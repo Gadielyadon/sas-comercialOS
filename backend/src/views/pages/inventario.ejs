@@ -1,0 +1,1576 @@
+<%- include('../partials/head', { title }) %>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+
+  <div class="main-content">
+    <%- include('../partials/header', { module, user }) %>
+
+    <main class="page-body">
+
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Productos</h2>
+          <p><%= products.length %> productos registrados en el sistema.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button type="button" class="btn-action btn-action-outline" onclick="exportCSV()">
+            <i class="bi bi-download"></i> Exportar
+          </button>
+          <button type="button" class="btn-action btn-action-outline" onclick="abrirImportar()"
+            style="color:#10b981;border-color:rgba(16,185,129,.4);">
+            <i class="bi bi-file-earmark-excel"></i> Importar Excel
+          </button>
+          <button type="button" class="btn-action btn-action-primary" onclick="abrirModal()">
+            <i class="bi bi-plus-lg"></i> Nuevo Producto
+          </button>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="page-toolbar" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+
+        <!-- Buscador unificado -->
+        <div style="position:relative;flex:1;min-width:260px;">
+          <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;pointer-events:none;">
+            <i class="bi bi-search" id="searchIcoNormal" style="color:var(--text-muted);font-size:14px;"></i>
+            <i class="bi bi-upc-scan" id="searchIcoScan" style="color:#10b981;font-size:14px;display:none;"></i>
+          </div>
+          <input id="q" class="search-input"
+            placeholder="Buscar por nombre, SKU o escaneá un código de barras…"
+            oninput="filterRows()" autocomplete="off" spellcheck="false"
+            style="padding-left:36px;width:100%;">
+          <div id="scanModeBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
+            background:rgba(16,185,129,.12);color:#10b981;border-radius:20px;padding:3px 10px;
+            font-size:11px;font-weight:700;border:1px solid rgba(16,185,129,.3);">
+            <i class="bi bi-upc-scan"></i> Scanner activo
+          </div>
+        </div>
+
+        <!-- Filtros de stock -->
+        <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap;">
+          <button class="btn-filtro-stock active" id="filtroTodos"   onclick="setFiltroStock('todos',   this)">Todos</button>
+          <button class="btn-filtro-stock"         id="filtroSinStock" onclick="setFiltroStock('sinstock', this)">
+            <span class="dot-stock rojo"></span> Sin stock
+          </button>
+          <button class="btn-filtro-stock"         id="filtroStockBajo" onclick="setFiltroStock('bajo', this)">
+            <span class="dot-stock naranja"></span> Stock bajo
+          </button>
+          <!-- Filtro por categoría -->
+          <select id="filtroCat" onchange="filterRows()"
+            style="height:34px;padding:0 10px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-body);font-size:12.5px;font-weight:600;cursor:pointer;outline:none;transition:border-color .15s;">
+            <option value="">Todas las categorías</option>
+            <% const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort(); %>
+            <% cats.forEach(cat => { %>
+              <option value="<%= cat %>"><%= cat %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Indicador scanner -->
+        <div id="scanHint" style="width:100%;font-size:11.5px;color:var(--text-muted);margin-top:-6px;display:none;">
+          <i class="bi bi-upc-scan" style="color:#10b981;"></i>
+          Scanner listo — escaneá un código de barras para ajustar stock al instante
+        </div>
+      </div>
+
+      <style>
+        .btn-filtro-stock {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
+          background: var(--bg-card); color: var(--text-secondary);
+          font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s;
+          white-space: nowrap;
+        }
+        .btn-filtro-stock:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .btn-filtro-stock.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+        .btn-filtro-stock.active .dot-stock { border-color: rgba(255,255,255,.6); }
+        .dot-stock { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid transparent; display: inline-block; }
+        .dot-stock.rojo    { background: #ef4444; }
+        .dot-stock.naranja { background: #f59e0b; }
+
+        /* ── Columna stock mejorada ── */
+        .stock-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 14px; border-radius: 20px; font-size: 13px;
+          font-weight: 800; font-family: var(--font-mono);
+          min-width: 60px; justify-content: center;
+        }
+        .stock-badge.ok     { background: #10b981; color: #fff; border: none; }
+        .stock-badge.bajo   { background: #f59e0b; color: #fff; border: none; }
+        .stock-badge.vacio  { background: #ef4444; color: #fff; border: none; }
+        .stock-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .stock-dot.ok     { background: rgba(255,255,255,.7); box-shadow: 0 0 5px rgba(255,255,255,.5); animation: stockPulse 2s infinite; }
+        .stock-dot.bajo   { background: rgba(255,255,255,.7); }
+        .stock-dot.vacio  { background: rgba(255,255,255,.7); }
+        @keyframes stockPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        /* ── Modal ajuste stock por scanner ── */
+        .stock-modal-overlay {
+          display: none; position: fixed; inset: 0;
+          background: rgba(0,0,0,.55); z-index: 300;
+          align-items: center; justify-content: center; padding: 20px;
+        }
+        .stock-modal-overlay.open { display: flex; }
+        .stock-modal-box {
+          background: var(--bg-card); border: 1px solid var(--border-color);
+          border-radius: 20px; width: 100%; max-width: 420px;
+          box-shadow: 0 24px 80px rgba(0,0,0,.3);
+          animation: modalPop .16s ease;
+          overflow: hidden;
+        }
+        .stock-modal-header {
+          padding: 20px 24px 16px;
+          border-bottom: 1px solid var(--border-color);
+          background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(0,180,216,.04));
+        }
+        .stock-modal-producto { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+        .stock-modal-meta { font-size: 12.5px; color: var(--text-secondary); display: flex; gap: 12px; }
+        .stock-modal-body { padding: 20px 24px; }
+        .stock-actual-wrap {
+          display: flex; align-items: center; justify-content: space-between;
+          background: var(--bg-body); border-radius: 12px; padding: 14px 18px;
+          margin-bottom: 18px; border: 1px solid var(--border-color);
+        }
+        .stock-actual-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stock-actual-val { font-size: 28px; font-weight: 900; font-family: var(--font-mono); }
+        .stock-ajuste-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .btn-ajuste {
+          padding: 14px 8px; border-radius: 12px; border: 2px solid var(--border-color);
+          background: var(--bg-body); cursor: pointer; transition: all .15s;
+          font-size: 15px; font-weight: 800; display: flex; flex-direction: column;
+          align-items: center; gap: 4px; color: var(--text-primary);
+        }
+        .btn-ajuste:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .btn-ajuste.suma  { border-color: rgba(16,185,129,.4); color: #059669; }
+        .btn-ajuste.suma:hover  { background: rgba(16,185,129,.08); border-color: #10b981; }
+        .btn-ajuste.resta { border-color: rgba(239,68,68,.3); color: #dc2626; }
+        .btn-ajuste.resta:hover { background: rgba(239,68,68,.06); border-color: #ef4444; }
+        .btn-ajuste-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+        .stock-custom-row { display: flex; gap: 8px; align-items: center; }
+        .stock-custom-input {
+          flex: 1; padding: 10px 14px; border: 2px solid var(--border-color);
+          border-radius: 10px; background: var(--bg-body); color: var(--text-primary);
+          font-size: 16px; font-weight: 700; font-family: var(--font-mono);
+          text-align: center; outline: none; transition: border-color .15s;
+        }
+        .stock-custom-input:focus { border-color: var(--color-action); }
+        .btn-stock-set {
+          padding: 10px 18px; border-radius: 10px; border: none;
+          background: var(--color-primary); color: #fff; font-size: 13.5px;
+          font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity .15s;
+        }
+        .btn-stock-set:hover { opacity: .88; }
+        .stock-modal-footer {
+          padding: 12px 24px; border-top: 1px solid var(--border-color);
+          display: flex; gap: 8px; justify-content: flex-end;
+          background: var(--bg-body);
+        }
+        .btn-stock-cancel { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
+      </style>
+
+      <!-- TABLA -->
+      <div class="card-panel">
+        <div class="card-panel-body">
+          <table class="sales-table" id="productsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>SKU</th>
+                <th>Nombre / Descripción</th>
+                <th>Categoría</th>
+                <th>Costo</th>
+                <th>Precio Venta</th>
+                <th>Margen</th>
+                <th>Promo</th>
+                <th>Stock</th>
+                <th style="width:150px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% products.forEach(p => { %>
+                <tr data-sku="<%= p.sku %>">
+                  <td class="sale-id"><%= p.id %></td>
+                  <td class="sale-id"><%= p.sku %></td>
+                  <td>
+                    <strong><%= p.name %></strong>
+                    <% if (p.pesable) { %>
+                      <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,.12);color:#059669;margin-left:5px;">
+                        <i class="bi bi-scales"></i> Pesable
+                      </span>
+                    <% } %>
+                    <% if (p.descripcion) { %>
+                      <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;"><%= p.descripcion.length > 50 ? p.descripcion.slice(0,50) + '…' : p.descripcion %></div>
+                    <% } %>
+                  </td>
+                  <td style="color:var(--text-secondary);font-size:12.5px"><%= p.category || '—' %></td>
+                  <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)">
+                    <%= p.price_cost ? '$' + Number(p.price_cost).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %>
+                  </td>
+                  <td><strong style="font-family:var(--font-mono);">$<%= Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}) %></strong></td>
+                  <td>
+                    <% if (p.margen) { %>
+                      <span style="font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;">
+                        <%= Number(p.margen).toFixed(1) %>%
+                      </span>
+                    <% } else { %>
+                      <span style="color:var(--text-secondary);font-size:12px">—</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (p.en_promo && p.price_promo) { %>
+                      <div>
+                        <span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;">🏷️ PROMO</span>
+                        <div style="font-family:var(--font-mono);font-size:12px;color:#d97706;font-weight:700;margin-top:2px;">$<%= Number(p.price_promo).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+                      </div>
+                    <% } else { %>
+                      <span style="color:var(--text-secondary);font-size:12px">—</span>
+                    <% } %>
+                  </td>
+                  <td data-stock="<%= p.stock %>">
+                    <% const sc = p.stock <= 0 ? 'vacio' : (p.stock <= 3 ? 'bajo' : 'ok'); %>
+                    <span class="stock-badge <%= sc %>">
+                      <span class="stock-dot <%= sc %>"></span>
+                      <%= p.stock %>
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:6px; align-items:center">
+                      <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('<%= p.sku %>', 1)" title="Sumar stock">+1</button>
+                      <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('<%= p.sku %>', -1)" title="Restar stock">-1</button>
+                      <button type="button" class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%= JSON.stringify(p) %>)" title="Editar producto"
+                        style="color:var(--color-action); border-color:rgba(0,180,216,.3);">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button type="button" class="btn-action btn-action-ghost btn-sm" onclick="removeProduct('<%= p.sku %>')" title="Eliminar">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL NUEVO / EDITAR PRODUCTO
+══════════════════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalProducto" onclick="cerrarModalSiOverlay(event)">
+  <div style="width:100%;max-width:860px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0;">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalTitulo">Nuevo Producto</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="modalSubtitulo">Completá los datos del producto</div>
+        </div>
+      </div>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body en dos columnas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;overflow:hidden;">
+
+      <!-- ── COLUMNA IZQUIERDA: datos básicos ── -->
+      <div style="padding:18px 20px;overflow-y:auto;border-right:1px solid var(--border-color);display:flex;flex-direction:column;gap:12px;">
+
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-secondary);margin-bottom:2px;">Datos del producto</div>
+
+        <!-- SKU + Nombre -->
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;">
+          <div>
+            <label class="form-lbl">SKU / Código</label>
+            <input type="text" id="m_sku" placeholder="ABC-001"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:12.5px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          </div>
+          <div>
+            <label class="form-lbl">Nombre *</label>
+            <input type="text" id="m_name" placeholder="Nombre del producto"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          </div>
+        </div>
+
+        <!-- Categoría + Stock -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label class="form-lbl">Categoría</label>
+            <input type="text" id="m_category" placeholder="Ej: Bebidas"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          </div>
+          <div>
+            <label class="form-lbl">Stock inicial</label>
+            <input type="number" id="m_stock" placeholder="0" min="0" step="1" value="0"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+            <div id="m_stock_edit_wrap" style="margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <label class="form-lbl">Descripción <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional — aparece en el POS)</span></label>
+          <textarea id="m_descripcion" placeholder="Ej: Pack de 10 unidades..." rows="2"
+            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12.5px;outline:none;transition:border .2s;font-family:var(--font-body);resize:vertical;"
+            onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
+        </div>
+
+        <!-- Imagen del producto -->
+        <div>
+          <label class="form-lbl">Imagen del producto <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <div id="img-upload-area" style="border:1.5px dashed var(--border-color);border-radius:var(--radius-md);padding:12px;display:flex;align-items:center;gap:12px;background:var(--bg-body);transition:border-color .2s;">
+            <!-- Preview -->
+            <div id="img-preview-wrap" style="width:64px;height:64px;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative;">
+              <i id="img-placeholder-icon" class="bi bi-image" style="font-size:22px;color:var(--text-secondary);opacity:.4;"></i>
+              <img id="img-preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:var(--radius-sm);">
+              <button id="img-remove-btn" onclick="removerImagen()" style="display:none;position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#ef4444;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:1;padding:0;" title="Quitar imagen">✕</button>
+            </div>
+            <!-- Botones -->
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+              <!-- Input oculto para galería/cámara -->
+              <input type="file" id="img-file-input" accept="image/*" style="display:none;" onchange="onImageFileSelected(event)">
+              <!-- Botón galería -->
+              <button type="button" onclick="document.getElementById('img-file-input').click()"
+                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
+                <i class="bi bi-images" style="font-size:14px;color:var(--color-action);"></i> Galería / Archivo
+              </button>
+              <!-- Botón cámara (solo muestra en móvil con cámara disponible) -->
+              <input type="file" id="img-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="onImageFileSelected(event)">
+              <button type="button" id="btn-camara" onclick="document.getElementById('img-camera-input').click()"
+                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
+                <i class="bi bi-camera" style="font-size:14px;color:#10b981;"></i> Sacar foto
+              </button>
+              <span id="img-filename" style="font-size:10.5px;color:var(--text-secondary);display:none;"></span>
+            </div>
+          </div>
+          <!-- base64 oculto que se manda al guardar -->
+          <input type="hidden" id="m_imagen" value="">
+        </div>
+
+        <!-- Pesable -->
+        <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;" for="m_pesable">
+            <i class="bi bi-scales" style="color:#10b981;font-size:16px;"></i>
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--text-primary);">Producto Pesable</div>
+              <div style="font-size:11px;color:var(--text-secondary);">Precio por kg/gramo</div>
+            </div>
+          </label>
+          <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
+            <input type="checkbox" id="m_pesable" style="opacity:0;width:0;height:0;position:absolute;" onchange="togglePesable(this)">
+            <label for="m_pesable" id="m_pesable_track" style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;">
+              <span id="m_pesable_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- IVA (sin IEPS) -->
+        <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+          <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="bi bi-percent" style="margin-right:4px;"></i>IVA (opcional)</div>
+          <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
+            <label style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+              <input type="checkbox" id="m_iva_check" onchange="toggleIva(this)" style="width:14px;height:14px;accent-color:var(--color-action);cursor:pointer;">
+              IVA <span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(0,180,216,.1);color:var(--color-action);" id="m_iva_badge">0%</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:5px;flex:1;">
+              <input type="number" id="m_iva" value="21" min="0" max="100" step="0.01" disabled
+                style="width:100%;padding:6px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12.5px;outline:none;"
+                oninput="actualizarBadge('m_iva','m_iva_badge','m_iva_check')">
+              <span style="font-size:12px;color:var(--text-secondary);">%</span>
+            </div>
+          </div>
+          <!-- IEPS eliminado de la UI — checkbox oculto para compatibilidad con JS -->
+          <input type="checkbox" id="m_ieps_check" style="display:none;" value="0">
+          <input type="number" id="m_ieps" value="0" style="display:none;">
+          <span id="m_ieps_badge" style="display:none;"></span>
+        </div>
+
+      </div>
+
+      <!-- ── COLUMNA DERECHA: precios + promo ── -->
+      <div style="padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-secondary);margin-bottom:2px;">Precios y promoción</div>
+
+        <!-- Costo -->
+        <div>
+          <label class="form-lbl">Precio Costo ($) <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <input type="number" id="m_price_cost" placeholder="0.00" min="0" step="0.01"
+            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"
+            oninput="calcPrecioVenta()">
+        </div>
+
+        <!-- Margen + Precio Venta en fila -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label class="form-lbl">Margen (%)</label>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <input type="number" id="m_margen" placeholder="50" min="0" step="0.1" value="50"
+                style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+                onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
+                oninput="calcPrecioVenta()">
+              <span style="font-size:13px;color:var(--text-secondary);flex-shrink:0;">%</span>
+            </div>
+          </div>
+          <div>
+            <label class="form-lbl">Precio Venta Final ($) *</label>
+            <input type="number" id="m_price" placeholder="0.00" min="0" step="0.01"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;font-weight:700;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"
+              oninput="actualizarPreview()">
+          </div>
+        </div>
+
+        <!-- Indicador margen -->
+        <div id="margenIndicador" style="display:none;padding:7px 11px;border-radius:var(--radius-sm);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);font-size:12px;color:#059669;font-weight:600;"></div>
+
+        <!-- Preview desglose fiscal -->
+<div id="m_preview" style="display:none;background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-md);padding:11px;">
+  <div style="font-size:10.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">
+    Desglose fiscal estimado
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-items:center;">
+    <div>
+      <span style="font-size:11px;color:var(--text-secondary);">Precio cargado: </span>
+      <span id="prev_base" style="font-weight:700;color:var(--text-primary);"></span>
+    </div>
+
+    <div>
+      <span style="font-size:11px;color:var(--text-secondary);">Neto estimado: </span>
+      <span id="prev_neto" style="font-weight:600;color:var(--text-primary);"></span>
+    </div>
+
+    <div>
+      <span style="font-size:11px;color:var(--text-secondary);">IVA incluido: </span>
+      <span id="prev_iva" style="font-weight:600;color:var(--color-action);"></span>
+    </div>
+
+    <div>
+      <span style="font-size:11px;color:var(--text-secondary);">IEPS incluido: </span>
+      <span id="prev_ieps" style="font-weight:600;color:#d97706;"></span>
+    </div>
+
+    <div style="grid-column:1 / -1;border-top:1px dashed rgba(0,0,0,.08);padding-top:8px;">
+      <span style="font-size:11px;color:var(--text-secondary);">Total facturado: </span>
+      <span id="prev_total" style="font-weight:700;font-size:14px;color:var(--text-primary);"></span>
+    </div>
+  </div>
+</div>
+
+        <!-- Promo -->
+        <div style="background:rgba(245,158,11,.04);border:1.5px solid rgba(245,158,11,.2);border-radius:var(--radius-md);padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;">
+              <i class="bi bi-tag-fill" style="margin-right:5px;color:#f59e0b;"></i>Promoción
+            </div>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+              <span style="font-size:12px;color:var(--text-secondary);">Activar</span>
+              <div style="position:relative;width:40px;height:22px;">
+                <input type="checkbox" id="m_en_promo" style="opacity:0;width:0;height:0;position:absolute;" onchange="togglePromo(this)">
+                <label for="m_en_promo" id="m_promo_track"
+                  style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;">
+                  <span id="m_promo_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span>
+                </label>
+              </div>
+            </label>
+          </div>
+          <div id="promoOffMsg" style="font-size:12px;color:var(--text-secondary);font-style:italic;">Sin promoción activa — el precio normal se usa en el POS</div>
+          <div id="promoFields" style="display:none;">
+            <label class="form-lbl" style="color:#92400e;">Precio Promo ($)</label>
+            <input type="number" id="m_price_promo" placeholder="0.00" min="0" step="0.01"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(245,158,11,.4);background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='rgba(245,158,11,.4)'"
+              oninput="mostrarAhorroPromo()">
+            <div id="promoAhorro" style="display:none;margin-top:8px;padding:8px 11px;background:rgba(245,158,11,.1);border-radius:var(--radius-sm);font-size:12.5px;font-weight:700;color:#d97706;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer botones -->
+    <div style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-body);flex-shrink:0;">
+      <button onclick="guardarProducto()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:10px;">
+        <i class="bi bi-check-lg"></i> <span id="btnGuardarTexto">Guardar producto</span>
+      </button>
+      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:10px 18px;">
+        <i class="bi bi-x-lg"></i> Cancelar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<script>
+/* ── Estado del modal ── */
+let _editSku = null; // null = nuevo, string = editando
+
+/* ── Helpers impuestos ── */
+function toggleIva(cb) {
+  const input = document.getElementById('m_iva');
+  input.disabled = !cb.checked;
+  input.style.color = cb.checked ? 'var(--text-primary)' : 'var(--text-secondary)';
+  input.style.background = cb.checked ? 'var(--bg-body)' : 'var(--bg-card)';
+  actualizarBadge('m_iva', 'm_iva_badge', 'm_iva_check');
+}
+
+// IEPS eliminado — stub para no romper llamadas existentes
+function toggleIeps(cb) { actualizarPreview(); }
+
+function actualizarBadge(inputId, badgeId, checkId) {
+  const check = document.getElementById(checkId);
+  const val = (check && check.checked) ? (parseFloat(document.getElementById(inputId).value) || 0) : 0;
+  const badge = document.getElementById(badgeId);
+  if (badge) badge.textContent = val + '%';
+  actualizarPreview();
+}
+
+function togglePesable(cb) {
+  document.getElementById('m_pesable_track').style.background = cb.checked ? 'var(--color-action)' : 'var(--border-color)';
+  document.getElementById('m_pesable_thumb').style.transform = cb.checked ? 'translateX(20px)' : 'translateX(0)';
+}
+
+function actualizarPreview() {
+  const precioFinal = parseFloat(document.getElementById('m_price').value) || 0;
+  const ivaCheck    = document.getElementById('m_iva_check').checked;
+  const ivaPct      = ivaCheck ? (parseFloat(document.getElementById('m_iva').value) || 0) : 0;
+
+  let neto = precioFinal;
+  let ivaIncluido = 0;
+
+  if (precioFinal > 0 && ivaPct > 0) {
+    const divisor = 1 + (ivaPct / 100);
+    neto = precioFinal / divisor;
+    ivaIncluido = precioFinal - neto;
+  }
+
+  const fmt = (n) =>
+    '$' + Number(n || 0).toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+  document.getElementById('m_preview').style.display =
+    (precioFinal > 0 && ivaCheck) ? 'block' : 'none';
+
+  document.getElementById('prev_base').textContent  = fmt(precioFinal);
+  document.getElementById('prev_neto').textContent  = fmt(neto);
+  document.getElementById('prev_iva').textContent   = fmt(ivaIncluido);
+  const prevIeps = document.getElementById('prev_ieps');
+  if (prevIeps) prevIeps.textContent = fmt(0);
+  document.getElementById('prev_total').textContent = fmt(precioFinal);
+}
+
+/* ── Calcular precio venta desde costo + margen ── */
+function calcPrecioVenta() {
+  const costo  = parseFloat(document.getElementById('m_price_cost')?.value) || 0;
+  const margen = parseFloat(document.getElementById('m_margen')?.value) || 0;
+  const ind    = document.getElementById('margenIndicador');
+
+  if (costo > 0 && margen > 0) {
+    const precioVenta = costo * (1 + margen / 100);
+    document.getElementById('m_price').value = precioVenta.toFixed(2);
+    if (ind) {
+      ind.style.display = 'block';
+     ind.innerHTML = `Costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})} + ${margen}% = <strong>$${precioVenta.toLocaleString('es-AR',{minimumFractionDigits:2})}</strong> precio final cargado`;
+    }
+    actualizarPreview();
+  } else if (ind) {
+    ind.style.display = 'none';
+  }
+}
+
+/* ── Calcular margen si usuario ingresa precio venta manual ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const priceInput = document.getElementById('m_price');
+  if (priceInput) {
+    priceInput.addEventListener('input', () => {
+      const costo  = parseFloat(document.getElementById('m_price_cost')?.value) || 0;
+      const venta  = parseFloat(priceInput.value) || 0;
+      const ind    = document.getElementById('margenIndicador');
+      if (costo > 0 && venta > 0) {
+        const margenCalc = ((venta - costo) / costo) * 100;
+        if (document.getElementById('m_margen')) document.getElementById('m_margen').value = margenCalc.toFixed(1);
+        if (ind) {
+          ind.style.display = 'block';
+          ind.innerHTML = `Margen calculado: <strong>${margenCalc.toFixed(1)}%</strong> sobre costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})}`;
+        }
+      }
+    });
+  }
+});
+
+/* ── Toggle promo ── */
+function togglePromo(chk) {
+  const fields  = document.getElementById('promoFields');
+  const offMsg  = document.getElementById('promoOffMsg');
+  const track   = document.getElementById('m_promo_track');
+  const thumb   = document.getElementById('m_promo_thumb');
+  if (chk.checked) {
+    if (fields)  fields.style.display = 'block';
+    if (offMsg)  offMsg.style.display = 'none';
+    if (track)   track.style.background = '#f59e0b';
+    if (thumb)   thumb.style.transform  = 'translateX(18px)';
+  } else {
+    if (fields)  fields.style.display = 'none';
+    if (offMsg)  offMsg.style.display = 'block';
+    if (track)   track.style.background = 'var(--border-color)';
+    if (thumb)   thumb.style.transform  = 'translateX(0)';
+  }
+}
+
+/* ── Mostrar ahorro en promo ── */
+function mostrarAhorroPromo() {
+  const precio = parseFloat(document.getElementById('m_price')?.value) || 0;
+  const promo  = parseFloat(document.getElementById('m_price_promo')?.value) || 0;
+  const el     = document.getElementById('promoAhorro');
+  if (!el) return;
+  if (precio > 0 && promo > 0 && promo < precio) {
+    const ahorro = precio - promo;
+    const pct    = ((ahorro / precio) * 100).toFixed(0);
+    el.style.display = 'block';
+    el.innerHTML = `🏷️ Descuento: <strong>${pct}%</strong><br>Ahorro: $${ahorro.toLocaleString('es-AR',{minimumFractionDigits:2})}`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+/* ── Abrir modal NUEVO ── */
+function abrirModal(prefillSku = '') {
+  _editSku = null;
+  document.getElementById('modalTitulo').textContent    = 'Nuevo Producto';
+  document.getElementById('modalSubtitulo').textContent = 'Completá los datos del producto';
+  document.getElementById('btnGuardarTexto').textContent = 'Guardar producto';
+
+  // Limpiar campos
+  document.getElementById('m_sku').value      = prefillSku || '';
+  document.getElementById('m_sku').disabled   = false;
+  document.getElementById('m_name').value     = '';
+  document.getElementById('m_price').value    = '';
+  document.getElementById('m_category').value = '';
+  document.getElementById('m_stock').value    = '0';
+  if (document.getElementById('m_price_cost'))  document.getElementById('m_price_cost').value  = '';
+  if (document.getElementById('m_margen'))       document.getElementById('m_margen').value       = '50';
+  if (document.getElementById('m_en_promo'))   { document.getElementById('m_en_promo').checked = false; togglePromo(document.getElementById('m_en_promo')); }
+  if (document.getElementById('m_price_promo')) document.getElementById('m_price_promo').value = '';
+  if (document.getElementById('m_descripcion')) document.getElementById('m_descripcion').value = '';
+  document.getElementById('margenIndicador').style.display = 'none';
+  document.getElementById('m_iva_check').checked  = false;
+  document.getElementById('m_ieps_check').checked = false;
+  document.getElementById('m_pesable').checked    = false;
+  toggleIva(document.getElementById('m_iva_check'));
+  toggleIeps(document.getElementById('m_ieps_check'));
+  togglePesable(document.getElementById('m_pesable'));
+  document.getElementById('m_preview').style.display = 'none';
+  setImagenPreview(null);
+
+  document.getElementById('modalProducto').classList.add('open');
+  setTimeout(() => document.getElementById(prefillSku ? 'm_name' : 'm_sku').focus(), 80);
+}
+
+/* ── Abrir modal EDITAR ── */
+function abrirEditar(p) {
+  _editSku = p.sku;
+  document.getElementById('modalTitulo').textContent    = 'Editar Producto';
+  document.getElementById('modalSubtitulo').textContent = 'SKU: ' + p.sku;
+  document.getElementById('btnGuardarTexto').textContent = 'Guardar cambios';
+
+  document.getElementById('m_sku').value      = p.sku;
+  document.getElementById('m_sku').disabled   = false;
+  document.getElementById('m_name').value     = p.name;
+  if (document.getElementById('m_descripcion')) document.getElementById('m_descripcion').value = p.descripcion || '';
+  document.getElementById('m_price').value    = p.price;
+  document.getElementById('m_category').value = p.category || '';
+  document.getElementById('m_stock').value    = p.stock;
+  // Costo + margen
+  if (document.getElementById('m_price_cost')) document.getElementById('m_price_cost').value = p.price_cost || '';
+  if (document.getElementById('m_margen'))     document.getElementById('m_margen').value     = p.margen || 50;
+  // Promo
+  const enPromo = p.en_promo === 1 || p.en_promo === true;
+  if (document.getElementById('m_en_promo')) {
+    document.getElementById('m_en_promo').checked = enPromo;
+    togglePromo(document.getElementById('m_en_promo'));
+  }
+  if (enPromo && document.getElementById('m_price_promo')) {
+    document.getElementById('m_price_promo').value = p.price_promo || '';
+  }
+  mostrarAhorroPromo();
+  calcPrecioVenta();
+
+  // IVA
+  const ivaCheck = p.iva > 0;
+  document.getElementById('m_iva_check').checked = ivaCheck;
+  document.getElementById('m_iva').value = p.iva || 16;
+  toggleIva(document.getElementById('m_iva_check'));
+
+  // IEPS
+  const iepsCheck = p.ieps > 0;
+  document.getElementById('m_ieps_check').checked = iepsCheck;
+  document.getElementById('m_ieps').value = p.ieps || 3;
+  toggleIeps(document.getElementById('m_ieps_check'));
+
+  // Pesable
+  document.getElementById('m_pesable').checked = Boolean(p.pesable);
+  togglePesable(document.getElementById('m_pesable'));
+
+  // Imagen
+  setImagenPreview(p.imagen || null);
+
+  actualizarPreview();
+  document.getElementById('modalProducto').classList.add('open');
+  setTimeout(() => document.getElementById('m_name').focus(), 80);
+}
+
+/* ── Cerrar modal ── */
+function cerrarModal() {
+  document.getElementById('modalProducto').classList.remove('open');
+}
+
+function cerrarModalSiOverlay(e) {
+  if (e.target.id === 'modalProducto') cerrarModal();
+}
+
+/* ── Guardar (crear o editar) ── */
+async function guardarProducto() {
+  const sku        = document.getElementById('m_sku').value.trim();
+  const name       = document.getElementById('m_name').value.trim();
+  const price      = parseFloat(document.getElementById('m_price').value) || 0;
+  const category   = document.getElementById('m_category').value.trim();
+  const stock      = parseInt(document.getElementById('m_stock').value) || 0;
+  const ivaCheck   = document.getElementById('m_iva_check').checked;
+  const iepsCheck  = document.getElementById('m_ieps_check').checked;
+  const iva        = ivaCheck  ? (parseFloat(document.getElementById('m_iva').value)  || 0) : 0;
+  const ieps       = iepsCheck ? (parseFloat(document.getElementById('m_ieps').value) || 0) : 0;
+  const pesable    = document.getElementById('m_pesable').checked ? 1 : 0;
+  const descripcion = document.getElementById('m_descripcion')?.value.trim() || null;
+  const price_cost  = parseFloat(document.getElementById('m_price_cost')?.value) || null;
+  const margen      = parseFloat(document.getElementById('m_margen')?.value) || null;
+  const en_promo    = document.getElementById('m_en_promo')?.checked ? 1 : 0;
+  const price_promo = en_promo ? (parseFloat(document.getElementById('m_price_promo')?.value) || null) : null;
+  const imagen      = document.getElementById('m_imagen')?.value || null;
+
+  console.log('[guardar] imagen presente:', imagen ? ('sí, ' + Math.round(imagen.length/1024) + 'kb') : 'no');
+
+  if (!sku || !name) { alert('SKU y Nombre son obligatorios.'); return; }
+
+  try {
+    if (_editSku) {
+      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, descripcion, price_cost, margen, en_promo, price_promo, imagen })
+      });
+      console.log('[guardar] PUT status:', r.status);
+      if (!r.ok) {
+        const e = await r.json().catch(()=>({error:`HTTP ${r.status}`}));
+        alert('Error editando: ' + (e.error || r.status));
+        return;
+      }
+    } else {
+      const r = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, descripcion, imagen })
+      });
+      console.log('[guardar] POST status:', r.status);
+      if (!r.ok) {
+        const e = await r.json().catch(()=>({error:`HTTP ${r.status}`}));
+        alert('Error creando: ' + (e.error || r.status));
+        return;
+      }
+    }
+    location.reload();
+  } catch(err) {
+    console.error('[guardar] excepción:', err);
+    alert('Error de red: ' + err.message);
+  }
+}
+
+/* ── Imagen helpers ── */
+function setImagenPreview(src) {
+  const preview  = document.getElementById('img-preview');
+  const icon     = document.getElementById('img-placeholder-icon');
+  const removeBtn = document.getElementById('img-remove-btn');
+  const hidden   = document.getElementById('m_imagen');
+  if (src) {
+    preview.src = src;
+    preview.style.display = 'block';
+    icon.style.display = 'none';
+    removeBtn.style.display = 'flex';
+    hidden.value = src;
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    icon.style.display = 'block';
+    removeBtn.style.display = 'none';
+    hidden.value = '';
+    document.getElementById('img-filename').style.display = 'none';
+    document.getElementById('img-filename').textContent = '';
+  }
+}
+
+function onImageFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  // Validar tamaño (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('La imagen no puede superar 5MB. Intentá con una foto más pequeña.');
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Comprimir a max 600px y quality 0.75
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 600;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.75);
+      setImagenPreview(compressed);
+      const fname = document.getElementById('img-filename');
+      fname.textContent = file.name;
+      fname.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = ''; // reset para poder volver a subir la misma
+}
+
+function removerImagen() {
+  setImagenPreview(null);
+}
+
+/* ── Filtro tabla ── */
+function filterRows() {
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  document.querySelectorAll('#productsTable tbody tr').forEach(tr => {
+    const sku  = tr.children[1].innerText.toLowerCase();
+    const name = tr.children[2].innerText.toLowerCase();
+    tr.style.display = (sku.includes(q) || name.includes(q)) ? '' : 'none';
+  });
+}
+
+/* ── Stock delta ── */
+async function stockDelta(sku, delta) {
+  const r = await fetch(`/api/products/${encodeURIComponent(sku)}/stock`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ delta })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+/* ── Eliminar ── */
+async function removeProduct(sku) {
+  if (!confirm('¿Eliminar producto ' + sku + '?')) return;
+  const r = await fetch(`/api/products/${encodeURIComponent(sku)}`, { method: 'DELETE' });
+  if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error eliminando'); return; }
+  location.reload();
+}
+
+/* ── Exportar ── */
+function exportCSV() { window.location.href = '/api/products.csv'; }
+
+/* ── ESC cierra modal ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { cerrarModal(); cerrarImportar(); }
+});
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL IMPORTAR EXCEL
+══════════════════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalImportar" onclick="if(event.target.id==='modalImportar')cerrarImportar()">
+  <div class="sale-modal" style="max-width:780px;text-align:left;padding:0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+
+    <!-- Header fijo -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 26px 18px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:18px;">
+          <i class="bi bi-file-earmark-excel"></i>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Importar Productos desde Excel</div>
+          <div style="font-size:11.5px;color:var(--text-secondary);" id="imp_subtitle">Seleccioná un archivo .xlsx o .csv</div>
+        </div>
+      </div>
+      <button onclick="cerrarImportar()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- PASO 1: Drop zone -->
+    <div id="imp_step1" style="padding:26px;flex:1;overflow-y:auto;">
+      <div id="imp_dropzone"
+        style="border:2.5px dashed var(--border-color);border-radius:14px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-body);"
+        onclick="document.getElementById('imp_fileInput').click()"
+        ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
+        <div style="font-size:44px;color:rgba(16,185,129,.5);margin-bottom:12px;"><i class="bi bi-file-earmark-excel"></i></div>
+        <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Arrastrá tu archivo acá</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">o hacé click para seleccionar</div>
+        <span style="font-size:11px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;padding:4px 12px;color:var(--text-secondary);">
+          .xlsx · .xls · .csv — máx. 5MB
+        </span>
+      </div>
+      <input type="file" id="imp_fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="impFileSelected(event)">
+
+      <!-- Formato esperado -->
+      <div style="margin-top:20px;background:var(--bg-body);border:1px solid var(--border-color);border-radius:10px;padding:16px 18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:10px;">Formato de columnas esperado</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <% [['sku','SKU / Código','cyan'],['name','Nombre','cyan'],['price','Precio','cyan'],['category','Categoría','gray'],['stock','Stock','gray'],['iva','IVA (%)','gray'],['ieps','IEPS (%)','gray']].forEach(([k,l,c]) => { %>
+            <span style="font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;
+              background:<%= c==='cyan'?'rgba(0,180,216,.1)':'rgba(100,116,139,.08)' %>;
+              color:<%= c==='cyan'?'var(--color-action)':'var(--text-secondary)' %>;
+              border:1px solid <%= c==='cyan'?'rgba(0,180,216,.25)':'var(--border-color)' %>;">
+              <%= k %> <span style="opacity:.6;font-weight:400">(<%= l %>)</span>
+              <% if(c==='cyan'){ %><i class="bi bi-asterisk" style="font-size:8px;vertical-align:super;"></i><% } %>
+            </span>
+          <% }) %>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-secondary);">
+          <i class="bi bi-asterisk" style="font-size:8px;vertical-align:super;"></i> Obligatorias · Las columnas pueden estar en cualquier orden · La primera fila debe ser el encabezado
+        </div>
+        <button onclick="descargarPlantilla()" style="margin-top:10px;background:none;border:none;cursor:pointer;color:var(--color-action);font-size:12px;font-weight:600;padding:0;display:flex;align-items:center;gap:5px;">
+          <i class="bi bi-download"></i> Descargar plantilla de ejemplo
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 2: Preview + resolución de conflictos -->
+    <div id="imp_step2" style="display:none;flex:1;overflow-y:auto;padding:0;">
+
+      <!-- Resumen -->
+      <div style="padding:16px 26px;background:var(--bg-body);border-bottom:1px solid var(--border-color);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div>
+          <span style="font-size:13px;font-weight:600;" id="imp_countNew">0 nuevos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div>
+          <span style="font-size:13px;font-weight:600;" id="imp_countConflict">0 conflictos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div>
+          <span style="font-size:13px;font-weight:600;" id="imp_countError">0 errores</span>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:7px;" id="imp_resolveAll" style="display:none">
+          <span style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;">Resolver todos los conflictos:</span>
+          <button onclick="resolverTodos('update')" style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.08);color:#10b981;cursor:pointer;">Actualizar todos</button>
+          <button onclick="resolverTodos('skip')"   style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);cursor:pointer;">Ignorar todos</button>
+        </div>
+      </div>
+
+      <!-- Tabla preview -->
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="imp_previewTable">
+          <thead>
+            <tr style="background:var(--bg-body);border-bottom:1px solid var(--border-color);">
+              <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);text-align:left;">Estado</th>
+              <th style="padding:10px 14px;text-align:left;">SKU</th>
+              <th style="padding:10px 14px;text-align:left;">Nombre</th>
+              <th style="padding:10px 14px;text-align:right;">Precio</th>
+              <th style="padding:10px 14px;text-align:left;">Categoría</th>
+              <th style="padding:10px 14px;text-align:right;">Stock</th>
+              <th style="padding:10px 14px;text-align:center;">IVA</th>
+              <th style="padding:10px 14px;text-align:center;">IEPS</th>
+              <th style="padding:10px 14px;text-align:center;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="imp_previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer con botones de acción -->
+    <div id="imp_footer" style="display:none;padding:16px 26px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg-card);">
+      <button onclick="impVolver()" style="background:none;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <i class="bi bi-arrow-left"></i> Volver
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;color:var(--text-secondary);" id="imp_footerInfo"></span>
+        <button id="imp_btnImportar" onclick="ejecutarImportacion()"
+          style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,.35);">
+          <i class="bi bi-check-circle-fill"></i> <span id="imp_btnLabel">Importar</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════
+   IMPORTAR PRODUCTOS — lógica completa
+════════════════════════════════════════════════════ */
+let _impRows = [];   // filas parseadas del Excel { sku, name, price, ... , _status, _action }
+
+function abrirImportar() {
+  _impRows = [];
+  document.getElementById('imp_step1').style.display = 'block';
+  document.getElementById('imp_step2').style.display = 'none';
+  document.getElementById('imp_footer').style.display = 'none';
+  document.getElementById('imp_subtitle').textContent = 'Seleccioná un archivo .xlsx o .csv';
+  document.getElementById('imp_fileInput').value = '';
+  document.getElementById('modalImportar').classList.add('open');
+}
+
+function cerrarImportar() {
+  document.getElementById('modalImportar').classList.remove('open');
+}
+
+/* ── Drag & drop ── */
+function impDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('imp_dropzone').style.borderColor = '#10b981';
+  document.getElementById('imp_dropzone').style.background  = 'rgba(16,185,129,.04)';
+}
+function impDragLeave(e) {
+  document.getElementById('imp_dropzone').style.borderColor = 'var(--border-color)';
+  document.getElementById('imp_dropzone').style.background  = 'var(--bg-body)';
+}
+function impDrop(e) {
+  e.preventDefault(); impDragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file) impProcesarArchivo(file);
+}
+function impFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) impProcesarArchivo(file);
+}
+
+/* ── Normalizar encabezados ── */
+function impNormHeader(h) {
+  const s = String(h||'').toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+  const map = {
+    sku:'sku', codigo:'sku', code:'sku', cod:'sku', barcode:'sku',
+    nombre:'name', name:'name', producto:'name', descripcion:'name',
+    precio:'price', price:'price', costo:'price', valor:'price',
+    categoria:'category', category:'category', rubro:'category', tipo:'category',
+    stock:'stock', cantidad:'stock', qty:'stock', existencia:'stock',
+    iva:'iva', impuesto:'iva',
+    ieps:'ieps',
+  };
+  return map[s] || s;
+}
+
+/* ── Parsear archivo con SheetJS ── */
+async function impProcesarArchivo(file) {
+  if (file.size > 5 * 1024 * 1024) { alert('El archivo supera 5MB'); return; }
+  document.getElementById('imp_subtitle').textContent = 'Leyendo archivo…';
+
+  // Cargar SheetJS dinámicamente si no está disponible
+  if (typeof XLSX === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const workbook = XLSX.read(e.target.result, { type: 'array' });
+      const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+      const raw      = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (!raw.length) { alert('El archivo está vacío o no tiene datos válidos.'); return; }
+
+      // Mapear columnas
+      const rows = raw.map(r => {
+        const mapped = {};
+        Object.keys(r).forEach(k => { mapped[impNormHeader(k)] = r[k]; });
+        return {
+          sku:      String(mapped.sku   || '').trim(),
+          name:     String(mapped.name  || '').trim(),
+          price:    parseFloat(mapped.price)  || 0,
+          category: String(mapped.category || '').trim(),
+          stock:    parseInt(mapped.stock)    || 0,
+          iva:      parseFloat(mapped.iva)    || 0,
+          ieps:     parseFloat(mapped.ieps)   || 0,
+          _action:  'new',   // 'new' | 'update' | 'skip'
+          _status:  'new',   // 'new' | 'conflict' | 'error'
+          _error:   '',
+        };
+      });
+
+      // Validar filas requeridas
+      rows.forEach(r => {
+        if (!r.sku)  { r._status = 'error'; r._error = 'SKU vacío'; }
+        if (!r.name) { r._status = 'error'; r._error = (r._error ? r._error + ', ' : '') + 'Nombre vacío'; }
+      });
+
+      // Verificar cuáles SKUs ya existen
+      document.getElementById('imp_subtitle').textContent = 'Verificando SKUs existentes…';
+      const skusValidos = rows.filter(r => r._status !== 'error').map(r => r.sku);
+
+      const checks = await Promise.allSettled(
+        skusValidos.map(sku => fetch(`/api/products/${encodeURIComponent(sku)}`).then(r => ({ sku, exists: r.ok })))
+      );
+      const existentes = new Set(
+        checks.filter(c => c.status==='fulfilled' && c.value.exists).map(c => c.value.sku)
+      );
+
+      rows.forEach(r => {
+        if (r._status === 'error') return;
+        if (existentes.has(r.sku)) {
+          r._status = 'conflict';
+          r._action = 'update'; // default: actualizar
+        }
+      });
+
+      _impRows = rows;
+      impMostrarPreview();
+    } catch (err) {
+      console.error(err);
+      alert('Error leyendo el archivo. Asegurate que sea un Excel o CSV válido.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ── Mostrar preview ── */
+function impMostrarPreview() {
+  const countNew      = _impRows.filter(r => r._status==='new').length;
+  const countConflict = _impRows.filter(r => r._status==='conflict').length;
+  const countError    = _impRows.filter(r => r._status==='error').length;
+
+  document.getElementById('imp_countNew').textContent      = countNew      + ' nuevos';
+  document.getElementById('imp_countConflict').textContent = countConflict + ' conflictos';
+  document.getElementById('imp_countError').textContent    = countError    + ' errores';
+  document.getElementById('imp_resolveAll').style.display  = countConflict > 1 ? 'flex' : 'none';
+
+  const tbody = document.getElementById('imp_previewBody');
+  tbody.innerHTML = _impRows.map((r, i) => {
+    const statusBadge = {
+      new:      `<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,.1);color:#10b981;">NUEVO</span>`,
+      conflict: `<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(245,158,11,.1);color:#d97706;">CONFLICTO</span>`,
+      error:    `<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(239,68,68,.1);color:#ef4444;">ERROR</span>`,
+    }[r._status] || '';
+
+    const accion = r._status === 'conflict' ? `
+      <div style="display:flex;gap:5px;justify-content:center;">
+        <button onclick="setAccion(${i},'update')" style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;cursor:pointer;
+          border:1.5px solid ${r._action==='update'?'#10b981':'var(--border-color)'};
+          background:${r._action==='update'?'rgba(16,185,129,.1)':'transparent'};
+          color:${r._action==='update'?'#10b981':'var(--text-secondary)'};">
+          Actualizar
+        </button>
+        <button onclick="setAccion(${i},'skip')" style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;cursor:pointer;
+          border:1.5px solid ${r._action==='skip'?'#94a3b8':'var(--border-color)'};
+          background:${r._action==='skip'?'rgba(100,116,139,.1)':'transparent'};
+          color:${r._action==='skip'?'#64748b':'var(--text-secondary)'};">
+          Ignorar
+        </button>
+      </div>` :
+      r._status === 'error' ? `<span style="font-size:11px;color:#ef4444;">${r._error}</span>` :
+      `<span style="font-size:11px;color:#10b981;font-weight:600;">Crear</span>`;
+
+    const rowBg = r._status === 'error' ? 'rgba(239,68,68,.04)' :
+                  r._status === 'conflict' ? 'rgba(245,158,11,.03)' : '';
+
+    return `<tr style="border-bottom:1px solid var(--border-color);background:${rowBg};" id="imp_row_${i}">
+      <td style="padding:10px 14px;">${statusBadge}</td>
+      <td style="padding:10px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">${r.sku}</td>
+      <td style="padding:10px 14px;font-weight:600;color:var(--text-primary);">${r.name||'—'}</td>
+      <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:700;">$${Number(r.price).toFixed(2)}</td>
+      <td style="padding:10px 14px;color:var(--text-secondary);">${r.category||'—'}</td>
+      <td style="padding:10px 14px;text-align:right;">${r.stock}</td>
+      <td style="padding:10px 14px;text-align:center;">${r.iva>0?r.iva+'%':'—'}</td>
+      <td style="padding:10px 14px;text-align:center;">${r.ieps>0?r.ieps+'%':'—'}</td>
+      <td style="padding:10px 14px;text-align:center;">${accion}</td>
+    </tr>`;
+  }).join('');
+
+  const activas = _impRows.filter(r => r._status !== 'error' && r._action !== 'skip').length;
+  document.getElementById('imp_footerInfo').textContent = `Se procesarán ${activas} producto${activas!==1?'s':''}`;
+  document.getElementById('imp_subtitle').textContent   = `${_impRows.length} filas encontradas`;
+
+  document.getElementById('imp_step1').style.display = 'none';
+  document.getElementById('imp_step2').style.display  = 'block';
+  document.getElementById('imp_footer').style.display = 'flex';
+}
+
+function setAccion(i, accion) {
+  _impRows[i]._action = accion;
+  impMostrarPreview(); // re-render
+}
+
+function resolverTodos(accion) {
+  _impRows.forEach(r => { if (r._status === 'conflict') r._action = accion; });
+  impMostrarPreview();
+}
+
+function impVolver() {
+  document.getElementById('imp_step1').style.display = 'block';
+  document.getElementById('imp_step2').style.display  = 'none';
+  document.getElementById('imp_footer').style.display = 'none';
+}
+
+/* ── Ejecutar importación ── */
+async function ejecutarImportacion() {
+  const btn   = document.getElementById('imp_btnImportar');
+  const label = document.getElementById('imp_btnLabel');
+  btn.disabled = true;
+  label.textContent = 'Importando…';
+
+  const toCreate = _impRows.filter(r => r._status === 'new');
+  const toUpdate = _impRows.filter(r => r._status === 'conflict' && r._action === 'update');
+
+  let ok = 0, err = 0;
+
+  // Crear nuevos
+  for (const r of toCreate) {
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku:r.sku, name:r.name, price:r.price, category:r.category, stock:r.stock, iva:r.iva, ieps:r.ieps, pesable:0 })
+    });
+    res.ok ? ok++ : err++;
+  }
+
+  // Actualizar existentes
+  for (const r of toUpdate) {
+    const res = await fetch(`/api/products/${encodeURIComponent(r.sku)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name:r.name, price:r.price, category:r.category, stock:r.stock, iva:r.iva, ieps:r.ieps })
+    });
+    res.ok ? ok++ : err++;
+  }
+
+  cerrarImportar();
+  if (err) {
+    alert(`Importación completada:\n✅ ${ok} productos procesados\n❌ ${err} errores — revisá la consola`);
+  }
+  location.reload();
+}
+
+/* ── Descargar plantilla ── */
+function descargarPlantilla() {
+  const csv = 'sku,name,price,category,stock,iva,ieps\n' +
+              'ABC-001,Coca Cola 1.5L,1500,Bebidas,20,21,0\n' +
+              'ABC-002,Pepsi Retornable 1L,1200,Bebidas,15,0,0\n' +
+              'ABC-003,Detergente 500ml,800,Limpieza,30,10.5,0\n';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url;
+  a.download = 'plantilla_productos.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+</script>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL AJUSTE RÁPIDO DE STOCK (scanner)
+══════════════════════════════════════════════════════ -->
+<div class="stock-modal-overlay" id="modalStock" onclick="if(event.target===this)cerrarModalStock()">
+  <div class="stock-modal-box">
+    <div class="stock-modal-header">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,.15);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:18px;flex-shrink:0;">
+          <i class="bi bi-upc-scan"></i>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Ajuste de stock</div>
+          <div class="stock-modal-producto" id="smNombre">—</div>
+        </div>
+      </div>
+      <div class="stock-modal-meta">
+        <span><i class="bi bi-upc"></i> <span id="smSku">—</span></span>
+        <span id="smCategoria" style="display:none"><i class="bi bi-tag"></i> <span id="smCatVal">—</span></span>
+      </div>
+    </div>
+
+    <div class="stock-modal-body">
+      <!-- Stock actual -->
+      <div class="stock-actual-wrap">
+        <div>
+          <div class="stock-actual-label">Stock actual</div>
+          <div class="stock-actual-val" id="smStockActual" style="color:var(--text-primary)">—</div>
+        </div>
+        <div id="smStockBadge"></div>
+      </div>
+
+      <!-- Botones rápidos -->
+      <div class="stock-ajuste-grid">
+        <button class="btn-ajuste resta" onclick="ajustarStock(-5)">
+          <span style="font-size:20px;">−5</span>
+          <span class="btn-ajuste-label">Restar</span>
+        </button>
+        <button class="btn-ajuste resta" onclick="ajustarStock(-1)">
+          <span style="font-size:20px;">−1</span>
+          <span class="btn-ajuste-label">Restar</span>
+        </button>
+        <button class="btn-ajuste suma" onclick="ajustarStock(1)">
+          <span style="font-size:20px;">+1</span>
+          <span class="btn-ajuste-label">Sumar</span>
+        </button>
+      </div>
+      <div class="stock-ajuste-grid" style="grid-template-columns:1fr 1fr;margin-bottom:18px;">
+        <button class="btn-ajuste suma" onclick="ajustarStock(5)">
+          <span style="font-size:20px;">+5</span>
+          <span class="btn-ajuste-label">Sumar</span>
+        </button>
+        <button class="btn-ajuste suma" onclick="ajustarStock(10)">
+          <span style="font-size:20px;">+10</span>
+          <span class="btn-ajuste-label">Sumar</span>
+        </button>
+      </div>
+
+      <!-- Input personalizado -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Cantidad personalizada</div>
+      <div class="stock-custom-row">
+        <select id="smSigno" style="padding:10px 12px;border:2px solid var(--border-color);border-radius:10px;background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;cursor:pointer;">
+          <option value="1">+ Sumar</option>
+          <option value="-1">− Restar</option>
+          <option value="set">= Establecer</option>
+        </select>
+        <input type="number" id="smCantidad" class="stock-custom-input" placeholder="0" min="0" step="1"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();aplicarPersonalizado();}">
+        <button class="btn-stock-set" onclick="aplicarPersonalizado()">
+          <i class="bi bi-check-lg"></i> Aplicar
+        </button>
+      </div>
+    </div>
+
+    <div class="stock-modal-footer">
+      <button class="btn-stock-cancel" onclick="cerrarModalStock()">
+        <i class="bi bi-x-lg"></i> Cerrar
+      </button>
+      <button class="btn-stock-cancel" onclick="cerrarModalStock();setTimeout(()=>document.getElementById('q').focus(),100);"
+        style="border-color:rgba(16,185,129,.4);color:#10b981;">
+        <i class="bi bi-upc-scan"></i> Escanear otro
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Estado modal stock ── */
+let _smSku       = null;
+let _smStock     = 0;
+
+function abrirModalStock(producto) {
+  _smSku   = producto.sku;
+  _smStock = Number(producto.stock);
+
+  document.getElementById('smNombre').textContent     = producto.name;
+  document.getElementById('smSku').textContent        = producto.sku;
+  const catSpan = document.getElementById('smCategoria');
+  if (producto.category) {
+    document.getElementById('smCatVal').textContent = producto.category;
+    catSpan.style.display = '';
+  } else {
+    catSpan.style.display = 'none';
+  }
+  actualizarStockModal(_smStock);
+  document.getElementById('smCantidad').value = '';
+  document.getElementById('smSigno').value = '1';
+  document.getElementById('modalStock').classList.add('open');
+  setTimeout(() => document.getElementById('smCantidad').focus(), 120);
+}
+
+function actualizarStockModal(stock) {
+  _smStock = stock;
+  const el   = document.getElementById('smStockActual');
+  const badge = document.getElementById('smStockBadge');
+  el.textContent = stock;
+  const clase = stock <= 0 ? 'vacio' : stock <= 3 ? 'bajo' : 'ok';
+  el.style.color = { vacio:'#dc2626', bajo:'#d97706', ok:'#059669' }[clase];
+  badge.innerHTML = `<span class="stock-badge ${clase}">
+    <span class="stock-dot ${clase}"></span>${stock}
+  </span>`;
+}
+
+function cerrarModalStock() {
+  document.getElementById('modalStock').classList.remove('open');
+  _smSku = null;
+}
+
+async function ajustarStock(delta) {
+  if (!_smSku) return;
+  try {
+    const r = await fetch(`/api/products/${encodeURIComponent(_smSku)}/stock`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta })
+    });
+    if (!r.ok) { alert('Error actualizando stock'); return; }
+    const nuevoStock = _smStock + delta;
+    actualizarStockModal(Math.max(0, nuevoStock));
+    // Actualizar la fila en la tabla sin recargar
+    actualizarFilaStock(_smSku, Math.max(0, nuevoStock));
+  } catch(e) { alert('Error de red'); }
+}
+
+async function aplicarPersonalizado() {
+  const cant   = parseInt(document.getElementById('smCantidad').value) || 0;
+  const signo  = document.getElementById('smSigno').value;
+  if (!cant && signo !== 'set') return;
+  if (signo === 'set') {
+    // Establecer valor absoluto
+    const nuevo = Math.max(0, cant);
+    const delta = nuevo - _smStock;
+    await ajustarStock(delta);
+  } else {
+    await ajustarStock(Number(signo) * cant);
+  }
+  document.getElementById('smCantidad').value = '';
+  document.getElementById('smCantidad').focus();
+}
+
+function actualizarFilaStock(sku, nuevoStock) {
+  const row = document.querySelector(`[data-sku="${sku}"]`);
+  if (!row) return;
+  const td  = row.querySelector('[data-stock]');
+  if (!td) return;
+  td.setAttribute('data-stock', nuevoStock);
+  const clase = nuevoStock <= 0 ? 'vacio' : nuevoStock <= 3 ? 'bajo' : 'ok';
+  td.innerHTML = `<span class="stock-badge ${clase}">
+    <span class="stock-dot ${clase}"></span>${nuevoStock}
+  </span>`;
+  // Flash visual
+  row.classList.remove('row-flash'); void row.offsetWidth; row.classList.add('row-flash');
+}
+
+/* ── Scanner unificado ── */
+let _scanBuffer  = '';
+let _scanTimer   = null;
+const SCAN_SPEED = 80; // ms entre chars — scanner es más rápido que humano
+
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('q');
+
+  // Detector de velocidad: si chars llegan < 80ms = scanner
+  searchInput.addEventListener('keydown', (e) => {
+    if (_scanTimer) clearTimeout(_scanTimer);
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = searchInput.value.trim();
+      if (!code) return;
+      procesarCodigoScanner(code);
+      return;
+    }
+
+    // Detectar modo scanner por velocidad de tipeo
+    _scanTimer = setTimeout(() => {
+      // Si el input tiene valor y llegó completo rápido (scanner), mostrar hint
+      const val = searchInput.value.trim();
+      if (val.length > 3) {
+        document.getElementById('scanHint').style.display = 'block';
+      }
+    }, 300);
+  });
+
+  // Modo scanner: Enter en cualquier lugar del documento
+  document.addEventListener('keydown', async (e) => {
+    // No interferir si hay modal abierto o foco en input
+    const activeTag = document.activeElement?.tagName;
+    if (['INPUT','TEXTAREA','SELECT'].includes(activeTag)) return;
+    if (document.getElementById('modalProducto').classList.contains('open')) return;
+    if (document.getElementById('modalStock').classList.contains('open')) return;
+
+    if (e.key === 'Escape') {
+      cerrarModalStock();
+      return;
+    }
+
+    // Capturar teclas para buffer de scanner
+    if (e.key.length === 1) {
+      _scanBuffer += e.key;
+      if (_scanTimer) clearTimeout(_scanTimer);
+      _scanTimer = setTimeout(async () => {
+        const code = _scanBuffer.trim();
+        _scanBuffer = '';
+        if (code.length >= 3) {
+          searchInput.value = code;
+          filterRows();
+          await procesarCodigoScanner(code);
+        }
+      }, 100);
+    }
+  });
+});
+
+async function procesarCodigoScanner(code) {
+  try {
+    const res = await fetch(`/api/products/${encodeURIComponent(code)}`);
+    if (res.ok) {
+      const product = await res.json();
+      // Scroll + flash la fila
+      const row = document.querySelector(`[data-sku="${product.sku}"]`);
+      if (row) { row.scrollIntoView({ behavior:'smooth', block:'center' }); }
+      // Abrir modal de ajuste de stock
+      abrirModalStock(product);
+    } else if (res.status === 404) {
+      // Producto no existe → abrir modal de creación
+      abrirModal(code);
+    }
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+/* ── filterRows mejorado con filtro de stock y categoría ── */
+let _filtroStockActivo = 'todos';
+
+function setFiltroStock(filtro, btn) {
+  _filtroStockActivo = filtro;
+  document.querySelectorAll('.btn-filtro-stock').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterRows();
+}
+
+function filterRows() {
+  const q    = (document.getElementById('q')?.value || '').trim().toLowerCase();
+  const cat  = (document.getElementById('filtroCat')?.value || '').toLowerCase();
+  document.querySelectorAll('#productsTable tbody tr').forEach(tr => {
+    const sku    = (tr.children[1]?.innerText || '').toLowerCase();
+    const name   = (tr.children[2]?.innerText || '').toLowerCase();
+    const trCat  = (tr.children[3]?.innerText || '').toLowerCase().replace('—','');
+    const stock  = parseInt(tr.querySelector('[data-stock]')?.dataset.stock ?? '999');
+    const matchQ   = !q   || sku.includes(q)   || name.includes(q);
+    const matchCat = !cat || trCat.includes(cat);
+    let   matchF   = true;
+    if (_filtroStockActivo === 'sinstock') matchF = stock <= 0;
+    if (_filtroStockActivo === 'bajo')     matchF = stock > 0 && stock <= 3;
+    tr.style.display = (matchQ && matchCat && matchF) ? '' : 'none';
+  });
+}
+</script>
+
+<%- include('../partials/scripts') %>

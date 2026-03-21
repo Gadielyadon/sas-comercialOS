@@ -1,0 +1,521 @@
+<%- include('../partials/head', { title: 'Proveedores' }) %>
+<style>
+.filtro-chip { padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body); }
+.filtro-chip:hover { background:var(--bg-body);color:var(--text-primary); }
+.filtro-chip.on    { background:var(--color-action);color:#fff; }
+.form-lbl { font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px; }
+.form-input { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
+.form-input:focus { border-color:var(--color-action); }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'proveedores', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Proveedores', user }) %>
+    <main class="page-body">
+
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Proveedores</h2>
+          <p>Gestión de proveedores y cuentas a pagar.</p>
+        </div>
+        <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
+          <i class="bi bi-truck"></i> Nuevo Proveedor
+        </button>
+      </div>
+
+      <!-- Resumen rápido -->
+      <div id="resumenProveedores" style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+
+      <!-- Toolbar -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;">
+        <div class="search-input-wrap" style="flex:1;min-width:200px;max-width:320px">
+          <i class="bi bi-search"></i>
+          <input id="q" class="search-input" placeholder="Buscar por nombre, CUIT o rubro…" oninput="filtrar()">
+        </div>
+        <div style="display:flex;gap:5px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px;">
+          <button class="filtro-chip on" data-f="todos"    onclick="setFiltro(this)">Todos</button>
+          <button class="filtro-chip"    data-f="deudores" onclick="setFiltro(this)"><i class="bi bi-exclamation-circle" style="color:#ef4444;margin-right:4px;"></i>Con deuda</button>
+          <button class="filtro-chip"    data-f="ok"       onclick="setFiltro(this)"><i class="bi bi-check-circle" style="color:#10b981;margin-right:4px;"></i>Al día</button>
+        </div>
+        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+          <option value="nombre">Ordenar: A → Z</option>
+          <option value="mayor-deuda">Mayor deuda primero</option>
+        </select>
+        <div style="display:flex;gap:6px;margin-left:auto;">
+          <button onclick="exportarCSV()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-filetype-csv"></i> CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="card-panel">
+        <div class="card-panel-body">
+          <table class="sales-table" id="tablaProveedores">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>CUIT</th>
+                <th>Rubro</th>
+                <th>Teléfono</th>
+                <th>Saldo (debo)</th>
+                <th style="width:260px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (proveedores||[]).forEach(p => { %>
+              <tr data-id="<%= p.id %>">
+                <td><strong><%= p.nombre %></strong><% if(p.notas){%><div style="font-size:11px;color:var(--text-secondary);margin-top:1px;"><%= p.notas.slice(0,40) %></div><%}%></td>
+                <td style="font-family:var(--font-mono);color:var(--text-secondary);"><%= p.cuit||'—' %></td>
+                <td style="color:var(--text-secondary);"><%= p.rubro||'—' %></td>
+                <td style="color:var(--text-secondary);"><%= p.telefono||'—' %></td>
+                <td>
+                  <% if(p.saldo>0){ %><span class="badge-status badge-anulado">Debo $<%= Number(p.saldo).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+                  <% } else { %><span class="badge-status badge-pagado">Al día</span><% } %>
+                </td>
+                <td>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+                    <button class="btn-action btn-action-outline btn-sm"
+                      onclick="verCuenta(<%= p.id %>, this.dataset.nombre, <%= p.saldo %>)"
+                      data-nombre="<%= p.nombre %>">
+                      <i class="bi bi-clock-history"></i> Cuenta
+                    </button>
+                      <i class="bi bi-clock-history"></i> Cuenta
+                    </button>
+                    <button class="btn-action btn-action-outline btn-sm"
+                      onclick="abrirFactura(<%= p.id %>, this.dataset.nombre)"
+                      data-nombre="<%= p.nombre %>"
+                      style="color:#d97706;border-color:rgba(217,119,6,.3);">
+                      <i class="bi bi-receipt"></i> Factura
+                    </button>
+                      <i class="bi bi-receipt"></i> Factura
+                    </button>
+                    <% if(p.saldo>0){ %>
+                    <button class="btn-action btn-action-primary btn-sm"
+                      onclick="abrirPago(<%= p.id %>, this.dataset.nombre, <%= p.saldo %>)"
+                      data-nombre="<%= p.nombre %>">
+                      <i class="bi bi-cash"></i> Pagar
+                    </button>
+                      <i class="bi bi-cash"></i> Pagar
+                    </button>
+                    <% } %>
+                    <button class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%- JSON.stringify(p) %>)" style="color:var(--color-action);border-color:rgba(0,180,216,.3);"><i class="bi bi-pencil"></i></button>
+                    <button class="btn-action btn-action-ghost btn-sm" onclick="eliminar(<%= p.id %>)"><i class="bi bi-trash3"></i></button>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR -->
+<div class="sale-overlay" id="modalProv" onclick="if(event.target.id==='modalProv')cerrarModal()">
+  <div class="sale-modal" style="max-width:520px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-truck"></i></div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalProvTitulo">Nuevo Proveedor</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Datos del proveedor</div>
+        </div>
+      </div>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="grid-column:1/-1">
+        <label class="form-lbl">Nombre *</label>
+        <input type="text" id="p_nombre" class="form-input" placeholder="Nombre o razón social">
+      </div>
+      <div>
+        <label class="form-lbl">CUIT / RUT</label>
+        <input type="text" id="p_cuit" class="form-input" placeholder="Opcional">
+      </div>
+      <div>
+        <label class="form-lbl">Rubro</label>
+        <input type="text" id="p_rubro" class="form-input" placeholder="Ej: Mayorista, Servicios...">
+      </div>
+      <div>
+        <label class="form-lbl">Teléfono</label>
+        <input type="text" id="p_telefono" class="form-input" placeholder="Opcional">
+      </div>
+      <div>
+        <label class="form-lbl">Email</label>
+        <input type="email" id="p_email" class="form-input" placeholder="Opcional">
+      </div>
+      <div style="grid-column:1/-1">
+        <label class="form-lbl">Notas</label>
+        <textarea id="p_notas" class="form-input" rows="2" placeholder="Condiciones de pago, datos extra..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button onclick="guardar()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:10px;">
+        <i class="bi bi-check-lg"></i> <span id="btnProvTxt">Guardar</span>
+      </button>
+      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:10px 16px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARGAR FACTURA -->
+<div class="sale-overlay" id="modalFactura" onclick="if(event.target.id==='modalFactura')document.getElementById('modalFactura').classList.remove('open')">
+  <div class="sale-modal" style="max-width:420px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-receipt"></i></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Registrar Factura</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="facturaProvNombre">—</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('modalFactura').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label class="form-lbl">Monto ($) *</label>
+          <input type="number" id="f_monto" class="form-input" placeholder="0.00" min="0.01" step="0.01" style="font-size:18px;font-weight:700;">
+        </div>
+        <div>
+          <label class="form-lbl">N° Factura</label>
+          <input type="text" id="f_nro" class="form-input" placeholder="Ej: A-0001">
+        </div>
+      </div>
+      <div>
+        <label class="form-lbl">Descripción</label>
+        <input type="text" id="f_desc" class="form-input" placeholder="Ej: Mercadería semana 1, Servicio X...">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button onclick="confirmarFactura()" style="flex:1;padding:10px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+        <i class="bi bi-receipt"></i> Registrar factura
+      </button>
+      <button onclick="document.getElementById('modalFactura').classList.remove('open')" class="btn-action btn-action-outline" style="padding:10px 16px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGO -->
+<div class="sale-overlay" id="modalPagoP" onclick="if(event.target.id==='modalPagoP')document.getElementById('modalPagoP').classList.remove('open')">
+  <div class="sale-modal" style="max-width:380px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-cash-stack"></i></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Registrar Pago</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="pagoProvNombre">—</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('modalPagoP').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;">
+      <span style="font-size:12px;color:#dc2626;font-weight:600;">Deuda actual</span>
+      <span style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:#dc2626;" id="pagoProvSaldo">$0</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <label class="form-lbl" style="margin:0;">Monto a pagar ($)</label>
+          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 8px;cursor:pointer;">Pagar todo</button>
+        </div>
+        <input type="number" id="pp_monto" class="form-input" placeholder="0.00" min="0.01" step="0.01" style="font-size:18px;font-weight:700;" oninput="calcResto()">
+      </div>
+      <div id="restoWrap" style="display:none;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.08);">
+        <span style="font-size:12px;font-weight:600;color:#d97706;" id="restoLabel">Saldo restante</span>
+        <span style="float:right;font-family:var(--font-mono);font-size:14px;font-weight:700;color:#d97706;" id="restoValor">$0</span>
+      </div>
+      <div>
+        <label class="form-lbl">Descripción</label>
+        <input type="text" id="pp_desc" class="form-input" placeholder="Ej: Transferencia, efectivo...">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button onclick="confirmarPago()" style="flex:1;padding:10px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+        <i class="bi bi-check-circle-fill"></i> Confirmar pago
+      </button>
+      <button onclick="document.getElementById('modalPagoP').classList.remove('open')" class="btn-action btn-action-outline" style="padding:10px 16px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CUENTA CORRIENTE PROVEEDOR -->
+<div class="sale-overlay" id="modalCuentaP" onclick="if(event.target.id==='modalCuentaP')cerrarCuenta()">
+  <div style="width:100%;max-width:860px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-truck"></i></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Cuenta Corriente — Proveedor</div>
+          <div style="font-size:12px;color:var(--text-secondary);" id="cuentaPNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarCuenta()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:240px 1fr;flex:1;overflow:hidden;">
+      <div style="padding:16px;border-right:1px solid var(--border-color);overflow-y:auto;background:var(--bg-body);display:flex;flex-direction:column;gap:12px;">
+        <div id="cuentaPBanner" style="border-radius:var(--radius-md);padding:14px;text-align:center;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="cuentaPLabel">Deuda</div>
+          <div style="font-size:30px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;" id="cuentaPValor">$0</div>
+        </div>
+        <div id="cuentaPStats"></div>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:7px;">
+          <button onclick="cerrarCuenta();setTimeout(()=>abrirFactura(_cPId,_cPNombre),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
+            <i class="bi bi-receipt"></i> Cargar factura
+          </button>
+          <button id="cuentaPBtnPagar" onclick="cerrarCuenta();setTimeout(()=>abrirPago(_cPId,_cPNombre,_cPSaldo),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
+            <i class="bi bi-cash-stack"></i> Registrar pago
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);" id="cuentaPTotal">—</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;" id="cuentaPListado">
+          <p style="color:var(--text-secondary);text-align:center;padding:32px;">Cargando…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+'use strict';
+let _editId=null, _factId=null, _factNombre='', _pagoId=null, _pagoNombre='', _pagoSaldo=0;
+let _cPId=null, _cPNombre='', _cPSaldo=0;
+let _filtroActivo='todos';
+
+// ── Resumen ──
+(function(){
+  const proveedores = <%- JSON.stringify(proveedores||[]) %>;
+  const conDeuda = proveedores.filter(p=>p.saldo>0);
+  const totalDeuda = conDeuda.reduce((a,p)=>a+Number(p.saldo),0);
+  const el = document.getElementById('resumenProveedores');
+  if(!el) return;
+  const s=(icon,label,val,color)=>`<div style="display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
+    <i class="bi ${icon}" style="font-size:18px;color:${color};"></i>
+    <div><div style="font-size:11px;color:var(--text-secondary);">${label}</div><div style="font-size:14px;font-weight:700;color:var(--text-primary);">${val}</div></div></div>`;
+  el.innerHTML =
+    s('bi-truck','Total proveedores',proveedores.length,'var(--color-action)')+
+    s('bi-exclamation-circle','Con deuda',conDeuda.length,'#ef4444')+
+    s('bi-cash-stack','Deuda total','$'+totalDeuda.toLocaleString('es-AR',{minimumFractionDigits:2}),'#dc2626');
+})();
+
+// ── Filtros ──
+function setFiltro(btn) {
+  document.querySelectorAll('.filtro-chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); _filtroActivo=btn.dataset.f; filtrar();
+}
+function filtrar() {
+  const q=(document.getElementById('q')?.value||'').toLowerCase();
+  const orden=document.getElementById('ordenSelect')?.value||'nombre';
+  const rows=[...document.querySelectorAll('#tablaProveedores tbody tr')];
+  rows.forEach(tr=>{
+    const nombre=tr.querySelector('td')?.innerText.toLowerCase()||'';
+    const saldoTxt=tr.querySelector('td:nth-child(5)')?.innerText||'';
+    const debe=saldoTxt.toLowerCase().includes('debo');
+    const matchQ=!q||nombre.includes(q)||tr.innerText.toLowerCase().includes(q);
+    const matchF=_filtroActivo==='todos'||(_filtroActivo==='deudores'&&debe)||(_filtroActivo==='ok'&&!debe);
+    tr.style.display=(matchQ&&matchF)?'':'none';
+  });
+  const tbody=document.querySelector('#tablaProveedores tbody');
+  const vis=rows.filter(r=>r.style.display!=='none');
+  if(orden==='mayor-deuda') vis.sort((a,b)=>{
+    const g=tr=>{const t=tr.querySelector('td:nth-child(5)')?.innerText||'';const m=t.match(/[\d.]+/);return m?parseFloat(m[0].replace(/\./g,'')):0;};
+    return g(b)-g(a);
+  });
+  vis.forEach(r=>tbody.appendChild(r));
+}
+
+// ── CRUD Proveedor ──
+function abrirNuevo(){
+  _editId=null;
+  document.getElementById('modalProvTitulo').textContent='Nuevo Proveedor';
+  document.getElementById('btnProvTxt').textContent='Guardar';
+  ['p_nombre','p_cuit','p_rubro','p_telefono','p_email','p_notas'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('modalProv').classList.add('open');
+  setTimeout(()=>document.getElementById('p_nombre').focus(),80);
+}
+function abrirEditar(p){
+  _editId=p.id;
+  document.getElementById('modalProvTitulo').textContent='Editar Proveedor';
+  document.getElementById('btnProvTxt').textContent='Guardar cambios';
+  document.getElementById('p_nombre').value=p.nombre||'';
+  document.getElementById('p_cuit').value=p.cuit||'';
+  document.getElementById('p_rubro').value=p.rubro||'';
+  document.getElementById('p_telefono').value=p.telefono||'';
+  document.getElementById('p_email').value=p.email||'';
+  document.getElementById('p_notas').value=p.notas||'';
+  document.getElementById('modalProv').classList.add('open');
+  setTimeout(()=>document.getElementById('p_nombre').focus(),80);
+}
+function cerrarModal(){ document.getElementById('modalProv').classList.remove('open'); }
+async function guardar(){
+  const nombre=document.getElementById('p_nombre').value.trim();
+  if(!nombre){alert('El nombre es obligatorio');return;}
+  const body={nombre,cuit:document.getElementById('p_cuit').value.trim(),rubro:document.getElementById('p_rubro').value.trim(),
+    telefono:document.getElementById('p_telefono').value.trim(),email:document.getElementById('p_email').value.trim(),
+    notas:document.getElementById('p_notas').value.trim()};
+  const url=_editId?`/proveedores/api/${_editId}`:'/proveedores/api';
+  const method=_editId?'PUT':'POST';
+  const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.json().catch(()=>({}));alert(e.error||'Error');return;}
+  location.reload();
+}
+async function eliminar(id){
+  if(!confirm('¿Eliminar proveedor y todo su historial?'))return;
+  await fetch(`/proveedores/api/${id}`,{method:'DELETE'});
+  location.reload();
+}
+
+// ── Factura ──
+function abrirFactura(id,nombre){
+  _factId=id; _factNombre=nombre;
+  document.getElementById('facturaProvNombre').textContent=nombre;
+  document.getElementById('f_monto').value='';
+  document.getElementById('f_nro').value='';
+  document.getElementById('f_desc').value='';
+  document.getElementById('modalFactura').classList.add('open');
+  setTimeout(()=>document.getElementById('f_monto').focus(),80);
+}
+async function confirmarFactura(){
+  const monto=parseFloat(document.getElementById('f_monto').value);
+  if(!monto||monto<=0){alert('Ingresá un monto válido');return;}
+  const r=await fetch(`/proveedores/api/${_factId}/factura`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({monto,nro_factura:document.getElementById('f_nro').value.trim(),descripcion:document.getElementById('f_desc').value.trim()||'Factura'})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));alert(e.error||'Error');return;}
+  document.getElementById('modalFactura').classList.remove('open');
+  location.reload();
+}
+
+// ── Pago ──
+function abrirPago(id,nombre,saldo){
+  _pagoId=id; _pagoNombre=nombre; _pagoSaldo=Number(saldo);
+  document.getElementById('pagoProvNombre').textContent=nombre;
+  document.getElementById('pagoProvSaldo').textContent='$'+_pagoSaldo.toLocaleString('es-AR',{minimumFractionDigits:2});
+  document.getElementById('pp_monto').value='';
+  document.getElementById('pp_desc').value='';
+  document.getElementById('restoWrap').style.display='none';
+  document.getElementById('modalPagoP').classList.add('open');
+  setTimeout(()=>document.getElementById('pp_monto').focus(),80);
+}
+function pagarTodo(){ document.getElementById('pp_monto').value=_pagoSaldo.toFixed(2); calcResto(); }
+function calcResto(){
+  const m=parseFloat(document.getElementById('pp_monto').value)||0;
+  const resto=_pagoSaldo-m;
+  const wrap=document.getElementById('restoWrap');
+  if(m<=0){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(resto<=0){document.getElementById('restoLabel').textContent='Quedará al día ✓';document.getElementById('restoValor').textContent='$0';}
+  else{document.getElementById('restoLabel').textContent='Saldo restante';document.getElementById('restoValor').textContent='$'+resto.toLocaleString('es-AR',{minimumFractionDigits:2});}
+}
+async function confirmarPago(){
+  const monto=parseFloat(document.getElementById('pp_monto').value);
+  if(!monto||monto<=0){alert('Ingresá un monto válido');return;}
+  const r=await fetch(`/proveedores/api/${_pagoId}/pago`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({monto,descripcion:document.getElementById('pp_desc').value.trim()||'Pago'})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));alert(e.error||'Error');return;}
+  document.getElementById('modalPagoP').classList.remove('open');
+  location.reload();
+}
+
+// ── Cuenta corriente ──
+async function verCuenta(id,nombre,saldo){
+  _cPId=id; _cPNombre=nombre; _cPSaldo=Number(saldo);
+  document.getElementById('cuentaPNombre').textContent=nombre;
+  document.getElementById('cuentaPListado').innerHTML='<p style="color:var(--text-secondary);text-align:center;padding:32px;">Cargando…</p>';
+  document.getElementById('modalCuentaP').classList.add('open');
+
+  // Banner
+  const banner=document.getElementById('cuentaPBanner');
+  const label=document.getElementById('cuentaPLabel');
+  const valor=document.getElementById('cuentaPValor');
+  const btnPagar=document.getElementById('cuentaPBtnPagar');
+  if(_cPSaldo>0){
+    banner.style.cssText='border-radius:var(--radius-md);padding:14px;text-align:center;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);';
+    label.style.color='#dc2626'; valor.style.color='#dc2626';
+    label.textContent='Debo'; valor.textContent='$'+_cPSaldo.toLocaleString('es-AR',{minimumFractionDigits:2});
+    btnPagar.style.display='flex';
+  } else {
+    banner.style.cssText='border-radius:var(--radius-md);padding:14px;text-align:center;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
+    label.style.color='#10b981'; valor.style.color='#10b981';
+    label.textContent='Al día'; valor.textContent='$0';
+    btnPagar.style.display='none';
+  }
+
+  const r=await fetch(`/proveedores/api/${id}/movs`);
+  const movs=await r.json();
+
+  // Stats
+  const facturas=movs.filter(m=>m.tipo==='factura').reduce((a,m)=>a+Number(m.monto),0);
+  const pagos=movs.filter(m=>m.tipo==='pago').reduce((a,m)=>a+Number(m.monto),0);
+  document.getElementById('cuentaPStats').innerHTML=`
+    <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Facturas</span><span style="font-family:var(--font-mono);font-weight:700;color:#dc2626;">+$${facturas.toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Pagos</span><span style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-$${pagos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>
+        <div style="border-top:1px dashed var(--border-color);padding-top:5px;display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Movimientos</span><span style="font-weight:700;">${movs.length}</span></div>
+      </div>
+    </div>`;
+  document.getElementById('cuentaPTotal').textContent=`${movs.length} movimiento${movs.length!==1?'s':''}`;
+
+  if(!movs.length){
+    document.getElementById('cuentaPListado').innerHTML='<p style="color:var(--text-secondary);text-align:center;padding:32px;">Sin movimientos aún.</p>';
+    return;
+  }
+
+  document.getElementById('cuentaPListado').innerHTML=movs.map(m=>{
+    const esFact=m.tipo==='factura';
+    const color=esFact?'#dc2626':'#10b981';
+    const bg=esFact?'rgba(239,68,68,.04)':'rgba(16,185,129,.04)';
+    const borde=esFact?'rgba(239,68,68,.15)':'rgba(16,185,129,.15)';
+    const icono=esFact?'bi-receipt':'bi-cash-stack';
+    const signo=esFact?'+':'-';
+    const desc=m.descripcion||(esFact?'Factura':'Pago');
+    const fecha=(m.created_at||'').slice(0,16).replace('T',' ');
+    const [fp,hp]=fecha.split(' ');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bg};border-radius:10px;border:1px solid ${borde};">
+      <i class="bi ${icono}" style="font-size:22px;color:${color};flex-shrink:0;"></i>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}${m.nro_factura?` <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);">#${m.nro_factura}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11.5px;color:var(--text-secondary);"><i class="bi bi-calendar3" style="font-size:10px;"></i> ${fp}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);"><i class="bi bi-clock" style="font-size:10px;"></i> ${hp}</span>
+          <span style="font-size:11px;font-weight:600;color:${Number(m.saldo_post)>0?'#dc2626':'#10b981'};background:${Number(m.saldo_post)>0?'rgba(239,68,68,.1)':'rgba(16,185,129,.1)'};padding:1px 7px;border-radius:20px;">
+            Saldo $${Number(m.saldo_post).toLocaleString('es-AR',{minimumFractionDigits:2})}
+          </span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:1px;">${m.tipo}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function cerrarCuenta(){ document.getElementById('modalCuentaP').classList.remove('open'); }
+
+function exportarCSV(){
+  const rows=[...document.querySelectorAll('#tablaProveedores tbody tr')].filter(r=>r.style.display!=='none');
+  let csv='\uFEFFNombre;CUIT;Rubro;Teléfono;Saldo\n';
+  rows.forEach(r=>{
+    const t=r.querySelectorAll('td');
+    csv+=[t[0]?.innerText.trim(),t[1]?.innerText,t[2]?.innerText,t[3]?.innerText,t[4]?.innerText.trim()].join(';')+'\n';
+  });
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:'proveedores.csv'});
+  a.click();
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cerrarModal();cerrarCuenta();document.getElementById('modalFactura').classList.remove('open');document.getElementById('modalPagoP').classList.remove('open');}});
+</script>

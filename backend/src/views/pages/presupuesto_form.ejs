@@ -1,0 +1,965 @@
+<%- include('../partials/head', { title: title }) %>
+
+<style>
+  .page-body { padding: 0; max-width: 100%; }
+  .form-grid { display: flex; flex-direction: column; gap: 0; }
+
+  /* Zona principal — ocupa todo */
+  .zona-principal { flex: 1; padding: 20px 24px; }
+  @media (min-width: 900px) { .zona-principal { padding: 28px 40px; } }
+  @media (min-width: 1400px) { .zona-principal { padding: 32px 56px; } }
+
+  /* Barra de totales — sticky abajo en mobile, barra lateral en desktop grande */
+  .totales-bar {
+    background: var(--bg-card);
+    border-top: 2px solid var(--border-color);
+    padding: 14px 20px;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+  }
+  .totales-bar-nums { display: flex; gap: 20px; align-items: center; flex: 1; flex-wrap: wrap; }
+  .totales-bar-item { display: flex; flex-direction: column; }
+  .totales-bar-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .totales-bar-val   { font-size: 16px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+  .totales-bar-total { font-size: 22px; font-weight: 900; color: var(--color-primary); }
+  .totales-bar-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  .btn-guardar-bar {
+    padding: 12px 28px; border: none; border-radius: var(--radius-sm);
+    background: var(--color-primary); color: #fff; font-size: 14px;
+    font-weight: 700; cursor: pointer; display: flex; align-items: center;
+    gap: 8px; transition: opacity .15s; white-space: nowrap;
+  }
+  .btn-guardar-bar:hover { opacity: .88; }
+  .btn-desc-toggle {
+    padding: 9px 14px; border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-secondary); font-size: 12.5px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: all .15s;
+  }
+  .btn-desc-toggle:hover { border-color: var(--color-action); color: var(--color-action); }
+
+  /* Desc panel popup */
+  .desc-popup {
+    display: none; position: fixed; bottom: 80px; right: 20px;
+    background: var(--bg-card); border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md); padding: 16px; width: 300px;
+    box-shadow: var(--shadow-lg); z-index: 110;
+  }
+  .desc-popup.open { display: block; }
+  @media (max-width: 600px) { .desc-popup { right: 10px; left: 10px; width: auto; bottom: 90px; } }
+
+  /* Secciones */
+  .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 18px; }
+  .section-head { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .section-body { padding: 20px; }
+
+  /* Campos */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .field input, .field select, .field textarea {
+    padding: 9px 12px; border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm); background: var(--bg-body);
+    color: var(--text-primary); font-size: 13.5px; outline: none;
+    font-family: var(--font-body); transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--color-action); }
+
+  /* Buscador dropdown */
+  .prod-search-wrap { position: relative; margin-bottom: 12px; }
+  .prod-search-wrap input { width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-body); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color .15s; }
+  .prod-search-wrap input:focus { border-color: var(--color-action); }
+  .prod-search-wrap i.search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; }
+  .prod-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 50; max-height: 280px; overflow-y: auto; display: none; }
+  .prod-dropdown.open { display: block; }
+  .prod-item { padding: 11px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background .1s; }
+  .prod-item:last-child { border-bottom: none; }
+  .prod-item:hover { background: var(--bg-body); }
+  .prod-item-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .prod-item-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+  .prod-item-precio { font-size: 14px; font-weight: 700; color: #10b981; white-space: nowrap; }
+  .badge-tipo { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+
+  /* Item de dropdown resaltado por teclado */
+  .prod-item.kb-focus {
+    background: var(--color-primary) !important;
+    outline: none;
+  }
+  .prod-item.kb-focus .prod-item-name,
+  .prod-item.kb-focus .prod-item-meta,
+  .prod-item.kb-focus .prod-item-meta span { color: #fff !important; }
+  .prod-item.kb-focus .prod-item-precio { color: #a7f3d0 !important; }
+  .prod-item.kb-focus .badge-tipo { background: rgba(255,255,255,.2) !important; color: #fff !important; }
+  .badge-sistema  { background: rgba(99,102,241,.1); color: #6366f1; }
+  .badge-catalogo { background: rgba(245,158,11,.1); color: #f59e0b; }
+
+  /* ══════════════════════════════════════════════
+     TABLA DE ÍTEMS — más grande y cómoda
+  ══════════════════════════════════════════════ */
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table thead th {
+    padding: 11px 14px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .6px;
+    color: var(--text-secondary); background: var(--bg-body);
+    border-bottom: 2px solid var(--border-color); text-align: left;
+  }
+  .items-table thead th.col-right { text-align: right; }
+  .items-table thead th.col-center { text-align: center; width: 44px; }
+  .items-table tbody td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+  .items-table tbody tr:last-child td { border-bottom: none; }
+  .items-table tbody tr:hover td { background: rgba(0,180,216,.025); }
+
+  /* Inputs dentro de la tabla — más grandes y visibles */
+  .item-input {
+    width: 100%; padding: 9px 11px;
+    border: 1.5px solid transparent; border-radius: 7px;
+    background: transparent; color: var(--text-primary);
+    font-size: 14px; font-family: var(--font-body);
+    outline: none; transition: all .15s;
+  }
+  .item-input:hover { border-color: var(--border-color); }
+  .item-input:focus { border-color: var(--color-action); background: var(--bg-body); }
+  .item-input.mono { font-family: var(--font-mono); text-align: right; font-size: 14px; }
+  .subtotal-cell {
+    font-family: var(--font-mono); font-size: 15px; font-weight: 800;
+    color: var(--color-primary); text-align: right; padding-right: 14px; white-space: nowrap;
+  }
+  .btn-remove-item {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; padding: 7px 9px; border-radius: 7px;
+    font-size: 16px; transition: all .15s; display: flex; align-items: center;
+  }
+  .btn-remove-item:hover { background: rgba(239,68,68,.1); color: #ef4444; }
+  .empty-items { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+
+  /* Tabs */
+  .tabs-busq { display: flex; gap: 5px; margin-bottom: 14px; }
+  .tab-btn {
+    flex: 1; padding: 9px 8px; border: 1.5px solid var(--border-color);
+    border-radius: 8px; background: transparent; color: var(--text-secondary);
+    font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .tab-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .tab-btn.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+
+  /* Panel lateral */
+  .totales-panel { display: none; } /* reemplazado por totales-bar */
+  .total-row-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-color); font-size: 13.5px; }
+  .total-row-item:last-child { border-bottom: none; }
+  .total-final { font-size: 24px; font-weight: 800; color: var(--color-primary); font-family: var(--font-mono); }
+  .descuento-toggle { font-size: 12px; color: var(--color-action); cursor: pointer; font-weight: 600; text-decoration: underline; }
+  .descuento-fields { display: none; gap: 10px; margin-top: 10px; }
+  .descuento-fields.open { display: flex; }
+  .btn-guardar { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--color-primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s; margin-top: 14px; }
+  .btn-guardar:hover { opacity: .88; }
+  .btn-secondary { width: 100%; padding: 10px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; text-align: center; text-decoration: none; display: block; transition: all .15s; }
+  .btn-secondary:hover { border-color: var(--color-action); color: var(--color-action); }
+
+  /* ══════════════════════════════════════════════
+     CATÁLOGO PROPIO — gestión inline
+  ══════════════════════════════════════════════ */
+  .catalogo-panel { border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; }
+  .catalogo-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--bg-body);
+    border-bottom: 1px solid var(--border-color);
+  }
+  .catalogo-header span { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
+  .catalogo-list { max-height: 260px; overflow-y: auto; }
+  .catalogo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border-color);
+    transition: background .1s; cursor: pointer;
+  }
+  .catalogo-item:last-child { border-bottom: none; }
+  .catalogo-item:hover { background: rgba(0,180,216,.04); }
+  .catalogo-item-info { flex: 1; min-width: 0; }
+  .catalogo-item-nombre { font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .catalogo-item-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+  .catalogo-item-precio { font-size: 14px; font-weight: 800; color: #10b981; white-space: nowrap; font-family: var(--font-mono); }
+  .catalogo-item-acciones { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+  .catalogo-item:hover .catalogo-item-acciones { opacity: 1; }
+  .btn-cat-accion { background: none; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .btn-cat-agregar { color: var(--color-primary); }
+  .btn-cat-agregar:hover { background: rgba(31,60,136,.1); }
+  .btn-cat-editar  { color: var(--text-muted); }
+  .btn-cat-editar:hover  { background: var(--bg-body); color: var(--text-primary); }
+  .btn-cat-eliminar { color: var(--text-muted); }
+  .btn-cat-eliminar:hover { background: rgba(239,68,68,.1); color: #ef4444; }
+
+  .catalogo-form-add {
+    padding: 12px 14px; background: var(--bg-body);
+    border-top: 1px solid var(--border-color);
+  }
+  .catalogo-form-add .row-inputs { display: grid; grid-template-columns: 1fr 90px 80px; gap: 7px; margin-bottom: 7px; }
+  .cat-input {
+    padding: 8px 10px; border: 1.5px solid var(--border-color);
+    border-radius: 7px; background: var(--bg-card); color: var(--text-primary);
+    font-size: 13px; font-family: var(--font-body); outline: none; width: 100%;
+    transition: border-color .15s;
+  }
+  .cat-input:focus { border-color: var(--color-action); }
+  .btn-add-cat {
+    width: 100%; padding: 8px; background: #f59e0b; color: #fff;
+    border: none; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: opacity .15s;
+  }
+  .btn-add-cat:hover { opacity: .88; }
+  .empty-catalogo { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+  /* Modal edición catálogo */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+  .modal-title  { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-close  { background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; }
+  .modal-body   { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .m-field { display: flex; flex-direction: column; gap: 4px; }
+  .m-field label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .m-field input, .m-field select {
+    padding: 9px 11px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm);
+    background: var(--bg-body); color: var(--text-primary); font-size: 13.5px; outline: none;
+    transition: border-color .15s;
+  }
+  .m-field input:focus, .m-field select:focus { border-color: var(--color-action); }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'presupuestos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: presupuesto ? 'Editar ' + presupuesto.numero : 'Nuevo Presupuesto', user }) %>
+    <div class="page-body">
+
+      <form method="POST" action="<%= presupuesto ? '/presupuestos/actualizar/' + presupuesto.id : '/presupuestos/crear' %>" id="formPpto">
+        <input type="hidden" name="items_json" id="itemsJson">
+        <input type="hidden" name="descuento_pct"   id="hdDescPct"   value="0">
+        <input type="hidden" name="descuento_monto" id="hdDescMonto" value="0">
+
+        <div class="form-grid">
+          <!-- Zona principal full width -->
+          <div class="zona-principal">
+
+            <!-- Datos del cliente -->
+            <div class="section-card">
+              <div class="section-head">
+                <div class="section-title"><i class="bi bi-person-lines-fill"></i> Datos del cliente</div>
+              </div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div class="field">
+                    <label>Nombre / Razón social *</label>
+                    <input type="text" name="cliente_nombre" placeholder="Ej: Juan García" value="<%= presupuesto?.cliente_nombre || '' %>" required>
+                  </div>
+                  <div class="field">
+                    <label>CUIT / DNI</label>
+                    <input type="text" name="cliente_cuit" placeholder="20-12345678-9" value="<%= presupuesto?.cliente_cuit || '' %>">
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label>Email</label>
+                    <input type="email" name="cliente_email" placeholder="cliente@email.com" value="<%= presupuesto?.cliente_email || '' %>">
+                  </div>
+                  <div class="field">
+                    <label>Teléfono</label>
+                    <input type="text" name="cliente_tel" placeholder="0381-4..." value="<%= presupuesto?.cliente_tel || '' %>">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Condiciones -->
+            <div class="section-card">
+              <div class="section-head">
+                <div class="section-title"><i class="bi bi-card-checklist"></i> Condiciones</div>
+              </div>
+              <div class="section-body">
+                <div class="field-row triple">
+                  <div class="field">
+                    <label>Condición de pago</label>
+                    <select name="condicion_pago">
+                      <% ['Contado','30 días','60 días','A convenir','Transferencia','Cheque'].forEach(c => { %>
+                      <option value="<%= c %>" <%= (presupuesto?.condicion_pago || 'Contado') === c ? 'selected' : '' %>><%= c %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Válido por (días)</label>
+                    <input type="number" name="validez_dias" placeholder="Sin vencimiento" min="1" value="<%= presupuesto?.validez_dias || '' %>">
+                  </div>
+                  <div class="field">
+                    <label>Notas / Observaciones</label>
+                    <input type="text" name="notas" placeholder="Ej: Incluye instalación" value="<%= presupuesto?.notas || '' %>">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════
+                 ÍTEMS DEL PRESUPUESTO — sección grande
+            ═══════════════════════════════════════ -->
+            <div class="section-card">
+              <div class="section-head">
+                <div class="section-title" style="font-size:14px;"><i class="bi bi-list-ul" style="font-size:16px;"></i> Ítems del presupuesto</div>
+                <span id="contadorItems" style="font-size:12.5px;color:var(--text-muted);font-weight:600;">0 ítems</span>
+              </div>
+
+              <!-- Tabs -->
+              <div style="padding: 16px 20px 0;">
+                <div class="tabs-busq">
+                  <button type="button" class="tab-btn active" onclick="setTab('sistema', this)">
+                    <i class="bi bi-box-seam"></i> Del sistema
+                  </button>
+                  <button type="button" class="tab-btn" onclick="setTab('catalogo', this)">
+                    <i class="bi bi-star-fill"></i> Catálogo propio
+                  </button>
+                  <button type="button" class="tab-btn" onclick="setTab('manual', this)">
+                    <i class="bi bi-pencil-fill"></i> Ingreso manual
+                  </button>
+                </div>
+
+                <!-- Tab: Sistema -->
+                <div id="tabSistema" class="tab-panel">
+                  <div class="prod-search-wrap">
+                    <i class="bi bi-search search-ico"></i>
+                    <input type="text" id="buscadorSistema" placeholder="Buscá un producto del inventario por nombre o SKU..." oninput="buscarSistema(this.value)" autocomplete="off">
+                    <div class="prod-dropdown" id="dropSistema"></div>
+                  </div>
+                </div>
+
+                <!-- Tab: Catálogo propio — con gestión inline -->
+                <div id="tabCatalogo" class="tab-panel" style="display:none">
+                  <div class="catalogo-panel">
+                    <div class="catalogo-header">
+                      <span><i class="bi bi-star-fill" style="color:#f59e0b;margin-right:5px;"></i> Lista de precios de presupuestos</span>
+                      <span id="catContador" style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:none;letter-spacing:0;"></span>
+                    </div>
+                    <div class="catalogo-list" id="catalogoList">
+                      <!-- Se renderiza con JS -->
+                    </div>
+                    <!-- Formulario agregar nuevo ítem al catálogo -->
+                    <div class="catalogo-form-add">
+                      <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Agregar nuevo ítem al catálogo</div>
+                      <div class="row-inputs">
+                        <input class="cat-input" type="text" id="catNuevoNombre" placeholder="Nombre / descripción del ítem">
+                        <input class="cat-input mono" type="number" id="catNuevoPrecio" placeholder="Precio" min="0" step="any" style="font-family:var(--font-mono);text-align:right;">
+                        <select class="cat-input" id="catNuevoUnidad">
+                          <option value="unidad">unidad</option>
+                          <option value="hora">hora</option>
+                          <option value="servicio">servicio</option>
+                          <option value="m2">m²</option>
+                          <option value="m3">m³</option>
+                          <option value="kg">kg</option>
+                          <option value="lt">lt</option>
+                          <option value="global">global</option>
+                        </select>
+                      </div>
+                      <input class="cat-input" type="text" id="catNuevoDesc" placeholder="Descripción opcional (ej: Incluye materiales)" style="margin-bottom:7px;">
+                      <button type="button" class="btn-add-cat" onclick="guardarNuevoCatalogoItem()">
+                        <i class="bi bi-plus-lg"></i> Agregar al catálogo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tab: Manual -->
+                <div id="tabManual" class="tab-panel" style="display:none">
+                  <div style="background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-sm);padding:16px;">
+                    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Ingresar ítem personalizado</div>
+                    <div style="display:grid;grid-template-columns:1fr 100px 130px;gap:10px;margin-bottom:10px;">
+                      <div class="field">
+                        <label>Descripción</label>
+                        <input type="text" id="manualNombre" placeholder="Ej: Servicio de instalación, Mano de obra...">
+                      </div>
+                      <div class="field">
+                        <label>Cantidad</label>
+                        <input type="number" id="manualCantidad" value="1" min="0.01" step="any">
+                      </div>
+                      <div class="field">
+                        <label>Precio unitario</label>
+                        <input type="number" id="manualPrecio" placeholder="0" min="0" step="any">
+                      </div>
+                    </div>
+                    <button type="button" onclick="agregarManual()" style="width:100%;padding:10px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+                      <i class="bi bi-plus-lg"></i> Agregar ítem
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabla de ítems agregados -->
+              <div style="overflow-x:auto;margin-top:8px;">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th style="padding-left:20px;">Descripción</th>
+                      <th class="col-right" style="width:110px;">Cantidad</th>
+                      <th class="col-right" style="width:150px;">Precio unit.</th>
+                      <th class="col-right" style="width:150px;">Subtotal</th>
+                      <th class="col-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="itemsBody">
+                    <tr id="emptyRow">
+                      <td colspan="5" class="empty-items">
+                        <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
+                        <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
+                        <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- fin zona-principal -->
+
+        </div><!-- fin form-grid -->
+
+        <!-- ══════════════════════════════════════════════════
+             BARRA STICKY DE TOTALES + GUARDAR (mobile & desktop)
+        ══════════════════════════════════════════════════ -->
+        <div class="totales-bar">
+          <div class="totales-bar-nums">
+            <div class="totales-bar-item">
+              <span class="totales-bar-label">Subtotal</span>
+              <span class="totales-bar-val" id="resSubtotal">$0</span>
+            </div>
+            <div class="totales-bar-item" id="descuentoWrap" style="display:none;">
+              <span class="totales-bar-label">Descuento</span>
+              <span class="totales-bar-val" id="resDescuento" style="color:#ef4444;">-$0</span>
+            </div>
+            <div class="totales-bar-item">
+              <span class="totales-bar-label">Total</span>
+              <span class="totales-bar-val totales-bar-total" id="resTotal">$0</span>
+            </div>
+          </div>
+          <div class="totales-bar-actions">
+            <button type="button" class="btn-desc-toggle" onclick="toggleDescPopup()">
+              <i class="bi bi-percent"></i> Descuento
+            </button>
+            <a href="/presupuestos" class="btn-desc-toggle" style="text-decoration:none;">
+              <i class="bi bi-x-lg"></i>
+            </a>
+            <button type="submit" class="btn-guardar-bar">
+              <i class="bi bi-<%= presupuesto ? 'check-lg' : 'save' %>"></i>
+              <%= presupuesto ? 'Guardar' : 'Crear presupuesto' %>
+            </button>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Popup descuento -->
+      <div class="desc-popup" id="descPopup">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Aplicar descuento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div class="field">
+            <label>% descuento</label>
+            <input type="number" id="descPct" placeholder="0" min="0" max="100" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+          </div>
+          <div class="field">
+            <label>$ descuento</label>
+            <input type="number" id="descMonto" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+          </div>
+        </div>
+        <button type="button" onclick="toggleDescPopup()" style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;">Listo</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar ítem del catálogo -->
+<div class="modal-overlay" id="modalEditCat">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-pencil-fill" style="color:#f59e0b"></i> Editar ítem del catálogo</span>
+      <button class="modal-close" onclick="cerrarModalCat()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editCatId">
+      <div class="m-field">
+        <label>Nombre</label>
+        <input type="text" id="editCatNombre" placeholder="Nombre del ítem">
+      </div>
+      <div class="m-field">
+        <label>Descripción</label>
+        <input type="text" id="editCatDesc" placeholder="Descripción opcional">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="m-field">
+          <label>Precio</label>
+          <input type="number" id="editCatPrecio" placeholder="0" min="0" step="any">
+        </div>
+        <div class="m-field">
+          <label>Unidad</label>
+          <select id="editCatUnidad">
+            <option value="unidad">unidad</option>
+            <option value="hora">hora</option>
+            <option value="servicio">servicio</option>
+            <option value="m2">m²</option>
+            <option value="m3">m³</option>
+            <option value="kg">kg</option>
+            <option value="lt">lt</option>
+            <option value="global">global</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="cerrarModalCat()">Cancelar</button>
+      <button type="button" class="btn-save" onclick="guardarEditCat()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+// ── Datos del servidor ──
+const PRODUCTOS_SISTEMA = <%- JSON.stringify(productos) %>;
+let   CATALOGO          = <%- JSON.stringify(catalogo) %>;
+
+// ── Estado de ítems del presupuesto ──
+let items = [];
+
+<% if (presupuesto && presupuesto.items && presupuesto.items.length) { %>
+items = <%- JSON.stringify(presupuesto.items.map(i => ({
+  id: i.id, nombre: i.nombre, descripcion: i.descripcion,
+  cantidad: i.cantidad, precio_unitario: i.precio_unitario,
+  tipo: i.tipo, sku: i.sku
+}))) %>;
+renderItems();
+<% } %>
+
+<% if (presupuesto && (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0)) { %>
+document.getElementById('descPct').value   = '<%= presupuesto.descuento_pct || 0 %>';
+document.getElementById('descMonto').value = '<%= presupuesto.descuento_monto || 0 %>';
+calcularTotales();
+<% } %>
+
+const fmt  = n => '$' + (Number(n)||0).toLocaleString('es-AR',{minimumFractionDigits:0});
+const escHTML = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ─────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────
+function setTab(tab, btn) {
+  ['sistema','catalogo','manual'].forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'catalogo') renderCatalogo();
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUSCADOR SISTEMA
+// ─────────────────────────────────────────────────────────────
+function buscarSistema(q) {
+  const drop = document.getElementById('dropSistema');
+  if (!q.trim()) { drop.classList.remove('open'); return; }
+  const results = PRODUCTOS_SISTEMA.filter(p =>
+    p.name.toLowerCase().includes(q.toLowerCase()) ||
+    p.sku.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 12);
+
+  drop.innerHTML = !results.length
+    ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13.5px;">Sin resultados</div>'
+    : results.map(p => `
+      <div class="prod-item" onclick="agregarDesde('sistema', ${JSON.stringify(p).replace(/"/g,'&quot;')})">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
+          <div style="flex:1;min-width:0;">
+            <div class="prod-item-name">${p.name}</div>
+            <div class="prod-item-meta">
+              <span class="badge-tipo badge-sistema">Sistema</span>
+              <span>SKU: ${p.sku}</span>
+              ${p.category ? `<span>${p.category}</span>` : ''}
+              <span>Stock: ${p.stock}</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="prod-item-precio">${fmt(p.precio_presupuesto)}</div>
+            ${p.precio_presupuesto !== p.precio_venta
+              ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">${fmt(p.precio_venta)}</div>`
+              : ''}
+          </div>
+        </div>
+      </div>`).join('');
+  drop.classList.add('open');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATÁLOGO PROPIO — render de lista
+// ─────────────────────────────────────────────────────────────
+function renderCatalogo() {
+  const list = document.getElementById('catalogoList');
+  document.getElementById('catContador').textContent = CATALOGO.length + ' ítem' + (CATALOGO.length !== 1 ? 's' : '');
+
+  if (!CATALOGO.length) {
+    list.innerHTML = '<div class="empty-catalogo"><i class="bi bi-star" style="font-size:28px;display:block;margin-bottom:8px;opacity:.25;"></i>El catálogo está vacío.<br>Agregá ítems abajo para empezar.</div>';
+    return;
+  }
+
+  list.innerHTML = CATALOGO.map(c => `
+    <div class="catalogo-item">
+      <div class="catalogo-item-info" onclick="agregarDesde('catalogo', ${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div class="catalogo-item-nombre">${escHTML(c.nombre)}</div>
+        <div class="catalogo-item-desc">${c.descripcion ? escHTML(c.descripcion) + ' · ' : ''}${c.unidad}</div>
+      </div>
+      <div class="catalogo-item-precio">${fmt(c.precio)}</div>
+      <div class="catalogo-item-acciones">
+        <button type="button" class="btn-cat-accion btn-cat-agregar" title="Agregar al presupuesto"
+          onclick="agregarDesde('catalogo', ${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button type="button" class="btn-cat-accion btn-cat-editar" title="Editar"
+          onclick="abrirEditCat(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button type="button" class="btn-cat-accion btn-cat-eliminar" title="Eliminar"
+          onclick="eliminarCatItem(${c.id}, '${escHTML(c.nombre)}')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATÁLOGO — CRUD via API
+// ─────────────────────────────────────────────────────────────
+async function guardarNuevoCatalogoItem() {
+  const nombre = document.getElementById('catNuevoNombre').value.trim();
+  const precio = parseFloat(document.getElementById('catNuevoPrecio').value) || 0;
+  const unidad = document.getElementById('catNuevoUnidad').value;
+  const desc   = document.getElementById('catNuevoDesc').value.trim();
+  if (!nombre) { document.getElementById('catNuevoNombre').focus(); return; }
+
+  try {
+    const r = await fetch('/presupuestos/api/catalogo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, precio, unidad, descripcion: desc })
+    });
+    const nuevo = await r.json();
+    CATALOGO.push(nuevo);
+    renderCatalogo();
+    document.getElementById('catNuevoNombre').value = '';
+    document.getElementById('catNuevoPrecio').value = '';
+    document.getElementById('catNuevoDesc').value   = '';
+    document.getElementById('catNuevoNombre').focus();
+  } catch(e) { alert('Error al guardar en el catálogo'); }
+}
+
+function abrirEditCat(item) {
+  document.getElementById('editCatId').value     = item.id;
+  document.getElementById('editCatNombre').value = item.nombre;
+  document.getElementById('editCatDesc').value   = item.descripcion || '';
+  document.getElementById('editCatPrecio').value = item.precio;
+  document.getElementById('editCatUnidad').value = item.unidad || 'unidad';
+  document.getElementById('modalEditCat').classList.add('active');
+}
+
+function cerrarModalCat() {
+  document.getElementById('modalEditCat').classList.remove('active');
+}
+
+async function guardarEditCat() {
+  const id     = document.getElementById('editCatId').value;
+  const nombre = document.getElementById('editCatNombre').value.trim();
+  const precio = parseFloat(document.getElementById('editCatPrecio').value) || 0;
+  const unidad = document.getElementById('editCatUnidad').value;
+  const desc   = document.getElementById('editCatDesc').value.trim();
+  if (!nombre) return;
+
+  try {
+    const r = await fetch(`/presupuestos/api/catalogo/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, precio, unidad, descripcion: desc })
+    });
+    const actualizado = await r.json();
+    const idx = CATALOGO.findIndex(c => c.id == id);
+    if (idx !== -1) CATALOGO[idx] = actualizado;
+    renderCatalogo();
+    cerrarModalCat();
+  } catch(e) { alert('Error al actualizar'); }
+}
+
+async function eliminarCatItem(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del catálogo?`)) return;
+  try {
+    await fetch(`/presupuestos/api/catalogo/${id}`, { method: 'DELETE' });
+    CATALOGO = CATALOGO.filter(c => c.id !== id);
+    renderCatalogo();
+  } catch(e) { alert('Error al eliminar'); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// AGREGAR ÍTEMS AL PRESUPUESTO
+// ─────────────────────────────────────────────────────────────
+function agregarDesde(fuente, prod) {
+  if (fuente === 'sistema') {
+    items.push({ tipo:'producto', sku:prod.sku, nombre:prod.name,
+      descripcion:prod.category||'', cantidad:1, precio_unitario:prod.precio_presupuesto });
+    document.getElementById('buscadorSistema').value = '';
+    document.getElementById('dropSistema').classList.remove('open');
+  } else {
+    items.push({ tipo:'servicio', sku:null, nombre:prod.nombre,
+      descripcion:prod.descripcion||'', cantidad:1, precio_unitario:prod.precio });
+  }
+  renderItems();
+}
+
+function agregarManual() {
+  const nombre = document.getElementById('manualNombre').value.trim();
+  if (!nombre) { document.getElementById('manualNombre').focus(); return; }
+  const cantidad = parseFloat(document.getElementById('manualCantidad').value) || 1;
+  const precio   = parseFloat(document.getElementById('manualPrecio').value)   || 0;
+  items.push({ tipo:'custom', sku:null, nombre, descripcion:'', cantidad, precio_unitario:precio });
+  document.getElementById('manualNombre').value = '';
+  document.getElementById('manualPrecio').value = '';
+  document.getElementById('manualCantidad').value = '1';
+  renderItems();
+}
+
+function quitarItem(i) { items.splice(i,1); renderItems(); }
+
+// ─────────────────────────────────────────────────────────────
+// RENDER TABLA ÍTEMS
+// ─────────────────────────────────────────────────────────────
+function renderItems() {
+  const tbody = document.getElementById('itemsBody');
+  document.getElementById('contadorItems').textContent = items.length + ' ítem' + (items.length!==1?'s':'');
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-items">
+      <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
+      <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
+      <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
+    </td></tr>`;
+    calcularTotales(); return;
+  }
+
+  tbody.innerHTML = items.map((item, i) => {
+    const sub = (Number(item.cantidad) * Number(item.precio_unitario)) || 0;
+    const badge = item.tipo==='producto'
+      ? '<span class="badge-tipo badge-sistema" style="font-size:10px;">Producto</span>'
+      : item.tipo==='servicio'
+        ? '<span class="badge-tipo badge-catalogo" style="font-size:10px;">Catálogo</span>'
+        : '';
+    return `<tr>
+      <td style="padding-left:20px;min-width:220px;">
+        <input class="item-input" type="text" value="${escHTML(item.nombre)}"
+          oninput="items[${i}].nombre=this.value" placeholder="Descripción del ítem">
+        <div style="display:flex;gap:6px;margin-top:3px;align-items:center;">
+          ${badge}
+          ${item.sku ? `<span style="font-size:11px;color:var(--text-muted);">SKU: ${item.sku}</span>` : ''}
+        </div>
+      </td>
+      <td>
+        <input class="item-input mono" type="number" value="${item.cantidad}" min="0.01" step="any"
+          oninput="items[${i}].cantidad=parseFloat(this.value)||0;renderItems()">
+      </td>
+      <td>
+        <input class="item-input mono" type="number" value="${item.precio_unitario}" min="0" step="any"
+          oninput="items[${i}].precio_unitario=parseFloat(this.value)||0;renderItems()">
+      </td>
+      <td class="subtotal-cell">${fmt(sub)}</td>
+      <td style="text-align:center;padding-right:8px;">
+        <button type="button" class="btn-remove-item" onclick="quitarItem(${i})">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+  calcularTotales();
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOTALES
+// ─────────────────────────────────────────────────────────────
+function calcularTotales() {
+  const subtotal  = items.reduce((s,i)=>s+(Number(i.cantidad)*Number(i.precio_unitario)),0);
+  const dPct      = parseFloat(document.getElementById('descPct')?.value)   || 0;
+  const dMonto    = parseFloat(document.getElementById('descMonto')?.value) || 0;
+  const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
+  const total     = Math.max(0, subtotal - descuento);
+
+  document.getElementById('resSubtotal').textContent = fmt(subtotal);
+  document.getElementById('resTotal').textContent    = fmt(total);
+
+  // Sincronizar hidden inputs para el form
+  const hdPct   = document.getElementById('hdDescPct');
+  const hdMonto = document.getElementById('hdDescMonto');
+  if (hdPct)   hdPct.value   = dPct;
+  if (hdMonto) hdMonto.value = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
+
+  const descWrap = document.getElementById('descuentoWrap');
+  const resDesc  = document.getElementById('resDescuento');
+  if (descuento > 0) {
+    if (descWrap) descWrap.style.display = '';
+    if (resDesc)  resDesc.textContent = '- ' + fmt(descuento);
+  } else {
+    if (descWrap) descWrap.style.display = 'none';
+  }
+}
+
+function toggleDescPopup() {
+  document.getElementById('descPopup').classList.toggle('open');
+}
+function toggleDescuento() { toggleDescPopup(); }
+
+// ─────────────────────────────────────────────────────────────
+// SUBMIT
+// ─────────────────────────────────────────────────────────────
+document.getElementById('formPpto').addEventListener('submit', function(e) {
+  if (!items.length) { e.preventDefault(); alert('Agregá al menos un ítem al presupuesto.'); return; }
+  document.getElementById('itemsJson').value = JSON.stringify(items);
+});
+
+// Cerrar dropdowns y popups afuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('.prod-search-wrap'))
+    document.querySelectorAll('.prod-dropdown').forEach(d => d.classList.remove('open'));
+  if (!e.target.closest('#descPopup') && !e.target.closest('.btn-desc-toggle'))
+    document.getElementById('descPopup')?.classList.remove('open');
+  if (e.target === document.getElementById('modalEditCat'))
+    cerrarModalCat();
+});
+// ─────────────────────────────────────────────────────────────
+// NAVEGACIÓN POR TECLADO EN DROPDOWNS
+// ─────────────────────────────────────────────────────────────
+// Estado de navegación por dropdown activo
+const kbState = {
+  dropId: null,   // id del dropdown activo
+  index:  -1,     // ítem seleccionado (-1 = ninguno)
+  data:   [],     // resultados actuales (para sistema)
+  fuente: null    // 'sistema' | null
+};
+
+function getDropItems(dropId) {
+  return document.querySelectorAll(`#${dropId} .prod-item`);
+}
+
+function kbHighlight(dropId, index) {
+  const items = getDropItems(dropId);
+  items.forEach((el, i) => el.classList.toggle('kb-focus', i === index));
+  if (items[index]) {
+    items[index].scrollIntoView({ block: 'nearest' });
+  }
+  kbState.index = index;
+  kbState.dropId = dropId;
+}
+
+function kbSelect(dropId) {
+  const items = getDropItems(dropId);
+  if (kbState.index >= 0 && items[kbState.index]) {
+    items[kbState.index].click();
+    kbState.index = -1;
+  }
+}
+
+// Adjuntar navegación a un input de búsqueda
+function attachKbNav(inputId, dropId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.addEventListener('keydown', e => {
+    const drop = document.getElementById(dropId);
+    const isOpen = drop?.classList.contains('open');
+    const items  = getDropItems(dropId);
+    const count  = items.length;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isOpen) return;
+      const next = kbState.dropId === dropId
+        ? Math.min(kbState.index + 1, count - 1)
+        : 0;
+      kbHighlight(dropId, next);
+    }
+    else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!isOpen) return;
+      const prev = kbState.dropId === dropId
+        ? Math.max(kbState.index - 1, 0)
+        : 0;
+      kbHighlight(dropId, prev);
+    }
+    else if (e.key === 'Enter') {
+      if (isOpen && kbState.dropId === dropId && kbState.index >= 0) {
+        e.preventDefault();
+        kbSelect(dropId);
+      }
+    }
+    else if (e.key === 'Escape') {
+      drop?.classList.remove('open');
+      kbState.index = -1;
+      input.blur();
+    }
+    else {
+      // Al escribir, resetear índice
+      kbState.index = -1;
+      if (kbState.dropId === dropId) {
+        getDropItems(dropId).forEach(el => el.classList.remove('kb-focus'));
+      }
+    }
+  });
+}
+
+// Adjuntar a los inputs una vez que el DOM cargó
+attachKbNav('buscadorSistema',  'dropSistema');
+attachKbNav('buscadorCatalogo', 'dropCatalogo');
+
+// Enter en input manual también agrega
+document.getElementById('manualNombre')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); agregarManual(); }
+});
+document.getElementById('manualPrecio')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); agregarManual(); }
+});
+document.getElementById('manualCantidad')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); agregarManual(); }
+});
+
+// Enter en catálogo nuevo
+document.getElementById('catNuevoNombre')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('catNuevoPrecio')?.focus(); }
+});
+document.getElementById('catNuevoPrecio')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); guardarNuevoCatalogoItem(); }
+});
+
+// Reset KB cuando se cierra un dropdown
+function buscarSistemaOrig(q) { kbState.index = -1; buscarSistema(q); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarModalCat();
+    document.getElementById('descPopup')?.classList.remove('open');
+    document.querySelectorAll('.prod-dropdown').forEach(d => d.classList.remove('open'));
+    kbState.index = -1;
+  }
+});
+
+// Init: renderizar catálogo si la tab está visible
+renderCatalogo();
+</script>

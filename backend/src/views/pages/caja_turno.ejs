@@ -1,0 +1,359 @@
+<%- include('../partials/head', { title }) %>
+<div class="app-wrapper">
+<%- include('../partials/sidebar', { active: 'caja', user }) %>
+
+<div class="main-content">
+  <%- include('../partials/header', { title, module, user }) %>
+
+  <div class="page-body" style="padding:24px;">
+
+    <!-- ── TÍTULO ── -->
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 4px;">Caja</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin:0;">Panel de caja y reportes de turnos</p>
+    </div>
+
+    <!-- ── BANNER CAJA ABIERTA / CERRADA ── -->
+    <% if (cajaActual) { %>
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(5,150,105,.04));border:1.5px solid rgba(16,185,129,.3);border-radius:14px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:pulse 2s infinite;"></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#065f46;">Caja abierta</div>
+          <div style="font-size:12.5px;color:#047857;">
+            Cajero: <strong><%= cajaActual.user_open %></strong>
+            · Desde: <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) %></strong>
+            · Inicial: <strong>$<%= (cajaActual.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></strong>
+          </div>
+        </div>
+      </div>
+      <form method="POST" action="/caja/cerrar" onsubmit="return confirm('¿Seguro que querés cerrar la caja?')" style="margin:0;">
+        <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;background:#ef4444;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,.35);">
+          <i class="bi bi-lock-fill"></i> Cerrar Caja
+        </button>
+      </form>
+    </div>
+
+    <!-- ── STATS DEL TURNO ── -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-value">$<%= totalTurno.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+        <div class="stat-label">Total del turno</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><i class="bi bi-receipt"></i></div>
+        <div class="stat-value"><%= ventasTurno.length %></div>
+        <div class="stat-label">Ventas del turno</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="stat-value">$<%= totalMovimientos.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+        <div class="stat-label">Movimientos netos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><i class="bi bi-wallet2"></i></div>
+        <div class="stat-value">$<%= ((cajaActual.monto_inicial||0) + totalTurno + totalMovimientos).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+        <div class="stat-label">Efectivo esperado</div>
+      </div>
+    </div>
+
+    <!-- ── VENTAS POR MÉTODO ── -->
+    <% const metodos = Object.entries(porMetodo); %>
+    <% if (metodos.length > 0) { %>
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="section-title"><i class="bi bi-credit-card"></i> Ventas por método de pago</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:16px 20px;">
+        <% metodos.forEach(([metodo, monto]) => { %>
+          <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-body);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:3px;"><%= metodo %></div>
+            <div style="font-size:16px;font-weight:800;color:var(--text-primary);">$<%= monto.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- ── MOVIMIENTOS DEL TURNO ── -->
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="section-title" style="justify-content:space-between;">
+        <span><i class="bi bi-arrow-left-right"></i> Movimientos manuales</span>
+        <button onclick="document.getElementById('modalMovimiento').classList.add('active')"
+          style="padding:6px 14px;border-radius:8px;background:var(--color-action,#6366f1);color:#fff;font-size:12px;font-weight:700;border:none;cursor:pointer;">
+          + Agregar
+        </button>
+      </div>
+      <% if (movimientos.length === 0) { %>
+        <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Sin movimientos en este turno</div>
+      <% } else { %>
+        <% movimientos.forEach(m => { %>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border-color);">
+            <span style="font-size:13.5px;color:var(--text-primary);"><%= m.descripcion || m.tipo %></span>
+            <strong style="color:<%= m.tipo==='ingreso' ? '#10b981' : '#ef4444' %>;">
+              <%= m.tipo==='ingreso' ? '+' : '−' %>$<%= m.monto.toLocaleString('es-AR',{minimumFractionDigits:2}) %>
+            </strong>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <% } else { %>
+    <!-- ── SIN CAJA ABIERTA ── -->
+    <div style="background:rgba(107,114,128,.06);border:1.5px solid rgba(107,114,128,.2);border-radius:14px;padding:18px 22px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></div>
+        <span style="font-size:13.5px;color:var(--text-secondary);">No hay caja abierta en este momento.</span>
+      </div>
+      <button onclick="document.getElementById('modalAbrirCaja').classList.add('active')"
+        style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;background:#10b981;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,.35);">
+        <i class="bi bi-unlock-fill"></i> Abrir Caja
+      </button>
+    </div>
+    <% } %>
+
+    <!-- ── HISTORIAL DE TURNOS ── -->
+    <div class="section-card">
+      <div class="section-title"><i class="bi bi-clock-history"></i> Historial de turnos</div>
+      <% if (!historial || historial.length === 0) { %>
+        <div style="padding:40px;text-align:center;color:var(--text-muted);">
+          <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:8px;opacity:.35;"></i>
+          No hay turnos anteriores registrados
+        </div>
+      <% } else { %>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--bg-body);border-bottom:1.5px solid var(--border-color);">
+              <th class="th">ID</th>
+              <th class="th">Cajero</th>
+              <th class="th">Apertura</th>
+              <th class="th">Cierre</th>
+              <th class="th" style="text-align:right;">Inicial</th>
+              <th class="th" style="text-align:right;">Ventas</th>
+              <th class="th" style="text-align:center;">Estado</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% historial.forEach(c => { %>
+            <tr class="tr-row">
+              <td class="td" style="color:var(--text-muted);font-size:12px;">#<%= c.id %></td>
+              <td class="td"><strong><%= c.user_open || '—' %></strong></td>
+              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) %></td>
+              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—' %></td>
+              <td class="td" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:right;font-weight:700;color:#6366f1;">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:center;">
+                <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+                  background:<%= c.status==='abierta' ? 'rgba(16,185,129,.1)' : 'rgba(107,114,128,.1)' %>;
+                  color:<%= c.status==='abierta' ? '#10b981' : '#6b7280' %>;">
+                  <%= c.status === 'abierta' ? 'Abierta' : 'Cerrada' %>
+                </span>
+              </td>
+              <td class="td">
+                <button onclick="verDetalle(<%= c.id %>)"
+                  style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </div>
+
+  </div>
+</div><!-- /main-content -->
+
+<!-- ── MODAL ABRIR CAJA ── -->
+<div class="modal-overlay" id="modalAbrirCaja" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-unlock-fill"></i> Abrir Caja</span>
+      <button class="modal-close" onclick="document.getElementById('modalAbrirCaja').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="field">
+          <label>Terminal / Nombre de caja</label>
+          <input type="text" id="inp_terminal" value="Caja Principal" placeholder="Ej: Caja 1, Mostrador...">
+        </div>
+        <div class="field">
+          <label>Monto inicial en efectivo</label>
+          <div class="field-prefix">
+            <span>$</span>
+            <input type="number" id="inp_monto" placeholder="0.00" min="0" step="0.01" value="0">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <% [0, 1000, 2000, 5000, 10000].forEach(v => { %>
+            <button onclick="document.getElementById('inp_monto').value='<%= v %>'"
+              style="flex:1;min-width:60px;padding:7px 4px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-body);color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;">
+              $<%= v.toLocaleString('es-AR') %>
+            </button>
+          <% }) %>
+        </div>
+        <button class="btn-abrir" id="btnAbrir" onclick="abrirCaja()">
+          <i class="bi bi-unlock-fill"></i> Abrir Caja y Comenzar
+        </button>
+        <div id="errorMsg" style="display:none;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL MOVIMIENTO ── -->
+<div class="modal-overlay" id="modalMovimiento" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-arrow-left-right"></i> Agregar movimiento</span>
+      <button class="modal-close" onclick="document.getElementById('modalMovimiento').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <form method="POST" action="/caja/movimiento" style="display:flex;flex-direction:column;gap:14px;">
+        <div class="field">
+          <label>Tipo</label>
+          <select name="tipo" style="width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:14px;">
+            <option value="ingreso">Ingreso</option>
+            <option value="retiro">Retiro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Monto</label>
+          <div class="field-prefix"><span>$</span><input type="number" name="monto" min="0" step="0.01" required></div>
+        </div>
+        <div class="field">
+          <label>Descripción</label>
+          <input type="text" name="descripcion" placeholder="Motivo del movimiento">
+        </div>
+        <button type="submit" style="padding:12px;border:none;border-radius:var(--radius-md);background:var(--color-action,#6366f1);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+          Confirmar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL DETALLE TURNO ── -->
+<div class="modal-overlay" id="modalDetalle" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-file-earmark-text"></i> Detalle del turno</span>
+      <button class="modal-close" onclick="document.getElementById('modalDetalle').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px;" id="detalleContent">
+      <div style="text-align:center;padding:30px;color:var(--text-muted);">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+async function abrirCaja() {
+  const btn = document.getElementById('btnAbrir');
+  const errDiv = document.getElementById('errorMsg');
+  const montoInicial = parseFloat(document.getElementById('inp_monto').value) || 0;
+  const terminal = document.getElementById('inp_terminal').value.trim() || 'Caja Principal';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Abriendo…';
+  errDiv.style.display = 'none';
+
+  try {
+    const r = await fetch('/caja/api/abrir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ montoInicial, terminal })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      window.location.reload();
+    } else {
+      errDiv.textContent = data.error || 'Error al abrir la caja';
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-unlock-fill"></i> Abrir Caja y Comenzar';
+    }
+  } catch(e) {
+    errDiv.textContent = 'Error de conexión';
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-unlock-fill"></i> Abrir Caja y Comenzar';
+  }
+}
+
+async function verDetalle(cajaId) {
+  document.getElementById('modalDetalle').classList.add('active');
+  document.getElementById('detalleContent').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">Cargando…</div>';
+  try {
+    const r = await fetch(`/caja/resumen/${cajaId}`);
+    const d = await r.json();
+    const fmt = n => '$' + (n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+    const dif = (d.caja.monto_final||0) - d.efectivoEsperado;
+    const difColor = Math.abs(dif)<0.01 ? '#10b981' : dif>0 ? '#f59e0b' : '#ef4444';
+
+    let html = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="det-row"><span>Inicial</span><strong>${fmt(d.caja.monto_inicial)}</strong></div>
+        <div class="det-row"><span>Total ventas</span><strong style="color:#6366f1;">${fmt(d.totalVentas)}</strong></div>
+        <div class="det-row"><span>Efectivo ventas</span><strong style="color:#10b981;">${fmt(d.totalEfectivo)}</strong></div>
+        <div class="det-row"><span>Esperado</span><strong style="color:#3b82f6;">${fmt(d.efectivoEsperado)}</strong></div>
+        ${d.caja.monto_final ? `<div class="det-row"><span>Contado</span><strong>${fmt(d.caja.monto_final)}</strong></div>
+        <div class="det-row"><span>Diferencia</span><strong style="color:${difColor};">${dif>=0?'+':''}${fmt(dif)}</strong></div>` : ''}
+      </div>`;
+
+    if (d.desglose && d.desglose.length > 0) {
+      html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Por método de pago</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;">`;
+      d.desglose.forEach(x => {
+        html += `<div style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);font-size:12.5px;">
+          <strong>${x.metodo}</strong>: ${fmt(x.total)} (${x.cantidad})</div>`;
+      });
+      html += '</div>';
+    }
+
+    if (d.movimientos && d.movimientos.length > 0) {
+      html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Movimientos manuales</div>`;
+      d.movimientos.forEach(m => {
+        html += `<div style="display:flex;justify-content:space-between;padding:7px 10px;border-radius:7px;margin-bottom:5px;background:var(--bg-body);">
+          <span style="font-size:13px;">${m.tipo === 'ingreso' ? '▲' : '▼'} ${m.descripcion||m.tipo}</span>
+          <strong style="color:${m.tipo==='ingreso'?'#10b981':'#ef4444'};">${m.tipo==='ingreso'?'+':'−'}${fmt(m.monto)}</strong>
+        </div>`;
+      });
+    }
+
+    document.getElementById('detalleContent').innerHTML = html;
+  } catch(e) {
+    document.getElementById('detalleContent').innerHTML = '<div style="color:#ef4444;padding:20px;">Error al cargar</div>';
+  }
+}
+</script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.stat-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px; }
+.stat-icon { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px; }
+.stat-value { font-size:18px;font-weight:800;color:var(--text-primary); }
+.stat-label { font-size:11.5px;color:var(--text-secondary);font-weight:600; }
+.section-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;margin-bottom:0; }
+.section-title { padding:14px 20px;font-size:13px;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px; }
+.th { padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);white-space:nowrap; }
+.td { padding:11px 14px;font-size:13.5px;color:var(--text-primary);border-bottom:1px solid var(--border-color); }
+.tr-row:hover td { background:var(--bg-hover); }
+.det-row { padding:8px 12px;border-radius:8px;background:var(--bg-body);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:13px; }
+.det-row span { color:var(--text-secondary); }
+.field { display:flex;flex-direction:column;gap:6px; }
+.field label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary); }
+.field input, .field select { padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none; }
+.field input:focus { border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12); }
+.field-prefix { position:relative; }
+.field-prefix span { position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:700;color:var(--text-secondary);pointer-events:none; }
+.field-prefix input { padding-left:30px; }
+.btn-abrir { width:100%;padding:14px;border:none;border-radius:var(--radius-md);background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 6px 18px rgba(16,185,129,.35); }
+.btn-abrir:hover { transform:translateY(-1px); }
+.btn-abrir:disabled { opacity:.6;cursor:not-allowed;transform:none; }
+</style>
+</div><!-- /app-wrapper -->

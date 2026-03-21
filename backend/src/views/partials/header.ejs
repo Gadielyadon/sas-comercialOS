@@ -1,0 +1,43 @@
+<header class="app-header" id="appHeader">
+
+  <!-- Izquierda: hamburger + sección actual -->
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;min-width:160px;">
+    <button onclick="toggleSidebar()"
+      style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;background:rgba(255,255,255,0.07);border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.6);font-size:18px;flex-shrink:0;transition:background .15s;"
+      onmouseover="this.style.background='rgba(255,255,255,0.12)'"
+      onmouseout="this.style.background='rgba(255,255,255,0.07)'"
+      title="Menú">
+      <i class="bi bi-list"></i>
+    </button>
+    <div style="display:flex;flex-direction:column;line-height:1.2;">
+      <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.3);">Sección</span>
+      <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);"><%= module || 'Panel' %></span>
+    </div>
+  </div>
+
+  <!-- Centro: nombre empresa en naranja -->
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+    <span style="font-size:clamp(16px,2vw,24px);font-weight:800;color:var(--color-primary,#f97316);letter-spacing:-0.3px;white-space:nowrap;">
+      <%= typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre ? locals.empresa_nombre : 'ComercialOS' %>
+    </span>
+  </div>
+
+  <!-- Derecha: avatar + nombre -->
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;min-width:160px;justify-content:flex-end;">
+    <div style="width:34px;height:34px;border-radius:50%;background:var(--color-primary,#f97316);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;">
+      <%= (user?.name || 'A').slice(0,1).toUpperCase() %>
+    </div>
+    <div style="line-height:1.3;">
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.88);"><%= user?.name || 'Admin' %></div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.38);"><%= user?.role === 'admin' ? 'Administrador' : 'Empleado' %></div>
+    </div>
+  </div>
+
+</header>
+
+<style>
+.app-header {
+  background: var(--bg-sidebar) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+</style>

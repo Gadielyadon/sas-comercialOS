@@ -1,0 +1,268 @@
+<%- include('../partials/head', { title: 'Reporte Métodos de Pago' }) %>
+
+<style>
+  .main-content { margin-left: var(--sidebar-width); padding-top: var(--header-height); min-height: 100vh; }
+  .page-body    { padding: 28px 32px; max-width: 960px; }
+
+  .filtros-bar {
+    display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 14px; padding: 18px 20px; margin-bottom: 24px;
+  }
+  .filtros-bar .fg { display: flex; flex-direction: column; gap: 5px; }
+  .filtros-bar label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .filtros-bar input[type=date] {
+    padding: 8px 12px; border: 1.5px solid var(--border-color); border-radius: 8px;
+    background: var(--bg-body); color: var(--text-primary);
+    font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color .15s;
+  }
+  .filtros-bar input:focus { border-color: #6366f1; }
+  .filtros-hint {
+    font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 5px;
+    margin-left: auto; padding: 6px 10px; background: var(--bg-body);
+    border-radius: 8px; border: 1px solid var(--border-color);
+  }
+  .btn-buscar {
+    padding: 9px 20px; border-radius: 8px; border: none;
+    background: #6366f1; color: #fff; font-size: 13px;
+    font-weight: 700; font-family: var(--font-body); cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: filter .15s;
+  }
+  .btn-buscar:hover { filter: brightness(1.1); }
+  .btn-pdf {
+    padding: 9px 20px; border-radius: 8px;
+    border: 1.5px solid #6366f1; background: transparent;
+    color: #6366f1; font-size: 13px; font-weight: 700;
+    font-family: var(--font-body); cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: background .15s;
+  }
+  .btn-pdf:hover { background: rgba(99,102,241,.07); }
+
+  .resumen-total {
+    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(99,102,241,.03));
+    border: 1.5px solid rgba(99,102,241,.2); border-radius: 14px;
+    padding: 20px 28px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 24px;
+  }
+  .rt-item { text-align: center; min-width: 110px; }
+  .rt-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); margin-bottom: 6px; }
+  .rt-value { font-size: 22px; font-weight: 800; font-family: var(--font-mono, monospace); line-height: 1; }
+  .rt-arrow { font-size: 20px; color: var(--border-color); align-self: center; padding-bottom: 4px; }
+
+  .metodos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .metodo-card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 14px; padding: 18px 20px; border-left: 4px solid var(--mc);
+  }
+  .mc-nombre  { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--mc); margin-bottom: 10px; }
+  .mc-bruto   { font-size: 20px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono, monospace); }
+  .mc-count   { font-size: 12px; color: var(--text-muted); margin-top: 3px; margin-bottom: 10px; }
+  .mc-divider { border: none; border-top: 1px solid var(--border-color); margin: 10px 0; }
+  .mc-row     { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; margin-bottom: 4px; }
+  .mc-row-label { color: var(--text-secondary); font-weight: 600; }
+  .mc-row-val   { font-family: var(--font-mono, monospace); font-weight: 700; }
+  .mc-neto-row  { display: flex; justify-content: space-between; align-items: center; margin-top: 8px;
+                  background: rgba(16,185,129,.08); border-radius: 8px; padding: 7px 10px; }
+  .mc-neto-lbl  { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: #10b981; }
+  .mc-neto-val  { font-size: 15px; font-weight: 800; color: #10b981; font-family: var(--font-mono, monospace); }
+
+  .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+  .section-head { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  table.dt { width: 100%; border-collapse: collapse; }
+  table.dt thead th { padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); background: var(--bg-body); border-bottom: 1px solid var(--border-color); text-align: left; }
+  table.dt tbody td { padding: 11px 16px; font-size: 13.5px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); }
+  table.dt tbody tr:last-child td { border-bottom: none; }
+  table.dt tbody tr:hover td { background: var(--bg-body); }
+  .td-r { text-align: right; font-family: var(--font-mono, monospace); font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .tr-total td { background: var(--bg-body); font-weight: 800; border-top: 2px solid var(--border-color); }
+
+  .empty-state { padding: 60px; text-align: center; color: var(--text-muted); }
+  .empty-state i { font-size: 40px; display: block; margin-bottom: 12px; opacity: .3; }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .no-print { display: none !important; }
+    .main-content { margin-left: 0 !important; padding-top: 0 !important; }
+    .page-body { padding: 0 !important; max-width: 100% !important; }
+    .print-header { display: block !important; }
+    body { background: #fff !important; }
+    .metodo-card, .section-card, .resumen-total { box-shadow: none !important; border: 1px solid #ddd !important; }
+    .section-card { page-break-inside: avoid; }
+  }
+  .print-header { display: none; padding-bottom: 16px; border-bottom: 2px solid #e5e7eb; margin-bottom: 20px; }
+  .print-header h1 { font-size: 20px; font-weight: 800; color: #111; margin: 0 0 4px; }
+  .print-header p  { font-size: 13px; color: #6b7280; margin: 0; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'dashboard', activeSub: 'reporte_metodos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Reporte de Ventas', user }) %>
+
+    <div class="page-body">
+
+      <div class="print-header" id="printHeader">
+        <h1>Reporte de Ventas por Método de Pago</h1>
+        <p id="printSubtitle"></p>
+      </div>
+
+      <div class="filtros-bar no-print">
+        <div class="fg">
+          <label>Desde</label>
+          <input type="date" id="fDesde">
+        </div>
+        <div class="fg">
+          <label>Hasta</label>
+          <input type="date" id="fHasta">
+        </div>
+        <button class="btn-buscar" onclick="buscar()">
+          <i class="bi bi-search"></i> Buscar
+        </button>
+        <button class="btn-pdf no-print" onclick="imprimir()">
+          <i class="bi bi-file-pdf"></i> Exportar PDF
+        </button>
+        <div class="filtros-hint no-print">
+          <i class="bi bi-info-circle"></i>
+          Comisiones desde <strong style="margin-left:3px;">Ajustes → Métodos de pago</strong>
+        </div>
+      </div>
+
+      <div id="resultados">
+        <div class="empty-state">
+          <i class="bi bi-bar-chart-line"></i>
+          Seleccioná un período y hacé clic en Buscar
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+'use strict';
+const fmt  = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+const COLS = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#ef4444'];
+
+(function(){
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('fDesde').value = hoy;
+  document.getElementById('fHasta').value = hoy;
+})();
+
+async function buscar() {
+  const desde = document.getElementById('fDesde').value;
+  const hasta  = document.getElementById('fHasta').value;
+  if (!desde || !hasta) { alert('Seleccioná un período'); return; }
+
+  const div = document.getElementById('resultados');
+  div.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass-split" style="font-size:36px;display:block;margin-bottom:12px;opacity:.4;"></i>Cargando...</div>';
+
+  try {
+    const r    = await fetch('/api/reporte/metodos?' + new URLSearchParams({ desde, hasta }));
+    const data = await r.json();
+
+    if (!data.metodos || !data.metodos.length) {
+      div.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Sin ventas en ese período</div>';
+      return;
+    }
+
+    const metodos       = data.metodos;
+    const totalBruto    = metodos.reduce((s, m) => s + m.total,         0);
+    const totalComision = metodos.reduce((s, m) => s + m.comision_monto, 0);
+    const totalNeto     = metodos.reduce((s, m) => s + m.neto,           0);
+    const totalTx       = metodos.reduce((s, m) => s + m.cantidad,       0);
+
+    const fmtF   = iso => new Date(iso + 'T00:00:00').toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const periodo = desde === hasta ? fmtF(desde) : fmtF(desde) + ' al ' + fmtF(hasta);
+    document.getElementById('printSubtitle').textContent =
+      'Período: ' + periodo + ' · Generado: ' + new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+    let html = '';
+
+    // Resumen
+    html += '<div class="resumen-total">'
+      + '<div class="rt-item"><div class="rt-label">Total bruto</div><div class="rt-value" style="color:#6366f1">' + fmt(totalBruto) + '</div></div>'
+      + '<div class="rt-arrow">→</div>'
+      + '<div class="rt-item"><div class="rt-label">Comisiones</div><div class="rt-value" style="color:#d97706">− ' + fmt(totalComision) + '</div></div>'
+      + '<div class="rt-arrow">→</div>'
+      + '<div class="rt-item"><div class="rt-label">Lo que te llega</div><div class="rt-value" style="color:#10b981">' + fmt(totalNeto) + '</div></div>'
+      + '<div class="rt-item" style="border-left:1px solid var(--border-color);padding-left:20px;"><div class="rt-label">Transacciones</div><div class="rt-value" style="color:var(--text-primary)">' + totalTx + '</div></div>'
+      + '<div class="rt-item"><div class="rt-label">Período</div><div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-top:4px;">' + periodo + '</div></div>'
+      + '</div>';
+
+    // Tarjetas
+    html += '<div class="metodos-grid">';
+    metodos.forEach(function(m, i) {
+      const color = COLS[i % COLS.length];
+      const cuerpo = m.comision_pct > 0
+        ? '<hr class="mc-divider"><div class="mc-row"><span class="mc-row-label">Comisión (' + m.comision_pct + '%)</span><span class="mc-row-val" style="color:#d97706">− ' + fmt(m.comision_monto) + '</span></div>'
+          + '<div class="mc-neto-row"><span class="mc-neto-lbl">Lo que te llega</span><span class="mc-neto-val">' + fmt(m.neto) + '</span></div>'
+        : '<div class="mc-neto-row" style="margin-top:10px;"><span class="mc-neto-lbl">Sin comisión</span><span class="mc-neto-val">' + fmt(m.neto) + '</span></div>';
+      html += '<div class="metodo-card" style="--mc:' + color + '">'
+        + '<div class="mc-nombre">' + m.metodo + '</div>'
+        + '<div class="mc-bruto">' + fmt(m.total) + '</div>'
+        + '<div class="mc-count">' + m.cantidad + ' transacción' + (m.cantidad !== 1 ? 'es' : '') + '</div>'
+        + cuerpo + '</div>';
+    });
+    html += '</div>';
+
+    // Tabla
+    html += '<div class="section-card"><div class="section-head"><div class="section-title"><i class="bi bi-table" style="color:#6366f1;margin-right:6px"></i>Detalle por método</div></div>'
+      + '<table class="dt"><thead><tr>'
+      + '<th>Método</th><th>Transacciones</th><th>Ticket prom.</th><th>Total bruto</th><th>Comisión %</th><th>Comisión $</th><th style="color:#10b981">Lo que te llega</th>'
+      + '</tr></thead><tbody>';
+    metodos.forEach(function(m, i) {
+      const color  = COLS[i % COLS.length];
+      const ticket = m.cantidad > 0 ? m.total / m.cantidad : 0;
+      html += '<tr>'
+        + '<td><span class="badge" style="background:' + color + '22;color:' + color + '">' + m.metodo + '</span></td>'
+        + '<td class="td-r">' + m.cantidad + '</td>'
+        + '<td class="td-r">' + fmt(ticket) + '</td>'
+        + '<td class="td-r">' + fmt(m.total) + '</td>'
+        + '<td class="td-r" style="color:#d97706">' + (m.comision_pct > 0 ? m.comision_pct + '%' : '—') + '</td>'
+        + '<td class="td-r" style="color:#d97706">' + (m.comision_pct > 0 ? '− ' + fmt(m.comision_monto) : '—') + '</td>'
+        + '<td class="td-r" style="color:#10b981;font-weight:800">' + fmt(m.neto) + '</td>'
+        + '</tr>';
+    });
+    html += '<tr class="tr-total">'
+      + '<td><strong>TOTAL</strong></td><td class="td-r">' + totalTx + '</td><td class="td-r">—</td>'
+      + '<td class="td-r" style="color:#6366f1">' + fmt(totalBruto) + '</td><td class="td-r">—</td>'
+      + '<td class="td-r" style="color:#d97706">− ' + fmt(totalComision) + '</td>'
+      + '<td class="td-r" style="color:#10b981">' + fmt(totalNeto) + '</td>'
+      + '</tr></tbody></table></div>';
+
+    // Detalle ventas
+    if (data.ventas && data.ventas.length) {
+      html += '<div class="section-card"><div class="section-head"><div class="section-title"><i class="bi bi-list-ul" style="color:#6366f1;margin-right:6px"></i>Ventas del período (' + data.ventas.length + ')</div></div>'
+        + '<table class="dt"><thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Método</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+      data.ventas.forEach(function(v) {
+        const d    = new Date(v.created_at.replace(' ','T') + 'Z');
+        const idx  = metodos.findIndex(function(m){ return m.metodo === v.payment_method; });
+        const color= COLS[idx >= 0 ? idx % COLS.length : 0];
+        html += '<tr>'
+          + '<td style="color:var(--text-muted);font-family:var(--font-mono,monospace)">#' + v.id + '</td>'
+          + '<td>' + d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) + '</td>'
+          + '<td style="color:var(--text-secondary)">' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) + '</td>'
+          + '<td><span class="badge" style="background:' + color + '22;color:' + color + '">' + (v.payment_method||'—') + '</span></td>'
+          + '<td class="td-r">' + fmt(v.total) + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    div.innerHTML = html;
+
+  } catch(e) {
+    div.innerHTML = '<div class="empty-state" style="color:#ef4444;"><i class="bi bi-exclamation-circle"></i>Error: ' + e.message + '</div>';
+  }
+}
+
+function imprimir() {
+  document.getElementById('printHeader').style.display = 'block';
+  window.print();
+  setTimeout(function(){ document.getElementById('printHeader').style.display = 'none'; }, 1000);
+}
+</script>

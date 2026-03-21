@@ -1,0 +1,669 @@
+<%- include('../partials/head', { title: 'Historial de Facturación' }) %>
+
+<style>
+  .main-content {
+    margin-left: var(--sidebar-width);
+    margin-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height));
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-body);
+  }
+
+  .page-body {
+    flex: 1;
+    padding: 24px 28px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .fact-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .fact-title-wrap h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+
+  .fact-title-wrap p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .fact-toolbar {
+    display: grid;
+    grid-template-columns: 1.5fr 180px 180px auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .fact-input,
+  .fact-select {
+    width: 100%;
+    padding: 11px 13px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    box-sizing: border-box;
+  }
+
+  .fact-input:focus,
+  .fact-select:focus {
+    border-color: var(--color-action);
+    box-shadow: 0 0 0 3px rgba(0,180,216,.1);
+  }
+
+  .fact-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: var(--font-body);
+  }
+
+  .fact-btn:hover {
+    border-color: var(--color-action);
+    color: var(--color-action);
+    background: rgba(0,180,216,.04);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px 15px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    line-height: 1;
+  }
+
+  .fact-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .fact-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-body);
+  }
+
+  .fact-panel-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .fact-panel-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .fact-table-wrap {
+    overflow-x: auto;
+  }
+
+  .fact-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1080px;
+  }
+
+  .fact-table thead th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--text-secondary);
+    background: var(--bg-body);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+  }
+
+  .fact-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    color: var(--text-primary);
+    vertical-align: middle;
+  }
+
+  .fact-table tbody tr:hover {
+    background: rgba(0,180,216,.03);
+  }
+
+  .tipo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #fff;
+  }
+
+  .tipo-a { background: #2563eb; }
+  .tipo-b { background: #10b981; }
+  .tipo-c { background: #f59e0b; }
+
+  .mono {
+    font-family: var(--font-mono);
+  }
+
+  .subtxt {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .fact-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .btn-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .14s;
+    text-decoration: none;
+    font-family: var(--font-body);
+  }
+
+  .btn-mini:hover {
+    border-color: var(--color-action);
+    color: var(--color-action);
+    background: rgba(0,180,216,.05);
+  }
+
+  .btn-mini.pdf:hover {
+    border-color: #6d28d9;
+    color: #6d28d9;
+    background: rgba(109,40,217,.06);
+  }
+
+  .empty-box,
+  .disabled-box {
+    padding: 36px 22px;
+    text-align: center;
+    color: var(--text-secondary);
+  }
+
+  .empty-box i,
+  .disabled-box i {
+    font-size: 40px;
+    opacity: .3;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .disabled-box {
+    background: rgba(109,40,217,.04);
+    border: 1px solid rgba(109,40,217,.15);
+    border-radius: 16px;
+  }
+
+  @media (max-width: 980px) {
+    .fact-toolbar {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .main-content {
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .fact-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+
+  <div class="main-content">
+    <%- include('../partials/header', { module, user }) %>
+
+    <main class="page-body">
+      <div class="fact-top">
+        <div class="fact-title-wrap">
+          <h2>Historial de Facturación</h2>
+          <p>Listado de comprobantes electrónicos emitidos desde el sistema.</p>
+        </div>
+
+        <div class="fact-toolbar">
+          <input
+            type="text"
+            id="factSearch"
+            class="fact-input"
+            placeholder="Buscar por cliente, CUIT, CAE o número..."
+            oninput="renderFacturas()"
+          >
+
+          <select id="factTipo" class="fact-select" onchange="renderFacturas()">
+            <option value="">Todos los tipos</option>
+            <option value="A">Factura A</option>
+            <option value="B">Factura B</option>
+            <option value="C">Factura C</option>
+          </select>
+
+          <select id="factOrden" class="fact-select" onchange="renderFacturas()">
+            <option value="desc">Más recientes</option>
+            <option value="asc">Más antiguas</option>
+            <option value="monto_desc">Mayor importe</option>
+            <option value="monto_asc">Menor importe</option>
+          </select>
+
+          <button class="fact-btn" onclick="cargarFacturas()">
+            <i class="bi bi-arrow-repeat"></i> Actualizar
+          </button>
+        </div>
+      </div>
+
+      <% if (!facturacionHabilitada) { %>
+        <div class="disabled-box">
+          <i class="bi bi-shield-slash"></i>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">
+            Esta vista está disponible solo cuando esté habilitada la opción de facturación
+          </div>
+          <div style="font-size:13px;">
+            Activala desde Ajustes para usar el historial y la emisión electrónica con AFIP / ARCA.
+          </div>
+        </div>
+      <% } %>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Comprobantes</div>
+          <div class="stat-value" id="statCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total facturado</div>
+          <div class="stat-value" id="statTotal">$0,00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Factura A</div>
+          <div class="stat-value" id="statA">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Factura B / C</div>
+          <div class="stat-value" id="statBC">0</div>
+        </div>
+      </div>
+
+      <div class="fact-panel">
+        <div class="fact-panel-head">
+          <div>
+            <div class="fact-panel-title">Comprobantes emitidos</div>
+            <div class="fact-panel-sub" id="factPanelSub">Cargando historial...</div>
+          </div>
+        </div>
+
+        <div class="fact-table-wrap">
+          <table class="fact-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Comprobante</th>
+                <th>Cliente</th>
+                <th>CUIT / Doc.</th>
+                <th>Importe</th>
+                <th>CAE</th>
+                <th>Vto. CAE</th>
+                <th>Venta</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="factTbody">
+              <tr>
+                <td colspan="10" style="text-align:center;padding:28px;color:var(--text-secondary);">
+                  Cargando…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+
+<script>
+'use strict';
+
+let facturasRaw = [];
+let facturasView = [];
+
+function money(n) {
+  return '$' + Number(n || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function tipoLetra(tipo) {
+  return ({ 1: 'A', 6: 'B', 11: 'C' })[Number(tipo)] || '?';
+}
+
+function tipoClase(letra) {
+  if (letra === 'A') return 'tipo-a';
+  if (letra === 'B') return 'tipo-b';
+  return 'tipo-c';
+}
+
+function fmtFecha(dt) {
+  if (!dt) return '—';
+  const d = new Date(dt);
+  if (Number.isNaN(d.getTime())) return dt;
+  return d.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function fmtCaeVto(v) {
+  if (!v) return '—';
+  const s = String(v);
+  if (s.length === 8) {
+    return `${s.slice(6,8)}/${s.slice(4,6)}/${s.slice(0,4)}`;
+  }
+  return s;
+}
+
+function escapeHtml(str = '') {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+async function copyText(txt) {
+  const value = String(txt || '');
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+
+    if (window.showToast) {
+      showToast('CAE copiado', 'success');
+    }
+  } catch (_) {}
+}
+
+function updateStats(rows) {
+  const total = rows.reduce((acc, r) => acc + Number(r.importe_total || 0), 0);
+  const countA = rows.filter(r => tipoLetra(r.tipo_cbte) === 'A').length;
+  const countBC = rows.filter(r => ['B', 'C'].includes(tipoLetra(r.tipo_cbte))).length;
+
+  document.getElementById('statCount').textContent = rows.length;
+  document.getElementById('statTotal').textContent = money(total);
+  document.getElementById('statA').textContent = countA;
+  document.getElementById('statBC').textContent = countBC;
+  document.getElementById('factPanelSub').textContent = rows.length
+    ? `${rows.length} comprobante${rows.length !== 1 ? 's' : ''} encontrado${rows.length !== 1 ? 's' : ''}`
+    : 'Sin comprobantes para mostrar';
+}
+
+function renderFacturas() {
+  const q = (document.getElementById('factSearch').value || '').trim().toLowerCase();
+  const tipo = document.getElementById('factTipo').value || '';
+  const orden = document.getElementById('factOrden').value || 'desc';
+
+  let rows = [...facturasRaw];
+
+  if (q) {
+    rows = rows.filter(r => {
+      const letra = tipoLetra(r.tipo_cbte);
+      const nro = `${String(r.punto_venta).padStart(4,'0')}-${String(r.nro_cbte).padStart(8,'0')}`;
+      return [
+        r.cliente_nombre,
+        r.cliente_nombre_db,
+        r.cliente_cuit,
+        r.cae,
+        nro,
+        letra
+      ].some(v => String(v || '').toLowerCase().includes(q));
+    });
+  }
+
+  if (tipo) {
+    rows = rows.filter(r => tipoLetra(r.tipo_cbte) === tipo);
+  }
+
+  rows.sort((a, b) => {
+    if (orden === 'asc') return new Date(a.created_at) - new Date(b.created_at);
+    if (orden === 'monto_desc') return Number(b.importe_total || 0) - Number(a.importe_total || 0);
+    if (orden === 'monto_asc') return Number(a.importe_total || 0) - Number(b.importe_total || 0);
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  facturasView = rows;
+  updateStats(rows);
+
+  const tbody = document.getElementById('factTbody');
+
+  if (!rows.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10">
+          <div class="empty-box">
+            <i class="bi bi-file-earmark-text"></i>
+            <div style="font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">Sin resultados</div>
+            <div style="font-size:13px;">No se encontraron comprobantes con esos filtros.</div>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const letra = tipoLetra(r.tipo_cbte);
+    const cliente = r.cliente_nombre || r.cliente_nombre_db || 'Consumidor Final';
+    const nro = `${String(r.punto_venta).padStart(4,'0')}-${String(r.nro_cbte).padStart(8,'0')}`;
+
+    return `
+      <tr>
+        <td>
+          <div>${fmtFecha(r.created_at)}</div>
+        </td>
+
+        <td>
+          <span class="tipo-badge ${tipoClase(letra)}">${letra}</span>
+        </td>
+
+        <td>
+          <div class="mono" style="font-weight:800;">${nro}</div>
+          <div class="subtxt">Cod. ${r.tipo_cbte}</div>
+        </td>
+
+        <td>
+          <div style="font-weight:700;">${escapeHtml(cliente)}</div>
+        </td>
+
+        <td>
+          <div class="mono">${escapeHtml(r.cliente_cuit || '-')}</div>
+        </td>
+
+        <td>
+          <div class="mono" style="font-weight:800;">${money(r.importe_total)}</div>
+        </td>
+
+        <td>
+          <div class="mono" style="font-weight:700;">${escapeHtml(r.cae || '-')}</div>
+        </td>
+
+        <td>
+          <div>${fmtCaeVto(r.cae_vto)}</div>
+        </td>
+
+        <td>
+          <div class="mono">#${r.sale_id}</div>
+        </td>
+
+        <td>
+          <div class="fact-actions">
+            <a class="btn-mini pdf" href="/afip/pdf/${r.sale_id}" target="_blank">
+              <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+            <button class="btn-mini" onclick="copyText('${escapeHtml(r.cae || '')}')">
+              <i class="bi bi-copy"></i> CAE
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function cargarFacturas() {
+  if (!FACTURACION_HABILITADA) {
+    return;
+  }
+
+  const tbody = document.getElementById('factTbody');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="10" style="text-align:center;padding:28px;color:var(--text-secondary);">
+        Cargando…
+      </td>
+    </tr>`;
+
+  try {
+    const r = await fetch('/afip/facturas?limit=500');
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al cargar facturas');
+    facturasRaw = Array.isArray(data.facturas) ? data.facturas : [];
+    renderFacturas();
+  } catch (e) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10">
+          <div class="empty-box">
+            <i class="bi bi-exclamation-triangle"></i>
+            <div style="font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">No se pudo cargar el historial</div>
+            <div style="font-size:13px;">${escapeHtml(e.message)}</div>
+          </div>
+        </td>
+      </tr>`;
+    updateStats([]);
+  }
+}
+
+const FACTURACION_HABILITADA = <%- facturacionHabilitada ? 'true' : 'false' %>;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!FACTURACION_HABILITADA) {
+    document.getElementById('factPanelSub').textContent =
+      'Vista disponible solo cuando la facturación esté habilitada';
+
+    document.getElementById('factTbody').innerHTML = `
+      <tr>
+        <td colspan="10">
+          <div class="empty-box">
+            <i class="bi bi-lock"></i>
+            <div style="font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">
+              Facturación deshabilitada
+            </div>
+            <div style="font-size:13px;">
+              Esta vista está disponible solo cuando esté habilitada la opción de facturación.
+            </div>
+          </div>
+        </td>
+      </tr>`;
+
+    updateStats([]);
+    return;
+  }
+
+  cargarFacturas();
+});
+</script>

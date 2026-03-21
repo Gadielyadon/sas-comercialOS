@@ -1,0 +1,152 @@
+<aside class="sidebar" id="sidebar">
+
+  <!-- Logo ComercialOS -->
+  <div class="sidebar-logo">
+    <a class="logo-mark" href="/dashboard">
+      <div class="logo-icon">C</div>
+      <div class="logo-text">
+        <strong>ComercialOS</strong>
+        <% if (typeof sucursal !== 'undefined' && sucursal && sucursal.nombre && sucursal.nombre !== 'Casa Central') { %>
+          <span style="color:var(--color-primary);font-weight:600;letter-spacing:.3px;"><%= sucursal.nombre %></span>
+        <% } else { %>
+          <span>SaaS</span>
+        <% } %>
+      </div>
+    </a>
+  </div>
+
+  <!-- Nav -->
+  <nav class="sidebar-nav">
+
+    <div class="nav-section-label">Principal</div>
+
+    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+      <a href="/dashboard" class="nav-item <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'active' : '' %>">
+        <i class="bi bi-grid-1x2"></i>
+        <span class="nav-text">Dashboard</span>
+      </a>
+      <% if (typeof active !== 'undefined' && active === 'dashboard') { %>
+        <a href="/dashboard/reportes/metodos" class="nav-item nav-subitem <%= (typeof activeSub !== 'undefined' && activeSub === 'reporte_metodos') ? 'active' : '' %>">
+          <i class="bi bi-bar-chart-line"></i>
+          <span class="nav-text">Métodos de pago</span>
+        </a>
+      <% } %>
+    <% } %>
+
+    <a href="/ventas" class="nav-item <%= (typeof active !== 'undefined' && active === 'ventas') ? 'active' : '' %>">
+      <i class="bi bi-upc-scan"></i>
+      <span class="nav-text">Ventas</span>
+    </a>
+
+    <a href="/caja" class="nav-item <%= (typeof active !== 'undefined' && active === 'caja') ? 'active' : '' %>">
+      <i class="bi bi-cash-coin"></i>
+      <span class="nav-text">Caja</span>
+    </a>
+
+    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
+      <i class="bi bi-people"></i>
+      <span class="nav-text">Clientes</span>
+    </a>
+
+    <a href="/presupuestos" class="nav-item <%= (typeof active !== 'undefined' && active === 'presupuestos') ? 'active' : '' %>">
+      <i class="bi bi-file-earmark-text"></i>
+      <span class="nav-text">Presupuestos</span>
+    </a>
+
+    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+
+      <div class="nav-section-label" style="margin-top:8px;">Administración</div>
+
+      <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
+        <i class="bi bi-box-seam"></i>
+        <span class="nav-text">Inventario</span>
+      </a>
+
+      <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
+        <i class="bi bi-sliders"></i>
+        <span class="nav-text">Ajustes</span>
+      </a>
+
+      <a href="/sucursales" class="nav-item <%= (typeof active !== 'undefined' && active === 'sucursales') ? 'active' : '' %>">
+        <i class="bi bi-diagram-3"></i>
+        <span class="nav-text">Sucursales</span>
+      </a>
+
+      <div class="nav-section-label" style="margin-top:8px;">Finanzas</div>
+
+      <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>">
+        <i class="bi bi-truck"></i>
+        <span class="nav-text">Proveedores</span>
+      </a>
+
+      <a href="/gastos" class="nav-item <%= (typeof active !== 'undefined' && active === 'gastos') ? 'active' : '' %>">
+        <i class="bi bi-receipt"></i>
+        <span class="nav-text">Gastos</span>
+      </a>
+
+      <a href="/afip/historial" class="nav-item <%= (typeof active !== 'undefined' && active === 'facturacion') ? 'active' : '' %>">
+        <i class="bi bi-file-earmark-check"></i>
+        <span class="nav-text">Facturación</span>
+      </a>
+
+    <% } %>
+
+  </nav>
+
+  <!-- Footer usuario -->
+  <div class="sidebar-footer">
+    <div class="user-mini">
+      <div class="user-avatar-sm">
+        <%= (typeof user !== 'undefined' && user && user.name) ? user.name[0].toUpperCase() : 'A' %>
+      </div>
+      <div class="user-mini-info">
+        <strong><%= (typeof user !== 'undefined' && user && user.name) ? user.name : 'Admin' %></strong>
+        <span>
+          <%= (typeof user !== 'undefined' && user && user.role)
+            ? (user.role === 'admin' ? 'Administrador' : 'Empleado')
+            : 'Usuario' %>
+        </span>
+      </div>
+    </div>
+    <a href="/logout" class="btn-logout" title="Cerrar sesión"
+       style="margin-left:auto;color:var(--text-muted);font-size:17px;text-decoration:none;padding:5px 7px;border-radius:6px;transition:color .15s;flex-shrink:0;"
+       onmouseenter="this.style.color='var(--color-danger)'" onmouseleave="this.style.color='var(--text-muted)'">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+
+</aside>
+
+<!-- Overlay oscuro detrás del sidebar -->
+<div id="sidebarOverlay"></div>
+
+<script>
+(function() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!sidebar) return;
+
+  window.openSidebar = function() {
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+  };
+
+  window.closeSidebar = function() {
+    sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+  };
+
+  window.toggleSidebar = function() {
+    if (sidebar.classList.contains('open')) window.closeSidebar();
+    else window.openSidebar();
+  };
+
+  window.closeSidebarMobile = window.closeSidebar;
+
+  if (overlay) overlay.addEventListener('click', window.closeSidebar);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') window.closeSidebar();
+  });
+})();
+</script>

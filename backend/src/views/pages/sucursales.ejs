@@ -1,0 +1,247 @@
+<%- include('../partials/head', { title: 'Sucursales' }) %>
+
+<style>
+  .main-content { margin-left: var(--sidebar-width); padding-top: var(--header-height); min-height: 100vh; }
+  .page-body    { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  .suc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; margin-top: 24px; }
+
+  .suc-card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); padding: 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: all .2s; position: relative; overflow: hidden;
+  }
+  .suc-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--color-action), #0099ba);
+    opacity: 0; transition: opacity .2s;
+  }
+  .suc-card:hover { border-color: rgba(0,180,216,.3); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .suc-card:hover::before { opacity: 1; }
+
+  .suc-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .suc-badge.activa   { background: rgba(16,185,129,.1); color: #10b981; }
+  .suc-badge.inactiva { background: rgba(239,68,68,.1);  color: #ef4444; }
+  .suc-badge.principal { background: rgba(0,180,216,.1); color: var(--color-action); }
+
+  .suc-name { font-family: var(--font-head, sans-serif); font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .suc-detail { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+
+  .suc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .suc-stat { background: var(--bg-body); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+  .suc-stat-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--color-action); }
+  .suc-stat-lbl { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  .suc-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-suc-edit { flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .btn-suc-edit:hover { border-color: var(--color-action); color: var(--color-action); }
+  .btn-suc-del  { padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; transition: all .15s; }
+  .btn-suc-del:hover { border-color: #ef4444; color: #ef4444; }
+
+  .add-card {
+    background: transparent; border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md); padding: 24px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; cursor: pointer; transition: all .2s; min-height: 180px;
+    color: var(--text-secondary);
+  }
+  .add-card:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.03); }
+  .add-card i { font-size: 28px; }
+  .add-card span { font-size: 14px; font-weight: 600; }
+
+  /* Modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.active { display:flex; }
+  .modal-box { background:var(--bg-card); border:1px solid var(--border-color); border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.2); width:100%; max-width:480px; animation:modalPop .15s ease; }
+  @keyframes modalPop { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border-color); }
+  .modal-title  { font-size:15px; font-weight:700; color:var(--text-primary); }
+  .modal-close  { background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; padding:4px 8px; border-radius:6px; }
+  .modal-close:hover { background:var(--bg-hover); }
+  .modal-body   { padding:22px; display:flex; flex-direction:column; gap:14px; }
+  .form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; text-transform:uppercase; letter-spacing:.5px; }
+  .form-group input, .form-group select {
+    width:100%; padding:10px 14px; border:1.5px solid var(--border-color);
+    border-radius:var(--radius-sm); background:var(--bg-body);
+    color:var(--text-primary); font-family:var(--font-body); font-size:14px; outline:none;
+    transition:border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color:var(--color-action); }
+  .modal-footer { padding:14px 22px; border-top:1px solid var(--border-color); display:flex; gap:10px; justify-content:flex-end; }
+  .btn-cancel { padding:9px 20px; border-radius:var(--radius-sm); border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; }
+  .btn-save   { padding:9px 20px; border-radius:var(--radius-sm); border:none; background:var(--color-action); color:#fff; font-size:13px; font-weight:700; cursor:pointer; transition:opacity .15s; }
+  .btn-save:hover { opacity:.9; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'ajustes', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Sucursales', user }) %>
+    <div class="page-body">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;color:var(--text-primary)">Sucursales</h1>
+          <p style="font-size:13.5px;color:var(--text-secondary);margin-top:3px">
+            Gestioná los locales de tu negocio. Cada sucursal tiene su propio stock y caja.
+          </p>
+        </div>
+      </div>
+
+      <!-- Resumen consolidado (solo admin) -->
+      <% if (es_admin) { %>
+      <div style="background:linear-gradient(135deg,rgba(0,180,216,.07),rgba(0,153,186,.04));border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-md);padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:14px">
+        <i class="bi bi-graph-up-arrow" style="font-size:24px;color:var(--color-action)"></i>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">Vista consolidada activa</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Como administrador, ves las ventas y reportes de <strong>todas las sucursales</strong>. Podés filtrar por sucursal en el Dashboard.</div>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Grid de sucursales -->
+      <div class="suc-grid" id="sucGrid">
+        <% sucursales.forEach((s, i) => { %>
+        <div class="suc-card" id="suc-<%= s.id %>">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="suc-badge <%= s.id === 1 ? 'principal' : (s.activa ? 'activa' : 'inactiva') %>">
+              <i class="bi bi-<%= s.id === 1 ? 'star-fill' : (s.activa ? 'check-circle-fill' : 'x-circle-fill') %>"></i>
+              <%= s.id === 1 ? 'Principal' : (s.activa ? 'Activa' : 'Inactiva') %>
+            </span>
+            <span style="font-size:11px;color:var(--text-muted)">#<%= s.id %></span>
+          </div>
+
+          <div class="suc-name"><%= s.nombre %></div>
+
+          <% if (s.direccion) { %>
+          <div class="suc-detail"><i class="bi bi-geo-alt"></i><%= s.direccion %></div>
+          <% } %>
+          <% if (s.telefono) { %>
+          <div class="suc-detail"><i class="bi bi-telephone"></i><%= s.telefono %></div>
+          <% } %>
+
+          <div class="suc-stats">
+            <div class="suc-stat">
+              <div class="suc-stat-val">
+                $<%= stats[s.id] ? stats[s.id].ventasHoy.total.toLocaleString('es-AR',{minimumFractionDigits:0}) : '0' %>
+              </div>
+              <div class="suc-stat-lbl">Ventas hoy</div>
+            </div>
+            <div class="suc-stat">
+              <div class="suc-stat-val">
+                <%= stats[s.id] ? stats[s.id].ventasHoy.count : '0' %>
+              </div>
+              <div class="suc-stat-lbl">Transacciones</div>
+            </div>
+          </div>
+
+          <div class="suc-actions">
+            <button class="btn-suc-edit" onclick="editarSucursal(<%= s.id %>,'<%= s.nombre %>','<%= s.direccion||'' %>','<%= s.telefono||'' %>')">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+            <% if (s.id !== 1) { %>
+            <button class="btn-suc-del" onclick="eliminarSucursal(<%= s.id %>,'<%= s.nombre %>')">
+              <i class="bi bi-trash3"></i>
+            </button>
+            <% } %>
+          </div>
+        </div>
+        <% }) %>
+
+        <!-- Agregar nueva -->
+        <div class="add-card" onclick="nuevaSucursal()">
+          <i class="bi bi-plus-circle"></i>
+          <span>Agregar sucursal</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal nueva/editar sucursal -->
+<div class="modal-overlay" id="modalSuc">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modalSucTitle">Nueva sucursal</span>
+      <button class="modal-close" onclick="cerrarModal()"><i class="bi bi-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sucId">
+      <div class="form-group">
+        <label>Nombre del local *</label>
+        <input type="text" id="sucNombre" placeholder="Ej: Sucursal Norte, Casa Central...">
+      </div>
+      <div class="form-group">
+        <label>Dirección</label>
+        <input type="text" id="sucDireccion" placeholder="Ej: Av. San Martín 1234">
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="text" id="sucTelefono" placeholder="Ej: 383-4XXXXXX">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" onclick="guardarSucursal()">
+        <i class="bi bi-check-lg"></i> Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+function nuevaSucursal() {
+  document.getElementById('sucId').value = '';
+  document.getElementById('sucNombre').value   = '';
+  document.getElementById('sucDireccion').value = '';
+  document.getElementById('sucTelefono').value  = '';
+  document.getElementById('modalSucTitle').textContent = 'Nueva sucursal';
+  document.getElementById('modalSuc').classList.add('active');
+  setTimeout(() => document.getElementById('sucNombre').focus(), 100);
+}
+function editarSucursal(id, nombre, dir, tel) {
+  document.getElementById('sucId').value        = id;
+  document.getElementById('sucNombre').value    = nombre;
+  document.getElementById('sucDireccion').value = dir;
+  document.getElementById('sucTelefono').value  = tel;
+  document.getElementById('modalSucTitle').textContent = 'Editar sucursal';
+  document.getElementById('modalSuc').classList.add('active');
+}
+function cerrarModal() { document.getElementById('modalSuc').classList.remove('active'); }
+
+async function guardarSucursal() {
+  const id       = document.getElementById('sucId').value;
+  const nombre   = document.getElementById('sucNombre').value.trim();
+  const direccion = document.getElementById('sucDireccion').value.trim();
+  const telefono  = document.getElementById('sucTelefono').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio'); return; }
+
+  const method = id ? 'PUT' : 'POST';
+  const url    = id ? `/api/sucursales/${id}` : '/api/sucursales';
+
+  const r = await fetch(url, {
+    method, headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ nombre, direccion: direccion||null, telefono: telefono||null })
+  });
+  if (r.ok) { cerrarModal(); location.reload(); }
+  else { const e = await r.json(); alert(e.error || 'Error al guardar'); }
+}
+
+async function eliminarSucursal(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}"?\n\nLos productos, ventas y cajas de esta sucursal se reasignarán a Casa Central.`)) return;
+  const r = await fetch(`/api/sucursales/${id}`, { method: 'DELETE' });
+  if (r.ok) location.reload();
+  else { const e = await r.json(); alert(e.error || 'Error al eliminar'); }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrarModal();
+});
+</script>

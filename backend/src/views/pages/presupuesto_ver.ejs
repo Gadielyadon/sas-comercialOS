@@ -1,0 +1,395 @@
+<%- include('../partials/head', { title: presupuesto.numero }) %>
+
+<style>
+  .page-body { padding: 24px 32px; max-width: 960px; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
+  .top-bar-left { display: flex; align-items: center; gap: 14px; }
+  .top-bar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* Badge estado */
+  .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; }
+  .badge-Borrador  { background: rgba(107,114,128,.1); color: #6b7280; }
+  .badge-Enviado   { background: rgba(59,130,246,.1);  color: #3b82f6; }
+  .badge-Aprobado  { background: rgba(16,185,129,.1);  color: #10b981; }
+  .badge-Rechazado { background: rgba(239,68,68,.1);   color: #ef4444; }
+
+  .btn-act { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; white-space: nowrap; }
+  .btn-act:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.05); }
+  .btn-act.primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  .btn-act.primary:hover { opacity: .88; color: #fff; }
+  .btn-act.success { background: #10b981; border-color: #10b981; color: #fff; }
+  .btn-act.success:hover { opacity: .88; color: #fff; }
+
+  /* Documento */
+  .doc-wrap { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+
+  /* ═══════════════════════════════════════════════
+     ESTILOS DEL DOCUMENTO REAL (A4)
+  ═══════════════════════════════════════════════ */
+  .doc-a4 {
+    padding: 48px 52px;
+    font-family: 'Sora', 'Segoe UI', sans-serif;
+    color: #1a2332;
+    font-size: 13.5px;
+    line-height: 1.6;
+    background: #fff;
+    min-height: 960px;
+  }
+
+  .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; padding-bottom: 28px; border-bottom: 3px solid #1f3c88; }
+  .empresa-nombre { font-size: 24px; font-weight: 800; color: #1f3c88; letter-spacing: -.3px; }
+  .empresa-datos  { font-size: 12px; color: #5f6c7b; margin-top: 4px; line-height: 1.9; }
+  .doc-titulo-wrap { text-align: right; }
+  .doc-titulo { font-size: 28px; font-weight: 800; color: #1f3c88; letter-spacing: -.5px; text-transform: uppercase; }
+  .doc-numero { font-size: 16px; font-weight: 700; color: #5f6c7b; margin-top: 4px; }
+  .doc-fecha  { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+  .doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+  .meta-box { padding: 16px 18px; border-radius: 10px; border: 1.5px solid #e8ecf0; }
+  .meta-box-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin-bottom: 8px; }
+  .meta-box-nombre { font-size: 17px; font-weight: 800; color: #1a2332; }
+  .meta-box-dato { font-size: 12.5px; color: #5f6c7b; margin-top: 3px; }
+  .cond-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cond-item { }
+  .cond-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; }
+  .cond-val   { font-size: 13px; font-weight: 600; color: #1a2332; }
+
+  /* Tabla ítems */
+  .items-tabla { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .items-tabla thead th { padding: 10px 14px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #fff; background: #1f3c88; }
+  .items-tabla thead th:first-child { border-radius: 8px 0 0 8px; }
+  .items-tabla thead th:last-child  { border-radius: 0 8px 8px 0; text-align: right; }
+  .items-tabla thead th.right { text-align: right; }
+  .items-tabla tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .items-tabla tbody tr:last-child td { border-bottom: none; }
+  .items-tabla tbody tr:nth-child(even) td { background: #fafbfc; }
+  .item-nombre { font-weight: 700; color: #1a2332; }
+  .item-desc   { font-size: 11.5px; color: #9ca3af; margin-top: 2px; }
+
+  /* Totales */
+  .totales-wrap { display: flex; justify-content: flex-end; margin-bottom: 28px; }
+  .totales-box { width: 300px; }
+  .total-line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .total-line:last-child { border-bottom: none; }
+  .total-final-line { display: flex; justify-content: space-between; padding: 12px 16px; background: #1f3c88; border-radius: 10px; margin-top: 10px; }
+  .total-final-label { font-size: 14px; font-weight: 800; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; }
+  .total-final-valor { font-size: 22px; font-weight: 900; color: #fff; }
+
+  /* Validez y notas */
+  .doc-footer-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .info-box { padding: 14px 16px; border-radius: 8px; background: #f8f9fb; border: 1px solid #e8ecf0; font-size: 12.5px; color: #5f6c7b; }
+  .info-box strong { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin-bottom: 4px; }
+
+  .doc-firma { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e8ecf0; }
+  .firma-linea { border-top: 1.5px solid #1a2332; padding-top: 8px; font-size: 11px; color: #9ca3af; text-align: center; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'presupuestos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: presupuesto.numero, user }) %>
+    <div class="page-body">
+
+      <!-- Barra de acciones -->
+      <div class="top-bar">
+        <div class="top-bar-left">
+          <a href="/presupuestos" class="btn-act"><i class="bi bi-arrow-left"></i> Volver</a>
+          <span class="badge-estado badge-<%= presupuesto.estado %>">
+            <%= presupuesto.estado %>
+          </span>
+        </div>
+        <div class="top-bar-actions">
+          <!-- Cambiar estado rápido -->
+          <% if (presupuesto.estado === 'Borrador') { %>
+          <form method="POST" action="/presupuestos/estado/<%= presupuesto.id %>" style="margin:0">
+            <input type="hidden" name="estado" value="Enviado">
+            <button type="submit" class="btn-act"><i class="bi bi-send"></i> Marcar enviado</button>
+          </form>
+          <% } %>
+          <% if (presupuesto.estado === 'Enviado') { %>
+          <form method="POST" action="/presupuestos/estado/<%= presupuesto.id %>" style="margin:0">
+            <input type="hidden" name="estado" value="Aprobado">
+            <button type="submit" class="btn-act success"><i class="bi bi-check-circle"></i> Aprobar</button>
+          </form>
+          <% } %>
+
+          <a href="/presupuestos/editar/<%= presupuesto.id %>" class="btn-act"><i class="bi bi-pencil"></i> Editar</a>
+          <button class="btn-act" onclick="imprimirTermica()"><i class="bi bi-receipt"></i> Térmica</button>
+          <button class="btn-act primary" onclick="imprimirA4()"><i class="bi bi-printer-fill"></i> Imprimir A4</button>
+        </div>
+      </div>
+
+      <!-- Documento A4 preview -->
+      <div class="doc-wrap">
+        <div class="doc-a4" id="docA4">
+
+          <!-- Header empresa -->
+          <div class="doc-header">
+            <div>
+              <div class="empresa-nombre"><%= config.empresa_nombre || 'Mi Comercio' %></div>
+              <div class="empresa-datos">
+                <% if (config.empresa_direccion) { %><%= config.empresa_direccion %><br><% } %>
+                <% if (config.empresa_telefono) { %>Tel: <%= config.empresa_telefono %><br><% } %>
+                <% if (config.empresa_email) { %><%= config.empresa_email %><% } %>
+              </div>
+            </div>
+            <div class="doc-titulo-wrap">
+              <div class="doc-titulo">Presupuesto</div>
+              <div class="doc-numero"><%= presupuesto.numero %></div>
+              <div class="doc-fecha"><%= new Date(presupuesto.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}) %></div>
+            </div>
+          </div>
+
+          <!-- Datos cliente + condiciones -->
+          <div class="doc-meta">
+            <div class="meta-box">
+              <div class="meta-box-title">Dirigido a</div>
+              <div class="meta-box-nombre"><%= presupuesto.cliente_nombre || 'Sin nombre' %></div>
+              <% if (presupuesto.cliente_cuit) { %><div class="meta-box-dato">CUIT: <%= presupuesto.cliente_cuit %></div><% } %>
+              <% if (presupuesto.cliente_email) { %><div class="meta-box-dato"><i class="bi bi-envelope"></i> <%= presupuesto.cliente_email %></div><% } %>
+              <% if (presupuesto.cliente_tel) { %><div class="meta-box-dato"><i class="bi bi-telephone"></i> <%= presupuesto.cliente_tel %></div><% } %>
+            </div>
+            <div class="meta-box">
+              <div class="meta-box-title">Condiciones</div>
+              <div class="cond-grid">
+                <div class="cond-item">
+                  <div class="cond-label">Condición de pago</div>
+                  <div class="cond-val"><%= presupuesto.condicion_pago || 'Contado' %></div>
+                </div>
+                <div class="cond-item">
+                  <div class="cond-label">Validez</div>
+                  <div class="cond-val">
+                    <% if (presupuesto.validez_dias) { %>
+                      <%= presupuesto.validez_dias %> días
+                    <% } else { %>
+                      Sin vencimiento
+                    <% } %>
+                  </div>
+                </div>
+                <div class="cond-item" style="margin-top:8px">
+                  <div class="cond-label">Fecha</div>
+                  <div class="cond-val"><%= new Date(presupuesto.created_at).toLocaleDateString('es-AR') %></div>
+                </div>
+                <div class="cond-item" style="margin-top:8px">
+                  <div class="cond-label">Estado</div>
+                  <div class="cond-val"><%= presupuesto.estado %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla ítems -->
+          <table class="items-tabla">
+            <thead>
+              <tr>
+                <th style="width:5%;text-align:center;">#</th>
+                <th style="width:45%">Descripción</th>
+                <th class="right" style="width:15%">Cant.</th>
+                <th class="right" style="width:17%">Precio unit.</th>
+                <th class="right" style="width:18%">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% presupuesto.items.forEach((item, idx) => { %>
+              <tr>
+                <td style="text-align:center;color:#9ca3af;font-size:12px"><%= idx+1 %></td>
+                <td>
+                  <div class="item-nombre"><%= item.nombre %></div>
+                  <% if (item.descripcion) { %><div class="item-desc"><%= item.descripcion %></div><% } %>
+                </td>
+                <td style="text-align:right;font-weight:600"><%= Number(item.cantidad).toLocaleString('es-AR') %></td>
+                <td style="text-align:right">$<%= Number(item.precio_unitario).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+                <td style="text-align:right;font-weight:700">$<%= Number(item.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <!-- Totales -->
+          <div class="totales-wrap">
+            <div class="totales-box">
+              <div class="total-line">
+                <span style="color:#5f6c7b">Subtotal</span>
+                <span>$<%= Number(presupuesto.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+              </div>
+              <% if (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0) { %>
+              <div class="total-line">
+                <span style="color:#ef4444">Descuento<% if(presupuesto.descuento_pct>0){%> (<%= presupuesto.descuento_pct %>%)<% } %></span>
+                <span style="color:#ef4444">- $<%= Number(presupuesto.descuento_monto || (presupuesto.subtotal * presupuesto.descuento_pct/100)).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+              </div>
+              <% } %>
+              <div class="total-final-line">
+                <span class="total-final-label">Total</span>
+                <span class="total-final-valor">$<%= Number(presupuesto.total).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notas y validez -->
+          <% if (presupuesto.notas || presupuesto.validez_dias) { %>
+          <div class="doc-footer-info">
+            <% if (presupuesto.notas) { %>
+            <div class="info-box">
+              <strong>Notas</strong>
+              <%= presupuesto.notas %>
+            </div>
+            <% } %>
+            <% if (presupuesto.validez_dias) { %>
+            <div class="info-box">
+              <strong>Validez del presupuesto</strong>
+              Este presupuesto tiene validez de <%= presupuesto.validez_dias %> días a partir de la fecha de emisión.
+            </div>
+            <% } %>
+          </div>
+          <% } %>
+
+          <!-- Firmas -->
+          <div class="doc-firma">
+            <div class="firma-linea">Firma del cliente</div>
+            <div class="firma-linea"><%= config.empresa_nombre || 'Firma empresa' %></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+const presupuesto = <%- JSON.stringify(presupuesto) %>;
+const config      = <%- JSON.stringify(config) %>;
+
+const fmt  = n => '$' + (Number(n)||0).toLocaleString('es-AR', {minimumFractionDigits:2});
+const fmt0 = n => '$' + (Number(n)||0).toLocaleString('es-AR', {minimumFractionDigits:0});
+
+/* ── IMPRIMIR A4 ── */
+function imprimirA4() {
+  const html = document.getElementById('docA4').innerHTML;
+  const w = window.open('', '_blank', 'width=900,height=750');
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>${presupuesto.numero} — Presupuesto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:'Sora',sans-serif; color:#1a2332; background:#fff; }
+      @page { size: A4; margin: 0; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+      .doc-a4 { padding:40px 48px; min-height:297mm; }
+      .doc-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; padding-bottom:24px; border-bottom:3px solid #1f3c88; }
+      .empresa-nombre { font-size:22px; font-weight:800; color:#1f3c88; }
+      .empresa-datos  { font-size:11.5px; color:#5f6c7b; margin-top:4px; line-height:1.9; }
+      .doc-titulo-wrap { text-align:right; }
+      .doc-titulo { font-size:26px; font-weight:800; color:#1f3c88; text-transform:uppercase; }
+      .doc-numero { font-size:15px; font-weight:700; color:#5f6c7b; margin-top:3px; }
+      .doc-fecha  { font-size:11.5px; color:#9ca3af; margin-top:2px; }
+      .doc-meta { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
+      .meta-box { padding:14px 16px; border-radius:8px; border:1.5px solid #e8ecf0; }
+      .meta-box-title { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.8px; color:#9ca3af; margin-bottom:7px; }
+      .meta-box-nombre { font-size:16px; font-weight:800; color:#1a2332; }
+      .meta-box-dato { font-size:12px; color:#5f6c7b; margin-top:3px; }
+      .cond-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+      .cond-label { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; }
+      .cond-val   { font-size:12.5px; font-weight:600; color:#1a2332; }
+      .cond-item { margin-top:6px; }
+      table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+      thead th { padding:9px 12px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#fff; background:#1f3c88; }
+      thead th:first-child { border-radius:7px 0 0 7px; }
+      thead th:last-child  { border-radius:0 7px 7px 0; text-align:right; }
+      th.right, td.right { text-align:right; }
+      tbody td { padding:10px 12px; border-bottom:1px solid #f0f2f5; font-size:12.5px; }
+      tbody tr:nth-child(even) td { background:#fafbfc; }
+      .item-nombre { font-weight:700; color:#1a2332; }
+      .item-desc   { font-size:10.5px; color:#9ca3af; margin-top:2px; }
+      .totales-wrap { display:flex; justify-content:flex-end; margin-bottom:24px; }
+      .totales-box { width:280px; }
+      .total-line { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f2f5; font-size:12.5px; }
+      .total-final-line { display:flex; justify-content:space-between; padding:10px 14px; background:#1f3c88; border-radius:8px; margin-top:8px; }
+      .total-final-label { font-size:13px; font-weight:800; color:rgba(255,255,255,.85); text-transform:uppercase; }
+      .total-final-valor { font-size:20px; font-weight:900; color:#fff; }
+      .doc-footer-info { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+      .info-box { padding:12px 14px; border-radius:7px; background:#f8f9fb; border:1px solid #e8ecf0; font-size:11.5px; color:#5f6c7b; }
+      .info-box strong { display:block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; margin-bottom:3px; }
+      .doc-firma { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:40px; padding-top:16px; border-top:1px solid #e8ecf0; }
+      .firma-linea { border-top:1.5px solid #1a2332; padding-top:6px; font-size:10.5px; color:#9ca3af; text-align:center; }
+    </style>
+  </head><body><div class="doc-a4">${html}</div></body></html>`);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 600);
+}
+
+/* ── IMPRIMIR TÉRMICA ── */
+function imprimirTermica() {
+  const p   = presupuesto;
+  const emp = config.empresa_nombre || 'Mi Comercio';
+  const dir = config.empresa_direccion || '';
+  const tel = config.empresa_telefono  || '';
+
+  const itemsHTML = p.items.map(i => `
+    <div style="margin-bottom:6px;">
+      <div style="font-weight:700;font-size:13px;">${i.nombre}</div>
+      ${i.descripcion ? `<div style="font-size:11px;color:#666;">${i.descripcion}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;">
+        <span>${Number(i.cantidad).toLocaleString('es-AR')} x ${fmt0(i.precio_unitario)}</span>
+        <strong>${fmt0(i.subtotal)}</strong>
+      </div>
+    </div>
+    <div style="border-top:1px dashed #ccc;margin:6px 0;"></div>
+  `).join('');
+
+  const descuento = p.descuento_monto > 0 ? p.descuento_monto : (p.subtotal * p.descuento_pct / 100);
+
+  const w = window.open('', '_blank', 'width=380,height:600');
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>${p.numero}</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:'Courier New', monospace; font-size:13px; color:#000; background:#fff; width:80mm; padding:8mm 6mm; }
+      .center  { text-align:center; }
+      .bold    { font-weight:700; }
+      .sep     { border-top:1px dashed #000; margin:8px 0; }
+      .sep2    { border-top:2px solid #000; margin:8px 0; }
+      .row     { display:flex; justify-content:space-between; }
+      .total-grande { font-size:20px; font-weight:900; text-align:center; margin:8px 0; }
+      @media print {
+        body { width:80mm; }
+        @page { size:80mm auto; margin:0; }
+      }
+    </style>
+  </head><body>
+    <div class="center bold" style="font-size:16px;">${emp}</div>
+    ${dir ? `<div class="center" style="font-size:11px;">${dir}</div>` : ''}
+    ${tel ? `<div class="center" style="font-size:11px;">Tel: ${tel}</div>` : ''}
+    <div class="sep2"></div>
+    <div class="center bold" style="font-size:15px;letter-spacing:1px;">PRESUPUESTO</div>
+    <div class="center" style="font-size:12px;">${p.numero}</div>
+    <div class="center" style="font-size:11px;color:#444;">${new Date(p.created_at).toLocaleDateString('es-AR')}</div>
+    <div class="sep"></div>
+    <div class="bold" style="font-size:12px;">CLIENTE</div>
+    <div style="font-size:13px;">${p.cliente_nombre}</div>
+    ${p.cliente_cuit ? `<div style="font-size:11px;">CUIT: ${p.cliente_cuit}</div>` : ''}
+    ${p.cliente_tel  ? `<div style="font-size:11px;">Tel: ${p.cliente_tel}</div>` : ''}
+    <div class="sep"></div>
+    <div class="bold" style="font-size:11px;margin-bottom:6px;">DETALLE</div>
+    ${itemsHTML}
+    <div class="row" style="font-size:12px;"><span>Subtotal</span><span>${fmt0(p.subtotal)}</span></div>
+    ${descuento > 0 ? `<div class="row" style="font-size:12px;"><span>Descuento</span><span>- ${fmt0(descuento)}</span></div>` : ''}
+    <div class="sep2"></div>
+    <div class="row bold" style="font-size:13px;"><span>TOTAL</span><span></span></div>
+    <div class="total-grande">${fmt0(p.total)}</div>
+    <div class="sep"></div>
+    <div class="row" style="font-size:11px;"><span>Condición de pago</span><span>${p.condicion_pago || 'Contado'}</span></div>
+    ${p.validez_dias ? `<div class="row" style="font-size:11px;"><span>Válido por</span><span>${p.validez_dias} días</span></div>` : ''}
+    ${p.notas ? `<div class="sep"></div><div style="font-size:11px;">${p.notas}</div>` : ''}
+    <div class="sep"></div>
+    <div class="center" style="font-size:10px;color:#666;">Presupuesto generado por ComercialOS</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 400);
+}
+</script>

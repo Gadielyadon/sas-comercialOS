@@ -1,0 +1,220 @@
+<%- include('../partials/head', { title }) %>
+<div class="app-wrapper">
+<%- include('../partials/sidebar', { active: 'caja', user }) %>
+
+<div class="main-content">
+  <%- include('../partials/header', { title, module, user }) %>
+
+  <div class="page-body" style="padding:24px;max-width:1100px;margin:0 auto;">
+
+    <!-- ── TÍTULO ── -->
+    <div style="margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 4px;">Reportes de Caja</h2>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;">Historial de turnos y cierres</p>
+      </div>
+      <% if (!cajaActual) { %>
+        <a href="/caja/abrir"
+          style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:var(--radius-md);background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(16,185,129,.3);">
+          <i class="bi bi-unlock-fill"></i> Abrir Caja
+        </a>
+      <% } %>
+    </div>
+
+    <!-- ── BANNER CAJA ABIERTA / CERRADA ── -->
+    <% if (cajaActual) { %>
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(5,150,105,.04));border:1.5px solid rgba(16,185,129,.3);border-radius:14px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:pulse 2s infinite;"></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#065f46;">Caja abierta ahora</div>
+          <div style="font-size:12.5px;color:#047857;">Terminal: <strong><%= cajaActual.terminal %></strong> · Desde: <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) %></strong></div>
+        </div>
+      </div>
+      <a href="/caja/turno" style="padding:9px 18px;border-radius:var(--radius-md);background:#10b981;color:#fff;font-size:13px;font-weight:700;text-decoration:none;">Ver mi turno →</a>
+    </div>
+    <% } else { %>
+    <div style="background:rgba(107,114,128,.06);border:1.5px solid rgba(107,114,128,.2);border-radius:14px;padding:14px 20px;margin-bottom:24px;display:flex;align-items:center;gap:10px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></div>
+      <span style="font-size:13.5px;color:var(--text-secondary);">No hay caja abierta en este momento. Podés ver el historial o <a href="/caja/abrir" style="color:var(--color-action);font-weight:600;">abrir una nueva caja</a>.</span>
+    </div>
+    <% } %>
+
+    <!-- ── STATS DEL DÍA ── -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><i class="bi bi-bag-check"></i></div>
+        <div class="stat-value">$<%= ventasHoy.reduce((a,v)=>a+v.total,0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+        <div class="stat-label">Ventas hoy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><i class="bi bi-receipt"></i></div>
+        <div class="stat-value"><%= ventasHoy.length %></div>
+        <div class="stat-label">Transacciones hoy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-value"><%= stockBajo.length %></div>
+        <div class="stat-label">Productos stock bajo</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;"><i class="bi bi-calendar-check"></i></div>
+        <div class="stat-value"><%= cajas.length %></div>
+        <div class="stat-label">Turnos registrados</div>
+      </div>
+    </div>
+
+    <!-- ── HISTORIAL DE CAJAS ── -->
+    <div class="section-card" style="margin-bottom:28px;">
+      <div class="section-title"><i class="bi bi-clock-history"></i> Historial de turnos</div>
+      <% if (cajas.length === 0) { %>
+        <div style="padding:40px;text-align:center;color:var(--text-muted);">
+          <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:8px;opacity:.35;"></i>
+          No hay turnos registrados aún
+        </div>
+      <% } else { %>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--bg-body);border-bottom:1.5px solid var(--border-color);">
+              <th class="th">ID</th>
+              <th class="th">Cajero</th>
+              <th class="th">Terminal</th>
+              <th class="th">Apertura</th>
+              <th class="th">Cierre</th>
+              <th class="th" style="text-align:right;">Inicial</th>
+              <th class="th" style="text-align:right;">Ventas</th>
+              <th class="th" style="text-align:right;">Final</th>
+              <th class="th" style="text-align:center;">Estado</th>
+              <th class="th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% cajas.forEach(c => { %>
+            <tr class="tr-row" data-id="<%= c.id %>">
+              <td class="td" style="color:var(--text-muted);font-size:12px;">#<%= c.id %></td>
+              <td class="td"><strong><%= c.user_nombre || c.user_open || '—' %></strong></td>
+              <td class="td"><%= c.terminal || 'Principal' %></td>
+              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) %></td>
+              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—' %></td>
+              <td class="td" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:right;font-weight:700;color:#6366f1;">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:right;font-weight:700;">$<%= (c.monto_final||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:center;">
+                <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+                  background:<%= c.status==='abierta' ? 'rgba(16,185,129,.1)' : 'rgba(107,114,128,.1)' %>;
+                  color:<%= c.status==='abierta' ? '#10b981' : '#6b7280' %>;">
+                  <%= c.status === 'abierta' ? 'Abierta' : 'Cerrada' %>
+                </span>
+              </td>
+              <td class="td">
+                <button onclick="verDetalle(<%= c.id %>)"
+                  style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- ── PRODUCTOS STOCK BAJO ── -->
+    <% if (stockBajo.length > 0) { %>
+    <div class="section-card">
+      <div class="section-title" style="color:#d97706;"><i class="bi bi-exclamation-triangle"></i> Productos con stock bajo (≤5)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;">
+        <% stockBajo.forEach(p => { %>
+          <div style="padding:7px 14px;border-radius:8px;border:1.5px solid rgba(245,158,11,.3);background:rgba(245,158,11,.06);font-size:13px;">
+            <strong><%= p.name %></strong> — <span style="color:#d97706;font-weight:700;"><%= p.stock %> ud.</span>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+</div>
+
+<!-- ── MODAL DETALLE CAJA ── -->
+<div class="modal-overlay" id="modalDetalle" onclick="if(event.target===this)closeModal('modalDetalle')">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-file-earmark-text"></i> Detalle del turno</span>
+      <button class="modal-close" onclick="closeModal('modalDetalle')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px;" id="detalleContent">
+      <div style="text-align:center;padding:30px;color:var(--text-muted);">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+async function verDetalle(cajaId) {
+  openModal('modalDetalle');
+  document.getElementById('detalleContent').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">Cargando…</div>';
+  try {
+    const r = await fetch(`/caja/api/resumen/${cajaId}`);
+    const d = await r.json();
+    const fmt = n => '$' + (n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+    const dif = (d.caja.monto_final||0) - d.efectivoEsperado;
+    const difColor = Math.abs(dif)<0.01 ? '#10b981' : dif>0 ? '#f59e0b' : '#ef4444';
+
+    let html = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="det-row"><span>Inicial</span><strong>${fmt(d.caja.monto_inicial)}</strong></div>
+        <div class="det-row"><span>Total ventas</span><strong style="color:#6366f1;">${fmt(d.totalVentas)}</strong></div>
+        <div class="det-row"><span>Efectivo ventas</span><strong style="color:#10b981;">${fmt(d.totalEfectivo)}</strong></div>
+        <div class="det-row"><span>Esperado</span><strong style="color:#3b82f6;">${fmt(d.efectivoEsperado)}</strong></div>
+        ${d.caja.monto_final ? `<div class="det-row"><span>Contado</span><strong>${fmt(d.caja.monto_final)}</strong></div>
+        <div class="det-row"><span>Diferencia</span><strong style="color:${difColor};">${dif>=0?'+':''}${fmt(dif)}</strong></div>` : ''}
+      </div>`;
+
+    if (d.desglose.length > 0) {
+      html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Por método de pago</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;">`;
+      d.desglose.forEach(x => {
+        html += `<div style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-body);font-size:12.5px;">
+          <strong>${x.payment_method}</strong>: ${fmt(x.total)} (${x.cantidad})</div>`;
+      });
+      html += '</div>';
+    }
+
+    if (d.movimientos.length > 0) {
+      html += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;margin-bottom:8px;">Movimientos manuales</div>`;
+      d.movimientos.forEach(m => {
+        html += `<div style="display:flex;justify-content:space-between;padding:7px 10px;border-radius:7px;margin-bottom:5px;background:var(--bg-body);">
+          <span style="font-size:13px;">${m.tipo === 'ingreso' ? '▲' : '▼'} ${m.descripcion||m.tipo}</span>
+          <strong style="color:${m.tipo==='ingreso'?'#10b981':'#ef4444'};">${m.tipo==='ingreso'?'+':'−'}${fmt(m.monto)}</strong>
+        </div>`;
+      });
+    }
+
+    document.getElementById('detalleContent').innerHTML = html;
+  } catch(e) {
+    document.getElementById('detalleContent').innerHTML = '<div style="color:#ef4444;padding:20px;">Error al cargar</div>';
+  }
+}
+</script>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.stat-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px; }
+.stat-icon { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px; }
+.stat-value { font-size:18px;font-weight:800;color:var(--text-primary); }
+.stat-label { font-size:11.5px;color:var(--text-secondary);font-weight:600; }
+.section-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;overflow:hidden; }
+.section-title { padding:14px 20px;font-size:13px;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px; }
+.th { padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);white-space:nowrap; }
+.td { padding:11px 14px;font-size:13.5px;color:var(--text-primary);border-bottom:1px solid var(--border-color); }
+.tr-row:hover td { background:var(--bg-hover); }
+.det-row { padding:8px 12px;border-radius:8px;background:var(--bg-body);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:13px; }
+.det-row span { color:var(--text-secondary); }
+</style>
+</div><!-- /app-wrapper -->

@@ -1,0 +1,550 @@
+<%- include('../partials/head', { title: 'Gastos' }) %>
+
+<%
+function catColor(cat, type) {
+  const map = {
+    'Alquiler':     {bg:'rgba(99,102,241,.1)', fg:'#4f46e5', bar:'#6366f1'},
+    'Servicios':    {bg:'rgba(0,180,216,.1)',  fg:'var(--color-action)', bar:'#00b4d8'},
+    'Sueldos':      {bg:'rgba(16,185,129,.1)', fg:'#059669', bar:'#10b981'},
+    'Insumos':      {bg:'rgba(245,158,11,.1)', fg:'#d97706', bar:'#f59e0b'},
+    'Impuestos':    {bg:'rgba(239,68,68,.1)',  fg:'#dc2626', bar:'#ef4444'},
+    'Mantenimiento':{bg:'rgba(168,85,247,.1)', fg:'#7c3aed', bar:'#a855f7'},
+    'Otros':        {bg:'rgba(107,114,128,.1)',fg:'#6b7280', bar:'#9ca3af'},
+  };
+  return (map[cat]||map['Otros'])[type];
+}
+function catIcon(cat) {
+  const map = {
+    'Alquiler':'bi-house','Servicios':'bi-lightning','Sueldos':'bi-people',
+    'Insumos':'bi-box','Impuestos':'bi-bank','Mantenimiento':'bi-tools','Otros':'bi-three-dots'
+  };
+  return map[cat]||'bi-tag';
+}
+
+%>
+
+<style>
+.form-lbl { font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px; }
+.form-input { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
+.form-input:focus { border-color:var(--color-action); }
+.cat-pill { display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:20px;font-size:11.5px;font-weight:700; }
+.metodo-txt { font-size:12px;color:var(--text-secondary);font-style:italic; }
+.estado-pill { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s; }
+.estado-pill.pendiente { background:rgba(245,158,11,.12);color:#d97706; }
+.estado-pill.pagado    { background:rgba(16,185,129,.12);color:#059669; }
+/* Toggle pago en modal */
+.pago-toggle-wrap { display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md); }
+.pago-toggle-info { display:flex;flex-direction:column;gap:2px; }
+.pago-toggle-label { font-size:13px;font-weight:700;color:var(--text-primary); }
+.pago-toggle-sub   { font-size:11px;color:var(--text-secondary); }
+.toggle-switch { position:relative;width:44px;height:24px;flex-shrink:0; }
+.toggle-switch input { opacity:0;width:0;height:0;position:absolute; }
+.toggle-slider { position:absolute;inset:0;border-radius:12px;background:var(--border-color);cursor:pointer;transition:background .2s; }
+.toggle-slider::before { content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.toggle-switch input:checked + .toggle-slider { background:#10b981; }
+.toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px); }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'gastos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Gastos', user }) %>
+    <main class="page-body">
+
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Gastos</h2>
+          <p>Control de gastos operativos del negocio.</p>
+        </div>
+        <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
+          <i class="bi bi-plus-circle"></i> Nuevo Gasto
+        </button>
+      </div>
+
+      <!-- Resumen tarjetas -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
+        <div class="stat-card turquesa">
+          <div class="stat-card-top">
+            <span class="stat-label">Total del período</span>
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+          </div>
+          <div class="stat-value">$<%= Number(resumen.total).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          <div class="stat-trend"><i class="bi bi-calendar3"></i> <%= filtros.desde||'Todo' %><% if(filtros.hasta) { %> → <%= filtros.hasta %><% } %></div>
+        </div>
+        <% resumen.porCategoria.slice(0,3).forEach(cat => { %>
+        <div class="stat-card azul">
+          <div class="stat-card-top">
+            <span class="stat-label"><%= cat.categoria %></span>
+            <div class="stat-icon"><i class="bi bi-tag"></i></div>
+          </div>
+          <div class="stat-value" style="font-size:20px;">$<%= Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          <div class="stat-trend"><%= cat.cantidad %> gasto<%= cat.cantidad!==1?'s':'' %></div>
+        </div>
+        <% }) %>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;">
+        <form method="GET" action="/gastos" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-right:5px;">Desde</label>
+            <input type="date" name="desde" value="<%= filtros.desde %>"
+              style="padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12.5px;outline:none;font-family:var(--font-body);">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-right:5px;">Hasta</label>
+            <input type="date" name="hasta" value="<%= filtros.hasta %>"
+              style="padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12.5px;outline:none;font-family:var(--font-body);">
+          </div>
+          <select name="categoria" class="filter-select" style="padding:7px 28px 7px 10px;font-size:12.5px;">
+            <option value="">Todas las categorías</option>
+            <% categorias.forEach(c => { %>
+            <option value="<%= c %>" <%= filtros.categoria===c?'selected':'' %>><%= c %></option>
+            <% }) %>
+          </select>
+          <button type="submit" class="btn-action btn-action-primary btn-sm"><i class="bi bi-search"></i> Filtrar</button>
+          <a href="/gastos" class="btn-action btn-action-outline btn-sm"><i class="bi bi-x-circle"></i> Limpiar</a>
+        </form>
+        <div style="display:flex;gap:6px;">
+          <button onclick="exportarCSV()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-filetype-csv"></i> CSV
+          </button>
+          <button onclick="exportarPDF()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-printer"></i> PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenido: tabla + gráfico por categoría -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
+
+        <!-- Tabla gastos -->
+        <div class="card-panel">
+          <div class="card-panel-header">
+            <span class="card-panel-title">Lista de gastos</span>
+            <span style="font-size:12px;color:var(--text-secondary);"><%= gastos.length %> registro<%= gastos.length!==1?'s':'' %></span>
+          </div>
+          <div class="card-panel-body">
+            <% if(gastos.length===0) { %>
+            <div class="placeholder-box" style="min-height:200px;">
+              <div class="placeholder-icon"><i class="bi bi-receipt"></i></div>
+              <h3>Sin gastos registrados</h3>
+              <p>Agregá tu primer gasto con el botón de arriba.</p>
+            </div>
+            <% } else { %>
+            <table class="sales-table" id="tablaGastos">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Categoría</th>
+                  <th>Descripción</th>
+                  <th>Forma de pago</th>
+                  <th>Estado</th>
+                  <th style="text-align:right">Monto</th>
+                  <th style="width:80px">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% gastos.forEach(g => { %>
+                <tr data-id="<%= g.id %>">
+                  <td style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-secondary);white-space:nowrap;">
+                    <%= g.fecha %>
+                  </td>
+                  <td>
+                    <span class="cat-pill" style="background:<%= catColor(g.categoria,'bg') %>;color:<%= catColor(g.categoria,'fg') %>;">
+                      <i class="bi <%= catIcon(g.categoria) %>"></i> <%= g.categoria %>
+                    </span>
+                  </td>
+                  <td>
+                    <strong><%= g.descripcion %></strong>
+                    <% if(g.comprobante){%><span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">#<%= g.comprobante %></span><%}%>
+                  </td>
+                  <td>
+                    <% if(g.metodo_pago){ %>
+                    <span class="metodo-txt"><%= g.metodo_pago %></span>
+                    <% } else { %>
+                    <span style="color:var(--text-secondary);font-size:12px;">—</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if(g.pagado) { %>
+                      <span class="estado-pill pagado" title="Pagado el <%= g.fecha_pago||'' %>">
+                        <i class="bi bi-check-circle-fill"></i> Pagado
+                        <% if(g.fecha_pago){ %><span style="font-weight:400;font-size:10px;opacity:.8"> · <%= g.fecha_pago %></span><% } %>
+                      </span>
+                    <% } else { %>
+                      <span class="estado-pill pendiente">
+                        <i class="bi bi-clock"></i> Pendiente
+                      </span>
+                    <% } %>
+                  </td>
+                  <td style="text-align:right;font-family:var(--font-mono);font-size:14px;font-weight:800;color:#dc2626;">
+                    $<%= Number(g.monto).toLocaleString('es-AR',{minimumFractionDigits:2}) %>
+                  </td>
+                  <td>
+                    <div style="display:flex;gap:4px;">
+                      <%# Usamos data-id para editar — sin JSON.stringify en el onclick %>
+                      <button class="btn-action btn-action-outline btn-sm btn-editar-gasto"
+                        data-id="<%= g.id %>"
+                        style="color:var(--color-action);border-color:rgba(0,180,216,.3);">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn-action btn-action-ghost btn-sm" onclick="eliminar(<%= g.id %>)">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Panel categorías -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card-panel">
+            <div class="card-panel-header">
+              <span class="card-panel-title">Por categoría</span>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+              <% const totalCats = resumen.porCategoria.reduce((a,c)=>a+Number(c.total),0)||1; %>
+              <% resumen.porCategoria.forEach(cat => { %>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span style="font-size:12px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:5px;">
+                    <i class="bi <%= catIcon(cat.categoria) %>" style="font-size:13px;color:<%= catColor(cat.categoria,'fg') %>;"></i>
+                    <%= cat.categoria %>
+                  </span>
+                  <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:#dc2626;">
+                    $<%= Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:0}) %>
+                  </span>
+                </div>
+                <div style="height:6px;border-radius:3px;background:var(--border-color);overflow:hidden;">
+                  <div style="height:100%;border-radius:3px;background:<%= catColor(cat.categoria,'bar') %>;width:<%= Math.round(Number(cat.total)/totalCats*100) %>%;transition:width .4s;"></div>
+                </div>
+                <div style="font-size:10.5px;color:var(--text-secondary);margin-top:2px;"><%= cat.cantidad %> gasto<%= cat.cantidad!==1?'s':'' %> · <%= Math.round(Number(cat.total)/totalCats*100) %>%</div>
+              </div>
+              <% }) %>
+              <% if(!resumen.porCategoria.length) { %>
+              <p style="text-align:center;color:var(--text-secondary);font-size:12.5px;padding:12px 0;">Sin datos</p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR GASTO -->
+<div class="sale-overlay" id="modalGasto" onclick="if(event.target.id==='modalGasto')cerrarModal()">
+  <div class="sale-modal" style="max-width:500px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">
+          <i class="bi bi-receipt"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalGastoTitulo">Nuevo Gasto</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Registrá el gasto operativo</div>
+        </div>
+      </div>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:13px;">
+
+      <!-- Monto grande -->
+      <div style="background:rgba(239,68,68,.05);border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:14px;">
+        <label class="form-lbl" style="color:#dc2626;">Monto ($) *</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;font-weight:800;color:#dc2626;">$</span>
+          <input type="number" id="g_monto" class="form-input" placeholder="0,00" min="0.01" step="0.01"
+            style="font-size:24px;font-weight:800;color:#dc2626;border-color:rgba(239,68,68,.3);background:transparent;padding:6px 8px;"
+            onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='rgba(239,68,68,.3)'">
+        </div>
+      </div>
+
+      <!-- Categoría + Fecha -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="form-lbl">Categoría *</label>
+          <select id="g_categoria" class="form-input" style="cursor:pointer;">
+            <% categorias.forEach(c => { %>
+            <option value="<%= c %>"><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="form-lbl">Fecha</label>
+          <input type="date" id="g_fecha" class="form-input">
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label class="form-lbl">Descripción *</label>
+        <input type="text" id="g_descripcion" class="form-input" placeholder="Ej: Pago alquiler mes de marzo">
+      </div>
+
+      <!-- Comprobante (opcional) -->
+      <div>
+        <label class="form-lbl">N° Comprobante <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <input type="text" id="g_comprobante" class="form-input" placeholder="Ej: Factura A-0012">
+      </div>
+
+      <!-- Forma de pago (texto libre) -->
+      <div>
+        <label class="form-lbl">¿Cómo se pagó? <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <input type="text" id="g_metodo_pago" class="form-input"
+          placeholder="Ej: Efectivo, 50% tarjeta 50% transferencia…">
+      </div>
+
+      <!-- Toggle Pagado / Pendiente -->
+      <div class="pago-toggle-wrap" id="pagoToggleWrap">
+        <div class="pago-toggle-info">
+          <span class="pago-toggle-label" id="pagoToggleLabel">Pendiente de pago</span>
+          <span class="pago-toggle-sub"   id="pagoToggleSub">Activá cuando se abone</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="g_pagado" onchange="onTogglePagado(this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Fecha de pago (aparece solo si está pagado) -->
+      <div id="fechaPagoWrap" style="display:none;">
+        <label class="form-lbl">Fecha en que se pagó</label>
+        <input type="date" id="g_fecha_pago" class="form-input">
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button onclick="guardar()" style="flex:1;padding:11px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+        <i class="bi bi-check-lg"></i> <span id="btnGastoTxt">Guardar gasto</span>
+      </button>
+      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+
+<script>
+'use strict';
+let _editGastoId = null;
+
+// ── Gastos en memoria (sin JSON.stringify en onclick) ──────────
+// Se construye desde el servidor sin riesgo de romper el HTML
+const _gastosData = {};
+<% gastos.forEach(g => { %>
+_gastosData[<%= g.id %>] = {
+  id:          <%= g.id %>,
+  monto:       <%= Number(g.monto) %>,
+  descripcion: <%- JSON.stringify(g.descripcion) %>,
+  categoria:   <%- JSON.stringify(g.categoria||'Otros') %>,
+  fecha:       <%- JSON.stringify(g.fecha||'') %>,
+  comprobante: <%- JSON.stringify(g.comprobante||'') %>,
+  metodo_pago: <%- JSON.stringify(g.metodo_pago||'') %>,
+  pagado:      <%= g.pagado ? 1 : 0 %>,
+  fecha_pago:  <%- JSON.stringify(g.fecha_pago||'') %>,
+};
+<% }) %>
+
+// ── Toggle pagado ─────────────────────────────────────────────
+function onTogglePagado(cb) {
+  const wrap  = document.getElementById('fechaPagoWrap');
+  const label = document.getElementById('pagoToggleLabel');
+  const sub   = document.getElementById('pagoToggleSub');
+  const wrapBox = document.getElementById('pagoToggleWrap');
+  if (cb.checked) {
+    wrap.style.display = 'block';
+    label.textContent  = 'Pagado ✓';
+    label.style.color  = '#059669';
+    sub.textContent    = 'Gasto abonado';
+    wrapBox.style.borderColor = 'rgba(16,185,129,.4)';
+    wrapBox.style.background  = 'rgba(16,185,129,.05)';
+    // Si no tiene fecha de pago, poner hoy
+    const fp = document.getElementById('g_fecha_pago');
+    if (!fp.value) fp.value = new Date().toISOString().split('T')[0];
+  } else {
+    wrap.style.display = 'none';
+    label.textContent  = 'Pendiente de pago';
+    label.style.color  = '';
+    sub.textContent    = 'Activá cuando se abone';
+    wrapBox.style.borderColor = '';
+    wrapBox.style.background  = '';
+  }
+}
+
+// ── Abrir nuevo ───────────────────────────────────────────────
+function abrirNuevo() {
+  _editGastoId = null;
+  document.getElementById('modalGastoTitulo').textContent = 'Nuevo Gasto';
+  document.getElementById('btnGastoTxt').textContent      = 'Guardar gasto';
+  document.getElementById('g_monto').value       = '';
+  document.getElementById('g_descripcion').value = '';
+  document.getElementById('g_comprobante').value = '';
+  document.getElementById('g_metodo_pago').value = '';
+  document.getElementById('g_fecha').value       = new Date().toISOString().split('T')[0];
+  document.getElementById('g_categoria').value   = 'Otros';
+  document.getElementById('g_pagado').checked    = false;
+  document.getElementById('g_fecha_pago').value  = '';
+  onTogglePagado(document.getElementById('g_pagado'));
+  document.getElementById('modalGasto').classList.add('open');
+  setTimeout(() => document.getElementById('g_monto').focus(), 80);
+}
+
+// ── Abrir editar ──────────────────────────────────────────────
+function abrirEditar(id) {
+  const g = _gastosData[id];
+  if (!g) { console.error('Gasto no encontrado:', id); return; }
+  _editGastoId = g.id;
+  document.getElementById('modalGastoTitulo').textContent = 'Editar Gasto';
+  document.getElementById('btnGastoTxt').textContent      = 'Guardar cambios';
+  document.getElementById('g_monto').value       = g.monto;
+  document.getElementById('g_descripcion').value = g.descripcion;
+  document.getElementById('g_comprobante').value = g.comprobante || '';
+  document.getElementById('g_metodo_pago').value = g.metodo_pago || '';
+  document.getElementById('g_fecha').value       = g.fecha || '';
+  document.getElementById('g_categoria').value   = g.categoria || 'Otros';
+  document.getElementById('g_pagado').checked    = !!g.pagado;
+  document.getElementById('g_fecha_pago').value  = g.fecha_pago || '';
+  onTogglePagado(document.getElementById('g_pagado'));
+  document.getElementById('modalGasto').classList.add('open');
+  setTimeout(() => document.getElementById('g_monto').focus(), 80);
+}
+
+function cerrarModal() { document.getElementById('modalGasto').classList.remove('open'); }
+
+// ── Guardar ───────────────────────────────────────────────────
+async function guardar() {
+  const monto       = parseFloat(document.getElementById('g_monto').value);
+  const descripcion = document.getElementById('g_descripcion').value.trim();
+  if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
+  if (!descripcion)         { alert('La descripción es obligatoria'); return; }
+
+  const body = {
+    monto,
+    descripcion,
+    categoria:   document.getElementById('g_categoria').value,
+    fecha:       document.getElementById('g_fecha').value,
+    comprobante: document.getElementById('g_comprobante').value.trim() || null,
+    metodo_pago: document.getElementById('g_metodo_pago').value.trim() || null,
+    pagado:      document.getElementById('g_pagado').checked ? 1 : 0,
+    fecha_pago:  document.getElementById('g_pagado').checked
+                   ? (document.getElementById('g_fecha_pago').value || null)
+                   : null,
+  };
+
+  const url    = _editGastoId ? `/gastos/api/${_editGastoId}` : '/gastos/api';
+  const method = _editGastoId ? 'PUT' : 'POST';
+
+  const r = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    alert(e.error || 'Error al guardar');
+    return;
+  }
+  location.reload();
+}
+
+// ── Eliminar ──────────────────────────────────────────────────
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  const r = await fetch(`/gastos/api/${id}`, { method: 'DELETE' });
+  if (!r.ok) { alert('Error eliminando'); return; }
+  location.reload();
+}
+
+// ── Delegación de eventos para botones editar ─────────────────
+// Evita JSON.stringify en onclick y el SyntaxError
+document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-editar-gasto');
+    if (btn) {
+      const id = parseInt(btn.dataset.id, 10);
+      abrirEditar(id);
+    }
+  });
+});
+
+// ── Exportar CSV ──────────────────────────────────────────────
+function exportarCSV() {
+  const rows = [...document.querySelectorAll('#tablaGastos tbody tr')];
+  let csv = '\uFEFFFecha;Categoría;Descripción;Forma de pago;Estado;Fecha pago;Monto\n';
+  rows.forEach(r => {
+    const t = r.querySelectorAll('td');
+    csv += [
+      t[0]?.innerText.trim(),
+      t[1]?.innerText.trim(),
+      t[2]?.innerText.trim(),
+      t[3]?.innerText.trim(),
+      t[4]?.innerText.trim(),
+      t[5]?.innerText.trim(),
+      t[6]?.innerText.trim()  // monto — ahora es la 7ma columna
+    ].join(';') + '\n';
+  });
+  const a = Object.assign(document.createElement('a'), {
+    href:     URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
+    download: 'gastos.csv'
+  });
+  a.click();
+}
+
+// ── Exportar PDF ──────────────────────────────────────────────
+function exportarPDF() {
+  const rows = [...document.querySelectorAll('#tablaGastos tbody tr')];
+  const total = rows.reduce((a, r) => {
+    const txt = r.querySelector('td:nth-child(7)')?.innerText
+      .replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.') || '0';
+    return a + parseFloat(txt);
+  }, 0);
+  const filas = rows.map(r => {
+    const t = r.querySelectorAll('td');
+    return `<tr>
+      <td>${t[0]?.innerText}</td>
+      <td>${t[1]?.innerText.trim()}</td>
+      <td><strong>${t[2]?.innerText.trim()}</strong></td>
+      <td>${t[3]?.innerText.trim()}</td>
+      <td>${t[4]?.innerText.trim()}</td>
+      <td style="text-align:right;color:#dc2626;font-weight:700;">${t[6]?.innerText.trim()}</td>
+    </tr>`;
+  }).join('');
+  const win = window.open('', '_blank', 'width=860,height=600');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos — ComercialOS</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:13px;margin:28px}
+    h2{font-size:18px;margin-bottom:2px}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}
+    td{padding:8px 12px;border-bottom:1px solid #e5e7eb}
+    tr:nth-child(even) td{background:#f9fafb}
+    .total{margin-top:14px;text-align:right;font-size:16px;font-weight:800;color:#dc2626}
+    @media print{body{margin:0}}
+  </style>
+  </head><body>
+  <h2>Gastos — ComercialOS</h2>
+  <p style="color:#666;font-size:12px;">Impreso: ${new Date().toLocaleString('es-AR')} · ${rows.length} registros</p>
+  <table>
+    <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Forma de pago</th><th>Estado</th><th style="text-align:right">Monto</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="total">Total: $${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+  </body></html>`);
+  win.document.close();
+  win.onload = () => win.print();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+</script>

@@ -1,0 +1,29 @@
+<%- include('../partials/head', { title, theme: 'light' }) %>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+
+  <div class="main-content">
+    <%- include('../partials/header', { module, user }) %>
+
+    <main class="page-body" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+      <div style="text-align:center;max-width:400px;">
+        <div style="font-size:72px;color:rgba(239,68,68,.25);margin-bottom:16px;">
+          <i class="bi bi-shield-x"></i>
+        </div>
+        <h2 style="font-size:22px;font-weight:800;color:var(--text-primary);margin-bottom:8px;">Acceso denegado</h2>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;">
+          No tenés permisos para ver esta sección.<br>
+          Contactá al administrador si creés que es un error.
+        </p>
+        <a href="/ventas" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--color-action);color:#fff;border-radius:var(--radius-sm);text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(0,180,216,.3);">
+          <i class="bi bi-arrow-left"></i> Volver a Ventas
+        </a>
+      </div>
+    </main>
+
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>

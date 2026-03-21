@@ -1,0 +1,812 @@
+<%- include('../partials/head', { title: 'Clientes' }) %>
+<style>
+.filtro-chip {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: var(--font-body);
+}
+.filtro-chip:hover { background: var(--bg-body); color: var(--text-primary); }
+.filtro-chip.on    { background: var(--color-action); color: #fff; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'clientes', user }) %>
+
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Clientes', user }) %>
+
+    <main class="page-body">
+
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Clientes</h2>
+          <p>Gestión de clientes y cuentas corrientes.</p>
+        </div>
+        <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
+          <i class="bi bi-person-plus"></i> Nuevo Cliente
+        </button>
+      </div>
+
+      <!-- Buscador + Filtros + Exportar -->
+      <div class="page-toolbar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;">
+        <div class="search-input-wrap" style="flex:1;min-width:200px;max-width:320px">
+          <i class="bi bi-search"></i>
+          <input id="q" class="search-input" placeholder="Buscar por nombre o documento…" oninput="filtrar()">
+        </div>
+
+        <!-- Filtro estado -->
+        <div style="display:flex;gap:5px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px;">
+          <button class="filtro-chip on" data-filtro="todos"    onclick="setFiltro(this)">Todos</button>
+          <button class="filtro-chip"    data-filtro="deudores" onclick="setFiltro(this)"><i class="bi bi-exclamation-circle" style="color:#ef4444;margin-right:4px;"></i>Deudores</button>
+          <button class="filtro-chip"    data-filtro="al-dia"   onclick="setFiltro(this)"><i class="bi bi-check-circle" style="color:#10b981;margin-right:4px;"></i>Al día</button>
+        </div>
+
+        <!-- Ordenar -->
+        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+          <option value="nombre">Ordenar: A → Z</option>
+          <option value="mayor-deuda">Mayor deuda primero</option>
+          <option value="menor-deuda">Menor deuda primero</option>
+        </select>
+
+        <!-- Exportar -->
+        <div style="display:flex;gap:6px;margin-left:auto;">
+          <button onclick="exportarClientesCSV()"
+            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-filetype-csv"></i> CSV
+          </button>
+          <button onclick="exportarClientesPDF()"
+            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen rápido -->
+      <div id="resumenClientes" style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;"></div>
+
+      <!-- Tabla -->
+      <div class="card-panel">
+        <div class="card-panel-body">
+          <table class="sales-table" id="tablaClientes">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>CUIT / DNI</th>
+                <th>Saldo</th>
+                <th style="width:240px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% (clientes || []).forEach(c => { %>
+                <tr data-id="<%= c.id %>">
+                  <td class="sale-id"><%= c.id %></td>
+                  <td>
+                    <strong><%= c.nombre %></strong>
+                    <% if (c.id === 1) { %>
+                      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(0,180,216,.1);color:var(--color-action);margin-left:6px;font-weight:600;">Default</span>
+                    <% } %>
+                  </td>
+                  <td style="color:var(--text-secondary);font-family:var(--font-mono)"><%= c.documento || '—' %></td>
+                  <td>
+                    <% if (c.saldo > 0) { %>
+                      <span class="badge-status badge-anulado">Debe $<%= Number(c.saldo).toFixed(2) %></span>
+                    <% } else if (c.saldo < 0) { %>
+                      <span class="badge-status badge-pendiente">A favor $<%= Math.abs(Number(c.saldo)).toFixed(2) %></span>
+                    <% } else { %>
+                      <span class="badge-status badge-pagado">Al día</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                      <button class="btn-action btn-action-outline btn-sm" onclick="verMovimientos(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="Ver cuenta corriente">
+                        <i class="bi bi-clock-history"></i> Cuenta
+                      </button>
+                      <% if (c.id !== 1) { %>
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirCargo(<%= c.id %>, '<%= c.nombre %>')" title="Registrar deuda manual"
+                          style="color:#d97706;border-color:rgba(217,119,6,.3);">
+                          <i class="bi bi-plus-circle"></i> Cargar
+                        </button>
+                      <% } %>
+                      <% if (c.saldo > 0) { %>
+                        <button class="btn-action btn-action-primary btn-sm" onclick="abrirPago(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="Registrar pago">
+                          <i class="bi bi-cash"></i> Cobrar
+                        </button>
+                      <% } %>
+                      <% if (c.id !== 1) { %>
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%= JSON.stringify(c) %>)" title="Editar" style="color:var(--color-action);border-color:rgba(0,180,216,.3);">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn-action btn-action-ghost btn-sm" onclick="eliminar(<%= c.id %>)" title="Eliminar">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL NUEVO / EDITAR CLIENTE
+══════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalCliente" onclick="if(event.target.id==='modalCliente')cerrarModal()">
+  <div class="sale-modal" style="max-width:440px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+          <i class="bi bi-person"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalClienteTitulo">Nuevo Cliente</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Datos del cliente</div>
+        </div>
+      </div>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Nombre *</label>
+        <input type="text" id="c_nombre" placeholder="Nombre completo o razón social"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">CUIT / DNI</label>
+        <input type="text" id="c_documento" placeholder="Opcional"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="guardarCliente()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:11px;">
+        <i class="bi bi-check-lg"></i> <span id="btnGuardarClienteTxt">Guardar</span>
+      </button>
+      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL CARGAR DEUDA
+══════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalCargo" onclick="if(event.target.id==='modalCargo')cerrarModalCargo()">
+  <div class="sale-modal" style="max-width:420px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+          <i class="bi bi-plus-circle"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Registrar Cargo</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="cargoClienteNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarModalCargo()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#92400e;">
+      <i class="bi bi-info-circle" style="margin-right:5px;"></i>
+      Mercadería o servicios que el cliente lleva sin pagar ahora (fiado manual).
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Monto ($) *</label>
+        <input type="number" id="cargo_monto" min="0.01" step="0.01" placeholder="0.00"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Descripción</label>
+        <input type="text" id="cargo_desc" placeholder="Ej: Bolsa de harina, Semana 1…"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="confirmarCargo()"
+        style="flex:1;justify-content:center;padding:11px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
+        <i class="bi bi-plus-circle-fill"></i> Registrar cargo
+      </button>
+      <button onclick="cerrarModalCargo()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL COBRAR (pago parcial o total)
+══════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalPago" onclick="if(event.target.id==='modalPago')cerrarModalPago()">
+  <div class="sale-modal" style="max-width:400px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Registrar Pago</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="pagoClienteNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarModalPago()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Saldo deudor actual -->
+    <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:#dc2626;font-weight:600;">Saldo deudor total</span>
+      <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:#dc2626;" id="pagoSaldoActual">$0.00</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;">Monto a cobrar ($)</label>
+          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
+            Cobrar todo
+          </button>
+        </div>
+        <input type="number" id="p_monto" min="0.01" step="0.01" placeholder="0.00"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
+          oninput="calcRestante()">
+      </div>
+
+      <!-- Saldo pendiente tras el pago -->
+      <div id="restanteWrap" style="display:none;border-radius:var(--radius-sm);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;font-weight:600;" id="restanteLabel">Saldo pendiente tras pago</span>
+        <span style="font-family:var(--font-mono);font-size:15px;font-weight:700;" id="restanteValor">$0.00</span>
+      </div>
+
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Descripción</label>
+        <input type="text" id="p_desc" placeholder="Ej: Pago en efectivo, Transferencia…"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="confirmarPago()"
+        style="flex:1;justify-content:center;padding:11px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
+        <i class="bi bi-check-circle-fill"></i> Confirmar pago
+      </button>
+      <button onclick="cerrarModalPago()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL CUENTA CORRIENTE / MOVIMIENTOS
+══════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalMovimientos" onclick="if(event.target.id==='modalMovimientos')cerrarModalMovimientos()">
+  <div style="width:100%;max-width:900px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+          <i class="bi bi-person-lines-fill"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Cuenta Corriente</div>
+          <div style="font-size:12px;color:var(--text-secondary);" id="movClienteNombre">—</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="exportarEstadoCuenta('pdf')"
+          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-printer"></i> Imprimir
+        </button>
+        <button onclick="exportarEstadoCuenta('csv')"
+          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-filetype-csv"></i> CSV
+        </button>
+        <button onclick="cerrarModalMovimientos()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cuerpo dos columnas -->
+    <div style="display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;">
+
+      <!-- IZQUIERDA: Resumen del cliente -->
+      <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-body);">
+
+        <!-- Saldo grande -->
+        <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="movBannerLabel">Saldo</div>
+          <div style="font-size:32px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;line-height:1;" id="movBannerValor">$0,00</div>
+        </div>
+
+        <!-- Stats rápidas -->
+        <div id="movStats" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+        <!-- Acciones -->
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;">
+          <button id="movBtnCargo" onclick="movIrCargo()"
+            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+            <i class="bi bi-plus-circle"></i> Registrar cargo
+          </button>
+          <button id="movBtnCobrar" onclick="movIrCobrar()"
+            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+            <i class="bi bi-cash-stack"></i> Registrar pago
+          </button>
+        </div>
+      </div>
+
+      <!-- DERECHA: Movimientos -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial de movimientos</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);" id="movTotal">—</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;" id="movListado">
+          <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+
+<script>
+'use strict';
+let _editClienteId  = null;
+let _pagoClienteId  = null;
+let _pagoSaldo      = 0;
+let _cargoClienteId = null;
+let _movId          = null;
+let _movNombre      = '';
+let _movSaldo       = 0;
+
+/* ════════════════════════════════════
+   CRUD CLIENTES
+════════════════════════════════════ */
+function abrirNuevo() {
+  _editClienteId = null;
+  document.getElementById('modalClienteTitulo').textContent    = 'Nuevo Cliente';
+  document.getElementById('btnGuardarClienteTxt').textContent  = 'Guardar';
+  document.getElementById('c_nombre').value    = '';
+  document.getElementById('c_documento').value = '';
+  document.getElementById('modalCliente').classList.add('open');
+  setTimeout(() => document.getElementById('c_nombre').focus(), 80);
+}
+
+function abrirEditar(c) {
+  _editClienteId = c.id;
+  document.getElementById('modalClienteTitulo').textContent    = 'Editar Cliente';
+  document.getElementById('btnGuardarClienteTxt').textContent  = 'Guardar cambios';
+  document.getElementById('c_nombre').value    = c.nombre;
+  document.getElementById('c_documento').value = c.documento || '';
+  document.getElementById('modalCliente').classList.add('open');
+  setTimeout(() => document.getElementById('c_nombre').focus(), 80);
+}
+
+function cerrarModal() { document.getElementById('modalCliente').classList.remove('open'); }
+
+async function guardarCliente() {
+  const nombre    = document.getElementById('c_nombre').value.trim();
+  const documento = document.getElementById('c_documento').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio'); return; }
+  const url    = _editClienteId ? `/api/clientes/${_editClienteId}` : '/api/clientes';
+  const method = _editClienteId ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify({nombre, documento}) });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminar cliente?')) return;
+  const r = await fetch(`/api/clientes/${id}`, { method: 'DELETE' });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+/* ════════════════════════════════════
+   CARGO (deuda manual)
+════════════════════════════════════ */
+function abrirCargo(id, nombre) {
+  _cargoClienteId = id;
+  document.getElementById('cargoClienteNombre').textContent = nombre;
+  document.getElementById('cargo_monto').value = '';
+  document.getElementById('cargo_desc').value  = '';
+  document.getElementById('modalCargo').classList.add('open');
+  setTimeout(() => document.getElementById('cargo_monto').focus(), 80);
+}
+
+function cerrarModalCargo() { document.getElementById('modalCargo').classList.remove('open'); }
+
+async function confirmarCargo() {
+  const monto = parseFloat(document.getElementById('cargo_monto').value);
+  const desc  = document.getElementById('cargo_desc').value.trim();
+  if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
+  const r = await fetch(`/api/clientes/${_cargoClienteId}/cargo`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ monto, descripcion: desc || 'Cargo manual' })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+/* ════════════════════════════════════
+   PAGO (parcial o total)
+════════════════════════════════════ */
+function abrirPago(id, nombre, saldo) {
+  _pagoClienteId = id;
+  _pagoSaldo     = Number(saldo);
+  document.getElementById('pagoClienteNombre').textContent = nombre;
+  document.getElementById('pagoSaldoActual').textContent   = '$' + _pagoSaldo.toFixed(2);
+  document.getElementById('p_monto').value = '';
+  document.getElementById('p_desc').value  = '';
+  document.getElementById('restanteWrap').style.display = 'none';
+  document.getElementById('modalPago').classList.add('open');
+  setTimeout(() => document.getElementById('p_monto').focus(), 80);
+}
+
+function pagarTodo() {
+  document.getElementById('p_monto').value = _pagoSaldo.toFixed(2);
+  calcRestante();
+}
+
+function calcRestante() {
+  const monto     = parseFloat(document.getElementById('p_monto').value) || 0;
+  const restante  = _pagoSaldo - monto;
+  const wrap      = document.getElementById('restanteWrap');
+  const label     = document.getElementById('restanteLabel');
+  const valor     = document.getElementById('restanteValor');
+
+  if (monto <= 0) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'flex';
+  if (restante <= 0) {
+    wrap.style.cssText  += ';background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
+    label.style.color   = '#059669';
+    valor.style.color   = '#059669';
+    label.textContent   = 'Quedará al día ✓';
+    valor.textContent   = '$0,00';
+  } else {
+    wrap.style.cssText  += ';background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);';
+    label.style.color   = '#d97706';
+    valor.style.color   = '#d97706';
+    label.textContent   = 'Saldo pendiente tras el pago';
+    valor.textContent   = '$' + restante.toFixed(2);
+  }
+}
+
+function cerrarModalPago() { document.getElementById('modalPago').classList.remove('open'); }
+
+async function confirmarPago() {
+  const monto = parseFloat(document.getElementById('p_monto').value);
+  const desc  = document.getElementById('p_desc').value.trim();
+  if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
+  const r = await fetch(`/api/clientes/${_pagoClienteId}/pago`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ monto, descripcion: desc || 'Pago manual' })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+/* ════════════════════════════════════
+   MOVIMIENTOS / CUENTA CORRIENTE
+════════════════════════════════════ */
+async function verMovimientos(id, nombre, saldo) {
+  _movId     = id;
+  _movNombre = nombre;
+  _movSaldo  = Number(saldo);
+
+  document.getElementById('movClienteNombre').textContent = nombre;
+  document.getElementById('movListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:24px 0;">Cargando…</p>';
+  document.getElementById('modalMovimientos').classList.add('open');
+
+  // Banner de saldo
+  const banner    = document.getElementById('movBanner');
+  const bannerLbl = document.getElementById('movBannerLabel');
+  const bannerVal = document.getElementById('movBannerValor');
+  const btnCobrar = document.getElementById('movBtnCobrar');
+
+  if (_movSaldo > 0) {
+    banner.style.cssText    = 'border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);';
+    bannerLbl.style.color   = '#dc2626';
+    bannerVal.style.color   = '#dc2626';
+    bannerLbl.textContent   = 'Saldo deudor';
+    bannerVal.textContent   = '$' + _movSaldo.toFixed(2);
+    btnCobrar.style.display = 'flex';
+  } else if (_movSaldo < 0) {
+    banner.style.cssText    = 'border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);';
+    bannerLbl.style.color   = '#d97706';
+    bannerVal.style.color   = '#d97706';
+    bannerLbl.textContent   = 'Saldo a favor';
+    bannerVal.textContent   = '$' + Math.abs(_movSaldo).toFixed(2);
+    btnCobrar.style.display = 'none';
+  } else {
+    banner.style.cssText    = 'border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
+    bannerLbl.style.color   = '#10b981';
+    bannerVal.style.color   = '#10b981';
+    bannerLbl.textContent   = 'Al día';
+    bannerVal.textContent   = '$0,00';
+    btnCobrar.style.display = 'none';
+  }
+
+  // Cargar movimientos
+  const r    = await fetch(`/api/clientes/${id}/movimientos`);
+  const movs = await r.json();
+
+  if (!movs.length) {
+    document.getElementById('movListado').innerHTML =
+      '<p style="color:var(--text-secondary);text-align:center;padding:24px 0;">Sin movimientos aún.</p>';
+    return;
+  }
+
+  // Calcular saldo acumulado: movs viene DESC → invertir, acumular, volver a invertir
+  const asc = [...movs].reverse();
+  let acum = 0;
+  const conAcum = asc.map(m => {
+    acum += m.tipo === 'cargo' ? Number(m.monto) : -Number(m.monto);
+    return { ...m, acum };
+  });
+  conAcum.reverse(); // más reciente arriba
+
+  // Stats panel izquierdo
+  const totalCargos = movs.filter(m=>m.tipo==='cargo').reduce((a,m)=>a+Number(m.monto),0);
+  const totalPagos  = movs.filter(m=>m.tipo==='pago').reduce((a,m)=>a+Number(m.monto),0);
+  const statsEl = document.getElementById('movStats');
+  if (statsEl) statsEl.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+          <span style="color:var(--text-secondary);">Total cargado</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:#dc2626;">+$${totalCargos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+          <span style="color:var(--text-secondary);">Total pagado</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-$${totalPagos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+        </div>
+        <div style="border-top:1px dashed var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size:12.5px;">
+          <span style="color:var(--text-secondary);">Movimientos</span>
+          <span style="font-weight:700;color:var(--text-primary);">${movs.length}</span>
+        </div>
+      </div>
+    </div>`;
+
+  const totalEl = document.getElementById('movTotal');
+  if (totalEl) totalEl.textContent = `${movs.length} movimiento${movs.length!==1?'s':''}`;
+
+  document.getElementById('movListado').innerHTML = conAcum.map(m => {
+    const esCargo = m.tipo === 'cargo';
+    const color   = esCargo ? '#dc2626' : '#10b981';
+    const bg      = esCargo ? 'rgba(239,68,68,.04)' : 'rgba(16,185,129,.04)';
+    const borde   = esCargo ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.15)';
+    const icono   = esCargo ? 'bi-arrow-up-circle-fill' : 'bi-arrow-down-circle-fill';
+    const signo   = esCargo ? '+' : '-';
+    const desc    = m.descripcion || (esCargo ? 'Cargo' : 'Pago');
+    const fecha   = (m.created_at || '').slice(0,16).replace('T',' ');
+    const [fechaPart, horaPart] = fecha.split(' ');
+
+    const acumColor = m.acum > 0 ? '#dc2626' : m.acum < 0 ? '#d97706' : '#10b981';
+    const acumLabel = m.acum > 0 ? `Saldo $${m.acum.toLocaleString('es-AR',{minimumFractionDigits:2})}` :
+                      m.acum < 0 ? `A favor $${Math.abs(m.acum).toLocaleString('es-AR',{minimumFractionDigits:2})}` : 'Al día ✓';
+
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bg};border-radius:10px;border:1px solid ${borde};"
+        data-mov data-tipo="${m.tipo}" data-desc="${desc.replace(/"/g,'&quot;')}" data-monto="${m.monto}" data-acum="${m.acum}" data-fecha="${fecha}">
+      <i class="bi ${icono}" style="font-size:22px;color:${color};flex-shrink:0;"></i>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
+            <i class="bi bi-calendar3" style="font-size:10px;"></i>${fechaPart}
+          </span>
+          <span style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
+            <i class="bi bi-clock" style="font-size:10px;"></i>${horaPart}
+          </span>
+          <span style="font-size:11px;font-weight:600;color:${acumColor};background:${acumColor}1a;padding:1px 7px;border-radius:20px;">${acumLabel}</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:1px;">${esCargo?'cargo':'pago'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cerrarModalMovimientos() { document.getElementById('modalMovimientos').classList.remove('open'); }
+
+// Botones rápidos desde movimientos
+function movIrCargo()  { cerrarModalMovimientos(); setTimeout(() => abrirCargo(_movId, _movNombre), 80); }
+function movIrCobrar() { cerrarModalMovimientos(); setTimeout(() => abrirPago(_movId, _movNombre, _movSaldo), 80); }
+
+/* ════════════════════════════════════
+   FILTRO LOCAL
+════════════════════════════════════ */
+let _filtroActivo = 'todos';
+
+function setFiltro(btn) {
+  document.querySelectorAll('.filtro-chip').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  _filtroActivo = btn.dataset.filtro;
+  filtrar();
+}
+
+function filtrar() {
+  const q      = (document.getElementById('q')?.value || '').toLowerCase();
+  const orden  = document.getElementById('ordenSelect')?.value || 'nombre';
+  const rows   = [...document.querySelectorAll('#tablaClientes tbody tr')];
+
+  rows.forEach(tr => {
+    const nombre = tr.querySelector('td:nth-child(2)')?.innerText.toLowerCase() || '';
+    const doc    = tr.querySelector('td:nth-child(3)')?.innerText.toLowerCase() || '';
+    const saldoTxt = tr.querySelector('td:nth-child(4)')?.innerText || '';
+    const debe   = saldoTxt.toLowerCase().includes('debe');
+    const alDia  = saldoTxt.toLowerCase().includes('al día') || saldoTxt.trim() === '—';
+
+    const matchQ = !q || nombre.includes(q) || doc.includes(q);
+    const matchF = _filtroActivo === 'todos' ||
+                   (_filtroActivo === 'deudores' && debe) ||
+                   (_filtroActivo === 'al-dia' && alDia);
+    tr.style.display = (matchQ && matchF) ? '' : 'none';
+  });
+
+  // Ordenar
+  const tbody = document.querySelector('#tablaClientes tbody');
+  const visible = rows.filter(tr => tr.style.display !== 'none');
+  visible.sort((a, b) => {
+    if (orden === 'nombre') {
+      return (a.querySelector('td:nth-child(2)')?.innerText || '').localeCompare(
+             b.querySelector('td:nth-child(2)')?.innerText || '');
+    }
+    const getSaldo = tr => {
+      const t = tr.querySelector('td:nth-child(4)')?.innerText || '';
+      const m = t.match(/[\d.,]+/);
+      const v = m ? parseFloat(m[0].replace(/\./g,'').replace(',','.')) : 0;
+      return t.toLowerCase().includes('debe') ? v : -v;
+    };
+    return orden === 'mayor-deuda'
+      ? getSaldo(b) - getSaldo(a)
+      : getSaldo(a) - getSaldo(b);
+  });
+  visible.forEach(tr => tbody.appendChild(tr));
+}
+
+/* ── Exportar lista de clientes ── */
+function exportarClientesCSV() {
+  const rows = [...document.querySelectorAll('#tablaClientes tbody tr')]
+    .filter(tr => tr.style.display !== 'none');
+  let csv = '\uFEFFID;Nombre;Documento;Saldo\n';
+  rows.forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    csv += [tds[0]?.innerText, tds[1]?.innerText.trim(), tds[2]?.innerText, tds[3]?.innerText.trim()].join(';') + '\n';
+  });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'})),
+    download: 'clientes.csv'
+  });
+  a.click();
+}
+
+function exportarClientesPDF() {
+  const rows = [...document.querySelectorAll('#tablaClientes tbody tr')]
+    .filter(tr => tr.style.display !== 'none');
+  const filas = rows.map(tr => {
+    const tds = tr.querySelectorAll('td');
+    const saldo = tds[3]?.innerText.trim() || '—';
+    const color = saldo.includes('Debe') ? '#dc2626' : saldo.includes('favor') ? '#d97706' : '#10b981';
+    return `<tr>
+      <td>${tds[0]?.innerText}</td>
+      <td><strong>${tds[1]?.innerText.trim()}</strong></td>
+      <td>${tds[2]?.innerText}</td>
+      <td style="color:${color};font-weight:700;">${saldo}</td>
+    </tr>`;
+  }).join('');
+  const win = window.open('','_blank','width=800,height=600');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+    <title>Clientes — ComercialOS</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;margin:24px}h2{font-size:18px;margin-bottom:4px}p{color:#666;font-size:12px;margin:0 0 16px}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
+  </head><body>
+    <h2>Clientes — ComercialOS</h2>
+    <p>Generado: ${new Date().toLocaleString('es-AR')} · ${rows.length} clientes</p>
+    <table><thead><tr><th>ID</th><th>Nombre</th><th>Documento</th><th>Saldo</th></tr></thead>
+    <tbody>${filas}</tbody></table>
+  </body></html>`);
+  win.document.close();
+  win.onload = () => win.print();
+}
+
+/* ── Exportar estado de cuenta individual ── */
+function exportarEstadoCuenta(formato) {
+  const nombre = document.getElementById('movClienteNombre')?.textContent || 'Cliente';
+  const saldo  = document.getElementById('movBannerValor')?.textContent  || '$0';
+  const items  = [...document.querySelectorAll('#movListado [data-mov]')];
+
+  if (formato === 'csv') {
+    let csv = '\uFEFFTipo;Descripción;Monto;Saldo tras mov.;Fecha\n';
+    items.forEach(el => {
+      csv += [
+        el.dataset.tipo, el.dataset.desc,
+        el.dataset.monto, el.dataset.acum, el.dataset.fecha
+      ].join(';') + '\n';
+    });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
+      download: `cuenta_${nombre.replace(/\s/g,'_')}.csv`
+    });
+    a.click();
+    return;
+  }
+
+  // PDF
+  const filas = items.map(el => {
+    const cargo = el.dataset.tipo === 'cargo';
+    const color = cargo ? '#dc2626' : '#10b981';
+    const signo = cargo ? '+' : '-';
+    return `<tr>
+      <td>${el.dataset.fecha}</td>
+      <td><strong>${el.dataset.desc}</strong></td>
+      <td style="text-align:right;color:${color};font-weight:700;">${signo}$${Number(el.dataset.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right;color:${Number(el.dataset.acum)>0?'#dc2626':'#10b981'};font-weight:600;">$${Number(el.dataset.acum).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('','_blank','width=800,height=700');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+    <title>Estado de Cuenta — ${nombre}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;margin:28px}h2{font-size:18px;margin-bottom:2px}h2 span{font-size:14px;font-weight:400;color:#666;margin-left:10px}.saldo{font-size:22px;font-weight:800;margin:10px 0 20px;padding:12px 18px;border-radius:8px;display:inline-block;background:#fee2e2;color:#dc2626}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
+  </head><body>
+    <h2>Estado de Cuenta <span>ComercialOS</span></h2>
+    <p style="color:#666;font-size:12px;">Cliente: <strong>${nombre}</strong> · Impreso: ${new Date().toLocaleString('es-AR')}</p>
+    <div class="saldo">Saldo actual: ${saldo}</div>
+    <table>
+      <thead><tr><th>Fecha</th><th>Descripción</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+  </body></html>`);
+  win.document.close();
+  win.onload = () => win.print();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarModal(); cerrarModalPago(); cerrarModalMovimientos(); cerrarModalCargo();
+  }
+});
+
+// Resumen rápido al cargar
+(function() {
+  const clientes = <%- JSON.stringify(clientes || []) %>;
+  const deudores = clientes.filter(c => c.saldo > 0);
+  const totalDeuda = deudores.reduce((a,c) => a + Number(c.saldo), 0);
+  const el = document.getElementById('resumenClientes');
+  if (!el) return;
+  const stat = (icon, label, value, color) =>
+    `<div style="display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
+      <i class="bi ${icon}" style="font-size:18px;color:${color};"></i>
+      <div><div style="font-size:11px;color:var(--text-secondary);">${label}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${value}</div></div>
+    </div>`;
+  el.innerHTML =
+    stat('bi-people', 'Total clientes', clientes.length, 'var(--color-action)') +
+    stat('bi-exclamation-circle', 'Con deuda', deudores.length, '#ef4444') +
+    stat('bi-cash-stack', 'Deuda total', '$' + totalDeuda.toLocaleString('es-AR',{minimumFractionDigits:2}), '#dc2626') +
+    stat('bi-check-circle', 'Al día', clientes.length - deudores.length, '#10b981');
+})();
+</script>
