@@ -92,7 +92,7 @@ try {
   console.log('✅  Gastos schema OK');
 } catch(e) { console.log('⚠️   gastos.service no encontrado:', e.message); }
 
-
+// Sales
 const salesSvc = require('./services/sales.service');
 salesSvc.initSalesSchema();
 
@@ -103,8 +103,12 @@ try {
   console.log('✅  Users schema OK');
 } catch(e) { console.log('⚠️   Error en users schema:', e.message); }
 
-
-
+// Payment methods
+try {
+  const pmSvc = require('./services/payment_methods.service');
+  if (pmSvc.initPaymentMethodsSchema) pmSvc.initPaymentMethodsSchema();
+  console.log('✅  Payment methods schema OK');
+} catch(e) { console.log('⚠️   Error en payment_methods schema:', e.message); }
 
 // 7. Presupuestos
 try {
