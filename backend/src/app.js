@@ -96,6 +96,16 @@ try {
 const salesSvc = require('./services/sales.service');
 salesSvc.initSalesSchema();
 
+// Auth — usuarios
+try {
+  const authSvc = require('./services/auth.service');
+  authSvc.initUsersTable();
+  console.log('✅  Users schema OK');
+} catch(e) { console.log('⚠️   Error en users schema:', e.message); }
+
+
+
+
 // 7. Presupuestos
 try {
   const presupuestosSvc = require('./services/presupuestos.service');
