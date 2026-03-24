@@ -1689,13 +1689,19 @@ function mostrarExito(conRecargo,metodoFinal,isEfectivo,received,offline){
     recibido: isEfectivo && !mixtoActivo ? received : null,
     vuelto,
     offline: !!offline,
-    items: cart.map(i => ({
-      sku: i.sku,
-      name: i.name,
-      qty: i.qty,
-      price: i.price,
-      subtotal: i.price * i.qty
-    }))
+   
+items: cart.map(i => ({
+  sku: i.sku,
+  name: i.name,
+  qty: i.qty,
+  price: i.price,
+  price_base: i.price_base,
+  subtotal: i.price * i.qty,
+  isPromo: !!i.isPromo,
+  isMayorista: !!i.isMayorista,
+  price_mayorista: i.price_mayorista || null,
+  qty_mayorista: i.qty_mayorista || null
+}))
   };
 
   document.getElementById('cobroOverlay').classList.remove('open');
@@ -1740,13 +1746,28 @@ function imprimirTicket(){
   const fontSize = es80 ? '11px' : '13px';
   const titleSize = es80 ? '18px' : '24px';
 
-  const itemsHtml = lastSaleData.items.map(it => `
+const itemsHtml = lastSaleData.items.map(it => {
+  let badge = '';
+  if (it.isMayorista) badge = ' <span style="font-size:9px;font-weight:800;">[MAYOR]</span>';
+  else if (it.isPromo) badge = ' <span style="font-size:9px;font-weight:800;">[PROMO]</span>';
+
+  let precioExtra = '';
+  if (it.isMayorista && it.price_base && it.price_base !== it.price) {
+    precioExtra = `<br><span style="font-size:9px;text-decoration:line-through;color:#999;">${fmt(it.price_base)}</span> → ${fmt(it.price)} c/u`;
+  } else if (it.isPromo && it.price_base && it.price_base !== it.price) {
+    precioExtra = `<br><span style="font-size:9px;text-decoration:line-through;color:#999;">${fmt(it.price_base)}</span> → ${fmt(it.price)} c/u`;
+  } else {
+    precioExtra = `<br><span style="font-size:9px;color:#666;">${fmt(it.price)} c/u</span>`;
+  }
+
+  return `
     <tr>
-      <td style="padding:4px 0;">${escapeHtml(it.name)}</td>
+      <td style="padding:4px 0;">${escapeHtml(it.name)}${badge}${precioExtra}</td>
       <td style="padding:4px 0;text-align:center;">${it.qty}</td>
-      <td style="padding:4px 0;text-align:right;">${fmt(it.subtotal)}</td>
+      <td style="padding:4px 0;text-align:right;font-weight:700;">${fmt(it.subtotal)}</td>
     </tr>
-  `).join('');
+  `;
+}).join('');
 
   const logoHtml = cfg.logo
     ? `<div class="center" style="margin-bottom:6px;"><img src="${escapeHtml(cfg.logo)}" style="max-width:100%;max-height:60px;object-fit:contain;"></div>`
