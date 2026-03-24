@@ -11,6 +11,9 @@ function initPromoSchema() {
   try { run(`ALTER TABLE products ADD COLUMN ieps REAL DEFAULT 0`); } catch (_) {}
   try { run(`ALTER TABLE products ADD COLUMN pesable INTEGER DEFAULT 0`); } catch (_) {}
   try { run(`ALTER TABLE products ADD COLUMN imagen TEXT DEFAULT NULL`); } catch (_) {}
+  // ── Precio mayorista ──────────────────────────────────────────
+  try { run(`ALTER TABLE products ADD COLUMN price_mayorista REAL DEFAULT NULL`); } catch (_) {}
+  try { run(`ALTER TABLE products ADD COLUMN qty_mayorista INTEGER DEFAULT NULL`); } catch (_) {}
 }
 
 function toNumber(value, fallback = 0) {
@@ -48,7 +51,9 @@ function baseSelect() {
       COALESCE(iva, 0) AS iva,
       COALESCE(ieps, 0) AS ieps,
       COALESCE(pesable, 0) AS pesable,
-      COALESCE(imagen, NULL) AS imagen
+      COALESCE(imagen, NULL) AS imagen,
+      COALESCE(price_mayorista, NULL) AS price_mayorista,
+      COALESCE(qty_mayorista, NULL)   AS qty_mayorista
     FROM products
   `;
 }
@@ -125,6 +130,8 @@ function create({
   price_promo = null,
   en_promo = 0,
   imagen = null,
+  price_mayorista = null,
+  qty_mayorista = null,
 }) {
   const suc = Number(sucursal_id || 1);
 
@@ -135,9 +142,10 @@ function create({
       iva, ieps, pesable,
       descripcion, sucursal_id,
       price_cost, margen,
-      price_promo, en_promo, imagen
+      price_promo, en_promo, imagen,
+      price_mayorista, qty_mayorista
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       String(sku),
@@ -155,6 +163,8 @@ function create({
       toNullableNumber(price_promo),
       toBoolInt(en_promo, 0),
       imagen || null,
+      toNullableNumber(price_mayorista),
+      toNullableNumber(qty_mayorista),
     ]
   );
 
@@ -169,22 +179,29 @@ function updateBySku(sku, fields, sucursal_id = null) {
     ? Number(fields.sucursal_id)
     : (p.sucursal_id || 1);
 
-  const name = fields.name !== undefined ? String(fields.name) : p.name;
-  const price = fields.price !== undefined ? toNumber(fields.price) : p.price;
-  const category = fields.category !== undefined ? fields.category : p.category;
-  const stock = fields.stock !== undefined ? toNumber(fields.stock) : p.stock;
-  const descripcion = fields.descripcion !== undefined ? fields.descripcion : p.descripcion;
-  const price_cost = fields.price_cost !== undefined ? toNullableNumber(fields.price_cost) : p.price_cost;
-  const margen = fields.margen !== undefined ? toNullableNumber(fields.margen) : p.margen;
-  const iva = fields.iva !== undefined ? toNumber(fields.iva, 0) : toNumber(p.iva, 0);
-  const ieps = fields.ieps !== undefined ? toNumber(fields.ieps, 0) : toNumber(p.ieps, 0);
-  const pesable = fields.pesable !== undefined ? toBoolInt(fields.pesable, 0) : toBoolInt(p.pesable, 0);
+  const name        = fields.name        !== undefined ? String(fields.name)                  : p.name;
+  const price       = fields.price       !== undefined ? toNumber(fields.price)                : p.price;
+  const category    = fields.category    !== undefined ? fields.category                       : p.category;
+  const stock       = fields.stock       !== undefined ? toNumber(fields.stock)                : p.stock;
+  const descripcion = fields.descripcion !== undefined ? fields.descripcion                    : p.descripcion;
+  const price_cost  = fields.price_cost  !== undefined ? toNullableNumber(fields.price_cost)  : p.price_cost;
+  const margen      = fields.margen      !== undefined ? toNullableNumber(fields.margen)      : p.margen;
+  const iva         = fields.iva         !== undefined ? toNumber(fields.iva, 0)               : toNumber(p.iva, 0);
+  const ieps        = fields.ieps        !== undefined ? toNumber(fields.ieps, 0)              : toNumber(p.ieps, 0);
+  const pesable     = fields.pesable     !== undefined ? toBoolInt(fields.pesable, 0)          : toBoolInt(p.pesable, 0);
   const price_promo = fields.price_promo !== undefined ? toNullableNumber(fields.price_promo) : p.price_promo;
-  const en_promo = fields.en_promo !== undefined ? toBoolInt(fields.en_promo, 0) : toBoolInt(p.en_promo, 0);
-  const imagen = fields.imagen !== undefined ? fields.imagen : p.imagen;
-  const newSku = fields.sku !== undefined && fields.sku !== null && String(fields.sku).trim() !== ''
+  const en_promo    = fields.en_promo    !== undefined ? toBoolInt(fields.en_promo, 0)         : toBoolInt(p.en_promo, 0);
+  const imagen      = fields.imagen      !== undefined ? fields.imagen                         : p.imagen;
+  const newSku      = fields.sku !== undefined && fields.sku !== null && String(fields.sku).trim() !== ''
     ? String(fields.sku).trim()
     : String(sku);
+  // ── Mayorista ──────────────────────────────────────────────
+  const price_mayorista = fields.price_mayorista !== undefined
+    ? toNullableNumber(fields.price_mayorista)
+    : p.price_mayorista;
+  const qty_mayorista = fields.qty_mayorista !== undefined
+    ? toNullableNumber(fields.qty_mayorista)
+    : p.qty_mayorista;
 
   run(
     `
@@ -204,7 +221,9 @@ function updateBySku(sku, fields, sucursal_id = null) {
       price_promo = ?,
       en_promo = ?,
       sucursal_id = ?,
-      imagen = ?
+      imagen = ?,
+      price_mayorista = ?,
+      qty_mayorista = ?
     WHERE sku = ? AND sucursal_id = ?
     `,
     [
@@ -223,6 +242,8 @@ function updateBySku(sku, fields, sucursal_id = null) {
       en_promo,
       targetSucursal,
       imagen || null,
+      price_mayorista,
+      qty_mayorista,
       String(sku),
       p.sucursal_id || 1,
     ]
@@ -262,7 +283,7 @@ function remove(sku, sucursal_id = null) {
 
 function exportCsv(sucursal_id = null) {
   const rows = list(sucursal_id);
-  const header = 'sku,name,price,stock,category,iva,ieps,pesable';
+  const header = 'sku,name,price,stock,category,iva,ieps,pesable,price_mayorista,qty_mayorista';
 
   return [
     header,
@@ -276,6 +297,8 @@ function exportCsv(sucursal_id = null) {
         r.iva ?? 0,
         r.ieps ?? 0,
         r.pesable ?? 0,
+        r.price_mayorista ?? '',
+        r.qty_mayorista ?? '',
       ].join(',')
     ),
   ].join('\n');

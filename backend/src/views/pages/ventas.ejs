@@ -1,4 +1,4 @@
-<%- include('../partials/head', { title: 'Ventas' }) %>
+ <%- include('../partials/head', { title: 'Ventas' }) %>
 
 <style>
   body { overflow:hidden; }
@@ -1092,14 +1092,40 @@ function addBySku(sku,el){
   if(p)addToCart(p);
 }
 
+function aplicarPrecioMayorista(item) {
+  if (!item.price_mayorista || !item.qty_mayorista) return;
+  const esMayorista = item.qty >= item.qty_mayorista;
+  if (esMayorista && !item.isMayorista) {
+    item.price     = item.price_mayorista;
+    item.isMayorista = true;
+    showToast(`🏪 ${item.name} — precio mayorista aplicado`, 'info');
+  } else if (!esMayorista && item.isMayorista) {
+    item.price     = item.price_base;
+    item.isMayorista = false;
+    showToast(`${item.name} — precio minorista`, 'info');
+  }
+}
+
 function addToCart(product){
- const ep = product.precio_efectivo !== undefined ? Number(product.precio_efectivo) : Number(product.price);
+  const ep = product.precio_efectivo !== undefined ? Number(product.precio_efectivo) : Number(product.price);
   const existing=cart.find(i=>i.sku===product.sku);
   if(existing){
     existing.qty++;
+    aplicarPrecioMayorista(existing);
     showToast(`${existing.name} — x${existing.qty}`,'info');
   } else {
-    cart.push({sku:product.sku,name:product.name,price:ep,descripcion:product.descripcion||null,isPromo:!!(product.en_promo&&product.price_promo),qty:1});
+    cart.push({
+      sku: product.sku,
+      name: product.name,
+      price: ep,
+      price_base: ep,
+      price_mayorista: product.price_mayorista ? Number(product.price_mayorista) : null,
+      qty_mayorista: product.qty_mayorista ? Number(product.qty_mayorista) : null,
+      isMayorista: false,
+      descripcion: product.descripcion || null,
+      isPromo: !!(product.en_promo && product.price_promo),
+      qty: 1
+    });
     showToast(`${product.name}${product.en_promo?' 🏷️':''} agregado`,'success');
   }
   beep('add');
@@ -1135,10 +1161,11 @@ function renderCartList(){
     }
     el.innerHTML = `
       ${item.isPromo ? '<span class="cart-promo-tag">Promo</span>' : ''}
+      ${item.isMayorista ? '<span class="cart-promo-tag" style="background:#6366f1;">Mayor</span>' : ''}
       <div class="cart-card-name">${item.name}</div>
       ${item.descripcion ? `<div class="cart-card-desc">${item.descripcion}</div>` : ''}
       <div class="cart-card-price">${fmt(item.price * item.qty)}</div>
-      <div class="cart-card-sub">${item.qty} × ${fmt(item.price)}</div>
+      <div class="cart-card-sub">${item.qty} × ${fmt(item.price)}${item.isMayorista ? ' <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : ''}</div>
       <div class="cart-card-bottom">
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="chgQty('${item.sku}',-1)"><i class="bi bi-dash"></i></button>
@@ -1159,6 +1186,7 @@ function chgQty(sku,d){
   if(!item)return;
   item.qty+=d;
   if(item.qty<=0){removeItem(sku);return;}
+  aplicarPrecioMayorista(item);
   updateCardState(sku);
   renderCartList();
   updateTotals();
