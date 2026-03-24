@@ -31,6 +31,8 @@ exports.create = (req, res) => {
       price_promo,
       sucursal_id,
       imagen,
+      price_mayorista, // ← AGREGADO
+      qty_mayorista,   // ← AGREGADO
     } = req.body || {};
 
     if (!sku || !name || price === undefined) {
@@ -53,6 +55,8 @@ exports.create = (req, res) => {
       price_promo: price_promo !== undefined && price_promo !== null && price_promo !== '' ? Number(price_promo) : null,
       sucursal_id: sucursal_id !== undefined ? Number(sucursal_id) : 1,
       imagen: imagen || null,
+      price_mayorista: price_mayorista !== undefined && price_mayorista !== null && price_mayorista !== '' ? Number(price_mayorista) : null, // ← AGREGADO
+      qty_mayorista:   qty_mayorista   !== undefined && qty_mayorista   !== null && qty_mayorista   !== '' ? Number(qty_mayorista)   : null, // ← AGREGADO
     });
 
     res.status(201).json(created);
@@ -102,6 +106,8 @@ exports.update = (req, res) => {
       price_promo,
       sucursal_id,
       imagen,
+      price_mayorista, // ← AGREGADO
+      qty_mayorista,   // ← AGREGADO
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -129,6 +135,14 @@ exports.update = (req, res) => {
           : undefined,
       sucursal_id: sucursal_id !== undefined ? Number(sucursal_id) : undefined,
       imagen: imagen !== undefined ? imagen : undefined,
+      price_mayorista: // ← AGREGADO
+        price_mayorista !== undefined
+          ? (price_mayorista === null || price_mayorista === '' ? null : Number(price_mayorista))
+          : undefined,
+      qty_mayorista:   // ← AGREGADO
+        qty_mayorista !== undefined
+          ? (qty_mayorista === null || qty_mayorista === '' ? null : Number(qty_mayorista))
+          : undefined,
     });
 
     res.json(updated);
