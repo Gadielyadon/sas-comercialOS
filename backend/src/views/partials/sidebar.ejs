@@ -2,7 +2,7 @@
 
   <!-- Logo ComercialOS -->
   <div class="sidebar-logo">
-    <a class="logo-mark" href="/dashboard">
+    <a class="logo-mark" href="/presupuestos">
       <div class="logo-icon">C</div>
       <div class="logo-text">
         <strong>ComercialOS</strong>
@@ -19,34 +19,6 @@
   <nav class="sidebar-nav">
 
     <div class="nav-section-label">Principal</div>
-
-    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
-      <a href="/dashboard" class="nav-item <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'active' : '' %>">
-        <i class="bi bi-grid-1x2"></i>
-        <span class="nav-text">Dashboard</span>
-      </a>
-      <% if (typeof active !== 'undefined' && active === 'dashboard') { %>
-        <a href="/dashboard/reportes/metodos" class="nav-item nav-subitem <%= (typeof activeSub !== 'undefined' && activeSub === 'reporte_metodos') ? 'active' : '' %>">
-          <i class="bi bi-bar-chart-line"></i>
-          <span class="nav-text">Métodos de pago</span>
-        </a>
-      <% } %>
-    <% } %>
-
-    <a href="/ventas" class="nav-item <%= (typeof active !== 'undefined' && active === 'ventas') ? 'active' : '' %>">
-      <i class="bi bi-upc-scan"></i>
-      <span class="nav-text">Ventas</span>
-    </a>
-
-    <a href="/caja" class="nav-item <%= (typeof active !== 'undefined' && active === 'caja') ? 'active' : '' %>">
-      <i class="bi bi-cash-coin"></i>
-      <span class="nav-text">Caja</span>
-    </a>
-
-    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
-      <i class="bi bi-people"></i>
-      <span class="nav-text">Clientes</span>
-    </a>
 
     <a href="/presupuestos" class="nav-item <%= (typeof active !== 'undefined' && active === 'presupuestos') ? 'active' : '' %>">
       <i class="bi bi-file-earmark-text"></i>
@@ -65,28 +37,6 @@
       <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
         <i class="bi bi-sliders"></i>
         <span class="nav-text">Ajustes</span>
-      </a>
-
-      <a href="/sucursales" class="nav-item <%= (typeof active !== 'undefined' && active === 'sucursales') ? 'active' : '' %>">
-        <i class="bi bi-diagram-3"></i>
-        <span class="nav-text">Sucursales</span>
-      </a>
-
-      <div class="nav-section-label" style="margin-top:8px;">Finanzas</div>
-
-      <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>">
-        <i class="bi bi-truck"></i>
-        <span class="nav-text">Proveedores</span>
-      </a>
-
-      <a href="/gastos" class="nav-item <%= (typeof active !== 'undefined' && active === 'gastos') ? 'active' : '' %>">
-        <i class="bi bi-receipt"></i>
-        <span class="nav-text">Gastos</span>
-      </a>
-
-      <a href="/afip/historial" class="nav-item <%= (typeof active !== 'undefined' && active === 'facturacion') ? 'active' : '' %>">
-        <i class="bi bi-file-earmark-check"></i>
-        <span class="nav-text">Facturación</span>
       </a>
 
     <% } %>
