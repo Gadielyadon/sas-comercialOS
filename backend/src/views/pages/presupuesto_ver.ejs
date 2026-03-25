@@ -79,9 +79,6 @@
   .doc-footer-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .info-box { padding: 14px 16px; border-radius: 8px; background: #f8f9fb; border: 1px solid #e8ecf0; font-size: 12.5px; color: #5f6c7b; }
   .info-box strong { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin-bottom: 4px; }
-
-  .doc-firma { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e8ecf0; }
-  .firma-linea { border-top: 1.5px solid #1a2332; padding-top: 8px; font-size: 11px; color: #9ca3af; text-align: center; }
   /* ═══════════════════════════════════════════════
      RESPONSIVE MÓVIL
   ═══════════════════════════════════════════════ */
@@ -108,7 +105,6 @@
     .totales-box { width: 100%; }
 
     .doc-footer-info { grid-template-columns: 1fr; }
-    .doc-firma { grid-template-columns: 1fr; gap: 24px; }
 
     .total-final-valor { font-size: 18px; }
   }
@@ -177,7 +173,7 @@
                   <% if (config.empresa_direccion) { %><%= config.empresa_direccion %><br><% } else { %>Padre Lucas Barrionuevo s/n — San Fernando del Valle de Catamarca<br><% } %>
                   <% if (config.empresa_telefono) { %>Tel: <%= config.empresa_telefono %><br><% } else { %>Tel: 3834677166<br><% } %>
                   <% if (config.empresa_email) { %><%= config.empresa_email %><br><% } %>
-                  Inicio de actividades: 10/2025 &nbsp;|&nbsp; IIBB: 76771
+                  Inicio de actividades: 10/2025 &nbsp;|&nbsp; CUIT: 27-26433670-3 &nbsp;|&nbsp; IIBB: 76771
                 </div>
               </div>
             </div>
@@ -230,15 +226,22 @@
           <table class="items-tabla">
             <thead>
               <tr>
-                <th style="width:5%;text-align:center;">#</th>
-                <th style="width:45%">Descripción</th>
-                <th class="right" style="width:15%">Cant.</th>
-                <th class="right" style="width:17%">Precio unit.</th>
-                <th class="right" style="width:18%">Subtotal</th>
+                <th style="width:4%;text-align:center;">#</th>
+                <th style="width:38%">Descripción</th>
+                <th class="right" style="width:10%">Cant.</th>
+                <th class="right" style="width:14%">Precio unit.</th>
+                <th class="right" style="width:10%">IVA %</th>
+                <th class="right" style="width:12%">IVA $</th>
+                <th class="right" style="width:12%">Total c/IVA</th>
               </tr>
             </thead>
             <tbody>
-              <% presupuesto.items.forEach((item, idx) => { %>
+              <% presupuesto.items.forEach((item, idx) => {
+                   const pctIva = item.pct_iva != null ? Number(item.pct_iva) : null;
+                   const subtotal = Number(item.subtotal) || 0;
+                   const montoIva = pctIva && pctIva > 0 ? subtotal * pctIva / 100 : 0;
+                   const totalConIva = subtotal + montoIva;
+              %> 
               <tr>
                 <td style="text-align:center;color:#9ca3af;font-size:12px"><%= idx+1 %></td>
                 <td>
@@ -247,7 +250,13 @@
                 </td>
                 <td style="text-align:right;font-weight:600"><%= Number(item.cantidad).toLocaleString('es-AR') %></td>
                 <td style="text-align:right">$<%= Number(item.precio_unitario).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
-                <td style="text-align:right;font-weight:700">$<%= Number(item.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+                <td style="text-align:right;color:#5f6c7b">
+                  <% if (pctIva === 0) { %>Exento<% } else if (pctIva) { %><%= pctIva %>%<% } else { %>—<% } %>
+                </td>
+                <td style="text-align:right;color:#5f6c7b">
+                  <% if (montoIva > 0) { %>$<%= montoIva.toLocaleString('es-AR',{minimumFractionDigits:2}) %><% } else { %>—<% } %>
+                </td>
+                <td style="text-align:right;font-weight:700">$<%= totalConIva.toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               </tr>
               <% }) %>
             </tbody>
@@ -256,46 +265,61 @@
           <!-- Totales -->
           <div class="totales-wrap">
             <div class="totales-box">
+              <%
+                const subtotalBase = Number(presupuesto.subtotal) || 0;
+                const descMonto = Number(presupuesto.descuento_monto) || 0;
+                const descPct = Number(presupuesto.descuento_pct) || 0;
+                const descCalc = descMonto > 0 ? descMonto : (subtotalBase * descPct / 100);
+                const baseAntesIva = subtotalBase - descCalc;
+                const totalIva = presupuesto.items.reduce((acc, i) => {
+                  const pct = i.pct_iva != null ? Number(i.pct_iva) : 0;
+                  return acc + (Number(i.subtotal)||0) * pct / 100;
+                }, 0);
+                const grandTotal = baseAntesIva + totalIva;
+              %>
               <div class="total-line">
-                <span style="color:#5f6c7b">Subtotal</span>
-                <span>$<%= Number(presupuesto.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+                <span style="color:#5f6c7b">Subtotal (sin IVA)</span>
+                <span>$<%= subtotalBase.toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
               </div>
-              <% if (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0) { %>
+              <% if (descCalc > 0) { %>
               <div class="total-line">
-                <span style="color:#ef4444">Descuento<% if(presupuesto.descuento_pct>0){%> (<%= presupuesto.descuento_pct %>%)<% } %></span>
-                <span style="color:#ef4444">- $<%= Number(presupuesto.descuento_monto || (presupuesto.subtotal * presupuesto.descuento_pct/100)).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+                <span style="color:#ef4444">Descuento<% if(descPct>0){ %> (<%= descPct %>%)<% } %></span>
+                <span style="color:#ef4444">- $<%= descCalc.toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+              </div>
+              <% } %>
+              <% if (totalIva > 0) { %>
+              <div class="total-line">
+                <span style="color:#5f6c7b">IVA</span>
+                <span style="color:#5f6c7b">+ $<%= totalIva.toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
               </div>
               <% } %>
               <div class="total-final-line">
                 <span class="total-final-label">Total</span>
-                <span class="total-final-valor">$<%= Number(presupuesto.total).toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
+                <span class="total-final-valor">$<%= grandTotal.toLocaleString('es-AR',{minimumFractionDigits:2}) %></span>
               </div>
             </div>
           </div>
 
-          <!-- Notas y validez -->
-          <% if (presupuesto.notas || presupuesto.validez_dias) { %>
-          <div class="doc-footer-info">
-            <% if (presupuesto.notas) { %>
-            <div class="info-box">
-              <strong>Notas</strong>
-              <%= presupuesto.notas %>
+          <!-- Observaciones al pie -->
+          <% if (presupuesto.notas || presupuesto.condicion_pago_obs) { %>
+          <div style="margin-top:20px;border-top:1.5px solid #e8ecf0;padding-top:16px;">
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin-bottom:10px;">Observaciones y condiciones</div>
+            <div class="doc-footer-info">
+              <% if (presupuesto.condicion_pago_obs) { %>
+              <div class="info-box">
+                <strong>Condición de pago</strong>
+                <%= presupuesto.condicion_pago_obs %>
+              </div>
+              <% } %>
+              <% if (presupuesto.notas) { %>
+              <div class="info-box" style="<%= !presupuesto.condicion_pago_obs ? 'grid-column:1/-1;' : '' %>">
+                <strong>Notas / Aclaraciones</strong>
+                <%= presupuesto.notas %>
+              </div>
+              <% } %>
             </div>
-            <% } %>
-            <% if (presupuesto.validez_dias) { %>
-            <div class="info-box">
-              <strong>Validez del presupuesto</strong>
-              Este presupuesto tiene validez de <%= presupuesto.validez_dias %> días a partir de la fecha de emisión.
-            </div>
-            <% } %>
           </div>
           <% } %>
-
-          <!-- Firmas -->
-          <div class="doc-firma">
-            <div class="firma-linea">Firma del cliente</div>
-            <div class="firma-linea"><%= config.empresa_nombre || 'Firma empresa' %></div>
-          </div>
 
         </div>
       </div>
@@ -346,25 +370,23 @@ function imprimirA4() {
       .cond-val   { font-size:12.5px; font-weight:600; color:#1a2332; }
       .cond-item { margin-top:6px; }
       table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-      thead th { padding:9px 12px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#fff; background:linear-gradient(135deg,#1a4a1a 0%,#2d7a2d 100%); }
+      thead th { padding:8px 8px; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#fff; background:linear-gradient(135deg,#1a4a1a 0%,#2d7a2d 100%); }
       thead th:first-child { border-radius:7px 0 0 7px; }
       thead th:last-child  { border-radius:0 7px 7px 0; text-align:right; }
       th.right, td.right { text-align:right; }
-      tbody td { padding:10px 12px; border-bottom:1px solid #f0f2f5; font-size:12.5px; }
+      tbody td { padding:8px 8px; border-bottom:1px solid #f0f2f5; font-size:11px; }
       tbody tr:nth-child(even) td { background:#fafbfc; }
       .item-nombre { font-weight:700; color:#1a2332; }
-      .item-desc   { font-size:10.5px; color:#9ca3af; margin-top:2px; }
-      .totales-wrap { display:flex; justify-content:flex-end; margin-bottom:24px; }
-      .totales-box { width:280px; }
-      .total-line { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f2f5; font-size:12.5px; }
+      .item-desc   { font-size:9.5px; color:#9ca3af; margin-top:2px; }
+      .totales-wrap { display:flex; justify-content:flex-end; margin-bottom:20px; }
+      .totales-box { width:300px; }
+      .total-line { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f2f5; font-size:11.5px; }
       .total-final-line { display:flex; justify-content:space-between; padding:10px 14px; background:linear-gradient(135deg,#1a4a1a 0%,#2d7a2d 100%); border-radius:8px; margin-top:8px; }
       .total-final-label { font-size:13px; font-weight:800; color:rgba(255,255,255,.85); text-transform:uppercase; }
       .total-final-valor { font-size:20px; font-weight:900; color:#fff; }
-      .doc-footer-info { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
-      .info-box { padding:12px 14px; border-radius:7px; background:#f8f9fb; border:1px solid #e8ecf0; font-size:11.5px; color:#5f6c7b; }
-      .info-box strong { display:block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; margin-bottom:3px; }
-      .doc-firma { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:40px; padding-top:16px; border-top:1px solid #e8ecf0; }
-      .firma-linea { border-top:1.5px solid #1a2332; padding-top:6px; font-size:10.5px; color:#9ca3af; text-align:center; }
+      .doc-footer-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+      .info-box { padding:10px 12px; border-radius:7px; background:#f8f9fb; border:1px solid #e8ecf0; font-size:11px; color:#5f6c7b; }
+      .info-box strong { display:block; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; margin-bottom:3px; }
     </style>
   </head><body><div class="doc-a4">${html}</div></body></html>`);
   w.document.close();

@@ -305,8 +305,33 @@
                     <input type="number" name="validez_dias" placeholder="Sin vencimiento" min="1" value="<%= presupuesto?.validez_dias || '' %>">
                   </div>
                   <div class="field">
-                    <label>Notas / Observaciones</label>
-                    <input type="text" name="notas" placeholder="Ej: Incluye instalación" value="<%= presupuesto?.notas || '' %>">
+                    <label>IVA por defecto en ítems</label>
+                    <select name="iva_default" id="ivaDefault">
+                      <option value="">Sin IVA</option>
+                      <option value="0" <%= (presupuesto?.iva_default === 0 || presupuesto?.iva_default === '0') ? 'selected' : '' %>>Exento (0%)</option>
+                      <option value="10.5" <%= (presupuesto?.iva_default == 10.5) ? 'selected' : '' %>>10.5%</option>
+                      <option value="21" <%= (presupuesto?.iva_default == 21 || (!presupuesto?.iva_default && presupuesto?.iva_default !== 0)) ? 'selected' : '' %>>21%</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="section-card">
+              <div class="section-head">
+                <div class="section-title"><i class="bi bi-chat-left-text"></i> Observaciones al pie del presupuesto</div>
+                <span style="font-size:12px;color:var(--text-muted);">Aparecen en el documento impreso</span>
+              </div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div class="field">
+                    <label>Condición de pago (detalle)</label>
+                    <textarea name="condicion_pago_obs" rows="2" placeholder="Ej: 50% al inicio, 50% a la entrega. Transferencia bancaria." style="resize:vertical;"><%= presupuesto?.condicion_pago_obs || '' %></textarea>
+                  </div>
+                  <div class="field">
+                    <label>Notas / Aclaraciones</label>
+                    <textarea name="notas" rows="2" placeholder="Ej: El precio incluye mano de obra y materiales." style="resize:vertical;"><%= presupuesto?.notas || '' %></textarea>
                   </div>
                 </div>
               </div>
@@ -410,15 +435,16 @@
                   <thead>
                     <tr>
                       <th style="padding-left:20px;">Descripción</th>
-                      <th class="col-right" style="width:110px;">Cantidad</th>
-                      <th class="col-right" style="width:150px;">Precio unit.</th>
-                      <th class="col-right" style="width:150px;">Subtotal</th>
+                      <th class="col-right" style="width:100px;">Cantidad</th>
+                      <th class="col-right" style="width:140px;">Precio unit.</th>
+                      <th class="col-right" style="width:110px;">IVA</th>
+                      <th class="col-right" style="width:140px;">Subtotal s/IVA</th>
                       <th class="col-center"></th>
                     </tr>
                   </thead>
                   <tbody id="itemsBody">
                     <tr id="emptyRow">
-                      <td colspan="5" class="empty-items">
+                      <td colspan="6" class="empty-items">
                         <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
                         <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
                         <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
@@ -544,7 +570,8 @@ let items = [];
 items = <%- JSON.stringify(presupuesto.items.map(i => ({
   id: i.id, nombre: i.nombre, descripcion: i.descripcion,
   cantidad: i.cantidad, precio_unitario: i.precio_unitario,
-  tipo: i.tipo, sku: i.sku
+  tipo: i.tipo, sku: i.sku,
+  pct_iva: (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : null
 }))) %>;
 renderItems();
 <% } %>
@@ -716,15 +743,22 @@ async function eliminarCatItem(id, nombre) {
 // ─────────────────────────────────────────────────────────────
 // AGREGAR ÍTEMS AL PRESUPUESTO
 // ─────────────────────────────────────────────────────────────
+function getIvaDefault() {
+  const v = document.getElementById('ivaDefault')?.value;
+  if (v === '' || v === null || v === undefined) return null;
+  return parseFloat(v);
+}
+
 function agregarDesde(fuente, prod) {
+  const pct = getIvaDefault();
   if (fuente === 'sistema') {
     items.push({ tipo:'producto', sku:prod.sku, nombre:prod.name,
-      descripcion:prod.category||'', cantidad:1, precio_unitario:prod.precio_presupuesto });
+      descripcion:prod.category||'', cantidad:1, precio_unitario:prod.precio_presupuesto, pct_iva:pct });
     document.getElementById('buscadorSistema').value = '';
     document.getElementById('dropSistema').classList.remove('open');
   } else {
     items.push({ tipo:'servicio', sku:null, nombre:prod.nombre,
-      descripcion:prod.descripcion||'', cantidad:1, precio_unitario:prod.precio });
+      descripcion:prod.descripcion||'', cantidad:1, precio_unitario:prod.precio, pct_iva:pct });
   }
   renderItems();
 }
@@ -734,7 +768,8 @@ function agregarManual() {
   if (!nombre) { document.getElementById('manualNombre').focus(); return; }
   const cantidad = parseFloat(document.getElementById('manualCantidad').value) || 1;
   const precio   = parseFloat(document.getElementById('manualPrecio').value)   || 0;
-  items.push({ tipo:'custom', sku:null, nombre, descripcion:'', cantidad, precio_unitario:precio });
+  const pct = getIvaDefault();
+  items.push({ tipo:'custom', sku:null, nombre, descripcion:'', cantidad, precio_unitario:precio, pct_iva:pct });
   document.getElementById('manualNombre').value = '';
   document.getElementById('manualPrecio').value = '';
   document.getElementById('manualCantidad').value = '1';
@@ -751,7 +786,7 @@ function renderItems() {
   document.getElementById('contadorItems').textContent = items.length + ' ítem' + (items.length!==1?'s':'');
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-items">
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-items">
       <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
       <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
       <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
@@ -761,13 +796,16 @@ function renderItems() {
 
   tbody.innerHTML = items.map((item, i) => {
     const sub = (Number(item.cantidad) * Number(item.precio_unitario)) || 0;
+    const pct = item.pct_iva;
+    const pctLabel = pct === null || pct === undefined ? '—' : pct === 0 ? 'Exento' : pct + '%';
     const badge = item.tipo==='producto'
       ? '<span class="badge-tipo badge-sistema" style="font-size:10px;">Producto</span>'
       : item.tipo==='servicio'
         ? '<span class="badge-tipo badge-catalogo" style="font-size:10px;">Catálogo</span>'
         : '';
+    const ivaSelVal = (pct === null || pct === undefined) ? '' : String(pct);
     return `<tr>
-      <td style="padding-left:20px;min-width:220px;">
+      <td style="padding-left:20px;min-width:200px;">
         <input class="item-input" type="text" value="${escHTML(item.nombre)}"
           oninput="items[${i}].nombre=this.value" placeholder="Descripción del ítem">
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;">
@@ -782,6 +820,15 @@ function renderItems() {
       <td>
         <input class="item-input mono" type="number" value="${item.precio_unitario}" min="0" step="any"
           oninput="items[${i}].precio_unitario=parseFloat(this.value)||0;renderItems()">
+      </td>
+      <td>
+        <select class="item-input" style="font-size:13px;padding:6px 8px;"
+          onchange="items[${i}].pct_iva=this.value===''?null:parseFloat(this.value);renderItems()">
+          <option value="" ${ivaSelVal===''?'selected':''}>Sin IVA</option>
+          <option value="0" ${ivaSelVal==='0'?'selected':''}>Exento</option>
+          <option value="10.5" ${ivaSelVal==='10.5'?'selected':''}>10.5%</option>
+          <option value="21" ${ivaSelVal==='21'?'selected':''}>21%</option>
+        </select>
       </td>
       <td class="subtotal-cell">${fmt(sub)}</td>
       <td style="text-align:center;padding-right:8px;">
@@ -799,13 +846,41 @@ function renderItems() {
 // ─────────────────────────────────────────────────────────────
 function calcularTotales() {
   const subtotal  = items.reduce((s,i)=>s+(Number(i.cantidad)*Number(i.precio_unitario)),0);
+  const totalIva  = items.reduce((s,i)=>{
+    const pct = (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : 0;
+    return s + (Number(i.cantidad)*Number(i.precio_unitario)) * pct / 100;
+  }, 0);
   const dPct      = parseFloat(document.getElementById('descPct')?.value)   || 0;
   const dMonto    = parseFloat(document.getElementById('descMonto')?.value) || 0;
   const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
-  const total     = Math.max(0, subtotal - descuento);
+  const total     = Math.max(0, subtotal - descuento + totalIva);
 
   document.getElementById('resSubtotal').textContent = fmt(subtotal);
   document.getElementById('resTotal').textContent    = fmt(total);
+
+  // Mostrar IVA en la barra si hay
+  let ivaWrap = document.getElementById('ivaWrap');
+  if (!ivaWrap) {
+    // Crear el elemento la primera vez
+    const bar = document.getElementById('resSubtotal').closest('.totales-bar-nums');
+    if (bar) {
+      const div = document.createElement('div');
+      div.className = 'totales-bar-item';
+      div.id = 'ivaWrap';
+      div.innerHTML = '<span class="totales-bar-label">IVA</span><span class="totales-bar-val" id="resIva" style="color:#6b7280;">$0</span>';
+      div.style.display = 'none';
+      bar.insertBefore(div, document.getElementById('descuentoWrap') || bar.lastChild);
+      ivaWrap = div;
+    }
+  }
+  if (ivaWrap) {
+    if (totalIva > 0) {
+      ivaWrap.style.display = '';
+      document.getElementById('resIva').textContent = '+ ' + fmt(totalIva);
+    } else {
+      ivaWrap.style.display = 'none';
+    }
+  }
 
   // Sincronizar hidden inputs para el form
   const hdPct   = document.getElementById('hdDescPct');
