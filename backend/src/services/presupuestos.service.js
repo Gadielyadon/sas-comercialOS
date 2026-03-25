@@ -37,8 +37,14 @@ function initPresupuestosSchema() {
     descripcion      TEXT,
     cantidad         REAL    NOT NULL DEFAULT 1,
     precio_unitario  REAL    NOT NULL DEFAULT 0,
+    pct_iva          REAL    DEFAULT NULL,
     subtotal         REAL    NOT NULL DEFAULT 0
   )`);
+
+  // Agregar pct_iva a presupuesto_items si no existe (migracion)
+  try {
+    run(`ALTER TABLE presupuesto_items ADD COLUMN pct_iva REAL DEFAULT NULL`);
+  } catch(e) { /* ya existe */ }
 
   // Lista propia de productos/servicios de presupuesto
   run(`CREATE TABLE IF NOT EXISTS presupuesto_catalogo (
@@ -136,17 +142,18 @@ function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel,
     const qty      = Number(item.cantidad       || 1);
     const precio   = Number(item.precio_unitario || 0);
     const sub      = qty * precio;
+    const pctIva   = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '') ? Number(item.pct_iva) : null;
     run(`
       INSERT INTO presupuesto_items
-        (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, subtotal)
-      VALUES (?,?,?,?,?,?,?,?)
+        (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, pct_iva, subtotal)
+      VALUES (?,?,?,?,?,?,?,?,?)
     `, [
       pid,
       item.tipo        || 'custom',
       item.sku         || null,
       String(item.nombre || ''),
       item.descripcion || null,
-      qty, precio, sub
+      qty, precio, pctIva, sub
     ]);
   }
 
@@ -197,13 +204,14 @@ function update(id, datos) {
     for (const item of datos.items) {
       const qty    = Number(item.cantidad || 1);
       const precio = Number(item.precio_unitario || 0);
+      const pctIva = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '') ? Number(item.pct_iva) : null;
       run(`
         INSERT INTO presupuesto_items
-          (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, subtotal)
-        VALUES (?,?,?,?,?,?,?,?)
+          (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, pct_iva, subtotal)
+        VALUES (?,?,?,?,?,?,?,?,?)
       `, [Number(id), item.tipo||'custom', item.sku||null,
           String(item.nombre||''), item.descripcion||null,
-          qty, precio, qty*precio]);
+          qty, precio, pctIva, qty*precio]);
     }
   }
 
