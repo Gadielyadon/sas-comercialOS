@@ -438,12 +438,12 @@ input, select, textarea, button { font-family: var(--font-body); }
   border-bottom: 1px solid var(--border-color);
 }
 .card-panel-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.card-panel-body { padding: 0; }
+.card-panel-body { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    9. TABLAS
 ══════════════════════════════════════════════════════════════════════════ */
-.sales-table { width: 100%; border-collapse: collapse; }
+.sales-table { width: 100%; border-collapse: collapse; min-width: 650px; }
 .sales-table th {
   font-size: 10.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.7px; color: var(--text-muted);
@@ -742,4 +742,44 @@ input, select, textarea, button { font-family: var(--font-body); }
   table.dt thead th:nth-child(n+5), table.dt tbody td:nth-child(n+5) { display: none; }
   .nav-item { min-height: 42px; }
   ::-webkit-scrollbar { width: 0; height: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE MÓVIL — tablas y modales
+   ═══════════════════════════════════════════════ */
+@media (max-width: 700px) {
+
+  /* Modales full screen en móvil */
+  .sale-overlay > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+  /* Modal de producto: columna única */
+  .sale-overlay > div > div[style*="grid-template-columns:1fr 1fr"],
+  .sale-overlay > div > div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inventario — ocultar columnas menos usadas en móvil */
+  #productsTable th:nth-child(5),
+  #productsTable th:nth-child(7),
+  #productsTable th:nth-child(8),
+  #productsTable td:nth-child(5),
+  #productsTable td:nth-child(7),
+  #productsTable td:nth-child(8) { display: none; }
+
+  /* Presupuestos listado — ocultar columnas menos usadas */
+  #presupuestosTable th:nth-child(4),
+  #presupuestosTable th:nth-child(5),
+  #presupuestosTable td:nth-child(4),
+  #presupuestosTable td:nth-child(5) { display: none; }
+
+  /* Totales al 100% en formularios */
+  div[style*="max-width:320px"],
+  div[style*="max-width: 320px"] {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }
