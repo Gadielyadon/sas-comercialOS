@@ -559,31 +559,33 @@
 
 <%- include('../partials/scripts') %>
 <script>
+// ── Helpers ──
+const fmt = n => '$' + (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+const escHTML = s => String(s || '')
+  .replace(/&/g, '&amp;')
+  .replace(/"/g, '&quot;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;');
+
 // ── Datos del servidor ──
 const PRODUCTOS_SISTEMA = <%- JSON.stringify(productos) %>;
-let   CATALOGO          = <%- JSON.stringify(catalogo) %>;
+let CATALOGO = <%- JSON.stringify(catalogo) %>;
 
 // ── Estado de ítems del presupuesto ──
 let items = [];
 
 <% if (presupuesto && presupuesto.items && presupuesto.items.length) { %>
 items = <%- JSON.stringify(presupuesto.items.map(i => ({
-  id: i.id, nombre: i.nombre, descripcion: i.descripcion,
-  cantidad: i.cantidad, precio_unitario: i.precio_unitario,
-  tipo: i.tipo, sku: i.sku,
+  id: i.id,
+  nombre: i.nombre,
+  descripcion: i.descripcion,
+  cantidad: i.cantidad,
+  precio_unitario: i.precio_unitario,
+  tipo: i.tipo,
+  sku: i.sku,
   pct_iva: (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : null
 }))) %>;
-renderItems();
 <% } %>
-
-<% if (presupuesto && (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0)) { %>
-document.getElementById('descPct').value   = '<%= presupuesto.descuento_pct || 0 %>';
-document.getElementById('descMonto').value = '<%= presupuesto.descuento_monto || 0 %>';
-calcularTotales();
-<% } %>
-
-const fmt  = n => '$' + (Number(n)||0).toLocaleString('es-AR',{minimumFractionDigits:0});
-const escHTML = s => String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 // ─────────────────────────────────────────────────────────────
 // TABS
@@ -602,35 +604,56 @@ function setTab(tab, btn) {
 // ─────────────────────────────────────────────────────────────
 function buscarSistema(q) {
   const drop = document.getElementById('dropSistema');
-  if (!q.trim()) { drop.classList.remove('open'); return; }
+  if (!drop) return;
+
+  if (!q.trim()) {
+    drop.classList.remove('open');
+    drop.innerHTML = '';
+    kbState.index = -1;
+    return;
+  }
+
+  const qq = q.toLowerCase();
   const results = PRODUCTOS_SISTEMA.filter(p =>
-    p.name.toLowerCase().includes(q.toLowerCase()) ||
-    p.sku.toLowerCase().includes(q.toLowerCase())
+    String(p.name || '').toLowerCase().includes(qq) ||
+    String(p.sku || '').toLowerCase().includes(qq)
   ).slice(0, 12);
 
   drop.innerHTML = !results.length
     ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13.5px;">Sin resultados</div>'
-    : results.map(p => `
-      <div class="prod-item" onclick="agregarDesde('sistema', ${JSON.stringify(p).replace(/"/g,'&quot;')})">
-        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
-          <div style="flex:1;min-width:0;">
-            <div class="prod-item-name">${p.name}</div>
-            <div class="prod-item-meta">
-              <span class="badge-tipo badge-sistema">Sistema</span>
-              <span>SKU: ${p.sku}</span>
-              ${p.category ? `<span>${p.category}</span>` : ''}
-              <span>Stock: ${p.stock}</span>
+    : results.map(p => {
+        const safeObj = encodeURIComponent(JSON.stringify(p));
+        return `
+        <div class="prod-item" data-obj="${safeObj}" data-fuente="sistema">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
+            <div style="flex:1;min-width:0;">
+              <div class="prod-item-name">${escHTML(p.name)}</div>
+              <div class="prod-item-meta">
+                <span class="badge-tipo badge-sistema">Sistema</span>
+                <span>SKU: ${escHTML(p.sku || '')}</span>
+                ${p.category ? `<span>${escHTML(p.category)}</span>` : ''}
+                <span>Stock: ${Number(p.stock || 0)}</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div class="prod-item-precio">${fmt(p.precio_presupuesto)}</div>
+              ${Number(p.precio_presupuesto) !== Number(p.precio_venta)
+                ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">${fmt(p.precio_venta)}</div>`
+                : ''}
             </div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div class="prod-item-precio">${fmt(p.precio_presupuesto)}</div>
-            ${p.precio_presupuesto !== p.precio_venta
-              ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">${fmt(p.precio_venta)}</div>`
-              : ''}
-          </div>
-        </div>
-      </div>`).join('');
+        </div>`;
+      }).join('');
+
+  drop.querySelectorAll('.prod-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const obj = JSON.parse(decodeURIComponent(el.dataset.obj));
+      agregarDesde(el.dataset.fuente, obj);
+    });
+  });
+
   drop.classList.add('open');
+  kbState.index = -1;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -638,7 +661,10 @@ function buscarSistema(q) {
 // ─────────────────────────────────────────────────────────────
 function renderCatalogo() {
   const list = document.getElementById('catalogoList');
-  document.getElementById('catContador').textContent = CATALOGO.length + ' ítem' + (CATALOGO.length !== 1 ? 's' : '');
+  const contador = document.getElementById('catContador');
+  if (!list || !contador) return;
+
+  contador.textContent = CATALOGO.length + ' ítem' + (CATALOGO.length !== 1 ? 's' : '');
 
   if (!CATALOGO.length) {
     list.innerHTML = '<div class="empty-catalogo"><i class="bi bi-star" style="font-size:28px;display:block;margin-bottom:8px;opacity:.25;"></i>El catálogo está vacío.<br>Agregá ítems abajo para empezar.</div>';
@@ -647,22 +673,22 @@ function renderCatalogo() {
 
   list.innerHTML = CATALOGO.map(c => `
     <div class="catalogo-item">
-      <div class="catalogo-item-info" onclick="agregarDesde('catalogo', ${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <div class="catalogo-item-info" onclick='agregarDesde("catalogo", ${JSON.stringify(c)})'>
         <div class="catalogo-item-nombre">${escHTML(c.nombre)}</div>
-        <div class="catalogo-item-desc">${c.descripcion ? escHTML(c.descripcion) + ' · ' : ''}${c.unidad}</div>
+        <div class="catalogo-item-desc">${c.descripcion ? escHTML(c.descripcion) + ' · ' : ''}${escHTML(c.unidad || 'unidad')}</div>
       </div>
       <div class="catalogo-item-precio">${fmt(c.precio)}</div>
       <div class="catalogo-item-acciones">
         <button type="button" class="btn-cat-accion btn-cat-agregar" title="Agregar al presupuesto"
-          onclick="agregarDesde('catalogo', ${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          onclick='agregarDesde("catalogo", ${JSON.stringify(c)})'>
           <i class="bi bi-plus-lg"></i>
         </button>
         <button type="button" class="btn-cat-accion btn-cat-editar" title="Editar"
-          onclick="abrirEditCat(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          onclick='abrirEditCat(${JSON.stringify(c)})'>
           <i class="bi bi-pencil"></i>
         </button>
         <button type="button" class="btn-cat-accion btn-cat-eliminar" title="Eliminar"
-          onclick="eliminarCatItem(${c.id}, '${escHTML(c.nombre)}')">
+          onclick="eliminarCatItem(${c.id}, ${JSON.stringify(c.nombre)})">
           <i class="bi bi-trash"></i>
         </button>
       </div>
@@ -678,7 +704,11 @@ async function guardarNuevoCatalogoItem() {
   const precio = parseFloat(document.getElementById('catNuevoPrecio').value) || 0;
   const unidad = document.getElementById('catNuevoUnidad').value;
   const desc   = document.getElementById('catNuevoDesc').value.trim();
-  if (!nombre) { document.getElementById('catNuevoNombre').focus(); return; }
+
+  if (!nombre) {
+    document.getElementById('catNuevoNombre').focus();
+    return;
+  }
 
   try {
     const r = await fetch('/presupuestos/api/catalogo', {
@@ -686,21 +716,27 @@ async function guardarNuevoCatalogoItem() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, precio, unidad, descripcion: desc })
     });
+
     const nuevo = await r.json();
+    if (!r.ok) throw new Error(nuevo?.error || 'Error al guardar en el catálogo');
+
     CATALOGO.push(nuevo);
     renderCatalogo();
+
     document.getElementById('catNuevoNombre').value = '';
     document.getElementById('catNuevoPrecio').value = '';
-    document.getElementById('catNuevoDesc').value   = '';
+    document.getElementById('catNuevoDesc').value = '';
     document.getElementById('catNuevoNombre').focus();
-  } catch(e) { alert('Error al guardar en el catálogo'); }
+  } catch (e) {
+    alert(e.message || 'Error al guardar en el catálogo');
+  }
 }
 
 function abrirEditCat(item) {
-  document.getElementById('editCatId').value     = item.id;
-  document.getElementById('editCatNombre').value = item.nombre;
-  document.getElementById('editCatDesc').value   = item.descripcion || '';
-  document.getElementById('editCatPrecio').value = item.precio;
+  document.getElementById('editCatId').value = item.id;
+  document.getElementById('editCatNombre').value = item.nombre || '';
+  document.getElementById('editCatDesc').value = item.descripcion || '';
+  document.getElementById('editCatPrecio').value = item.precio || 0;
   document.getElementById('editCatUnidad').value = item.unidad || 'unidad';
   document.getElementById('modalEditCat').classList.add('active');
 }
@@ -710,11 +746,12 @@ function cerrarModalCat() {
 }
 
 async function guardarEditCat() {
-  const id     = document.getElementById('editCatId').value;
+  const id = document.getElementById('editCatId').value;
   const nombre = document.getElementById('editCatNombre').value.trim();
   const precio = parseFloat(document.getElementById('editCatPrecio').value) || 0;
   const unidad = document.getElementById('editCatUnidad').value;
-  const desc   = document.getElementById('editCatDesc').value.trim();
+  const desc = document.getElementById('editCatDesc').value.trim();
+
   if (!nombre) return;
 
   try {
@@ -723,21 +760,33 @@ async function guardarEditCat() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, precio, unidad, descripcion: desc })
     });
+
     const actualizado = await r.json();
+    if (!r.ok) throw new Error(actualizado?.error || 'Error al actualizar');
+
     const idx = CATALOGO.findIndex(c => c.id == id);
     if (idx !== -1) CATALOGO[idx] = actualizado;
+
     renderCatalogo();
     cerrarModalCat();
-  } catch(e) { alert('Error al actualizar'); }
+  } catch (e) {
+    alert(e.message || 'Error al actualizar');
+  }
 }
 
 async function eliminarCatItem(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}" del catálogo?`)) return;
+
   try {
-    await fetch(`/presupuestos/api/catalogo/${id}`, { method: 'DELETE' });
+    const r = await fetch(`/presupuestos/api/catalogo/${id}`, { method: 'DELETE' });
+    const out = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(out?.error || 'Error al eliminar');
+
     CATALOGO = CATALOGO.filter(c => c.id !== id);
     renderCatalogo();
-  } catch(e) { alert('Error al eliminar'); }
+  } catch (e) {
+    alert(e.message || 'Error al eliminar');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -751,39 +800,85 @@ function getIvaDefault() {
 
 function agregarDesde(fuente, prod) {
   const pct = getIvaDefault();
+
   if (fuente === 'sistema') {
-    items.push({ tipo:'producto', sku:prod.sku, nombre:prod.name,
-      descripcion:prod.category||'', cantidad:1, precio_unitario:prod.precio_presupuesto, pct_iva:pct });
-    document.getElementById('buscadorSistema').value = '';
-    document.getElementById('dropSistema').classList.remove('open');
+    items.push({
+      tipo: 'producto',
+      sku: prod.sku || null,
+      nombre: prod.name || '',
+      descripcion: prod.category || '',
+      cantidad: 1,
+      precio_unitario: Number(prod.precio_presupuesto || 0),
+      pct_iva: pct
+    });
+
+    const buscador = document.getElementById('buscadorSistema');
+    const drop = document.getElementById('dropSistema');
+    if (buscador) buscador.value = '';
+    if (drop) {
+      drop.classList.remove('open');
+      drop.innerHTML = '';
+    }
   } else {
-    items.push({ tipo:'servicio', sku:null, nombre:prod.nombre,
-      descripcion:prod.descripcion||'', cantidad:1, precio_unitario:prod.precio, pct_iva:pct });
+    items.push({
+      tipo: 'servicio',
+      sku: null,
+      nombre: prod.nombre || '',
+      descripcion: prod.descripcion || '',
+      cantidad: 1,
+      precio_unitario: Number(prod.precio || 0),
+      pct_iva: pct
+    });
   }
+
   renderItems();
 }
 
 function agregarManual() {
   const nombre = document.getElementById('manualNombre').value.trim();
-  if (!nombre) { document.getElementById('manualNombre').focus(); return; }
+  if (!nombre) {
+    document.getElementById('manualNombre').focus();
+    return;
+  }
+
   const cantidad = parseFloat(document.getElementById('manualCantidad').value) || 1;
-  const precio   = parseFloat(document.getElementById('manualPrecio').value)   || 0;
+  const precio = parseFloat(document.getElementById('manualPrecio').value) || 0;
   const pct = getIvaDefault();
-  items.push({ tipo:'custom', sku:null, nombre, descripcion:'', cantidad, precio_unitario:precio, pct_iva:pct });
+
+  items.push({
+    tipo: 'custom',
+    sku: null,
+    nombre,
+    descripcion: '',
+    cantidad,
+    precio_unitario: precio,
+    pct_iva: pct
+  });
+
   document.getElementById('manualNombre').value = '';
   document.getElementById('manualPrecio').value = '';
   document.getElementById('manualCantidad').value = '1';
+
   renderItems();
 }
 
-function quitarItem(i) { items.splice(i,1); renderItems(); }
+function quitarItem(i) {
+  items.splice(i, 1);
+  renderItems();
+}
 
 // ─────────────────────────────────────────────────────────────
 // RENDER TABLA ÍTEMS
 // ─────────────────────────────────────────────────────────────
 function renderItems() {
   const tbody = document.getElementById('itemsBody');
-  document.getElementById('contadorItems').textContent = items.length + ' ítem' + (items.length!==1?'s':'');
+  const contador = document.getElementById('contadorItems');
+
+  if (contador) {
+    contador.textContent = items.length + ' ítem' + (items.length !== 1 ? 's' : '');
+  }
+
+  if (!tbody) return;
 
   if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-items">
@@ -791,43 +886,46 @@ function renderItems() {
       <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
       <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
     </td></tr>`;
-    calcularTotales(); return;
+    calcularTotales();
+    return;
   }
 
   tbody.innerHTML = items.map((item, i) => {
     const sub = (Number(item.cantidad) * Number(item.precio_unitario)) || 0;
     const pct = item.pct_iva;
-    const pctLabel = pct === null || pct === undefined ? '—' : pct === 0 ? 'Exento' : pct + '%';
-    const badge = item.tipo==='producto'
+    const ivaSelVal = (pct === null || pct === undefined) ? '' : String(pct);
+
+    const badge = item.tipo === 'producto'
       ? '<span class="badge-tipo badge-sistema" style="font-size:10px;">Producto</span>'
-      : item.tipo==='servicio'
+      : item.tipo === 'servicio'
         ? '<span class="badge-tipo badge-catalogo" style="font-size:10px;">Catálogo</span>'
         : '';
-    const ivaSelVal = (pct === null || pct === undefined) ? '' : String(pct);
+
     return `<tr>
       <td style="padding-left:20px;min-width:200px;">
         <input class="item-input" type="text" value="${escHTML(item.nombre)}"
           oninput="items[${i}].nombre=this.value" placeholder="Descripción del ítem">
-        <div style="display:flex;gap:6px;margin-top:3px;align-items:center;">
+        <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap;">
           ${badge}
-          ${item.sku ? `<span style="font-size:11px;color:var(--text-muted);">SKU: ${item.sku}</span>` : ''}
+          ${item.sku ? `<span style="font-size:11px;color:var(--text-muted);">SKU: ${escHTML(item.sku)}</span>` : ''}
+          ${item.descripcion ? `<span style="font-size:11px;color:var(--text-muted);">${escHTML(item.descripcion)}</span>` : ''}
         </div>
       </td>
       <td>
-        <input class="item-input mono" type="number" value="${item.cantidad}" min="0.01" step="any"
+        <input class="item-input mono" type="number" value="${Number(item.cantidad || 0)}" min="0.01" step="any"
           oninput="items[${i}].cantidad=parseFloat(this.value)||0;renderItems()">
       </td>
       <td>
-        <input class="item-input mono" type="number" value="${item.precio_unitario}" min="0" step="any"
+        <input class="item-input mono" type="number" value="${Number(item.precio_unitario || 0)}" min="0" step="any"
           oninput="items[${i}].precio_unitario=parseFloat(this.value)||0;renderItems()">
       </td>
       <td>
         <select class="item-input" style="font-size:13px;padding:6px 8px;"
           onchange="items[${i}].pct_iva=this.value===''?null:parseFloat(this.value);renderItems()">
-          <option value="" ${ivaSelVal===''?'selected':''}>Sin IVA</option>
-          <option value="0" ${ivaSelVal==='0'?'selected':''}>Exento</option>
-          <option value="10.5" ${ivaSelVal==='10.5'?'selected':''}>10.5%</option>
-          <option value="21" ${ivaSelVal==='21'?'selected':''}>21%</option>
+          <option value="" ${ivaSelVal === '' ? 'selected' : ''}>Sin IVA</option>
+          <option value="0" ${ivaSelVal === '0' ? 'selected' : ''}>Exento</option>
+          <option value="10.5" ${ivaSelVal === '10.5' ? 'selected' : ''}>10.5%</option>
+          <option value="21" ${ivaSelVal === '21' ? 'selected' : ''}>21%</option>
         </select>
       </td>
       <td class="subtotal-cell">${fmt(sub)}</td>
@@ -838,6 +936,7 @@ function renderItems() {
       </td>
     </tr>`;
   }).join('');
+
   calcularTotales();
 }
 
@@ -845,24 +944,24 @@ function renderItems() {
 // TOTALES
 // ─────────────────────────────────────────────────────────────
 function calcularTotales() {
-  const subtotal  = items.reduce((s,i)=>s+(Number(i.cantidad)*Number(i.precio_unitario)),0);
-  const totalIva  = items.reduce((s,i)=>{
+  const subtotal = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_unitario)), 0);
+
+  const totalIva = items.reduce((s, i) => {
     const pct = (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : 0;
-    return s + (Number(i.cantidad)*Number(i.precio_unitario)) * pct / 100;
+    return s + (Number(i.cantidad) * Number(i.precio_unitario)) * pct / 100;
   }, 0);
-  const dPct      = parseFloat(document.getElementById('descPct')?.value)   || 0;
-  const dMonto    = parseFloat(document.getElementById('descMonto')?.value) || 0;
+
+  const dPct = parseFloat(document.getElementById('descPct')?.value) || 0;
+  const dMonto = parseFloat(document.getElementById('descMonto')?.value) || 0;
   const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
-  const total     = Math.max(0, subtotal - descuento + totalIva);
+  const total = Math.max(0, subtotal - descuento + totalIva);
 
   document.getElementById('resSubtotal').textContent = fmt(subtotal);
-  document.getElementById('resTotal').textContent    = fmt(total);
+  document.getElementById('resTotal').textContent = fmt(total);
 
-  // Mostrar IVA en la barra si hay
   let ivaWrap = document.getElementById('ivaWrap');
   if (!ivaWrap) {
-    // Crear el elemento la primera vez
-    const bar = document.getElementById('resSubtotal').closest('.totales-bar-nums');
+    const bar = document.getElementById('resSubtotal')?.closest('.totales-bar-nums');
     if (bar) {
       const div = document.createElement('div');
       div.className = 'totales-bar-item';
@@ -873,6 +972,7 @@ function calcularTotales() {
       ivaWrap = div;
     }
   }
+
   if (ivaWrap) {
     if (totalIva > 0) {
       ivaWrap.style.display = '';
@@ -882,24 +982,23 @@ function calcularTotales() {
     }
   }
 
-  // Sincronizar hidden inputs para el form
-  const hdPct   = document.getElementById('hdDescPct');
+  const hdPct = document.getElementById('hdDescPct');
   const hdMonto = document.getElementById('hdDescMonto');
-  if (hdPct)   hdPct.value   = dPct;
+  if (hdPct) hdPct.value = dPct;
   if (hdMonto) hdMonto.value = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
 
   const descWrap = document.getElementById('descuentoWrap');
-  const resDesc  = document.getElementById('resDescuento');
+  const resDesc = document.getElementById('resDescuento');
   if (descuento > 0) {
     if (descWrap) descWrap.style.display = '';
-    if (resDesc)  resDesc.textContent = '- ' + fmt(descuento);
+    if (resDesc) resDesc.textContent = '- ' + fmt(descuento);
   } else {
     if (descWrap) descWrap.style.display = 'none';
   }
 }
 
 function toggleDescPopup() {
-  document.getElementById('descPopup').classList.toggle('open');
+  document.getElementById('descPopup')?.classList.toggle('open');
 }
 function toggleDescuento() { toggleDescPopup(); }
 
@@ -907,28 +1006,35 @@ function toggleDescuento() { toggleDescPopup(); }
 // SUBMIT
 // ─────────────────────────────────────────────────────────────
 document.getElementById('formPpto').addEventListener('submit', function(e) {
-  if (!items.length) { e.preventDefault(); alert('Agregá al menos un ítem al presupuesto.'); return; }
+  if (!items.length) {
+    e.preventDefault();
+    alert('Agregá al menos un ítem al presupuesto.');
+    return;
+  }
   document.getElementById('itemsJson').value = JSON.stringify(items);
 });
 
 // Cerrar dropdowns y popups afuera
 document.addEventListener('click', e => {
-  if (!e.target.closest('.prod-search-wrap'))
+  if (!e.target.closest('.prod-search-wrap')) {
     document.querySelectorAll('.prod-dropdown').forEach(d => d.classList.remove('open'));
-  if (!e.target.closest('#descPopup') && !e.target.closest('.btn-desc-toggle'))
+  }
+
+  if (!e.target.closest('#descPopup') && !e.target.closest('.btn-desc-toggle')) {
     document.getElementById('descPopup')?.classList.remove('open');
-  if (e.target === document.getElementById('modalEditCat'))
+  }
+
+  if (e.target === document.getElementById('modalEditCat')) {
     cerrarModalCat();
+  }
 });
+
 // ─────────────────────────────────────────────────────────────
 // NAVEGACIÓN POR TECLADO EN DROPDOWNS
 // ─────────────────────────────────────────────────────────────
-// Estado de navegación por dropdown activo
 const kbState = {
-  dropId: null,   // id del dropdown activo
-  index:  -1,     // ítem seleccionado (-1 = ninguno)
-  data:   [],     // resultados actuales (para sistema)
-  fuente: null    // 'sistema' | null
+  dropId: null,
+  index: -1
 };
 
 function getDropItems(dropId) {
@@ -936,62 +1042,51 @@ function getDropItems(dropId) {
 }
 
 function kbHighlight(dropId, index) {
-  const items = getDropItems(dropId);
-  items.forEach((el, i) => el.classList.toggle('kb-focus', i === index));
-  if (items[index]) {
-    items[index].scrollIntoView({ block: 'nearest' });
-  }
+  const list = getDropItems(dropId);
+  list.forEach((el, i) => el.classList.toggle('kb-focus', i === index));
+  if (list[index]) list[index].scrollIntoView({ block: 'nearest' });
   kbState.index = index;
   kbState.dropId = dropId;
 }
 
 function kbSelect(dropId) {
-  const items = getDropItems(dropId);
-  if (kbState.index >= 0 && items[kbState.index]) {
-    items[kbState.index].click();
+  const list = getDropItems(dropId);
+  if (kbState.index >= 0 && list[kbState.index]) {
+    list[kbState.index].click();
     kbState.index = -1;
   }
 }
 
-// Adjuntar navegación a un input de búsqueda
 function attachKbNav(inputId, dropId) {
   const input = document.getElementById(inputId);
   if (!input) return;
+
   input.addEventListener('keydown', e => {
     const drop = document.getElementById(dropId);
     const isOpen = drop?.classList.contains('open');
-    const items  = getDropItems(dropId);
-    const count  = items.length;
+    const list = getDropItems(dropId);
+    const count = list.length;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (!isOpen) return;
-      const next = kbState.dropId === dropId
-        ? Math.min(kbState.index + 1, count - 1)
-        : 0;
+      if (!isOpen || count === 0) return;
+      const next = kbState.dropId === dropId ? Math.min(kbState.index + 1, count - 1) : 0;
       kbHighlight(dropId, next);
-    }
-    else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (!isOpen) return;
-      const prev = kbState.dropId === dropId
-        ? Math.max(kbState.index - 1, 0)
-        : 0;
+      if (!isOpen || count === 0) return;
+      const prev = kbState.dropId === dropId ? Math.max(kbState.index - 1, 0) : 0;
       kbHighlight(dropId, prev);
-    }
-    else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter') {
       if (isOpen && kbState.dropId === dropId && kbState.index >= 0) {
         e.preventDefault();
         kbSelect(dropId);
       }
-    }
-    else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape') {
       drop?.classList.remove('open');
       kbState.index = -1;
       input.blur();
-    }
-    else {
-      // Al escribir, resetear índice
+    } else {
       kbState.index = -1;
       if (kbState.dropId === dropId) {
         getDropItems(dropId).forEach(el => el.classList.remove('kb-focus'));
@@ -1000,9 +1095,7 @@ function attachKbNav(inputId, dropId) {
   });
 }
 
-// Adjuntar a los inputs una vez que el DOM cargó
-attachKbNav('buscadorSistema',  'dropSistema');
-attachKbNav('buscadorCatalogo', 'dropCatalogo');
+attachKbNav('buscadorSistema', 'dropSistema');
 
 // Enter en input manual también agrega
 document.getElementById('manualNombre')?.addEventListener('keydown', e => {
@@ -1023,9 +1116,6 @@ document.getElementById('catNuevoPrecio')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); guardarNuevoCatalogoItem(); }
 });
 
-// Reset KB cuando se cierra un dropdown
-function buscarSistemaOrig(q) { kbState.index = -1; buscarSistema(q); }
-
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     cerrarModalCat();
@@ -1035,6 +1125,14 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Init: renderizar catálogo si la tab está visible
+// Init
+renderItems();
+
+<% if (presupuesto && (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0)) { %>
+document.getElementById('descPct').value = '<%= presupuesto.descuento_pct || 0 %>';
+document.getElementById('descMonto').value = '<%= presupuesto.descuento_monto || 0 %>';
+calcularTotales();
+<% } %>
+
 renderCatalogo();
 </script>

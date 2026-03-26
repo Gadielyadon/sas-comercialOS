@@ -25,15 +25,24 @@ router.post('/login', (req, res) => {
       error: 'Usuario o contraseña incorrectos',
       username: username || ''
     });
-  }
-  const { get: dbGet } = require('../db');
-  // Obtener sucursal_id actualizado desde DB (puede haberse asignado después del login inicial)
+  }const { get: dbGet } = require('../db');
+
+let sucursal_id = 1; // valor por defecto
+
+try {
   const userFull = dbGet('SELECT sucursal_id FROM users WHERE id = ?', [user.id]);
-  req.session.user = {
-    ...user,
-    name: user.nombre || user.username,   // garantizar que .name esté siempre
-    sucursal_id: userFull?.sucursal_id || user.sucursal_id || 1
-  };
+  if (userFull && userFull.sucursal_id) {
+    sucursal_id = userFull.sucursal_id;
+  }
+} catch (err) {
+  console.log('⚠️ sucursal_id no existe todavía, usando default');
+}
+
+req.session.user = {
+  ...user,
+  name: user.nombre || user.username,
+  sucursal_id
+};
   const returnTo = req.session.returnTo || '/dashboard';
   delete req.session.returnTo;
   res.redirect(returnTo);
