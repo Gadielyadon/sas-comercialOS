@@ -396,6 +396,11 @@ const dataMetodos = <%- graficoMetodos %>;
 const dataTopProd = <%- graficoTopProd %>;
 const COLORS = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316'];
 
+function parseFechaLocal(value) {
+  if (!value) return new Date();
+  return new Date(String(value).replace(' ', 'T'));
+}
+
 // ── Chart Ventas 7 días ──
 (function() {
   const dias = [], totales = [];
@@ -598,8 +603,8 @@ async function buscarVentas(page = 1) {
         <i class="bi bi-chevron-right" id="chev-${v.id}" style="font-size:11px;color:var(--text-secondary);transition:transform .15s;"></i>
       </td>
       <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">#${v.id}</td>
-      <td style="padding:10px 14px;font-size:13.5px;">${new Date(v.created_at+'Z').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</td>
-      <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">${new Date(v.created_at+'Z').toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})}</td>
+      <td style="padding:10px 14px;font-size:13.5px;">${parseFechaLocal(v.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</td>
+      <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">${parseFechaLocal(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})}</td>
       <td style="padding:10px 14px;">
         <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(99,102,241,.1);color:#6366f1;">${v.payment_method}</span>
       </td>
@@ -685,7 +690,7 @@ function exportarVentasCSV() {
   if (!_lastVentas.length) { alert('No hay ventas para exportar'); return; }
   let csv = '\uFEFFN°;Fecha;Hora;Método;Total\n';
   _lastVentas.forEach(v => {
-    const d = new Date(v.created_at + 'Z');
+    const d = parseFechaLocal(v.created_at);
     csv += [v.id, d.toLocaleDateString('es-AR'), d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), v.payment_method, Number(v.total).toFixed(2)].join(';') + '\n';
   });
   const a = Object.assign(document.createElement('a'), {
@@ -787,7 +792,7 @@ async function reimprimirTicketVenta(saleId) {
 
   const cfg = await loadTicketConfigDashboard();
 
-  const fechaObj = new Date(venta.created_at + 'Z');
+  const fechaObj = parseFechaLocal(venta.created_at);
   const fechaTxt = fechaObj.toLocaleString('es-AR', {
     day:'2-digit',
     month:'2-digit',
