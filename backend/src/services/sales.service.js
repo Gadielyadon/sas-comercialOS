@@ -6,9 +6,9 @@ const { get, all, run, db } = require('../db');
 // Argentina = UTC-3 fijo (sin horario de verano desde 1999)
 // ─────────────────────────────────────────────────────────────
 function nowArgentina() {
-  const now    = new Date();
+  const now = new Date();
   const offset = -3 * 60; // UTC-3 en minutos
-  const local  = new Date(now.getTime() + offset * 60 * 1000);
+  const local = new Date(now.getTime() + offset * 60 * 1000);
   return local.toISOString().replace('T', ' ').substring(0, 19);
 }
 
@@ -43,12 +43,23 @@ function initSalesSchema() {
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
+const _columnExistsCache = new Map();
+
 function columnExists(table, col) {
-  try {
-    return all(`PRAGMA table_info(${table})`).some(c => c.name === col);
-  } catch (_) {
-    return false;
+  const key = `${table}.${col}`;
+  if (_columnExistsCache.has(key)) {
+    return _columnExistsCache.get(key);
   }
+
+  let exists = false;
+  try {
+    exists = all(`PRAGMA table_info(${table})`).some(c => c.name === col);
+  } catch (_) {
+    exists = false;
+  }
+
+  _columnExistsCache.set(key, exists);
+  return exists;
 }
 
 function toNumber(value, fallback = 0) {
@@ -67,10 +78,11 @@ function isManualDeptoItem(item) {
   return sku.startsWith('DEPTO-') || sku.startsWith('BAL-') || item?.isDepto === true;
 }
 
-function getProductForSale(sku, sucursal_id = 1) {
-  const hasSucursal = columnExists('products', 'sucursal_id');
+const HAS_PRODUCTS_SUCURSAL = columnExists('products', 'sucursal_id');
+const HAS_SALES_SUCURSAL = columnExists('sales', 'sucursal_id');
 
-  if (hasSucursal) {
+function getProductForSale(sku, sucursal_id = 1) {
+  if (HAS_PRODUCTS_SUCURSAL) {
     let prod = get(
       `SELECT sku, name, price, stock,
               COALESCE(iva, 0)     AS iva,
@@ -135,31 +147,65 @@ function createSale({
 
   const suc = sucursal_id ? Number(sucursal_id) : 1;
 
+  const insertSaleStmt = db.prepare(`
+    INSERT INTO sales (
+      total, payment_method, cash_received, change_amount,
+      discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const insertSaleItemStmt = db.prepare(`
+    INSERT INTO sale_items (
+      sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const updateStockBySucursalStmt = db.prepare(`
+    UPDATE products
+    SET stock = stock - ?
+    WHERE sku = ? AND sucursal_id = ?
+  `);
+
+  const updateStockStmt = db.prepare(`
+    UPDATE products
+    SET stock = stock - ?
+    WHERE sku = ?
+  `);
+
+  const getSaleStmt = db.prepare(`SELECT * FROM sales WHERE id = ?`);
+  const getSaleItemsStmt = db.prepare(`SELECT * FROM sale_items WHERE sale_id = ?`);
+  const getClienteStmt = db.prepare(`SELECT id, saldo FROM clientes WHERE id = ?`);
+  const insertCuentaCorrienteStmt = db.prepare(`
+    INSERT INTO cuenta_corriente
+      (cliente_id, tipo, monto, descripcion, sale_id)
+    VALUES (?, 'cargo', ?, ?, ?)
+  `);
+  const updateClienteSaldoStmt = db.prepare(`
+    UPDATE clientes SET saldo = saldo + ? WHERE id = ?
+  `);
+
   const tx = db.transaction(() => {
-    const saleRes = run(
-      `INSERT INTO sales (
-        total, payment_method, cash_received, change_amount,
-        discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        toNumber(total),
-        payment_method || null,
-        cash_received === undefined || cash_received === null || cash_received === ''
-          ? null
-          : toNumber(cash_received),
-        change_amount === undefined || change_amount === null || change_amount === ''
-          ? null
-          : toNumber(change_amount),
-        toNumber(discount_pct, 0),
-        toNumber(discount_fixed, 0),
-        toNumber(recargo_pct, 0),
-        cliente_id === undefined || cliente_id === null || cliente_id === ''
-          ? 1
-          : Number(cliente_id),
-        suc,
-        nowArgentina(),   // ← hora local Argentina en lugar de UTC
-      ]
+    const productCache = new Map();
+    const createdAt = nowArgentina();
+
+    const saleRes = insertSaleStmt.run(
+      toNumber(total),
+      payment_method || null,
+      cash_received === undefined || cash_received === null || cash_received === ''
+        ? null
+        : toNumber(cash_received),
+      change_amount === undefined || change_amount === null || change_amount === ''
+        ? null
+        : toNumber(change_amount),
+      toNumber(discount_pct, 0),
+      toNumber(discount_fixed, 0),
+      toNumber(recargo_pct, 0),
+      cliente_id === undefined || cliente_id === null || cliente_id === ''
+        ? 1
+        : Number(cliente_id),
+      suc,
+      createdAt
     );
 
     const sale_id = Number(saleRes.lastInsertRowid);
@@ -172,20 +218,24 @@ function createSale({
         throw new Error(`Cantidad inválida para ${sku || it?.name || 'item'}`);
       }
 
-      // ── Ítem manual / departamento / balanza: no busca en products ni descuenta stock ──
       if (isManualDeptoItem(it)) {
-        const name     = String(it?.name || 'Departamento');
-        const price    = toNumber(it?.price, 0);
+        const name = String(it?.name || 'Departamento');
+        const price = toNumber(it?.price, 0);
         const subtotal = toNumber(it?.subtotal, price * qty);
-        const iva      = toNumber(it?.iva, 0);
-        const ieps     = toNumber(it?.ieps, 0);
-        const pesable  = toBoolInt(it?.pesable, 0);
+        const iva = toNumber(it?.iva, 0);
+        const ieps = toNumber(it?.ieps, 0);
+        const pesable = toBoolInt(it?.pesable, 0);
 
-        run(
-          `INSERT INTO sale_items (
-            sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [sale_id, sku || `DEPTO-${Date.now()}`, name, price, qty, subtotal, iva, ieps, pesable]
+        insertSaleItemStmt.run(
+          sale_id,
+          sku || `DEPTO-${Date.now()}`,
+          name,
+          price,
+          qty,
+          subtotal,
+          iva,
+          ieps,
+          pesable
         );
 
         continue;
@@ -195,7 +245,12 @@ function createSale({
         throw new Error('Hay un item sin SKU');
       }
 
-      const prod = getProductForSale(sku, suc);
+      let prod = productCache.get(sku);
+      if (!prod) {
+        prod = getProductForSale(sku, suc);
+        if (prod) productCache.set(sku, prod);
+      }
+
       if (!prod) {
         throw new Error(`Producto no existe: ${sku}`);
       }
@@ -204,8 +259,8 @@ function createSale({
         throw new Error(`Stock insuficiente para ${prod.name || sku}. Disponible: ${prod.stock}`);
       }
 
-      const name     = String(it?.name || prod.name || sku);
-      const price    = toNumber(it?.price, toNumber(prod.price, 0));
+      const name = String(it?.name || prod.name || sku);
+      const price = toNumber(it?.price, toNumber(prod.price, 0));
       const subtotal = (it?.subtotal !== undefined && it?.subtotal !== null && it?.subtotal !== '')
         ? toNumber(it.subtotal, price * qty)
         : toNumber(price * qty);
@@ -222,59 +277,50 @@ function createSale({
         ? toBoolInt(it.pesable, 0)
         : toBoolInt(prod.pesable, 0);
 
-      run(
-        `INSERT INTO sale_items (
-          sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable]
+      insertSaleItemStmt.run(
+        sale_id,
+        sku,
+        name,
+        price,
+        qty,
+        subtotal,
+        iva,
+        ieps,
+        pesable
       );
 
-      if (columnExists('products', 'sucursal_id')) {
-        run(
-          `UPDATE products
-           SET stock = stock - ?
-           WHERE sku = ? AND sucursal_id = ?`,
-          [qty, sku, prod.sucursal_id || suc]
-        );
+      if (HAS_PRODUCTS_SUCURSAL) {
+        updateStockBySucursalStmt.run(qty, sku, prod.sucursal_id || suc);
       } else {
-        run(
-          `UPDATE products
-           SET stock = stock - ?
-           WHERE sku = ?`,
-          [qty, sku]
-        );
+        updateStockStmt.run(qty, sku);
       }
+
+      // mantener cache consistente por si el SKU aparece otra vez en la misma venta
+      prod.stock = toNumber(prod.stock, 0) - qty;
+      productCache.set(sku, prod);
     }
 
-    const sale      = get(`SELECT * FROM sales WHERE id = ?`, [sale_id]);
-    const saleItems = all(`SELECT * FROM sale_items WHERE sale_id = ?`, [sale_id]);
+    const sale = getSaleStmt.get(sale_id);
+    const saleItems = getSaleItemsStmt.all(sale_id);
 
-    // ── Si es cuenta corriente: cargar a cuenta corriente del cliente ──
-    const esCuentaCorriente = es_cuenta_corriente
+    const esCuentaCorrienteFinal = es_cuenta_corriente
       || (payment_method || '').toLowerCase().includes('fiado')
       || (payment_method || '').toLowerCase().includes('cuenta corriente');
-    const clienteFiado = (esCuentaCorriente && cliente_id && Number(cliente_id) > 1)
+
+    const clienteFiado = (esCuentaCorrienteFinal && cliente_id && Number(cliente_id) > 1)
       ? Number(cliente_id)
       : null;
 
     if (clienteFiado) {
-      const cli = get(`SELECT id, saldo FROM clientes WHERE id = ?`, [clienteFiado]);
+      const cli = getClienteStmt.get(clienteFiado);
       if (cli) {
-        run(
-          `INSERT INTO cuenta_corriente
-             (cliente_id, tipo, monto, descripcion, sale_id)
-           VALUES (?, 'cargo', ?, ?, ?)`,
-          [
-            clienteFiado,
-            toNumber(total),
-            `Venta #${sale_id} — Fiado`,
-            sale_id,
-          ]
+        insertCuentaCorrienteStmt.run(
+          clienteFiado,
+          toNumber(total),
+          `Venta #${sale_id} — Fiado`,
+          sale_id
         );
-        run(
-          `UPDATE clientes SET saldo = saldo + ? WHERE id = ?`,
-          [toNumber(total), clienteFiado]
-        );
+        updateClienteSaldoStmt.run(toNumber(total), clienteFiado);
       }
     }
 
@@ -294,7 +340,7 @@ function createSale({
 // ─────────────────────────────────────────────────────────────
 function listRecent(limit = 5, sucursal_id = null) {
   try {
-    const where = (sucursal_id && columnExists('sales', 'sucursal_id'))
+    const where = (sucursal_id && HAS_SALES_SUCURSAL)
       ? `WHERE s.sucursal_id = ${Number(sucursal_id)}`
       : '';
 
@@ -310,9 +356,8 @@ function listRecent(limit = 5, sucursal_id = null) {
     return sales.map(s => ({
       ...s,
       status: 'Pagado',
-      // El created_at ya está en hora Argentina → no agregar 'Z' ni ajustar offset
       time: new Date(s.created_at).toLocaleTimeString('es-AR', {
-        hour:   '2-digit',
+        hour: '2-digit',
         minute: '2-digit',
         hour12: false,
       }),
@@ -329,12 +374,11 @@ function listRecent(limit = 5, sucursal_id = null) {
 // ─────────────────────────────────────────────────────────────
 function listToday(sucursal_id = null) {
   try {
-    // Fecha de hoy en Argentina
-    const offset  = -3 * 60;
-    const nowArg  = new Date(Date.now() + offset * 60 * 1000);
-    const today   = nowArg.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    const offset = -3 * 60;
+    const nowArg = new Date(Date.now() + offset * 60 * 1000);
+    const today = nowArg.toISOString().split('T')[0];
 
-    const sWhere = (sucursal_id && columnExists('sales', 'sucursal_id'))
+    const sWhere = (sucursal_id && HAS_SALES_SUCURSAL)
       ? `AND s.sucursal_id = ${Number(sucursal_id)}`
       : '';
 
