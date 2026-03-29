@@ -22,7 +22,7 @@
           <div style="font-size:14px;font-weight:700;color:#065f46;">Caja abierta</div>
           <div style="font-size:12.5px;color:#047857;">
             Cajero: <strong><%= cajaActual.user_open %></strong>
-            · Desde: <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) %></strong>
+            · Desde: <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) %></strong>
             · Inicial: <strong>$<%= (cajaActual.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></strong>
           </div>
         </div>
@@ -139,8 +139,8 @@
             <tr class="tr-row">
               <td class="td" style="color:var(--text-muted);font-size:12px;">#<%= c.id %></td>
               <td class="td"><strong><%= c.user_open || '—' %></strong></td>
-              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) %></td>
-              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—' %></td>
+              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) %></td>
+              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '—' %></td>
               <td class="td" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               <td class="td" style="text-align:right;font-weight:700;color:#6366f1;">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               <td class="td" style="text-align:center;">

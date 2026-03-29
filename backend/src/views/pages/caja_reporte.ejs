@@ -28,7 +28,10 @@
         <div style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:pulse 2s infinite;"></div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#065f46;">Caja abierta ahora</div>
-          <div style="font-size:12.5px;color:#047857;">Terminal: <strong><%= cajaActual.terminal %></strong> · Desde: <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) %></strong></div>
+          <div style="font-size:12.5px;color:#047857;">
+            Terminal: <strong><%= cajaActual.terminal %></strong> · Desde:
+            <strong><%= new Date(cajaActual.opened_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) %></strong>
+          </div>
         </div>
       </div>
       <a href="/caja/turno" style="padding:9px 18px;border-radius:var(--radius-md);background:#10b981;color:#fff;font-size:13px;font-weight:700;text-decoration:none;">Ver mi turno →</a>
@@ -95,8 +98,8 @@
               <td class="td" style="color:var(--text-muted);font-size:12px;">#<%= c.id %></td>
               <td class="td"><strong><%= c.user_nombre || c.user_open || '—' %></strong></td>
               <td class="td"><%= c.terminal || 'Principal' %></td>
-              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) %></td>
-              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—' %></td>
+              <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) %></td>
+              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '—' %></td>
               <td class="td" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               <td class="td" style="text-align:right;font-weight:700;color:#6366f1;">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               <td class="td" style="text-align:right;font-weight:700;">$<%= (c.monto_final||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
