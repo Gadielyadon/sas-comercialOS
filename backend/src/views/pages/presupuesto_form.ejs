@@ -913,11 +913,13 @@ function renderItems() {
       </td>
       <td>
         <input class="item-input mono" type="number" value="${Number(item.cantidad || 0)}" min="0.01" step="any"
-          oninput="items[${i}].cantidad=parseFloat(this.value)||0;renderItems()">
+          oninput="items[${i}].cantidad=parseFloat(this.value)||0;calcularTotales()"
+          onchange="renderItems()">
       </td>
       <td>
         <input class="item-input mono" type="number" value="${Number(item.precio_unitario || 0)}" min="0" step="any"
-          oninput="items[${i}].precio_unitario=parseFloat(this.value)||0;renderItems()">
+          oninput="items[${i}].precio_unitario=parseFloat(this.value)||0;calcularTotales()"
+          onchange="renderItems()">
       </td>
       <td>
         <select class="item-input" style="font-size:13px;padding:6px 8px;"
