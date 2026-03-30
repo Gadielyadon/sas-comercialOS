@@ -4,11 +4,11 @@
     <a class="logo-mark" href="/ventas">
       <div class="logo-icon">F</div>
       <div class="logo-text">
-        <strong>Fiambreria</strong>
+        <strong><%= (typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre) ? locals.empresa_nombre : 'ComercialOS' %></strong>
         <% if (typeof sucursal !== 'undefined' && sucursal && sucursal.nombre && sucursal.nombre !== 'Casa Central') { %>
           <span style="color:var(--color-primary);font-weight:600;letter-spacing:.3px;"><%= sucursal.nombre %></span>
         <% } else { %>
-          <span>Sistema</span>
+          <span style="color:var(--text-muted);font-size:11px;">Sistema</span>
         <% } %>
       </div>
     </a>
@@ -48,6 +48,11 @@
     <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
       <i class="bi bi-box-seam"></i>
       <span class="nav-text">Inventario</span>
+    </a>
+
+    <a href="/stock" class="nav-item <%= (typeof active !== 'undefined' && active === 'stock') ? 'active' : '' %>">
+      <i class="bi bi-clipboard2-check"></i>
+      <span class="nav-text">Stock</span>
     </a>
 
     <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>">

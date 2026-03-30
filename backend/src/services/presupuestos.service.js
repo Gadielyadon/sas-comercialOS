@@ -27,16 +27,17 @@ function initPresupuestosSchema() {
   )`);
 
   run(`CREATE TABLE IF NOT EXISTS presupuesto_items (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    presupuesto_id   INTEGER NOT NULL REFERENCES presupuestos(id) ON DELETE CASCADE,
-    tipo             TEXT    NOT NULL DEFAULT 'producto' CHECK(tipo IN ('producto','servicio','custom')),
-    sku              TEXT,
-    nombre           TEXT    NOT NULL,
-    descripcion      TEXT,
-    cantidad         REAL    NOT NULL DEFAULT 1,
-    precio_unitario  REAL    NOT NULL DEFAULT 0,
-    pct_iva          REAL    DEFAULT NULL,
-    subtotal         REAL    NOT NULL DEFAULT 0
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    presupuesto_id      INTEGER NOT NULL REFERENCES presupuestos(id) ON DELETE CASCADE,
+    tipo                TEXT    NOT NULL DEFAULT 'producto' CHECK(tipo IN ('producto','servicio','custom')),
+    sku                 TEXT,
+    nombre              TEXT    NOT NULL,
+    descripcion         TEXT,
+    cantidad            REAL    NOT NULL DEFAULT 1,
+    precio_unitario     REAL    NOT NULL DEFAULT 0,
+    descuento_item_pct  REAL    NOT NULL DEFAULT 0,
+    pct_iva             REAL    DEFAULT NULL,
+    subtotal            REAL    NOT NULL DEFAULT 0
   )`);
 
   run(`CREATE TABLE IF NOT EXISTS presupuesto_catalogo (
@@ -49,17 +50,11 @@ function initPresupuestosSchema() {
     created_at  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
   )`);
 
-  try {
-    run(`ALTER TABLE presupuesto_items ADD COLUMN pct_iva REAL DEFAULT NULL`);
-  } catch (e) {}
-
-  try {
-    run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago_obs TEXT`);
-  } catch (e) {}
-
-  try {
-    run(`ALTER TABLE products ADD COLUMN precio_presupuesto REAL DEFAULT NULL`);
-  } catch (e) {}
+  // Migraciones seguras — no rompen si la columna ya existe
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN pct_iva REAL DEFAULT NULL`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN descuento_item_pct REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago_obs TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE products ADD COLUMN precio_presupuesto REAL DEFAULT NULL`); } catch (e) {}
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -111,20 +106,24 @@ function findById(id) {
 }
 
 function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0) {
-  const subtotal = items.reduce(
-    (s, i) => s + (Number(i.cantidad || 0) * Number(i.precio_unitario || 0)),
-    0
-  );
+  // Subtotal ya con descuentos por ítem aplicados
+  const subtotal = items.reduce((s, i) => {
+    const base = Number(i.cantidad || 0) * Number(i.precio_unitario || 0);
+    const desc = Number(i.descuento_item_pct || 0);
+    return s + base * (1 - desc / 100);
+  }, 0);
 
   const totalIva = items.reduce((s, i) => {
     const base = Number(i.cantidad || 0) * Number(i.precio_unitario || 0);
-    const pct = i.pct_iva === null || i.pct_iva === undefined || i.pct_iva === ''
+    const desc = Number(i.descuento_item_pct || 0);
+    const baseConDesc = base * (1 - desc / 100);
+    const pct = (i.pct_iva === null || i.pct_iva === undefined || i.pct_iva === '')
       ? 0
       : Number(i.pct_iva || 0);
-    return s + (base * pct / 100);
+    return s + baseConDesc * pct / 100;
   }, 0);
 
-  const dPct = Number(descuento_pct || 0);
+  const dPct   = Number(descuento_pct  || 0);
   const dMonto = Number(descuento_monto || 0);
   const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
   const total = Math.max(0, subtotal - descuento + totalIva);
@@ -132,7 +131,7 @@ function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0) {
   return {
     subtotal,
     totalIva,
-    descuento_pct: dPct,
+    descuento_pct:   dPct,
     descuento_monto: dMonto > 0 ? dMonto : descuento,
     total
   };
@@ -166,9 +165,9 @@ function create({
   `, [
     numero,
     String(cliente_nombre || 'Sin nombre'),
-    cliente_cuit || null,
+    cliente_cuit  || null,
     cliente_email || null,
-    cliente_tel || null,
+    cliente_tel   || null,
     condicion_pago || 'Contado',
     condicion_pago_obs || null,
     validez_dias ? Number(validez_dias) : null,
@@ -184,26 +183,28 @@ function create({
   const pid = r.lastInsertRowid;
 
   for (const item of items) {
-    const qty = Number(item.cantidad || 1);
-    const precio = Number(item.precio_unitario || 0);
-    const pctIva = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '')
+    const qty      = Number(item.cantidad || 1);
+    const precio   = Number(item.precio_unitario || 0);
+    const descItem = Number(item.descuento_item_pct || 0);
+    const pctIva   = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '')
       ? Number(item.pct_iva)
       : null;
 
     run(`
       INSERT INTO presupuesto_items
-        (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, pct_iva, subtotal)
-      VALUES (?,?,?,?,?,?,?,?,?)
+        (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, descuento_item_pct, pct_iva, subtotal)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
     `, [
       pid,
       item.tipo || 'custom',
-      item.sku || null,
+      item.sku  || null,
       String(item.nombre || ''),
       item.descripcion || null,
       qty,
       precio,
+      descItem,
       pctIva,
-      qty * precio
+      qty * precio * (1 - descItem / 100)
     ]);
   }
 
@@ -217,7 +218,7 @@ function update(id, datos) {
   const items = datos.items || p.items || [];
   const tot = calcularTotales(
     items,
-    datos.descuento_pct ?? p.descuento_pct ?? 0,
+    datos.descuento_pct   ?? p.descuento_pct   ?? 0,
     datos.descuento_monto ?? p.descuento_monto ?? 0
   );
 
@@ -238,11 +239,11 @@ function update(id, datos) {
       updated_at         = datetime('now','localtime')
     WHERE id = ?
   `, [
-    datos.cliente_nombre ?? p.cliente_nombre,
-    datos.cliente_cuit ?? p.cliente_cuit,
-    datos.cliente_email ?? p.cliente_email,
-    datos.cliente_tel ?? p.cliente_tel,
-    datos.condicion_pago ?? p.condicion_pago,
+    datos.cliente_nombre    ?? p.cliente_nombre,
+    datos.cliente_cuit      ?? p.cliente_cuit,
+    datos.cliente_email     ?? p.cliente_email,
+    datos.cliente_tel       ?? p.cliente_tel,
+    datos.condicion_pago    ?? p.condicion_pago,
     datos.condicion_pago_obs ?? p.condicion_pago_obs,
     datos.validez_dias !== undefined ? (datos.validez_dias || null) : p.validez_dias,
     datos.notas ?? p.notas,
@@ -257,26 +258,28 @@ function update(id, datos) {
     run(`DELETE FROM presupuesto_items WHERE presupuesto_id = ?`, [Number(id)]);
 
     for (const item of datos.items) {
-      const qty = Number(item.cantidad || 1);
-      const precio = Number(item.precio_unitario || 0);
-      const pctIva = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '')
+      const qty      = Number(item.cantidad || 1);
+      const precio   = Number(item.precio_unitario || 0);
+      const descItem = Number(item.descuento_item_pct || 0);
+      const pctIva   = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '')
         ? Number(item.pct_iva)
         : null;
 
       run(`
         INSERT INTO presupuesto_items
-          (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, pct_iva, subtotal)
-        VALUES (?,?,?,?,?,?,?,?,?)
+          (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, descuento_item_pct, pct_iva, subtotal)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
       `, [
         Number(id),
         item.tipo || 'custom',
-        item.sku || null,
+        item.sku  || null,
         String(item.nombre || ''),
         item.descripcion || null,
         qty,
         precio,
+        descItem,
         pctIva,
-        qty * precio
+        qty * precio * (1 - descItem / 100)
       ]);
     }
   }
@@ -332,10 +335,10 @@ function updateCatalogo(id, { nombre, descripcion, precio, unidad, activo }) {
     SET nombre = ?, descripcion = ?, precio = ?, unidad = ?, activo = ?
     WHERE id = ?
   `, [
-    nombre ?? c.nombre,
+    nombre      ?? c.nombre,
     descripcion ?? c.descripcion,
     Number(precio ?? c.precio),
-    unidad ?? c.unidad,
+    unidad  ?? c.unidad,
     activo !== undefined ? (activo ? 1 : 0) : c.activo,
     Number(id)
   ]);

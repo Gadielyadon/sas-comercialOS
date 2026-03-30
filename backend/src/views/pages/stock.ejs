@@ -1,0 +1,401 @@
+<%- include('../partials/head', { title }) %>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+
+  <div class="main-content">
+    <%- include('../partials/header', { module, user }) %>
+
+    <main class="page-body">
+
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Stock</h2>
+          <p>
+            <span id="resumenTexto">
+              <%= products.filter(p => !p.pesable && p.stock <= 0).length + products.filter(p => p.pesable && p.hay == 0).length %> producto(s) sin stock
+            </span>
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button type="button" class="btn-action btn-action-outline" id="btnVerFaltantes" onclick="toggleFaltantes()">
+            <i class="bi bi-funnel"></i> Ver faltantes
+          </button>
+          <button type="button" class="btn-action btn-action-primary" onclick="imprimirPDF()">
+            <i class="bi bi-file-earmark-pdf"></i> Imprimir faltantes
+          </button>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+        <div style="position:relative;flex:1;min-width:220px;">
+          <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none;"></i>
+          <input id="q" class="search-input" placeholder="Buscar producto…" oninput="filtrar()" autocomplete="off"
+            style="padding-left:36px;width:100%;">
+        </div>
+        <select id="filtroCat" onchange="filtrar()"
+          style="height:38px;padding:0 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;outline:none;">
+          <option value="">Todas las categorías</option>
+          <% const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort(); %>
+          <% cats.forEach(cat => { %>
+            <option value="<%= cat %>"><%= cat %></option>
+          <% }) %>
+        </select>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn-tab active" id="tabTodos"    onclick="setTab('todos',    this)">Todos</button>
+          <button class="btn-tab"         id="tabNormal"  onclick="setTab('normal',   this)">Con cantidad</button>
+          <button class="btn-tab"         id="tabPesable" onclick="setTab('pesable',  this)">Hay / No hay</button>
+        </div>
+      </div>
+
+      <style>
+        .btn-tab {
+          padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
+          background: var(--bg-card); color: var(--text-secondary);
+          font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s;
+        }
+        .btn-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .btn-tab.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+
+        .stock-table { width:100%; border-collapse:collapse; }
+        .stock-table th {
+          text-align:left; padding:10px 14px; font-size:11.5px; font-weight:700;
+          color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;
+          border-bottom:2px solid var(--border-color); background:var(--bg-card);
+        }
+        .stock-table td {
+          padding:12px 14px; font-size:13.5px; color:var(--text-primary);
+          border-bottom:1px solid var(--border-color); vertical-align:middle;
+        }
+        .stock-table tr:hover td { background: rgba(249,115,22,0.04); }
+        .stock-table tr.oculto { display:none; }
+
+        .badge-cat {
+          display:inline-block; padding:3px 10px; border-radius:20px;
+          background:rgba(249,115,22,0.1); color:var(--color-primary);
+          font-size:11px; font-weight:700;
+        }
+        .badge-pesable {
+          display:inline-block; padding:3px 10px; border-radius:20px;
+          background:rgba(99,102,241,0.1); color:#6366f1;
+          font-size:11px; font-weight:700;
+        }
+
+        /* Switch hay/no hay */
+        .switch-wrap { display:flex; align-items:center; gap:10px; }
+        .switch { position:relative; width:46px; height:26px; flex-shrink:0; }
+        .switch input { opacity:0; width:0; height:0; }
+        .slider {
+          position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+          background:#ef4444; border-radius:26px; transition:.25s;
+        }
+        .slider:before {
+          position:absolute; content:""; height:20px; width:20px;
+          left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.25s;
+          box-shadow:0 1px 4px rgba(0,0,0,.25);
+        }
+        input:checked + .slider { background:#10b981; }
+        input:checked + .slider:before { transform:translateX(20px); }
+        .label-hay { font-size:13px; font-weight:700; min-width:44px; }
+        .label-hay.si { color:#10b981; }
+        .label-hay.no { color:#ef4444; }
+
+        /* Input cantidad */
+        .qty-wrap { display:flex; align-items:center; gap:8px; }
+        .qty-input {
+          width:80px; padding:6px 10px; border-radius:8px;
+          border:1.5px solid var(--border-color); background:var(--bg-card);
+          color:var(--text-primary); font-family:var(--font-mono);
+          font-size:13px; font-weight:700; text-align:center; outline:none;
+          transition:border-color .15s;
+        }
+        .qty-input:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(249,115,22,0.12); }
+        .qty-badge {
+          display:inline-block; padding:5px 14px; border-radius:20px;
+          font-size:13px; font-weight:800; font-family:var(--font-mono);
+          min-width:56px; text-align:center;
+        }
+        .qty-badge.ok    { background:#10b981; color:#fff; }
+        .qty-badge.bajo  { background:#f59e0b; color:#fff; }
+        .qty-badge.vacio { background:#ef4444; color:#fff; }
+        .btn-guardar {
+          padding:5px 12px; border-radius:7px; border:none;
+          background:var(--color-primary); color:#fff;
+          font-size:12px; font-weight:700; cursor:pointer;
+          opacity:0; transition:opacity .15s; pointer-events:none;
+        }
+        .btn-guardar.visible { opacity:1; pointer-events:all; }
+
+        /* Placeholder vacío */
+        #sinResultados {
+          display:none; text-align:center; padding:60px 20px;
+          color:var(--text-muted); font-size:14px;
+        }
+        #sinResultados i { font-size:40px; display:block; margin-bottom:12px; opacity:.4; }
+      </style>
+
+      <div style="background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-color);overflow:hidden;">
+        <table class="stock-table" id="tablaStock">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th>Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyStock">
+            <% products.forEach(p => { %>
+              <tr
+                data-id="<%= p.id %>"
+                data-sku="<%= p.sku %>"
+                data-nombre="<%= p.name.toLowerCase() %>"
+                data-cat="<%= (p.category || '').toLowerCase() %>"
+                data-pesable="<%= p.pesable ? '1' : '0' %>"
+                data-hay="<%= p.hay != null ? p.hay : 1 %>"
+                data-stock="<%= p.stock %>"
+              >
+                <td>
+                  <div style="font-weight:700;font-size:13.5px;"><%= p.name %></div>
+                  <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">SKU: <%= p.sku %></div>
+                </td>
+                <td>
+                  <% if (p.category) { %>
+                    <span class="badge-cat"><%= p.category %></span>
+                  <% } else { %>
+                    <span style="color:var(--text-muted);font-size:12px;">—</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (p.pesable) { %>
+                    <span class="badge-pesable"><i class="bi bi-rulers"></i> Pesable</span>
+                  <% } else { %>
+                    <span style="color:var(--text-muted);font-size:12px;font-weight:600;"><i class="bi bi-hash"></i> Cantidad</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (p.pesable) { %>
+                    <!-- Switch Hay / No hay -->
+                    <div class="switch-wrap">
+                      <label class="switch">
+                        <input type="checkbox" <%= (p.hay == null || p.hay == 1) ? 'checked' : '' %>
+                          onchange="toggleHay(<%= p.id %>, this)">
+                        <span class="slider"></span>
+                      </label>
+                      <span class="label-hay <%= (p.hay == null || p.hay == 1) ? 'si' : 'no' %>" id="labelHay_<%= p.id %>">
+                        <%= (p.hay == null || p.hay == 1) ? 'Hay' : 'No hay' %>
+                      </span>
+                    </div>
+                  <% } else { %>
+                    <!-- Input cantidad -->
+                    <div class="qty-wrap">
+                      <span class="qty-badge <%= p.stock <= 0 ? 'vacio' : p.stock <= 5 ? 'bajo' : 'ok' %>" id="badge_<%= p.id %>">
+                        <%= p.stock %>
+                      </span>
+                      <input type="number" class="qty-input" id="qty_<%= p.id %>"
+                        value="<%= p.stock %>" min="0"
+                        oninput="onQtyChange(<%= p.id %>)"
+                        onkeydown="if(event.key==='Enter') guardarQty(<%= p.id %>)">
+                      <button class="btn-guardar" id="btnGuardar_<%= p.id %>" onclick="guardarQty(<%= p.id %>)">
+                        <i class="bi bi-check2"></i> Guardar
+                      </button>
+                    </div>
+                  <% } %>
+                </td>
+                <td style="text-align:right;">
+                  <!-- celda acción vacía por ahora -->
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <div id="sinResultados">
+          <i class="bi bi-search"></i>
+          Sin resultados para tu búsqueda
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ── Estado ────────────────────────────────────────────────────
+let tabActual     = 'todos';
+let soloFaltantes = false;
+
+// ── Toggle faltantes ──────────────────────────────────────────
+function toggleFaltantes() {
+  soloFaltantes = !soloFaltantes;
+  const btn = document.getElementById('btnVerFaltantes');
+  if (soloFaltantes) {
+    btn.innerHTML = '<i class="bi bi-x-lg"></i> Todos';
+    btn.style.background = 'var(--color-primary)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--color-primary)';
+  } else {
+    btn.innerHTML = '<i class="bi bi-funnel"></i> Ver faltantes';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+  filtrar();
+}
+
+// ── Tab ───────────────────────────────────────────────────────
+function setTab(tab, el) {
+  tabActual = tab;
+  document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filtrar();
+}
+
+// ── Filtrar tabla ─────────────────────────────────────────────
+function filtrar() {
+  const q   = document.getElementById('q').value.toLowerCase().trim();
+  const cat = document.getElementById('filtroCat').value.toLowerCase();
+  const rows = document.querySelectorAll('#tbodyStock tr');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const nombre  = row.dataset.nombre  || '';
+    const rowCat  = row.dataset.cat     || '';
+    const pesable = row.dataset.pesable === '1';
+    const hay     = parseInt(row.dataset.hay);
+    const stock   = parseInt(row.dataset.stock);
+
+    const matchQ   = !q   || nombre.includes(q) || row.dataset.sku.toLowerCase().includes(q);
+    const matchCat = !cat || rowCat === cat;
+
+    let matchTab = true;
+    if (tabActual === 'normal')  matchTab = !pesable;
+    if (tabActual === 'pesable') matchTab = pesable;
+
+    let matchFaltante = true;
+    if (soloFaltantes) {
+      if (pesable)  matchFaltante = (hay === 0);
+      else          matchFaltante = (stock <= 0);
+    }
+
+    if (matchQ && matchCat && matchTab && matchFaltante) {
+      row.classList.remove('oculto');
+      visible++;
+    } else {
+      row.classList.add('oculto');
+    }
+  });
+
+  document.getElementById('sinResultados').style.display = visible === 0 ? 'block' : 'none';
+}
+
+// ── Cambio de cantidad ─────────────────────────────────────────
+function onQtyChange(id) {
+  const btn = document.getElementById('btnGuardar_' + id);
+  btn.classList.add('visible');
+}
+
+async function guardarQty(id) {
+  const input = document.getElementById('qty_' + id);
+  const val   = parseInt(input.value);
+  if (isNaN(val) || val < 0) { input.focus(); return; }
+
+  const btn = document.getElementById('btnGuardar_' + id);
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/stock/qty', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, stock: val })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Actualizar badge
+      const badge = document.getElementById('badge_' + id);
+      badge.textContent = val;
+      badge.className = 'qty-badge ' + (val <= 0 ? 'vacio' : val <= 5 ? 'bajo' : 'ok');
+
+      // Actualizar data del row
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      if (row) row.dataset.stock = val;
+
+      btn.innerHTML = '<i class="bi bi-check2-all"></i> Guardado';
+      btn.style.background = '#10b981';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-check2"></i> Guardar';
+        btn.style.background = '';
+        btn.classList.remove('visible');
+        btn.disabled = false;
+      }, 1500);
+
+      actualizarResumen();
+    } else {
+      btn.innerHTML = 'Error';
+      btn.style.background = '#ef4444';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-check2"></i> Guardar';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 1500);
+    }
+  } catch(e) {
+    btn.innerHTML = 'Error';
+    btn.disabled = false;
+  }
+}
+
+// ── Toggle Hay / No hay ───────────────────────────────────────
+async function toggleHay(id, checkbox) {
+  const hay   = checkbox.checked ? 1 : 0;
+  const label = document.getElementById('labelHay_' + id);
+  const row   = document.querySelector(`tr[data-id="${id}"]`);
+
+  // Optimistic update
+  label.textContent = hay ? 'Hay' : 'No hay';
+  label.className = 'label-hay ' + (hay ? 'si' : 'no');
+  if (row) row.dataset.hay = hay;
+
+  try {
+    const res = await fetch('/stock/hay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, hay })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      // Revertir
+      checkbox.checked = !checkbox.checked;
+      label.textContent = checkbox.checked ? 'Hay' : 'No hay';
+      label.className = 'label-hay ' + (checkbox.checked ? 'si' : 'no');
+      if (row) row.dataset.hay = checkbox.checked ? 1 : 0;
+    }
+  } catch(e) {
+    checkbox.checked = !checkbox.checked;
+  }
+
+  actualizarResumen();
+}
+
+// ── Resumen en header ─────────────────────────────────────────
+function actualizarResumen() {
+  const rows = document.querySelectorAll('#tbodyStock tr');
+  let faltantes = 0;
+  rows.forEach(row => {
+    const pesable = row.dataset.pesable === '1';
+    if (pesable && parseInt(row.dataset.hay) === 0) faltantes++;
+    if (!pesable && parseInt(row.dataset.stock) <= 0) faltantes++;
+  });
+  document.getElementById('resumenTexto').textContent = faltantes + ' producto(s) sin stock';
+}
+
+// ── Imprimir PDF ──────────────────────────────────────────────
+function imprimirPDF() {
+  window.open('/stock/pdf-faltantes', '_blank');
+}
+</script>
+
+<%- include('../partials/scripts') %>

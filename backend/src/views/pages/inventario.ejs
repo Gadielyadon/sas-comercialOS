@@ -231,11 +231,21 @@
                     <% } %>
                   </td>
                   <td data-stock="<%= p.stock %>">
-                    <% const sc = p.stock <= 0 ? 'vacio' : (p.stock <= 3 ? 'bajo' : 'ok'); %>
-                    <span class="stock-badge <%= sc %>">
-                      <span class="stock-dot <%= sc %>"></span>
-                      <%= p.stock %>
-                    </span>
+                    <% if (p.pesable) { %>
+                      <% const hayVal = (p.hay == null || p.hay == 1); %>
+                      <span id="hayBadge_<%= p.id %>" class="stock-badge <%= hayVal ? 'ok' : 'vacio' %>"
+                        style="cursor:pointer;user-select:none;" title="Click para cambiar"
+                        onclick="toggleHayInventario(<%= p.id %>, this)">
+                        <span class="stock-dot <%= hayVal ? 'ok' : 'vacio' %>"></span>
+                        <%= hayVal ? 'Hay' : 'No hay' %>
+                      </span>
+                    <% } else { %>
+                      <% const sc = p.stock <= 0 ? 'vacio' : (p.stock <= 3 ? 'bajo' : 'ok'); %>
+                      <span class="stock-badge <%= sc %>">
+                        <span class="stock-dot <%= sc %>"></span>
+                        <%= p.stock %>
+                      </span>
+                    <% } %>
                   </td>
                   <td>
                     <div style="display:flex; gap:6px; align-items:center">
@@ -836,6 +846,23 @@ function onImageFileSelected(event) {
 }
 
 function removerImagen() { setImagenPreview(null); }
+async function toggleHayInventario(id, badge) {
+  const esHay = badge.textContent.trim().startsWith('Hay');
+  const nuevoHay = esHay ? 0 : 1;
+  try {
+    const r = await fetch('/stock/hay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, hay: nuevoHay })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      badge.className = 'stock-badge ' + (nuevoHay ? 'ok' : 'vacio');
+      badge.innerHTML = `<span class="stock-dot ${nuevoHay ? 'ok' : 'vacio'}"></span>${nuevoHay ? 'Hay' : 'No hay'}`;
+      badge.onclick = () => toggleHayInventario(id, badge);
+    }
+  } catch(e) {}
+}
 function filterRows() {
   const q = document.getElementById('q').value.trim().toLowerCase();
   document.querySelectorAll('#productsTable tbody tr').forEach(tr => {

@@ -437,6 +437,7 @@
                       <th style="padding-left:20px;">Descripción</th>
                       <th class="col-right" style="width:100px;">Cantidad</th>
                       <th class="col-right" style="width:140px;">Precio unit.</th>
+                      <th class="col-right" style="width:80px;">Desc.%</th>
                       <th class="col-right" style="width:110px;">IVA</th>
                       <th class="col-right" style="width:140px;">Subtotal s/IVA</th>
                       <th class="col-center"></th>
@@ -891,8 +892,10 @@ function renderItems() {
   }
 
   tbody.innerHTML = items.map((item, i) => {
-    const sub = (Number(item.cantidad) * Number(item.precio_unitario)) || 0;
-    const pct = item.pct_iva;
+    const desc    = Number(item.descuento_item_pct || 0);
+    const base    = Number(item.cantidad || 0) * Number(item.precio_unitario || 0);
+    const sub     = base * (1 - desc / 100);
+    const pct     = item.pct_iva;
     const ivaSelVal = (pct === null || pct === undefined) ? '' : String(pct);
 
     const badge = item.tipo === 'producto'
@@ -922,6 +925,13 @@ function renderItems() {
           onchange="renderItems()">
       </td>
       <td>
+        <input class="item-input mono" type="number" value="${desc || ''}" min="0" max="100" step="any"
+          placeholder="0"
+          style="width:64px;color:${desc > 0 ? '#f59e0b' : 'var(--text-primary)'};"
+          oninput="items[${i}].descuento_item_pct=parseFloat(this.value)||0;calcularTotales()"
+          onchange="renderItems()">
+      </td>
+      <td>
         <select class="item-input" style="font-size:13px;padding:6px 8px;"
           onchange="items[${i}].pct_iva=this.value===''?null:parseFloat(this.value);renderItems()">
           <option value="" ${ivaSelVal === '' ? 'selected' : ''}>Sin IVA</option>
@@ -930,7 +940,10 @@ function renderItems() {
           <option value="21" ${ivaSelVal === '21' ? 'selected' : ''}>21%</option>
         </select>
       </td>
-      <td class="subtotal-cell">${fmt(sub)}</td>
+      <td class="subtotal-cell">
+        ${desc > 0 ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;font-weight:400;">${fmt(base)}</div>` : ''}
+        ${fmt(sub)}
+      </td>
       <td style="text-align:center;padding-right:8px;">
         <button type="button" class="btn-remove-item" onclick="quitarItem(${i})">
           <i class="bi bi-x-lg"></i>
@@ -946,11 +959,18 @@ function renderItems() {
 // TOTALES
 // ─────────────────────────────────────────────────────────────
 function calcularTotales() {
-  const subtotal = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_unitario)), 0);
+  const subtotal = items.reduce((s, i) => {
+    const base = Number(i.cantidad) * Number(i.precio_unitario);
+    const desc = Number(i.descuento_item_pct || 0);
+    return s + base * (1 - desc / 100);
+  }, 0);
 
   const totalIva = items.reduce((s, i) => {
+    const base = Number(i.cantidad) * Number(i.precio_unitario);
+    const desc = Number(i.descuento_item_pct || 0);
+    const baseConDesc = base * (1 - desc / 100);
     const pct = (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : 0;
-    return s + (Number(i.cantidad) * Number(i.precio_unitario)) * pct / 100;
+    return s + baseConDesc * pct / 100;
   }, 0);
 
   const dPct = parseFloat(document.getElementById('descPct')?.value) || 0;

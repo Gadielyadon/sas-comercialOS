@@ -282,7 +282,12 @@
               </tr>
             </thead>
             <tbody>
-              <% (presupuesto.items || []).forEach((item, idx) => { %>
+              <% (presupuesto.items || []).forEach((item, idx) => { 
+                const descPct = Number(item.descuento_item_pct || 0);
+                const precioBase = Number(item.precio_unitario || 0);
+                const precioConDesc = precioBase * (1 - descPct / 100);
+                const subtotalItem = Number(item.cantidad || 0) * precioConDesc;
+              %>
                 <tr>
                   <td><%= idx + 1 %></td>
                   <td>
@@ -290,10 +295,18 @@
                     <% if (item.descripcion) { %>
                       <div class="item-desc"><%= item.descripcion %></div>
                     <% } %>
+                    <% if (descPct > 0) { %>
+                      <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:2px;">Descuento <%= descPct %>%</div>
+                    <% } %>
                   </td>
                   <td class="right"><%= Number(item.cantidad || 0).toLocaleString('es-AR') %></td>
-                  <td class="right">$<%= Number(item.precio_unitario || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></td>
-                  <td class="right">$<%= Number(item.subtotal || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></td>
+                  <td class="right">
+                    <% if (descPct > 0) { %>
+                      <div style="text-decoration:line-through;font-size:11px;color:#9ca3af;">$<%= precioBase.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></div>
+                    <% } %>
+                    $<%= precioConDesc.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %>
+                  </td>
+                  <td class="right">$<%= subtotalItem.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -303,7 +316,8 @@
             const subtotal = Number(presupuesto.subtotal || 0);
             const descuento = Number(presupuesto.descuento_monto || 0);
             const totalItemsIva = (presupuesto.items || []).reduce((acc, it) => {
-              const base = Number(it.subtotal || 0);
+              const descPct = Number(it.descuento_item_pct || 0);
+              const base = Number(it.cantidad || 0) * Number(it.precio_unitario || 0) * (1 - descPct / 100);
               const pct = (it.pct_iva !== null && it.pct_iva !== undefined && it.pct_iva !== '') ? Number(it.pct_iva) : 0;
               return acc + (base * pct / 100);
             }, 0);

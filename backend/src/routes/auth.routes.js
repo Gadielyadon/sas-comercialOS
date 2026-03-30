@@ -9,10 +9,22 @@ const { requireAuth, requireAdmin } = require('../middlewares/auth.middleware');
 ──────────────────────────────────────── */
 router.get('/login', (req, res) => {
   if (req.session?.user) return res.redirect('/dashboard');
+  // Leer logo y nombre de empresa desde la config
+  const { get: dbGet } = require('../db');
+  let empresa_logo   = '';
+  let empresa_nombre = 'ComercialOS';
+  try {
+    const cfgLogo   = dbGet('SELECT value FROM config WHERE key=?', ['empresa_logo']);
+    const cfgNombre = dbGet('SELECT value FROM config WHERE key=?', ['empresa_nombre']);
+    if (cfgLogo   && cfgLogo.value)   empresa_logo   = cfgLogo.value;
+    if (cfgNombre && cfgNombre.value) empresa_nombre = cfgNombre.value;
+  } catch(e) {}
   res.render('pages/login', {
     title: 'Iniciar sesión',
     error: null,
-    username: ''
+    username: '',
+    empresa_logo,
+    empresa_nombre
   });
 });
 

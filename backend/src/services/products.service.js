@@ -53,7 +53,8 @@ function baseSelect() {
       COALESCE(pesable, 0) AS pesable,
       COALESCE(imagen, NULL) AS imagen,
       COALESCE(price_mayorista, NULL) AS price_mayorista,
-      COALESCE(qty_mayorista, NULL)   AS qty_mayorista
+      COALESCE(qty_mayorista, NULL)   AS qty_mayorista,
+      COALESCE(hay, 1) AS hay
     FROM products
   `;
 }
@@ -83,51 +84,33 @@ function list(sucursal_id = null) {
 // SEARCH
 function search(q, limit = 8, sucursal_id = null) {
   const term = `%${q}%`;
+  const suc = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
 
-  const rows = sucursal_id
-    ? all(
-        `
-        ${baseSelect()}
-        WHERE sucursal_id = ?
-          AND stock > 0
-          AND (name LIKE ? OR sku LIKE ?)
-        ORDER BY name ASC
-        LIMIT ?
-        `,
-        [Number(sucursal_id), term, term, limit]
-      )
-    : all(
-        `
-        ${baseSelect()}
-        WHERE stock > 0
-          AND (name LIKE ? OR sku LIKE ?)
-        ORDER BY name ASC
-        LIMIT ?
-        `,
-        [term, term, limit]
-      );
+  const rows = all(
+    `
+    ${baseSelect()}
+    WHERE (name LIKE ? OR sku LIKE ?) AND stock > 0 ${suc}
+    ORDER BY CASE WHEN name LIKE ? THEN 0 ELSE 1 END, name ASC
+    LIMIT ?
+    `,
+    [term, term, `${q}%`, limit]
+  );
 
   return rows.map(withPrecioEfectivo);
 }
 
 function findBySku(sku, sucursal_id = null) {
-  const p = sucursal_id
-    ? get(
-        `
-        ${baseSelect()}
-        WHERE sku = ? AND sucursal_id = ?
-        LIMIT 1
-        `,
-        [String(sku), Number(sucursal_id)]
-      )
-    : get(
-        `
-        ${baseSelect()}
-        WHERE sku = ?
-        LIMIT 1
-        `,
-        [String(sku)]
-      );
+  const suc = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+
+  const p = get(
+    `
+    ${baseSelect()}
+    WHERE sku = ? ${suc}
+    ORDER BY CASE WHEN sucursal_id = ? THEN 0 ELSE 1 END
+    LIMIT 1
+    `,
+    [String(sku), sucursal_id ? Number(sucursal_id) : 0]
+  );
 
   return withPrecioEfectivo(p);
 }
@@ -153,10 +136,6 @@ function create({
 }) {
   const suc = Number(sucursal_id || 1);
 
-const existente = findBySku(sku, suc);
-if (existente) {
-  throw new Error(`El producto con SKU ${sku} ya existe`);
-}
   run(
     `
     INSERT INTO products (
@@ -288,7 +267,7 @@ function adjustStock(sku, delta, sucursal_id = null) {
     [newStock, String(sku), p.sucursal_id || 1]
   );
 
- return { ok: true, stock: newStock };
+  return findBySku(sku, sucursal_id);
 }
 
 function remove(sku, sucursal_id = null) {

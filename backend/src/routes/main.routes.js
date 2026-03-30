@@ -274,4 +274,183 @@ router.get('/dashboard/reportes/metodos', (req, res) => {
   });
 });
 
+// ── Stock ─────────────────────────────────────────────────────
+router.get('/stock', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  if (user.role !== 'admin') return res.redirect('/dashboard');
+
+  // Migración segura: agregar columna hay si no existe
+  const { run: dbRun } = require('../db');
+  try { dbRun(`ALTER TABLE products ADD COLUMN hay INTEGER NOT NULL DEFAULT 1`); } catch(e) { /* ya existe, ok */ }
+
+  let products = [];
+  try {
+    products = all(`SELECT id, sku, name, category, stock, pesable, hay FROM products ORDER BY category, name`);
+  } catch(e) {
+    // Fallback sin columna hay
+    try { products = all(`SELECT id, sku, name, category, stock, pesable, 1 as hay FROM products ORDER BY category, name`); } catch(e2) {}
+  }
+
+  res.render('pages/stock', {
+    title: 'Stock',
+    user,
+    active: 'stock',
+    module: 'Stock',
+    empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'),
+    products,
+    sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' }
+  });
+});
+
+// POST: actualizar cantidad de un producto normal
+router.post('/stock/qty', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  if (user.role !== 'admin') return res.json({ ok: false, error: 'Sin permiso' });
+  const { id, stock } = req.body;
+  if (!id || stock == null || isNaN(parseInt(stock))) return res.json({ ok: false });
+  try {
+    const { run: dbRun } = require('../db');
+    dbRun(`UPDATE products SET stock = ? WHERE id = ?`, [parseInt(stock), parseInt(id)]);
+    res.json({ ok: true });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// POST: actualizar hay/no hay de un producto pesable
+router.post('/stock/hay', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  if (user.role !== 'admin') return res.json({ ok: false, error: 'Sin permiso' });
+  const { id, hay } = req.body;
+  if (!id || hay == null) return res.json({ ok: false });
+  try {
+    const { run: dbRun } = require('../db');
+    dbRun(`UPDATE products SET hay = ? WHERE id = ?`, [hay ? 1 : 0, parseInt(id)]);
+    res.json({ ok: true });
+  } catch(e) { res.json({ ok: false, error: e.message }); }
+});
+
+// GET: PDF de faltantes
+router.get('/stock/pdf-faltantes', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  if (user.role !== 'admin') return res.redirect('/dashboard');
+
+  const { run: dbRun } = require('../db');
+  try { dbRun(`ALTER TABLE products ADD COLUMN hay INTEGER NOT NULL DEFAULT 1`); } catch(e) {}
+
+  let faltantes = [];
+  try {
+    // Normales sin stock
+    const normales = all(`SELECT name, sku, category, stock FROM products WHERE pesable = 0 AND stock <= 0 ORDER BY category, name`);
+    normales.forEach(p => faltantes.push({ ...p, tipo: 'cantidad', detalle: 'Sin stock' }));
+    // Pesables sin hay
+    const pesables = all(`SELECT name, sku, category FROM products WHERE pesable = 1 AND (hay = 0 OR hay IS NULL) ORDER BY category, name`);
+    pesables.forEach(p => faltantes.push({ ...p, tipo: 'pesable', detalle: 'No hay' }));
+  } catch(e) {}
+
+  const empresaNombre = getConfigValue('empresa_nombre', 'Mi Comercio');
+  const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const hora  = new Date().toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+
+  // Agrupar por categoría
+  const porCat = {};
+  faltantes.forEach(p => {
+    const cat = p.category || 'Sin categoría';
+    if (!porCat[cat]) porCat[cat] = [];
+    porCat[cat].push(p);
+  });
+
+  let filas = '';
+  for (const [cat, items] of Object.entries(porCat)) {
+    filas += `<tr class="cat-row"><td colspan="4">${cat}</td></tr>`;
+    items.forEach(p => {
+      const badge = p.tipo === 'pesable'
+        ? `<span class="badge-tipo pesable">Pesable</span>`
+        : `<span class="badge-tipo cantidad">Cantidad</span>`;
+      filas += `
+        <tr>
+          <td>${p.name}</td>
+          <td style="font-family:monospace;font-size:11px;color:#888">${p.sku}</td>
+          <td>${badge}</td>
+          <td><span class="badge-faltante">${p.detalle}</span></td>
+        </tr>`;
+    });
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Faltantes de Stock</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background:#fff; padding: 30px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; border-bottom:3px solid #f97316; padding-bottom:16px; }
+  .header-left h1 { font-size:22px; font-weight:800; color:#f97316; letter-spacing:-0.5px; }
+  .header-left p  { font-size:13px; color:#666; margin-top:4px; }
+  .header-right   { text-align:right; font-size:12px; color:#888; line-height:1.7; }
+  .header-right strong { color:#333; }
+  .resumen { background:#fff7ed; border:1.5px solid #fed7aa; border-radius:10px; padding:14px 18px; margin-bottom:22px; display:flex; align-items:center; gap:12px; }
+  .resumen .num { font-size:28px; font-weight:900; color:#f97316; }
+  .resumen .txt { font-size:13px; color:#92400e; line-height:1.5; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f97316; color:#fff; padding:10px 14px; text-align:left; font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; }
+  td { padding:10px 14px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .cat-row td { background:#fff7ed; color:#c2410c; font-weight:800; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; padding:8px 14px; }
+  tr:hover td { background:#fffbf7; }
+  .badge-tipo { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+  .badge-tipo.pesable  { background:#ede9fe; color:#6d28d9; }
+  .badge-tipo.cantidad { background:#e0f2fe; color:#0369a1; }
+  .badge-faltante { display:inline-block; padding:3px 9px; border-radius:20px; background:#fee2e2; color:#dc2626; font-size:11px; font-weight:700; }
+  .vacio { text-align:center; padding:50px; color:#aaa; font-size:15px; }
+  .footer { margin-top:28px; text-align:center; font-size:11px; color:#bbb; border-top:1px solid #eee; padding-top:14px; }
+  @media print {
+    body { padding:15px; }
+    @page { margin:1cm; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>📦 Reporte de Faltantes</h1>
+    <p>${empresaNombre}</p>
+  </div>
+  <div class="header-right">
+    <strong>Fecha:</strong> ${fecha}<br>
+    <strong>Hora:</strong> ${hora}<br>
+    <strong>Total faltantes:</strong> ${faltantes.length}
+  </div>
+</div>
+
+<div class="resumen">
+  <div class="num">${faltantes.length}</div>
+  <div class="txt">
+    <strong>Productos sin stock</strong><br>
+    ${faltantes.filter(p=>p.tipo==='cantidad').length} productos sin cantidad ·
+    ${faltantes.filter(p=>p.tipo==='pesable').length} productos pesables sin existencia
+  </div>
+</div>
+
+${faltantes.length === 0 ? '<div class="vacio">✅ ¡No hay faltantes! Todo el stock está disponible.</div>' : `
+<table>
+  <thead>
+    <tr>
+      <th>Producto</th>
+      <th>SKU</th>
+      <th>Tipo</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>${filas}</tbody>
+</table>`}
+
+<div class="footer">Generado por ComercialOS · ${fecha} ${hora}</div>
+
+<script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
 module.exports = router;
