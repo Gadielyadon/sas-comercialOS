@@ -1,12 +1,11 @@
 <%- include('../partials/head', { title: presupuesto.numero }) %>
 
 <style>
-  .page-body { padding: 24px 32px; max-width: 960px; }
+  .page-body { padding: 24px 32px; max-width: 1080px; }
   .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
-  .top-bar-left { display: flex; align-items: center; gap: 14px; }
+  .top-bar-left  { display: flex; align-items: center; gap: 14px; }
   .top-bar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-  /* Badge estado */
   .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; }
   .badge-Borrador  { background: rgba(107,114,128,.1); color: #6b7280; }
   .badge-Enviado   { background: rgba(59,130,246,.1);  color: #3b82f6; }
@@ -14,153 +13,150 @@
   .badge-Rechazado { background: rgba(239,68,68,.1);   color: #ef4444; }
 
   .btn-act {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
-    border-radius: var(--radius-sm);
-    border: 1.5px solid var(--border-color);
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all .15s;
-    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-color); background: var(--bg-card);
+    color: var(--text-secondary); font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: all .15s; white-space: nowrap;
   }
   .btn-act:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.05); }
   .btn-act.primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
-  .btn-act.primary:hover { opacity: .88; color: #fff; }
+  .btn-act.primary:hover { opacity: .88; }
   .btn-act.success { background: #10b981; border-color: #10b981; color: #fff; }
-  .btn-act.success:hover { opacity: .88; color: #fff; }
+  .btn-act.success:hover { opacity: .88; }
 
-  /* Documento */
-  .doc-wrap { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+  .doc-wrap { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 
-  /* ═══════════════════════════════════════════════
-     ESTILOS DEL DOCUMENTO REAL (A4)
-  ═══════════════════════════════════════════════ */
+  /* ═══ DOCUMENTO ESTILO AFIP ═══ */
   .doc-a4 {
-    padding: 48px 52px;
-    font-family: 'Sora', 'Segoe UI', sans-serif;
-    color: #1a2332;
-    font-size: 13.5px;
-    line-height: 1.6;
+    padding: 40px 48px;
+    font-family: 'Arial', 'Helvetica Neue', sans-serif;
+    color: #111; font-size: 12.5px; line-height: 1.5;
     background: #fff;
-    min-height: 960px;
   }
 
-  .doc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 36px;
-    padding-bottom: 28px;
-    border-bottom: 3px solid #2d7a2d;
+  /* ── HEADER AFIP ── */
+  .afip-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    border: 1.5px solid #333;
+    margin-bottom: 0;
   }
-
-  .header-left { display: flex; align-items: center; gap: 16px; }
-
-  .empresa-logo {
-    width: 58px;
-    height: 58px;
-    object-fit: contain;
-    border-radius: 10px;
+  .afip-col-empresa {
+    padding: 16px 18px;
+    border-right: 1.5px solid #333;
   }
-
-  .empresa-nombre { font-size: 24px; font-weight: 800; color: #1a4a1a; letter-spacing: -.3px; }
-  .empresa-datos  { font-size: 12px; color: #5f6c7b; margin-top: 4px; line-height: 1.9; }
-  .doc-titulo-wrap { text-align: right; }
-  .doc-titulo { font-size: 28px; font-weight: 800; color: #1a4a1a; letter-spacing: -.5px; text-transform: uppercase; }
-  .doc-numero { font-size: 16px; font-weight: 700; color: #5f6c7b; margin-top: 4px; }
-  .doc-fecha  { font-size: 12px; color: #9ca3af; margin-top: 2px; }
-
-  .doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
-  .meta-box { padding: 16px 18px; border-radius: 10px; border: 1.5px solid #e8ecf0; }
-  .meta-box-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin-bottom: 8px; }
-  .meta-box-nombre { font-size: 17px; font-weight: 800; color: #111; }
-  .meta-box-dato { font-size: 12.5px; color: #5f6c7b; margin-top: 3px; }
-
-  .cond-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .cond-item { }
-  .cond-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; }
-  .cond-val   { font-size: 13px; font-weight: 600; color: #1a2332; }
-
-  /* Tabla ítems */
-  .items-tabla { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  .items-tabla thead th {
-    padding: 10px 14px;
-    font-size: 10.5px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .6px;
-    color: #fff;
-    background: #1a4a1a;
+  .afip-col-centro {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px 20px; border-right: 1.5px solid #333;
+    min-width: 130px; text-align: center;
   }
-  .items-tabla thead th:first-child { border-radius: 8px 0 0 8px; }
-  .items-tabla thead th:last-child  { border-radius: 0 8px 8px 0; text-align: right; }
-  .items-tabla thead th.right { text-align: right; }
-  .items-tabla tbody td { padding: 11px 14px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
-  .items-tabla tbody tr:last-child td { border-bottom: none; }
-  .items-tabla tbody tr:nth-child(even) td { background: #fafbfc; }
-  .item-nombre { font-weight: 700; color: #1a2332; }
-  .item-desc   { font-size: 11.5px; color: #9ca3af; margin-top: 2px; }
-
-  /* Totales */
-  .totales-wrap { display: flex; justify-content: flex-end; margin-bottom: 28px; }
-  .totales-box { width: 300px; }
-  .total-line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
-  .total-line:last-child { border-bottom: none; }
-  .total-final-line { display: flex; justify-content: space-between; padding: 12px 16px; background: linear-gradient(135deg, #1a4a1a 0%, #2d7a2d 100%); border-radius: 10px; margin-top: 10px; }
-  .total-final-label { font-size: 14px; font-weight: 800; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; }
-  .total-final-valor { font-size: 22px; font-weight: 900; color: #fff; }
-
-  /* Validez y notas */
-  .doc-footer-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  .info-box { padding: 14px 16px; border-radius: 8px; background: #f8f9fb; border: 1px solid #e8ecf0; font-size: 12.5px; color: #5f6c7b; white-space: pre-line; }
-  .info-box strong { display: block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin-bottom: 4px; }
-
-  /* ═══════════════════════════════════════════════
-     RESPONSIVE MÓVIL
-  ═══════════════════════════════════════════════ */
-  @media (max-width: 700px) {
-    .page-body { padding: 12px 8px; }
-    .top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .top-bar-actions { width: 100%; flex-wrap: wrap; }
-    .btn-act { flex: 1; justify-content: center; font-size: 12px; padding: 8px 10px; }
-
-    .doc-a4 { padding: 24px 16px; font-size: 12.5px; }
-
-    .doc-header { flex-direction: column; gap: 16px; align-items: flex-start; }
-    .doc-titulo-wrap { text-align: left; }
-    .doc-titulo { font-size: 22px; }
-    .empresa-nombre { font-size: 19px; }
-
-    .doc-meta { grid-template-columns: 1fr; gap: 12px; }
-    .cond-grid { grid-template-columns: 1fr 1fr; }
-
-    .items-tabla thead th,
-    .items-tabla tbody td { padding: 8px 8px; font-size: 11.5px; }
-
-    .totales-wrap { justify-content: stretch; }
-    .totales-box { width: 100%; }
-
-    .doc-footer-info { grid-template-columns: 1fr; }
-
-    .total-final-valor { font-size: 18px; }
+  .afip-col-doc {
+    padding: 16px 18px;
+    text-align: right;
   }
+  .emp-logo { max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
+  .emp-nombre { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .emp-dato { font-size: 11px; color: #444; line-height: 1.7; }
+  .tipo-comp { font-size: 36px; font-weight: 900; color: #111; line-height: 1; }
+  .tipo-comp-label { font-size: 11px; font-weight: 700; color: #555; margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
+  .doc-titulo { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .doc-nro { font-size: 22px; font-weight: 900; color: #111; letter-spacing: 1px; }
+  .doc-fecha-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 8px; }
+  .doc-fecha-val   { font-size: 13px; font-weight: 600; color: #111; }
 
-  @media (max-width: 480px) {
-    .doc-a4 { padding: 16px 10px; }
-    .items-tabla thead { display: none; }
-    .items-tabla tbody td { display: block; border-bottom: none; padding: 4px 8px; }
-    .items-tabla tbody tr { border-bottom: 1px solid #e8ecf0; display: block; padding: 8px 0; }
-    .items-tabla tbody td:nth-child(1) { display: none; }
-    .items-tabla tbody td:nth-child(3)::before { content: 'Cant: '; color: #9ca3af; font-size: 11px; }
-    .items-tabla tbody td:nth-child(4)::before { content: 'Precio: '; color: #9ca3af; font-size: 11px; }
-    .items-tabla tbody td:nth-child(5) { text-align: left; font-weight: 700; color: #1a4a1a; }
-    .items-tabla tbody td:nth-child(5)::before { content: 'Subtotal: '; color: #9ca3af; font-size: 11px; font-weight: 400; }
+  /* ── FILA CLIENTE ── */
+  .afip-cliente-row {
+    border: 1.5px solid #333; border-top: none;
+    display: grid; grid-template-columns: 1fr auto;
+  }
+  .afip-cliente-main { padding: 10px 18px; border-right: 1.5px solid #333; }
+  .afip-cliente-meta { padding: 10px 18px; min-width: 200px; }
+  .afip-label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+  .afip-val   { font-size: 13px; font-weight: 600; color: #111; }
+  .afip-val.lg { font-size: 15px; font-weight: 700; }
+  .afip-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+
+  /* ── TABLA ITEMS ── */
+  .afip-tabla { width: 100%; border-collapse: collapse; margin-top: 0; font-size: 11.5px; }
+  .afip-tabla thead tr th {
+    background: #1a1a1a; color: #fff;
+    padding: 9px 10px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .4px; text-align: right;
+    border-right: 1px solid #333;
+  }
+  .afip-tabla thead tr th:first-child { text-align: center; border-left: 1.5px solid #333; }
+  .afip-tabla thead tr th.left { text-align: left; }
+  .afip-tabla thead tr th:last-child { border-right: 1.5px solid #333; }
+  .afip-tabla tbody td {
+    padding: 9px 10px; border-bottom: 1px solid #e5e7eb;
+    vertical-align: top; text-align: right;
+    border-right: 1px solid #e5e7eb;
+  }
+  .afip-tabla tbody td:first-child { text-align: center; color: #9ca3af; font-size: 11px; border-left: 1.5px solid #e5e7eb; }
+  .afip-tabla tbody td.left { text-align: left; }
+  .afip-tabla tbody tr:last-child td { border-bottom: 1.5px solid #333; }
+  .afip-tabla tbody tr:last-child td:last-child { border-right: 1.5px solid #333; }
+  .afip-tabla tbody tr:last-child td:first-child { border-left: 1.5px solid #333; }
+  .afip-tabla tbody tr:nth-child(even) td { background: #fafafa; }
+  .item-nombre { font-weight: 700; color: #111; font-size: 12px; }
+  .item-desc   { font-size: 10.5px; color: #777; margin-top: 2px; }
+  .item-sku    { font-size: 10px; color: #aaa; font-family: monospace; margin-top: 1px; }
+  .precio-tachado { font-size: 10px; color: #bbb; text-decoration: line-through; display: block; }
+  .desc-pct { font-size: 10.5px; color: #d97706; font-weight: 700; }
+
+  /* ── TOTALES AFIP ── */
+  .afip-totales-wrap { display: flex; justify-content: flex-end; margin-top: 0; }
+  .afip-totales {
+    width: 360px;
+    border: 1.5px solid #333; border-top: none;
+  }
+  .tot-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 14px; border-bottom: 1px solid #e5e7eb;
+    font-size: 12px;
+  }
+  .tot-row:last-child { border-bottom: none; }
+  .tot-row.final {
+    background: #1a1a1a; padding: 12px 14px;
+  }
+  .tot-row.final span:first-child { color: rgba(255,255,255,.8); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .tot-row.final span:last-child  { color: #fff; font-size: 20px; font-weight: 900; }
+  .tot-row.desc-row span:first-child { color: #d97706; }
+  .tot-row.desc-row span:last-child  { color: #d97706; font-weight: 700; }
+
+  /* ── SECCIONES FOOTER ── */
+  .afip-footer {
+    border: 1.5px solid #333; border-top: 1px solid #e5e7eb;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    margin-top: 16px;
+  }
+  .footer-box {
+    padding: 12px 16px;
+    border-right: 1px solid #e5e7eb;
+    font-size: 11.5px; color: #444; line-height: 1.65;
+  }
+  .footer-box:last-child { border-right: none; }
+  .footer-box-title {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .6px; color: #888; margin-bottom: 5px;
+  }
+  .footer-box-content { white-space: pre-line; }
+
+  @media (max-width: 750px) {
+    .page-body { padding: 10px 6px; }
+    .doc-a4 { padding: 20px 12px; }
+    .afip-header { grid-template-columns: 1fr; }
+    .afip-col-empresa, .afip-col-doc { border-right: none; border-bottom: 1.5px solid #333; }
+    .afip-col-centro { border-right: none; border-bottom: 1.5px solid #333; }
+    .afip-cliente-row { grid-template-columns: 1fr; }
+    .afip-cliente-main { border-right: none; border-bottom: 1px solid #e5e7eb; }
+    .afip-totales { width: 100%; }
+    .afip-totales-wrap { justify-content: stretch; }
+    .afip-footer { grid-template-columns: 1fr; }
+    .footer-box { border-right: none; border-bottom: 1px solid #e5e7eb; }
   }
 </style>
 
@@ -170,14 +166,12 @@
     <%- include('../partials/header', { module: presupuesto.numero, user }) %>
     <div class="page-body">
 
+      <!-- Barra acciones -->
       <div class="top-bar">
         <div class="top-bar-left">
           <a href="/presupuestos" class="btn-act"><i class="bi bi-arrow-left"></i> Volver</a>
-          <span class="badge-estado badge-<%= presupuesto.estado %>">
-            <%= presupuesto.estado %>
-          </span>
+          <span class="badge-estado badge-<%= presupuesto.estado %>"><%= presupuesto.estado %></span>
         </div>
-
         <div class="top-bar-actions">
           <% if (presupuesto.estado === 'Borrador') { %>
             <form method="POST" action="/presupuestos/estado/<%= presupuesto.id %>" style="margin:0">
@@ -185,206 +179,246 @@
               <button type="submit" class="btn-act"><i class="bi bi-send"></i> Marcar enviado</button>
             </form>
           <% } %>
-
           <% if (presupuesto.estado === 'Enviado') { %>
             <form method="POST" action="/presupuestos/estado/<%= presupuesto.id %>" style="margin:0">
               <input type="hidden" name="estado" value="Aprobado">
               <button type="submit" class="btn-act success"><i class="bi bi-check-circle"></i> Aprobar</button>
             </form>
           <% } %>
-
           <a href="/presupuestos/editar/<%= presupuesto.id %>" class="btn-act"><i class="bi bi-pencil"></i> Editar</a>
           <button class="btn-act" onclick="imprimirTermica()"><i class="bi bi-receipt"></i> Térmica</button>
           <button class="btn-act primary" onclick="imprimirA4()"><i class="bi bi-printer-fill"></i> Imprimir A4</button>
         </div>
       </div>
 
+      <!-- DOCUMENTO -->
       <div class="doc-wrap">
         <div class="doc-a4" id="docA4">
 
-          <div class="doc-header">
-            <div class="header-left">
+          <%
+            const itemsCalc = (presupuesto.items || []).map(it => {
+              const descPct    = Number(it.descuento_item_pct || 0);
+              const precioBase = Number(it.precio_unitario || 0);
+              const precioDesc = precioBase * (1 - descPct / 100);
+              const cant       = Number(it.cantidad || 0);
+              const subSD      = cant * precioDesc;
+              const ivaPct     = (it.pct_iva !== null && it.pct_iva !== undefined && it.pct_iva !== '') ? Number(it.pct_iva) : null;
+              const ivaVal     = ivaPct !== null ? subSD * ivaPct / 100 : 0;
+              const totalCIva  = subSD + ivaVal;
+              return { ...it, descPct, precioBase, precioDesc, cant, subSD, ivaPct, ivaVal, totalCIva };
+            });
+            const grandSub = itemsCalc.reduce((s, i) => s + i.subSD, 0);
+            const grandIva = itemsCalc.reduce((s, i) => s + i.ivaVal, 0);
+            const descGral = Number(presupuesto.descuento_monto || 0);
+            const grandTot = Math.max(0, grandSub - descGral + grandIva);
+          %>
+
+          <!-- ══ ENCABEZADO ESTILO AFIP ══ -->
+          <div class="afip-header">
+
+            <!-- Columna empresa -->
+            <div class="afip-col-empresa">
               <% if (config.empresa_logo) { %>
-                <img src="<%= config.empresa_logo %>" alt="Logo" class="empresa-logo">
+                <img src="<%= config.empresa_logo %>" class="emp-logo" alt="Logo">
               <% } %>
-
-              <div>
-                <div class="empresa-nombre"><%= config.empresa_nombre || 'Mi Comercio' %></div>
-                <div class="empresa-datos">
-                  <% if (config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
-                  <% if (config.empresa_telefono) { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
-                  <% if (config.empresa_email) { %><div>Email: <%= config.empresa_email %></div><% } %>
-                </div>
+              <div class="emp-nombre"><%= config.empresa_nombre || 'Mi Empresa' %></div>
+              <div class="emp-dato">
+                <% if (config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
+                <% if (config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
+                <% if (config.empresa_email)     { %><div><%= config.empresa_email %></div><% } %>
               </div>
             </div>
 
-            <div class="doc-titulo-wrap">
-              <div class="doc-titulo">Presupuesto</div>
-              <div class="doc-numero"><%= presupuesto.numero %></div>
-              <div class="doc-fecha">
-                Fecha:
-                <%= new Date(presupuesto.created_at).toLocaleDateString('es-AR') %>
+            <!-- Columna centro: letra tipo comprobante -->
+            <div class="afip-col-centro">
+              <div class="tipo-comp">X</div>
+              <div class="tipo-comp-label">Presupuesto</div>
+            </div>
+
+            <!-- Columna derecha: datos fiscales + número -->
+            <div class="afip-col-doc">
+              <div class="doc-titulo">PRESUPUESTO</div>
+              <div class="doc-nro"><%= presupuesto.numero %></div>
+              <div class="doc-fecha-label">Fecha</div>
+              <div class="doc-fecha-val"><%= new Date(presupuesto.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %></div>
+              <div style="margin-top:12px;">
+                <% if (config.empresa_cond_iva) { %>
+                  <div class="emp-dato"><%= config.empresa_cond_iva %></div>
+                <% } %>
+                <% if (config.afip_cuit) { %>
+                  <div class="emp-dato">CUIT: <%= config.afip_cuit %></div>
+                <% } %>
+                <% if (config.empresa_inicio_actividades) { %>
+                  <div class="emp-dato">Inicio Act.: <%= config.empresa_inicio_actividades %></div>
+                <% } %>
+                <% if (config.empresa_iibb) { %>
+                  <div class="emp-dato">Ing. Brutos: <%= config.empresa_iibb %></div>
+                <% } %>
               </div>
             </div>
           </div>
 
-          <div class="doc-meta">
-            <div class="meta-box">
-              <div class="meta-box-title">Cliente</div>
-              <div class="meta-box-nombre"><%= presupuesto.cliente_nombre || 'Sin nombre' %></div>
-              <% if (presupuesto.cliente_cuit) { %>
-                <div class="meta-box-dato">CUIT / DNI: <%= presupuesto.cliente_cuit %></div>
-              <% } %>
-              <% if (presupuesto.cliente_email) { %>
-                <div class="meta-box-dato">Email: <%= presupuesto.cliente_email %></div>
-              <% } %>
-              <% if (presupuesto.cliente_tel) { %>
-                <div class="meta-box-dato">Teléfono: <%= presupuesto.cliente_tel %></div>
-              <% } %>
-            </div>
-
-            <div class="meta-box">
-              <div class="meta-box-title">Condiciones</div>
-              <div class="cond-grid">
-                <div class="cond-item">
-                  <div class="cond-label">Pago</div>
-                  <div class="cond-val"><%= presupuesto.condicion_pago || 'Contado' %></div>
+          <!-- ══ FILA CLIENTE ══ -->
+          <div class="afip-cliente-row">
+            <div class="afip-cliente-main">
+              <div style="display:flex;gap:32px;flex-wrap:wrap;">
+                <div>
+                  <div class="afip-label">Señor/es</div>
+                  <div class="afip-val lg"><%= presupuesto.cliente_nombre || 'Consumidor Final' %></div>
                 </div>
-
-                <div class="cond-item">
-                  <div class="cond-label">Validez</div>
-                  <div class="cond-val">
-                    <%= presupuesto.validez_dias ? presupuesto.validez_dias + ' días' : 'Sin vencimiento' %>
+                <% if (presupuesto.cliente_cuit) { %>
+                  <div>
+                    <div class="afip-label">CUIT / DNI</div>
+                    <div class="afip-val"><%= presupuesto.cliente_cuit %></div>
                   </div>
+                <% } %>
+                <% if (presupuesto.cliente_email) { %>
+                  <div>
+                    <div class="afip-label">Email</div>
+                    <div class="afip-val"><%= presupuesto.cliente_email %></div>
+                  </div>
+                <% } %>
+                <% if (presupuesto.cliente_tel) { %>
+                  <div>
+                    <div class="afip-label">Teléfono</div>
+                    <div class="afip-val"><%= presupuesto.cliente_tel %></div>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+            <div class="afip-cliente-meta">
+              <div class="afip-meta-grid">
+                <div>
+                  <div class="afip-label">IVA</div>
+                  <div class="afip-val">Consumidor Final</div>
                 </div>
-
-                <div class="cond-item">
-                  <div class="cond-label">Estado</div>
-                  <div class="cond-val"><%= presupuesto.estado %></div>
+                <div>
+                  <div class="afip-label">Estado</div>
+                  <div class="afip-val"><%= presupuesto.estado %></div>
                 </div>
-
-                <div class="cond-item">
-                  <div class="cond-label">Sucursal</div>
-                  <div class="cond-val"><%= presupuesto.sucursal_nombre || 'Casa Central' %></div>
+                <div>
+                  <div class="afip-label">Sucursal</div>
+                  <div class="afip-val"><%= presupuesto.sucursal_nombre || 'Casa Central' %></div>
                 </div>
+                <% if (presupuesto.validez_dias) { %>
+                  <div>
+                    <div class="afip-label">Vence</div>
+                    <div class="afip-val"><%= presupuesto.validez_dias %> días</div>
+                  </div>
+                <% } %>
               </div>
             </div>
           </div>
 
-          <table class="items-tabla">
+          <!-- ══ TABLA ÍTEMS ══ -->
+          <table class="afip-tabla">
             <thead>
               <tr>
-                <th style="width:50px;">#</th>
-                <th>Descripción</th>
-                <th class="right" style="width:110px;">Cantidad</th>
-                <th class="right" style="width:140px;">Precio</th>
-                <th class="right" style="width:150px;">Subtotal</th>
+                <th style="width:36px;">#</th>
+                <th class="left">Descripción</th>
+                <th style="width:65px;">Cant.</th>
+                <th style="width:110px;">Precio Unit.</th>
+                <th style="width:62px;">% Desc</th>
+                <th style="width:110px;">Sub Total</th>
+                <th style="width:58px;">% IVA</th>
+                <th style="width:96px;">IVA $</th>
+                <th style="width:115px;">Total c/IVA</th>
               </tr>
             </thead>
             <tbody>
-              <% (presupuesto.items || []).forEach((item, idx) => { 
-                const descPct = Number(item.descuento_item_pct || 0);
-                const precioBase = Number(item.precio_unitario || 0);
-                const precioConDesc = precioBase * (1 - descPct / 100);
-                const subtotalItem = Number(item.cantidad || 0) * precioConDesc;
-              %>
+              <% itemsCalc.forEach((item, idx) => { %>
                 <tr>
                   <td><%= idx + 1 %></td>
-                  <td>
+                  <td class="left">
                     <div class="item-nombre"><%= item.nombre %></div>
-                    <% if (item.descripcion) { %>
-                      <div class="item-desc"><%= item.descripcion %></div>
-                    <% } %>
-                    <% if (descPct > 0) { %>
-                      <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:2px;">Descuento <%= descPct %>%</div>
-                    <% } %>
+                    <% if (item.descripcion) { %><div class="item-desc"><%= item.descripcion %></div><% } %>
+                    <% if (item.sku) { %><div class="item-sku">SKU: <%= item.sku %></div><% } %>
                   </td>
-                  <td class="right"><%= Number(item.cantidad || 0).toLocaleString('es-AR') %></td>
-                  <td class="right">
-                    <% if (descPct > 0) { %>
-                      <div style="text-decoration:line-through;font-size:11px;color:#9ca3af;">$<%= precioBase.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></div>
+                  <td><%= item.cant.toLocaleString('es-AR') %></td>
+                  <td>
+                    <% if (item.descPct > 0) { %>
+                      <span class="precio-tachado">$<%= item.precioBase.toLocaleString('es-AR', {minimumFractionDigits:2}) %></span>
                     <% } %>
-                    $<%= precioConDesc.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %>
+                    $<%= item.precioDesc.toLocaleString('es-AR', {minimumFractionDigits:2}) %>
                   </td>
-                  <td class="right">$<%= subtotalItem.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></td>
+                  <td>
+                    <% if (item.descPct > 0) { %>
+                      <span class="desc-pct"><%= item.descPct %>%</span>
+                    <% } else { %><span style="color:#ccc;">—</span><% } %>
+                  </td>
+                  <td>$<%= item.subSD.toLocaleString('es-AR', {minimumFractionDigits:2}) %></td>
+                  <td>
+                    <% if (item.ivaPct !== null) { %><%= item.ivaPct %>%
+                    <% } else { %><span style="color:#ccc;">—</span><% } %>
+                  </td>
+                  <td>
+                    <% if (item.ivaVal > 0) { %>$<%= item.ivaVal.toLocaleString('es-AR', {minimumFractionDigits:2}) %>
+                    <% } else { %><span style="color:#ccc;">—</span><% } %>
+                  </td>
+                  <td style="font-weight:700;">$<%= item.totalCIva.toLocaleString('es-AR', {minimumFractionDigits:2}) %></td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
 
-          <%
-            const subtotal = Number(presupuesto.subtotal || 0);
-            const descuento = Number(presupuesto.descuento_monto || 0);
-            const totalItemsIva = (presupuesto.items || []).reduce((acc, it) => {
-              const descPct = Number(it.descuento_item_pct || 0);
-              const base = Number(it.cantidad || 0) * Number(it.precio_unitario || 0) * (1 - descPct / 100);
-              const pct = (it.pct_iva !== null && it.pct_iva !== undefined && it.pct_iva !== '') ? Number(it.pct_iva) : 0;
-              return acc + (base * pct / 100);
-            }, 0);
-            const total = Math.max(0, subtotal - descuento + totalItemsIva);
-          %>
-
-          <div class="totales-wrap">
-            <div class="totales-box">
-              <div class="total-line">
-                <span>Subtotal</span>
-                <strong>$<%= subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></strong>
+          <!-- ══ TOTALES ══ -->
+          <div class="afip-totales-wrap">
+            <div class="afip-totales">
+              <div class="tot-row">
+                <span style="color:#555;">Subtotal (sin IVA)</span>
+                <strong>$<%= grandSub.toLocaleString('es-AR', {minimumFractionDigits:2}) %></strong>
               </div>
-
-              <% if (descuento > 0) { %>
-                <div class="total-line">
-                  <span>Descuento</span>
-                  <strong>-$<%= descuento.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></strong>
+              <% if (descGral > 0) { %>
+                <div class="tot-row desc-row">
+                  <span>Descuento general</span>
+                  <span>-$<%= descGral.toLocaleString('es-AR', {minimumFractionDigits:2}) %></span>
                 </div>
               <% } %>
-
-              <% if (totalItemsIva > 0) { %>
-                <div class="total-line">
-                  <span>IVA</span>
-                  <strong>$<%= totalItemsIva.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></strong>
+              <% if (grandIva > 0) { %>
+                <div class="tot-row">
+                  <span style="color:#555;">IVA</span>
+                  <strong>$<%= grandIva.toLocaleString('es-AR', {minimumFractionDigits:2}) %></strong>
                 </div>
               <% } %>
-
-              <div class="total-final-line">
-                <span class="total-final-label">Total</span>
-                <span class="total-final-valor">$<%= total.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></span>
+              <div class="tot-row final">
+                <span>TOTAL</span>
+                <span>$<%= grandTot.toLocaleString('es-AR', {minimumFractionDigits:2}) %></span>
               </div>
             </div>
           </div>
 
-          <% if (presupuesto.validez_dias || presupuesto.condicion_pago_obs || presupuesto.notas) { %>
-            <div style="border-top:1px solid #eef2f6;padding-top:16px;">
-              <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin-bottom:10px;">
-                Observaciones y condiciones
-              </div>
-
-              <div class="doc-footer-info">
-                <% if (presupuesto.validez_dias) { %>
-                  <div class="info-box">
-                    <strong>Validez del presupuesto</strong>
-                    Este presupuesto tiene una validez de <%= presupuesto.validez_dias %> día<%= Number(presupuesto.validez_dias) !== 1 ? 's' : '' %> desde su emisión.
+          <!-- ══ FOOTER: CONDICIONES / NOTAS ══ -->
+          <% const hayFooter = presupuesto.condicion_pago || presupuesto.condicion_pago_obs || presupuesto.notas || presupuesto.validez_dias; %>
+          <% if (hayFooter) { %>
+            <div class="afip-footer">
+              <% if (presupuesto.condicion_pago || presupuesto.condicion_pago_obs) { %>
+                <div class="footer-box">
+                  <div class="footer-box-title">Condición de pago</div>
+                  <div class="footer-box-content">
+                    <% if (presupuesto.condicion_pago) { %><strong><%= presupuesto.condicion_pago %></strong><% } %>
+                    <% if (presupuesto.condicion_pago_obs) { %>
+                      <div style="margin-top:3px;"><%= presupuesto.condicion_pago_obs %></div>
+                    <% } %>
                   </div>
-                <% } %>
-
-                <% if (presupuesto.condicion_pago_obs) { %>
-                  <div class="info-box">
-                    <strong>Condición de pago</strong>
-                    <%= presupuesto.condicion_pago_obs %>
-                  </div>
-                <% } %>
-
-                <% if (presupuesto.notas) { %>
-                  <div class="info-box" style="<%= !presupuesto.condicion_pago_obs && !presupuesto.validez_dias ? 'grid-column:1/-1;' : '' %>">
-                    <strong>Notas / Aclaraciones</strong>
-                    <%= presupuesto.notas %>
-                  </div>
-                <% } %>
-              </div>
+                </div>
+              <% } %>
+              <% if (presupuesto.validez_dias) { %>
+                <div class="footer-box">
+                  <div class="footer-box-title">Validez del presupuesto</div>
+                  <div class="footer-box-content">Este presupuesto tiene una validez de <strong><%= presupuesto.validez_dias %> día<%= Number(presupuesto.validez_dias) !== 1 ? 's' : '' %></strong> desde su emisión.</div>
+                </div>
+              <% } %>
+              <% if (presupuesto.notas) { %>
+                <div class="footer-box">
+                  <div class="footer-box-title">Notas / Aclaraciones</div>
+                  <div class="footer-box-content"><%= presupuesto.notas %></div>
+                </div>
+              <% } %>
             </div>
           <% } %>
 
-        </div>
-      </div>
+        </div><!-- fin doc-a4 -->
+      </div><!-- fin doc-wrap -->
 
     </div>
   </div>
@@ -398,95 +432,82 @@ const config      = <%- JSON.stringify(config) %>;
 const fmt  = n => '$' + (Number(n)||0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
 const fmt0 = n => '$' + (Number(n)||0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
 
-function calcularSubtotal(p) {
-  return Number(p.subtotal || 0);
+function calcItemSub(i) {
+  const desc = Number(i.descuento_item_pct || 0);
+  return Number(i.cantidad || 0) * Number(i.precio_unitario || 0) * (1 - desc / 100);
 }
-
-function calcularIva(p) {
-  return (p.items || []).reduce((acc, i) => {
-    const base = Number(i.subtotal || 0);
-    const pct  = (i.pct_iva !== null && i.pct_iva !== undefined && i.pct_iva !== '') ? Number(i.pct_iva) : 0;
-    return acc + (base * pct / 100);
-  }, 0);
+function calcItemIva(i) {
+  const pct = (i.pct_iva !== null && i.pct_iva !== undefined && i.pct_iva !== '') ? Number(i.pct_iva) : 0;
+  return calcItemSub(i) * pct / 100;
 }
-
-function calcularDescuento(p) {
-  return Number(p.descuento_monto || 0);
-}
-
-function calcularTotal(p) {
-  return Math.max(0, calcularSubtotal(p) - calcularDescuento(p) + calcularIva(p));
-}
+function calcularSubtotal(p) { return (p.items||[]).reduce((s,i) => s + calcItemSub(i), 0); }
+function calcularIva(p)      { return (p.items||[]).reduce((s,i) => s + calcItemIva(i), 0); }
+function calcularDescuento(p){ return Number(p.descuento_monto || 0); }
+function calcularTotal(p)    { return Math.max(0, calcularSubtotal(p) - calcularDescuento(p) + calcularIva(p)); }
 
 /* ── IMPRIMIR A4 ── */
 function imprimirA4() {
   const html = document.getElementById('docA4').innerHTML;
-  const w = window.open('', '_blank', 'width=900,height=750');
-
+  const w = window.open('', '_blank', 'width=1000,height=850');
   w.document.write(`<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
-    <title>${presupuesto.numero} — Presupuesto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <title>${presupuesto.numero}</title>
     <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family:'Sora',sans-serif; color:#1a2332; background:#fff; }
-      @page { size:A4; margin:0; }
-      @media print {
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      }
-
-      .doc-a4 { padding:40px 48px; min-height:297mm; }
-      .doc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; padding-bottom:24px; border-bottom:3px solid #2d7a2d; }
-      .header-left { display:flex; align-items:center; gap:16px; }
-      .empresa-logo { width:58px; height:58px; object-fit:contain; border-radius:10px; }
-      .empresa-nombre { font-size:22px; font-weight:800; color:#1a4a1a; }
-      .empresa-datos  { font-size:11.5px; color:#5f6c7b; margin-top:4px; line-height:1.9; }
-      .doc-titulo-wrap { text-align:right; }
-      .doc-titulo { font-size:26px; font-weight:800; color:#1a4a1a; text-transform:uppercase; }
-      .doc-numero { font-size:15px; font-weight:700; color:#5f6c7b; margin-top:3px; }
-      .doc-fecha  { font-size:11.5px; color:#9ca3af; margin-top:2px; }
-
-      .doc-meta { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px; }
-      .meta-box { padding:14px 16px; border-radius:8px; border:1px solid #e8ecf0; }
-      .meta-box-title { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.7px; color:#9ca3af; margin-bottom:8px; }
-      .meta-box-nombre { font-size:15px; font-weight:800; color:#111; }
-      .meta-box-dato { font-size:11px; color:#5f6c7b; margin-top:3px; }
-
-      .cond-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-      .cond-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; }
-      .cond-val   { font-size:11.5px; font-weight:600; color:#1a2332; }
-
-      table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-      thead th {
-        padding:9px 10px;
-        font-size:10px;
-        font-weight:800;
-        text-transform:uppercase;
-        letter-spacing:.5px;
-        color:#fff;
-        background:#1a4a1a;
-      }
-      thead th:first-child { border-radius:7px 0 0 7px; }
-      thead th:last-child  { border-radius:0 7px 7px 0; text-align:right; }
-      th.right, td.right { text-align:right; }
-      tbody td { padding:8px 8px; border-bottom:1px solid #f0f2f5; font-size:11px; vertical-align:top; }
-      tbody tr:nth-child(even) td { background:#fafbfc; }
-      .item-nombre { font-weight:700; color:#1a2332; }
-      .item-desc   { font-size:9.5px; color:#9ca3af; margin-top:2px; }
-
-      .totales-wrap { display:flex; justify-content:flex-end; margin-bottom:20px; }
-      .totales-box { width:300px; }
-      .total-line { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0f2f5; font-size:11.5px; }
-      .total-final-line { display:flex; justify-content:space-between; padding:10px 14px; background:linear-gradient(135deg,#1a4a1a 0%,#2d7a2d 100%); border-radius:8px; margin-top:8px; }
-      .total-final-label { font-size:13px; font-weight:800; color:rgba(255,255,255,.85); text-transform:uppercase; }
-      .total-final-valor { font-size:20px; font-weight:900; color:#fff; }
-
-      .doc-footer-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
-      .info-box { padding:10px 12px; border-radius:7px; background:#f8f9fb; border:1px solid #e8ecf0; font-size:11px; color:#5f6c7b; white-space:pre-line; }
-      .info-box strong { display:block; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9ca3af; margin-bottom:3px; }
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:Arial,'Helvetica Neue',sans-serif;color:#111;background:#fff;font-size:11px;}
+      @page{size:A4;margin:8mm;}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+      .doc-a4{padding:0;}
+      .afip-header{display:grid;grid-template-columns:1fr auto 1fr;gap:0;border:1.5px solid #333;}
+      .afip-col-empresa{padding:14px 16px;border-right:1.5px solid #333;}
+      .afip-col-centro{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;border-right:1.5px solid #333;min-width:110px;text-align:center;}
+      .afip-col-doc{padding:14px 16px;text-align:right;}
+      .emp-logo{max-height:48px;max-width:120px;object-fit:contain;margin-bottom:5px;display:block;}
+      .emp-nombre{font-size:15px;font-weight:700;color:#111;margin-bottom:3px;}
+      .emp-dato{font-size:10px;color:#444;line-height:1.7;}
+      .tipo-comp{font-size:32px;font-weight:900;color:#111;line-height:1;}
+      .tipo-comp-label{font-size:10px;font-weight:700;color:#555;margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
+      .doc-titulo{font-size:15px;font-weight:700;color:#111;margin-bottom:4px;}
+      .doc-nro{font-size:20px;font-weight:900;color:#111;letter-spacing:1px;}
+      .doc-fecha-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:6px;}
+      .doc-fecha-val{font-size:12px;font-weight:600;color:#111;}
+      .afip-cliente-row{border:1.5px solid #333;border-top:none;display:grid;grid-template-columns:1fr auto;}
+      .afip-cliente-main{padding:9px 16px;border-right:1.5px solid #333;}
+      .afip-cliente-meta{padding:9px 16px;min-width:180px;}
+      .afip-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
+      .afip-val{font-size:12px;font-weight:600;color:#111;}
+      .afip-val.lg{font-size:13px;font-weight:700;}
+      .afip-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;}
+      table{width:100%;border-collapse:collapse;font-size:10px;}
+      thead tr th{background:#1a1a1a;color:#fff;padding:8px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;text-align:right;border-right:1px solid #333;}
+      thead tr th:first-child{text-align:center;border-left:1.5px solid #333;}
+      thead tr th.left{text-align:left;}
+      thead tr th:last-child{border-right:1.5px solid #333;}
+      tbody td{padding:7px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top;text-align:right;border-right:1px solid #e5e7eb;}
+      tbody td:first-child{text-align:center;color:#9ca3af;font-size:10px;border-left:1.5px solid #e5e7eb;}
+      tbody td.left{text-align:left;}
+      tbody tr:last-child td{border-bottom:1.5px solid #333;}
+      tbody tr:last-child td:first-child{border-left:1.5px solid #333;}
+      tbody tr:last-child td:last-child{border-right:1.5px solid #333;}
+      tbody tr:nth-child(even) td{background:#fafafa;}
+      .item-nombre{font-weight:700;color:#111;font-size:10.5px;}
+      .item-desc{font-size:9.5px;color:#777;margin-top:1px;}
+      .precio-tachado{font-size:9.5px;color:#bbb;text-decoration:line-through;display:block;}
+      .desc-pct{font-size:10px;color:#d97706;font-weight:700;}
+      .afip-totales-wrap{display:flex;justify-content:flex-end;}
+      .afip-totales{width:300px;border:1.5px solid #333;border-top:none;}
+      .tot-row{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-bottom:1px solid #e5e7eb;font-size:11px;}
+      .tot-row.final{background:#1a1a1a;padding:10px 12px;border-bottom:none;}
+      .tot-row.final span:first-child{color:rgba(255,255,255,.8);font-size:11px;font-weight:700;text-transform:uppercase;}
+      .tot-row.final span:last-child{color:#fff;font-size:18px;font-weight:900;}
+      .tot-row.desc-row span{color:#d97706;font-weight:700;}
+      .afip-footer{border:1.5px solid #333;border-top:1px solid #e5e7eb;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0;margin-top:14px;}
+      .footer-box{padding:10px 14px;border-right:1px solid #e5e7eb;font-size:10.5px;color:#444;line-height:1.6;}
+      .footer-box:last-child{border-right:none;}
+      .footer-box-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#888;margin-bottom:4px;}
+      .footer-box-content{white-space:pre-line;}
     </style>
   </head><body><div class="doc-a4">${html}</div></body></html>`);
-
   w.document.close();
   setTimeout(() => { w.focus(); w.print(); }, 600);
 }
@@ -494,106 +515,61 @@ function imprimirA4() {
 /* ── IMPRIMIR TÉRMICA ── */
 function imprimirTermica() {
   const p   = presupuesto;
-  const emp = config.empresa_nombre || 'Mi Comercio';
+  const emp = config.empresa_nombre    || 'Mi Comercio';
   const dir = config.empresa_direccion || '';
   const tel = config.empresa_telefono  || '';
 
-  const itemsHTML = (p.items || []).map(i => `
-    <div style="margin-bottom:6px;">
-      <div style="font-weight:700;font-size:13px;">${i.nombre || ''}</div>
+  const itemsHTML = (p.items||[]).map(i => {
+    const desc   = Number(i.descuento_item_pct || 0);
+    const precio = Number(i.precio_unitario||0) * (1 - desc/100);
+    const sub    = Number(i.cantidad||0) * precio;
+    return `<div style="margin-bottom:6px;">
+      <div style="font-weight:700;font-size:13px;">${i.nombre||''}</div>
       ${i.descripcion ? `<div style="font-size:11px;color:#666;">${i.descripcion}</div>` : ''}
+      ${desc > 0 ? `<div style="font-size:10px;color:#d97706;">Desc. ${desc}%</div>` : ''}
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;">
-        <span>${Number(i.cantidad || 0).toLocaleString('es-AR')} x ${fmt0(i.precio_unitario)}</span>
-        <strong>${fmt0(i.subtotal)}</strong>
+        <span>${Number(i.cantidad||0).toLocaleString('es-AR')} x ${fmt0(precio)}</span>
+        <strong>${fmt0(sub)}</strong>
       </div>
-    </div>
-    <div style="border-top:1px dashed #ccc;margin:6px 0;"></div>
-  `).join('');
+    </div><div style="border-top:1px dashed #ccc;margin:6px 0;"></div>`;
+  }).join('');
 
-  const subtotal = calcularSubtotal(p);
+  const subtotal  = calcularSubtotal(p);
   const descuento = calcularDescuento(p);
-  const iva = calcularIva(p);
-  const total = calcularTotal(p);
-
-  const obsHTML = (p.condicion_pago_obs || p.notas)
-    ? `
-      <div style="margin-top:10px;">
-        <div style="border-top:1px dashed #ccc;margin:8px 0;"></div>
-        ${p.condicion_pago_obs ? `
-          <div style="font-size:11px;font-weight:700;margin-bottom:2px;">Condición de pago</div>
-          <div style="font-size:11px;margin-bottom:8px;white-space:pre-line;">${p.condicion_pago_obs}</div>
-        ` : ''}
-        ${p.notas ? `
-          <div style="font-size:11px;font-weight:700;margin-bottom:2px;">Notas</div>
-          <div style="font-size:11px;white-space:pre-line;">${p.notas}</div>
-        ` : ''}
-      </div>
-    `
-    : '';
+  const iva       = calcularIva(p);
+  const total     = calcularTotal(p);
 
   const w = window.open('', '_blank', 'width=420,height=800');
-  w.document.write(`<!DOCTYPE html>
-  <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>${p.numero} — Térmica</title>
-      <style>
-        * { box-sizing:border-box; }
-        body {
-          font-family: Arial, sans-serif;
-          width: 80mm;
-          margin: 0 auto;
-          padding: 10px;
-          color: #000;
-          background: #fff;
-        }
-        .center { text-align:center; }
-        .muted { color:#666; }
-        .sep { border-top:1px dashed #ccc; margin:8px 0; }
-        .row { display:flex; justify-content:space-between; gap:10px; }
-        .strong { font-weight:700; }
-        .total { font-size:18px; font-weight:900; }
-        @media print {
-          body { width: 80mm; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="center strong" style="font-size:16px;">${emp}</div>
-      ${dir ? `<div class="center muted" style="font-size:11px;">${dir}</div>` : ''}
-      ${tel ? `<div class="center muted" style="font-size:11px;">Tel: ${tel}</div>` : ''}
-      <div class="sep"></div>
-
-      <div class="center strong">PRESUPUESTO</div>
-      <div class="center">${p.numero}</div>
-      <div class="center muted" style="font-size:11px;">${new Date(p.created_at).toLocaleDateString('es-AR')}</div>
-
-      <div class="sep"></div>
-
-      <div style="font-size:12px;">
-        <div><strong>Cliente:</strong> ${p.cliente_nombre || 'Sin nombre'}</div>
-        ${p.cliente_cuit ? `<div><strong>CUIT/DNI:</strong> ${p.cliente_cuit}</div>` : ''}
-        ${p.cliente_tel ? `<div><strong>Tel:</strong> ${p.cliente_tel}</div>` : ''}
-        ${p.cliente_email ? `<div><strong>Email:</strong> ${p.cliente_email}</div>` : ''}
-      </div>
-
-      <div class="sep"></div>
-
-      ${itemsHTML}
-
-      <div class="row" style="font-size:12px;"><span>Subtotal</span><strong>${fmt0(subtotal)}</strong></div>
-      ${descuento > 0 ? `<div class="row" style="font-size:12px;"><span>Descuento</span><strong>-${fmt0(descuento)}</strong></div>` : ''}
-      ${iva > 0 ? `<div class="row" style="font-size:12px;"><span>IVA</span><strong>${fmt0(iva)}</strong></div>` : ''}
-      <div class="sep"></div>
-      <div class="row total"><span>TOTAL</span><span>${fmt0(total)}</span></div>
-
-      ${p.condicion_pago ? `<div style="margin-top:10px;font-size:11px;"><strong>Pago:</strong> ${p.condicion_pago}</div>` : ''}
-      ${p.validez_dias ? `<div style="font-size:11px;"><strong>Validez:</strong> ${p.validez_dias} día(s)</div>` : ''}
-
-      ${obsHTML}
-    </body>
-  </html>`);
-
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>${p.numero}</title>
+    <style>*{box-sizing:border-box;}body{font-family:Arial,sans-serif;width:80mm;margin:0 auto;padding:10px;color:#000;}.center{text-align:center;}.muted{color:#666;}.sep{border-top:1px dashed #ccc;margin:8px 0;}.row{display:flex;justify-content:space-between;gap:10px;}.strong{font-weight:700;}.total{font-size:18px;font-weight:900;}@media print{body{width:80mm;}}</style>
+  </head><body>
+    <div class="center strong" style="font-size:16px;">${emp}</div>
+    ${dir ? `<div class="center muted" style="font-size:11px;">${dir}</div>` : ''}
+    ${tel ? `<div class="center muted" style="font-size:11px;">Tel: ${tel}</div>` : ''}
+    <div class="sep"></div>
+    <div class="center strong">PRESUPUESTO</div>
+    <div class="center">${p.numero}</div>
+    <div class="center muted" style="font-size:11px;">${new Date(p.created_at).toLocaleDateString('es-AR')}</div>
+    <div class="sep"></div>
+    <div style="font-size:12px;">
+      <div><strong>Cliente:</strong> ${p.cliente_nombre||'Sin nombre'}</div>
+      ${p.cliente_cuit  ? `<div><strong>CUIT:</strong> ${p.cliente_cuit}</div>` : ''}
+      ${p.cliente_tel   ? `<div><strong>Tel:</strong> ${p.cliente_tel}</div>` : ''}
+      ${p.cliente_email ? `<div><strong>Email:</strong> ${p.cliente_email}</div>` : ''}
+    </div>
+    <div class="sep"></div>
+    ${itemsHTML}
+    <div class="row" style="font-size:12px;"><span>Subtotal</span><strong>${fmt0(subtotal)}</strong></div>
+    ${descuento > 0 ? `<div class="row" style="font-size:12px;"><span>Descuento</span><strong>-${fmt0(descuento)}</strong></div>` : ''}
+    ${iva > 0 ? `<div class="row" style="font-size:12px;"><span>IVA</span><strong>${fmt0(iva)}</strong></div>` : ''}
+    <div class="sep"></div>
+    <div class="row total"><span>TOTAL</span><span>${fmt0(total)}</span></div>
+    ${p.condicion_pago     ? `<div style="margin-top:10px;font-size:11px;"><strong>Pago:</strong> ${p.condicion_pago}</div>` : ''}
+    ${p.validez_dias       ? `<div style="font-size:11px;"><strong>Validez:</strong> ${p.validez_dias} día(s)</div>` : ''}
+    ${p.condicion_pago_obs ? `<div class="sep"></div><div style="font-size:11px;"><strong>Cond. pago:</strong><br>${p.condicion_pago_obs}</div>` : ''}
+    ${p.notas              ? `<div class="sep"></div><div style="font-size:11px;"><strong>Notas:</strong><br>${p.notas}</div>` : ''}
+  </body></html>`);
   w.document.close();
   setTimeout(() => { w.focus(); w.print(); }, 500);
 }

@@ -19,9 +19,17 @@
   .aj-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
 
   .aj-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); margin-bottom: 6px; }
-  .aj-field input, .aj-field textarea { width: 100%; padding: 10px 13px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color .15s, box-shadow .15s; }
-  .aj-field input:focus, .aj-field textarea:focus { border-color: var(--color-action); box-shadow: 0 0 0 3px rgba(0,180,216,.1); }
+  .aj-field input, .aj-field textarea, .aj-field select {
+    width: 100%; padding: 10px 13px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-color); background: var(--bg-body);
+    color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .aj-field input:focus, .aj-field textarea:focus, .aj-field select:focus {
+    border-color: var(--color-action); box-shadow: 0 0 0 3px rgba(0,180,216,.1);
+  }
   .aj-field textarea { resize: vertical; min-height: 64px; }
+  .aj-field .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   .logo-zone { border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 24px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg-body); position: relative; }
   .logo-zone:hover, .logo-zone.drag-over { border-color: var(--color-action); background: rgba(0,180,216,.04); }
@@ -68,6 +76,9 @@
   .aj-toast.show { transform: translateY(0); opacity: 1; }
   .aj-toast i { font-size: 16px; color: #10b981; }
 
+  /* Divisor interno dentro de sección */
+  .aj-divider { border: none; border-top: 1px solid var(--border-color); margin: 18px 0; }
+
   /* Métodos de pago */
   .pm-list { display: flex; flex-direction: column; gap: 8px; }
   .pm-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: all .15s; }
@@ -100,56 +111,25 @@
   .pm-form-row input, .pm-form-row select { padding: 9px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color .15s; }
   .pm-form-row input:focus, .pm-form-row select:focus { border-color: var(--color-action); }
   .icon-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 4px; max-height: 180px; overflow-y: auto; padding: 2px; }
-  .icon-opt { width: 36px; height: 36px; border: 1.5px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-secondary); cursor: pointer; transition: all .12px; }
+  .icon-opt { width: 36px; height: 36px; border: 1.5px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-secondary); cursor: pointer; }
   .icon-opt:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.07); }
   .icon-opt.selected { border-color: var(--color-action); background: rgba(0,180,216,.12); color: var(--color-action); }
   .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all .12s; }
   .color-dot.selected { border-color: var(--text-primary); transform: scale(1.1); }
-
-  .pm-comisiones-section {
-    background: var(--bg-body);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .pm-comisiones-title {
-    font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .6px; color: var(--text-secondary);
-    padding: 10px 14px 8px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .pm-comision-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 14px; border-bottom: 1px solid var(--border-color);
-  }
+  .pm-comisiones-section { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+  .pm-comisiones-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); padding: 10px 14px 8px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; }
+  .pm-comision-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border-color); }
   .pm-comision-row:last-child { border-bottom: none; }
-  .pm-comision-icon {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; flex-shrink: 0;
-  }
+  .pm-comision-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
   .pm-comision-info { flex: 1; min-width: 0; }
   .pm-comision-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .pm-comision-desc  { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
   .pm-comision-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-  .pm-comision-input-wrap input {
-    width: 72px; padding: 7px 8px; border-radius: 7px;
-    border: 1.5px solid var(--border-color);
-    background: var(--bg-card); color: var(--text-primary);
-    font-family: var(--font-mono); font-size: 14px; font-weight: 700;
-    text-align: right; outline: none; transition: border-color .15s;
-  }
+  .pm-comision-input-wrap input { width: 72px; padding: 7px 8px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: right; outline: none; transition: border-color .15s; }
   .pm-comision-input-wrap input:focus { border-color: var(--color-action); }
   .pm-comision-input-wrap span { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
-  .pm-comision-preview {
-    font-size: 11px; color: var(--text-secondary);
-    padding: 8px 14px;
-    background: rgba(99,102,241,.04);
-    border-top: 1px solid var(--border-color);
-    display: none;
-  }
+  .pm-comision-preview { font-size: 11px; color: var(--text-secondary); padding: 8px 14px; background: rgba(99,102,241,.04); border-top: 1px solid var(--border-color); display: none; }
   .pm-comision-preview.visible { display: block; }
 </style>
 
@@ -159,29 +139,44 @@
     <%- include('../partials/header', { module: 'Ajustes', user }) %>
     <div class="page-body">
 
-      <!-- ══ DATOS DE EMPRESA ══ -->
+      <!-- ══════════════════════════════════════
+           DATOS DE LA EMPRESA
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon blue"><i class="bi bi-building"></i></div>
           <div>
             <div class="aj-section-title">Datos de la empresa</div>
-            <div class="aj-section-desc">Información que aparece en el encabezado del ticket</div>
+            <div class="aj-section-desc">Información que aparece en el encabezado de tickets y presupuestos</div>
           </div>
         </div>
         <div class="aj-section-body">
+
+          <!-- Nombre + Tagline -->
           <div class="aj-grid" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Nombre del negocio *</label>
-              <input type="text" id="aj_nombre" placeholder="Ej: Almacén El Buen Gusto">
+              <input type="text" id="aj_nombre" placeholder="Ej: Green Team">
             </div>
           </div>
+          <div class="aj-grid" style="margin-bottom:14px;">
+            <div class="aj-field">
+              <label>Descripción / Tagline <span style="font-weight:400;opacity:.6;">(opcional)</span></label>
+              <input type="text" id="aj_tagline" placeholder="Ej: Mantenimiento integral de espacios verdes">
+              <div class="field-hint">Aparece debajo del nombre en el encabezado del presupuesto.</div>
+            </div>
+          </div>
+
+          <!-- Dirección -->
           <div class="aj-grid" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Dirección</label>
               <input type="text" id="aj_direccion" placeholder="Ej: Av. San Martín 123, Catamarca">
             </div>
           </div>
-          <div class="aj-grid aj-grid-2">
+
+          <!-- Teléfono + Email -->
+          <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Teléfono</label>
               <input type="text" id="aj_telefono" placeholder="Ej: 383-4123456">
@@ -191,16 +186,36 @@
               <input type="text" id="aj_email" placeholder="Ej: local@email.com">
             </div>
           </div>
+
+          <hr class="aj-divider">
+
+          <!-- Datos fiscales -->
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">
+            <i class="bi bi-file-earmark-text" style="margin-right:5px;"></i> Datos fiscales (opcionales — aparecen en presupuestos)
+          </div>
+          <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
+            <div class="aj-field">
+              <label>Inicio de actividades</label>
+              <input type="text" id="aj_inicio_actividades" placeholder="Ej: 10/2025">
+            </div>
+            <div class="aj-field">
+              <label>Ingresos Brutos (IIBB)</label>
+              <input type="text" id="aj_iibb" placeholder="Ej: 76771">
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- ══ LOGO ══ -->
+      <!-- ══════════════════════════════════════
+           LOGO
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon purple"><i class="bi bi-image"></i></div>
           <div>
             <div class="aj-section-title">Logo del negocio</div>
-            <div class="aj-section-desc">Se mostrará en el encabezado del ticket impreso. PNG, JPG o SVG, máx. 2MB.</div>
+            <div class="aj-section-desc">Se mostrará en tickets y presupuestos. PNG, JPG o SVG, máx. 2MB.</div>
           </div>
         </div>
         <div class="aj-section-body">
@@ -224,7 +239,9 @@
         </div>
       </div>
 
-      <!-- ══ TICKET ══ -->
+      <!-- ══════════════════════════════════════
+           TICKET
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon green"><i class="bi bi-receipt"></i></div>
@@ -287,7 +304,9 @@
         </div>
       </div>
 
-      <!-- ══ USUARIOS ══ -->
+      <!-- ══════════════════════════════════════
+           USUARIOS
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);"><i class="bi bi-people"></i></div>
@@ -314,7 +333,9 @@
         </div>
       </div>
 
-      <!-- ══ MÉTODOS DE PAGO ══ -->
+      <!-- ══════════════════════════════════════
+           MÉTODOS DE PAGO
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="bi bi-credit-card"></i></div>
@@ -336,7 +357,9 @@
         </div>
       </div>
 
-      <!-- ══ SECCIÓN AFIP ══ -->
+      <!-- ══════════════════════════════════════
+           FACTURA ELECTRÓNICA AFIP
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#6d28d9,#5b21b6);">
@@ -348,34 +371,20 @@
           </div>
         </div>
         <div class="aj-section-body">
-
           <div style="margin-bottom:16px;background:rgba(109,40,217,.05);border:1px solid rgba(109,40,217,.18);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">
-                Activar facturación electrónica
-              </div>
-              <div style="font-size:12px;color:var(--text-secondary);line-height:1.45;">
-                Si está desactivada, el sistema seguirá vendiendo normal pero no usará AFIP/ARCA.
-              </div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Activar facturación electrónica</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.45;">Si está desactivada, el sistema seguirá vendiendo normal pero no usará AFIP/ARCA.</div>
             </div>
-
             <div style="position:relative;width:54px;height:30px;flex-shrink:0;">
-              <input
-                type="checkbox"
-                id="facturacion_habilitada"
+              <input type="checkbox" id="facturacion_habilitada"
                 <%= String(config.facturacion_habilitada || '0') === '1' ? 'checked' : '' %>
                 style="opacity:0;width:0;height:0;position:absolute;"
-                onchange="toggleFacturacionHabilitada(this)"
-              >
-              <label
-                for="facturacion_habilitada"
-                id="facturacion_habilitada_track"
-                style="position:absolute;inset:0;border-radius:20px;background:<%= String(config.facturacion_habilitada || '0') === '1' ? 'var(--color-action)' : 'var(--border-color)' %>;cursor:pointer;transition:background .2s;"
-              >
-                <span
-                  id="facturacion_habilitada_thumb"
-                  style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);display:block;transform:<%= String(config.facturacion_habilitada || '0') === '1' ? 'translateX(24px)' : 'translateX(0)' %>;"
-                ></span>
+                onchange="toggleFacturacionHabilitada(this)">
+              <label for="facturacion_habilitada" id="facturacion_habilitada_track"
+                style="position:absolute;inset:0;border-radius:20px;background:<%= String(config.facturacion_habilitada || '0') === '1' ? 'var(--color-action)' : 'var(--border-color)' %>;cursor:pointer;transition:background .2s;">
+                <span id="facturacion_habilitada_thumb"
+                  style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);display:block;transform:<%= String(config.facturacion_habilitada || '0') === '1' ? 'translateX(24px)' : 'translateX(0)' %>;"></span>
               </label>
             </div>
           </div>
@@ -384,38 +393,33 @@
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>CUIT del emisor</label>
-                <input type="text" id="afip_cuit" placeholder="20-12345678-9" maxlength="13"
-                       value="<%= config.afip_cuit || '' %>"/>
+                <input type="text" id="afip_cuit" placeholder="20-12345678-9" maxlength="13" value="<%= config.afip_cuit || '' %>"/>
               </div>
               <div class="aj-field">
                 <label>Punto de venta (nro.)</label>
-                <input type="number" id="afip_punto_venta" placeholder="1" min="1" max="9999"
-                       value="<%= config.afip_punto_venta || '1' %>"/>
+                <input type="number" id="afip_punto_venta" placeholder="1" min="1" max="9999" value="<%= config.afip_punto_venta || '1' %>"/>
               </div>
             </div>
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>Ruta certificado (.crt)</label>
-                <input type="text" id="afip_cert_path" placeholder="certs/cert.crt"
-                       value="<%= config.afip_cert_path || 'certs/cert.crt' %>"/>
+                <input type="text" id="afip_cert_path" placeholder="certs/cert.crt" value="<%= config.afip_cert_path || 'certs/cert.crt' %>"/>
               </div>
               <div class="aj-field">
                 <label>Ruta clave privada (.key)</label>
-                <input type="text" id="afip_key_path" placeholder="certs/private.key"
-                       value="<%= config.afip_key_path || 'certs/private.key' %>"/>
+                <input type="text" id="afip_key_path" placeholder="certs/private.key" value="<%= config.afip_key_path || 'certs/private.key' %>"/>
               </div>
             </div>
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>Condición IVA del emisor</label>
-                <input type="text" id="empresa_cond_iva" placeholder="Responsable Inscripto"
-                       value="<%= config.empresa_cond_iva || 'Responsable Inscripto' %>"/>
+                <input type="text" id="empresa_cond_iva" placeholder="Responsable Inscripto" value="<%= config.empresa_cond_iva || 'Responsable Inscripto' %>"/>
               </div>
               <div class="aj-field">
                 <label>Ambiente AFIP</label>
-                <select id="afip_env" style="width:100%;padding:10px 13px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;">
+                <select id="afip_env">
                   <option value="homologacion" <%= config.afip_env !== 'produccion' ? 'selected' : '' %>>🧪 Homologación (testing)</option>
-                  <option value="produccion"   <%= config.afip_env === 'produccion' ? 'selected' : '' %>>🚀 Producción</option>
+                  <option value="produccion"   <%= config.afip_env === 'produccion'  ? 'selected' : '' %>>🚀 Producción</option>
                 </select>
               </div>
             </div>
@@ -434,11 +438,12 @@
               <span id="afipTestResult" style="margin-left:12px;font-size:13px;font-weight:600;"></span>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- ══ BALANZA ══ -->
+      <!-- ══════════════════════════════════════
+           BALANZA
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#d97706,#b45309);">
@@ -446,14 +451,12 @@
           </div>
           <div>
             <div class="aj-section-title">Balanza electrónica</div>
-            <div class="aj-section-desc">Soporte para balanzas que imprimen etiquetas con código EAN-13 (prefijo 2). Activá si usás balanza con etiquetadora en el punto de venta.</div>
+            <div class="aj-section-desc">Soporte para balanzas que imprimen etiquetas con código EAN-13 (prefijo 2).</div>
           </div>
         </div>
         <div class="aj-section-body">
           <div class="aj-grid aj-grid-2" style="align-items:start;">
-
             <div style="display:flex;flex-direction:column;gap:14px;">
-              <!-- Toggle habilitado -->
               <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
                 <div>
                   <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);">Activar soporte de balanza</div>
@@ -464,32 +467,20 @@
                   <span class="pm-toggle-slider"></span>
                 </label>
               </div>
-
-              <!-- Modo -->
               <div class="aj-field">
                 <label>Modo del código EAN-13</label>
-                <select id="balanza_modo" style="width:100%;padding:10px 13px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;">
+                <select id="balanza_modo">
                   <option value="precio">Precio — los últimos 5 dígitos son el precio (más común)</option>
                   <option value="peso">Peso — los últimos 5 dígitos son el peso en gramos</option>
                 </select>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">
-                  Consultá el manual de tu balanza. La mayoría usa <strong>modo precio</strong>.
-                </div>
+                <div class="field-hint">Consultá el manual de tu balanza. La mayoría usa <strong>modo precio</strong>.</div>
               </div>
-
-              <!-- Prefijo -->
               <div class="aj-field">
                 <label>Prefijo EAN-13</label>
-                <input type="number" id="balanza_prefijo" value="2" min="2" max="29" step="1"
-                  style="width:80px;"
-                  placeholder="2">
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">
-                  Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.
-                </div>
+                <input type="number" id="balanza_prefijo" value="2" min="2" max="29" step="1" style="width:80px;" placeholder="2">
+                <div class="field-hint">Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.</div>
               </div>
             </div>
-
-            <!-- Info / ejemplo -->
             <div style="background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
               <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
               <div style="font-size:12.5px;color:var(--text-primary);line-height:1.7;">
@@ -504,12 +495,13 @@
                 </span>
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
-      <!-- ══ APARIENCIA ══ -->
+      <!-- ══════════════════════════════════════
+           APARIENCIA
+      ══════════════════════════════════════ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">
@@ -527,12 +519,10 @@
               <div style="font-size:12px;color:var(--text-secondary);">Elegí entre modo claro u oscuro para todo el sistema</div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button id="btnTemaClaro" onclick="setTema('light')"
-                style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
+              <button id="btnTemaClaro" onclick="setTema('light')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
                 <i class="bi bi-sun"></i> Claro
               </button>
-              <button id="btnTemaOscuro" onclick="setTema('dark')"
-                style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
+              <button id="btnTemaOscuro" onclick="setTema('dark')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
                 <i class="bi bi-moon-stars"></i> Oscuro
               </button>
             </div>
@@ -540,7 +530,7 @@
         </div>
       </div>
 
-      <!-- ══ BOTONES ══ -->
+      <!-- Botones -->
       <div class="aj-actions">
         <button class="btn-guardar" onclick="guardarAjustes()">
           <i class="bi bi-check-circle-fill"></i> Guardar cambios
@@ -572,15 +562,11 @@
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div id="u_username_wrap">
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Nombre de usuario</label>
-        <input type="text" id="u_username" placeholder="ej: cajero1" autocomplete="off"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;"
-          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+        <input type="text" id="u_username" placeholder="ej: cajero1" autocomplete="off" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Nombre visible</label>
-        <input type="text" id="u_nombre" placeholder="ej: Juan Pérez"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;"
-          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+        <input type="text" id="u_nombre" placeholder="ej: Juan Pérez" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Rol</label>
@@ -600,9 +586,7 @@
       <div id="u_pass_wrap">
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;" id="u_pass_label">Contraseña</label>
         <div style="position:relative;">
-          <input type="password" id="u_password" placeholder="Mínimo 4 caracteres"
-            style="width:100%;padding:9px 36px 9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;"
-            onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          <input type="password" id="u_password" placeholder="Mínimo 4 caracteres" style="width:100%;padding:9px 36px 9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
           <button type="button" onclick="toggleUPass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:15px;"><i class="bi bi-eye" id="uPassEye"></i></button>
         </div>
         <small id="u_pass_hint" style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:none;">Dejá vacío para no cambiar la contraseña</small>
@@ -624,7 +608,6 @@
     </div>
     <input type="hidden" id="pmEditId" value="">
     <div style="display:flex;flex-direction:column;gap:14px;">
-
       <div class="pm-form-row"><label>Nombre *</label><input type="text" id="pm_nombre" placeholder="Ej: Naranja X, Clover…"></div>
       <div class="pm-form-row">
         <label>Tipo</label>
@@ -636,46 +619,32 @@
       </div>
       <div class="pm-form-row"><label>Ícono</label><div class="icon-grid" id="iconGrid"></div><input type="hidden" id="pm_icono" value="bi-cash"></div>
       <div class="pm-form-row"><label>Color</label><div class="color-row" id="colorRow"></div><input type="hidden" id="pm_color" value="cyan"></div>
-
       <div class="pm-comisiones-section">
-        <div class="pm-comisiones-title">
-          <i class="bi bi-percent" style="color:#6366f1"></i>
-          Porcentajes
-        </div>
-
+        <div class="pm-comisiones-title"><i class="bi bi-percent" style="color:#6366f1"></i> Porcentajes</div>
         <div class="pm-comision-row">
-          <div class="pm-comision-icon" style="background:rgba(245,158,11,.1);color:#d97706;">
-            <i class="bi bi-person-plus"></i>
-          </div>
+          <div class="pm-comision-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-person-plus"></i></div>
           <div class="pm-comision-info">
             <div class="pm-comision-label">Recargo al cliente</div>
             <div class="pm-comision-desc">Se suma al total en la venta · ej: 5% con Naranja</div>
           </div>
           <div class="pm-comision-input-wrap">
-            <input type="number" id="pm_recargo" value="0" min="0" max="100" step="0.1"
-              oninput="actualizarPreviewComision()">
+            <input type="number" id="pm_recargo" value="0" min="0" max="100" step="0.1" oninput="actualizarPreviewComision()">
             <span>%</span>
           </div>
         </div>
-
         <div class="pm-comision-row">
-          <div class="pm-comision-icon" style="background:rgba(99,102,241,.1);color:#6366f1;">
-            <i class="bi bi-bank"></i>
-          </div>
+          <div class="pm-comision-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><i class="bi bi-bank"></i></div>
           <div class="pm-comision-info">
             <div class="pm-comision-label">Comisión interna</div>
             <div class="pm-comision-desc">Lo que te cobra el banco/procesador a vos · para reportes</div>
           </div>
           <div class="pm-comision-input-wrap">
-            <input type="number" id="pm_comision" value="0" min="0" max="100" step="0.1"
-              oninput="actualizarPreviewComision()">
+            <input type="number" id="pm_comision" value="0" min="0" max="100" step="0.1" oninput="actualizarPreviewComision()">
             <span>%</span>
           </div>
         </div>
-
         <div class="pm-comision-preview" id="pmComisionPreview"></div>
       </div>
-
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
       <button onclick="guardarPM()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:11px;"><i class="bi bi-check-lg"></i> Guardar</button>
@@ -690,7 +659,7 @@
 'use strict';
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['aj_nombre','aj_direccion','aj_telefono','aj_email','aj_footer'].forEach(id => {
+  ['aj_nombre','aj_tagline','aj_direccion','aj_telefono','aj_email','aj_footer'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', actualizarPreview);
   });
@@ -701,7 +670,6 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPM_Ajustes();
 });
 
-/* ══ CONFIG ══ */
 let _config = {};
 let _logoBase64 = null;
 
@@ -709,12 +677,11 @@ function toggleFacturacionHabilitada(chk) {
   const track = document.getElementById('facturacion_habilitada_track');
   const thumb = document.getElementById('facturacion_habilitada_thumb');
   const wrap  = document.getElementById('afipConfigWrap');
-  const testResult = document.getElementById('afipTestResult');
-
   if (track) track.style.background = chk.checked ? 'var(--color-action)' : 'var(--border-color)';
-  if (thumb) thumb.style.transform = chk.checked ? 'translateX(24px)' : 'translateX(0)';
-  if (wrap) wrap.style.display = chk.checked ? 'block' : 'none';
-  if (!chk.checked && testResult) testResult.textContent = '';
+  if (thumb) thumb.style.transform  = chk.checked ? 'translateX(24px)' : 'translateX(0)';
+  if (wrap)  wrap.style.display     = chk.checked ? 'block' : 'none';
+  const el = document.getElementById('afipTestResult');
+  if (!chk.checked && el) el.textContent = '';
 }
 
 function syncFacturacionUI() {
@@ -726,10 +693,13 @@ async function cargarConfig() {
   try { const r = await fetch('/api/config'); _config = await r.json(); } catch(e) { _config = {}; }
 
   document.getElementById('aj_nombre').value    = _config.empresa_nombre    || '';
+  document.getElementById('aj_tagline').value   = _config.empresa_tagline   || '';
   document.getElementById('aj_direccion').value = _config.empresa_direccion || '';
   document.getElementById('aj_telefono').value  = _config.empresa_telefono  || '';
   document.getElementById('aj_email').value     = _config.empresa_email     || '';
   document.getElementById('aj_footer').value    = _config.ticket_footer     || '¡Gracias por su compra!';
+  document.getElementById('aj_inicio_actividades').value = _config.empresa_inicio_actividades || '';
+  document.getElementById('aj_iibb').value               = _config.empresa_iibb               || '';
 
   const formato = _config.ticket_formato || '80mm';
   document.getElementById('aj_fmt80').checked = formato === '80mm';
@@ -738,11 +708,8 @@ async function cargarConfig() {
   document.getElementById('fmtA4card').classList.toggle('selected', formato === 'A4');
 
   const factChk = document.getElementById('facturacion_habilitada');
-  if (factChk) {
-    factChk.checked = String(_config.facturacion_habilitada || '0') === '1';
-  }
+  if (factChk) factChk.checked = String(_config.facturacion_habilitada || '0') === '1';
 
-  // Balanza
   const balChk = document.getElementById('balanza_habilitada');
   if (balChk) balChk.checked = String(_config.balanza_habilitada || '0') === '1';
   const balModo = document.getElementById('balanza_modo');
@@ -753,7 +720,6 @@ async function cargarConfig() {
   if (_config.empresa_logo) mostrarLogoPreview(_config.empresa_logo);
   actualizarPreview();
   syncFacturacionUI();
-
   document.getElementById('pv-fecha').textContent = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
 }
 
@@ -768,11 +734,7 @@ function handleLogoFile(file) {
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) { alert('Máximo 2MB.'); return; }
   const reader = new FileReader();
-  reader.onload = e => {
-    _logoBase64 = e.target.result;
-    mostrarLogoPreview(_logoBase64);
-    actualizarPreview();
-  };
+  reader.onload = e => { _logoBase64 = e.target.result; mostrarLogoPreview(_logoBase64); actualizarPreview(); };
   reader.readAsDataURL(file);
 }
 
@@ -807,15 +769,12 @@ function actualizarPreview() {
   const direccion = document.getElementById('aj_direccion').value || '';
   const telefono  = document.getElementById('aj_telefono').value  || '';
   const footer    = document.getElementById('aj_footer').value    || '¡Gracias por su compra!';
-
   document.getElementById('pv-nombre').textContent    = nombre;
   document.getElementById('pv-direccion').textContent = direccion;
   document.getElementById('pv-telefono').textContent  = telefono ? `Tel: ${telefono}` : '';
   document.getElementById('pv-footer').textContent    = footer;
-
   const logoSrc = _logoBase64 !== null ? _logoBase64 : (_config.empresa_logo || '');
   const pvLogoWrap = document.getElementById('pv-logo-wrap');
-
   if (logoSrc && _logoBase64 !== '') {
     document.getElementById('pv-logo').src = logoSrc;
     pvLogoWrap.style.display = 'block';
@@ -826,25 +785,25 @@ function actualizarPreview() {
 
 async function guardarAjustes() {
   const body = {
-    empresa_nombre: document.getElementById('aj_nombre').value.trim(),
-    empresa_direccion: document.getElementById('aj_direccion').value.trim(),
-    empresa_telefono: document.getElementById('aj_telefono').value.trim(),
-    empresa_email: document.getElementById('aj_email').value.trim(),
-    ticket_footer: document.getElementById('aj_footer').value.trim(),
-    ticket_formato: document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
-
-    facturacion_habilitada: document.getElementById('facturacion_habilitada')?.checked ? '1' : '0',
-
-    balanza_habilitada: document.getElementById('balanza_habilitada')?.checked ? '1' : '0',
-    balanza_modo:       document.getElementById('balanza_modo')?.value || 'precio',
-    balanza_prefijo:    document.getElementById('balanza_prefijo')?.value || '2',
-
-    afip_cuit:        (document.getElementById('afip_cuit')?.value        || '').trim(),
-    afip_punto_venta: (document.getElementById('afip_punto_venta')?.value || '1').trim(),
-    afip_cert_path:   (document.getElementById('afip_cert_path')?.value   || 'certs/cert.crt').trim(),
-    afip_key_path:    (document.getElementById('afip_key_path')?.value    || 'certs/private.key').trim(),
-    afip_env:         document.getElementById('afip_env')?.value || 'homologacion',
-    empresa_cond_iva: (document.getElementById('empresa_cond_iva')?.value || 'Responsable Inscripto').trim(),
+    empresa_nombre:               document.getElementById('aj_nombre').value.trim(),
+    empresa_tagline:              document.getElementById('aj_tagline').value.trim(),
+    empresa_direccion:            document.getElementById('aj_direccion').value.trim(),
+    empresa_telefono:             document.getElementById('aj_telefono').value.trim(),
+    empresa_email:                document.getElementById('aj_email').value.trim(),
+    empresa_inicio_actividades:   document.getElementById('aj_inicio_actividades').value.trim(),
+    empresa_iibb:                 document.getElementById('aj_iibb').value.trim(),
+    ticket_footer:                document.getElementById('aj_footer').value.trim(),
+    ticket_formato:               document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
+    facturacion_habilitada:       document.getElementById('facturacion_habilitada')?.checked ? '1' : '0',
+    balanza_habilitada:           document.getElementById('balanza_habilitada')?.checked ? '1' : '0',
+    balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
+    balanza_prefijo:              document.getElementById('balanza_prefijo')?.value || '2',
+    afip_cuit:                    (document.getElementById('afip_cuit')?.value        || '').trim(),
+    afip_punto_venta:             (document.getElementById('afip_punto_venta')?.value || '1').trim(),
+    afip_cert_path:               (document.getElementById('afip_cert_path')?.value   || 'certs/cert.crt').trim(),
+    afip_key_path:                (document.getElementById('afip_key_path')?.value    || 'certs/private.key').trim(),
+    afip_env:                     document.getElementById('afip_env')?.value || 'homologacion',
+    empresa_cond_iva:             (document.getElementById('empresa_cond_iva')?.value || 'Responsable Inscripto').trim(),
   };
 
   if (_logoBase64 !== null) body.empresa_logo = _logoBase64;
@@ -855,10 +814,7 @@ async function guardarAjustes() {
     body: JSON.stringify(body)
   });
 
-  if (!r.ok) {
-    showToast('Error guardando', false);
-    return;
-  }
+  if (!r.ok) { showToast('Error guardando', false); return; }
 
   _config = await r.json();
   _logoBase64 = null;
@@ -869,50 +825,31 @@ async function guardarAjustes() {
 async function testAfipConexion() {
   const factChk = document.getElementById('facturacion_habilitada');
   const el = document.getElementById('afipTestResult');
-
-  if (!factChk?.checked) {
-    el.textContent = '⚪ Facturación electrónica desactivada';
-    el.style.color = 'var(--text-secondary)';
-    return;
-  }
-
-  el.textContent = '⏳ Probando...';
-  el.style.color = 'var(--text-secondary)';
-
+  if (!factChk?.checked) { el.textContent = '⚪ Facturación electrónica desactivada'; el.style.color = 'var(--text-secondary)'; return; }
+  el.textContent = '⏳ Probando...'; el.style.color = 'var(--text-secondary)';
   try {
     const r = await fetch('/afip/test');
     const data = await r.json();
-
-    if (data.ok) {
-      el.textContent = '✅ Conexión exitosa con AFIP';
-      el.style.color = '#10b981';
-    } else {
-      el.textContent = '❌ ' + (data.error || 'Error de conexión');
-      el.style.color = '#ef4444';
-    }
-  } catch(e) {
-    el.textContent = '❌ Error: ' + e.message;
-    el.style.color = '#ef4444';
-  }
+    if (data.ok) { el.textContent = '✅ Conexión exitosa con AFIP'; el.style.color = '#10b981'; }
+    else { el.textContent = '❌ ' + (data.error || 'Error de conexión'); el.style.color = '#ef4444'; }
+  } catch(e) { el.textContent = '❌ Error: ' + e.message; el.style.color = '#ef4444'; }
 }
 
 function imprimirTicketTest() {
   const cfg = {
-    empresa_nombre: document.getElementById('aj_nombre').value || 'Mi Comercio',
+    empresa_nombre:    document.getElementById('aj_nombre').value    || 'Mi Comercio',
     empresa_direccion: document.getElementById('aj_direccion').value,
-    empresa_telefono: document.getElementById('aj_telefono').value,
-    empresa_email: document.getElementById('aj_email').value,
-    ticket_footer: document.getElementById('aj_footer').value || '¡Gracias por su compra!',
-    ticket_formato: document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
-    empresa_logo: _logoBase64 !== null ? _logoBase64 : (_config.empresa_logo || ''),
+    empresa_telefono:  document.getElementById('aj_telefono').value,
+    empresa_email:     document.getElementById('aj_email').value,
+    ticket_footer:     document.getElementById('aj_footer').value    || '¡Gracias por su compra!',
+    ticket_formato:    document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
+    empresa_logo:      _logoBase64 !== null ? _logoBase64 : (_config.empresa_logo || ''),
   };
-
-  const is80mm = cfg.ticket_formato === '80mm';
-  const width = is80mm ? '72mm' : '180mm';
+  const is80mm   = cfg.ticket_formato === '80mm';
+  const width    = is80mm ? '72mm' : '180mm';
   const fontSize = is80mm ? '11px' : '13px';
   const logoHTML = cfg.empresa_logo ? `<img src="${cfg.empresa_logo}" style="max-width:100%;max-height:60px;object-fit:contain;margin-bottom:4px;"><br>` : '';
-  const fecha = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
-
+  const fecha    = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
   <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',monospace;font-size:${fontSize};width:${width};padding:8px;color:#000;}.c{text-align:center;}.s{border:none;border-top:1px dashed #999;margin:6px 0;}table{width:100%;border-collapse:collapse;}@media print{body{width:${width};}@page{margin:4mm;size:${is80mm?'80mm auto':'A4'};}}</style>
   </head><body><div class="c">${logoHTML}<strong style="font-size:${is80mm?'14px':'18px'};">${cfg.empresa_nombre}</strong><br>
@@ -923,18 +860,15 @@ function imprimirTicketTest() {
   <hr class="s"><div style="display:flex;justify-content:space-between;"><span>TOTAL:</span><strong>$1.000,00</strong></div>
   <hr class="s"><p>Pago: <strong>Efectivo</strong></p>
   <hr class="s"><div class="c" style="font-size:${is80mm?'10px':'12px'};">${cfg.ticket_footer}</div></body></html>`;
-
   const win = window.open('','_blank',`width=${is80mm?320:700},height=600,toolbar=0,menubar=0`);
-  win.document.write(html);
-  win.document.close();
-  win.focus();
+  win.document.write(html); win.document.close(); win.focus();
   setTimeout(() => win.print(), 400);
 }
 
 let _toastTimer = null;
 function showToast(msg, success=true) {
   const toast = document.getElementById('ajToast');
-  const icon = toast.querySelector('i');
+  const icon  = toast.querySelector('i');
   toast.style.borderLeftColor = success ? '#10b981' : '#ef4444';
   icon.style.color = success ? '#10b981' : '#ef4444';
   icon.className = success ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill';
@@ -950,15 +884,9 @@ let _uEditId = null;
 async function cargarUsuarios() {
   const res = await fetch('/api/users');
   if (!res.ok) return;
-
   const users = await res.json();
   const tbody = document.getElementById('usersTbody');
-
-  if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">Sin usuarios</td></tr>';
-    return;
-  }
-
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">Sin usuarios</td></tr>'; return; }
   tbody.innerHTML = users.map(u => `
     <tr>
       <td class="sale-id">${u.username}</td>
@@ -1020,54 +948,32 @@ function abrirEditarUsuario(u) {
   setTimeout(() => document.getElementById('u_nombre').focus(), 80);
 }
 
-function cerrarModalUsuario() {
-  document.getElementById('modalUsuario').classList.remove('open');
-}
+function cerrarModalUsuario() { document.getElementById('modalUsuario').classList.remove('open'); }
 
 async function guardarUsuario() {
   const nombre   = document.getElementById('u_nombre').value.trim();
   const role     = document.querySelector('input[name="u_role"]:checked')?.value || 'empleado';
   const password = document.getElementById('u_password').value;
-
   if (_uEditId) {
-    const r = await fetch(`/api/users/${_uEditId}`, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({nombre,role})
-    });
+    const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre,role}) });
     if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
-
     if (password) {
-      const rp = await fetch(`/api/users/${_uEditId}/password`, {
-        method:'PATCH',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({password})
-      });
+      const rp = await fetch(`/api/users/${_uEditId}/password`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password}) });
       if (!rp.ok) { const e = await rp.json(); alert(e.error||'Error'); return; }
     }
   } else {
     const username = document.getElementById('u_username').value.trim();
     if (!username) { alert('El nombre de usuario es obligatorio'); return; }
     if (!password || password.length < 4) { alert('La contraseña debe tener al menos 4 caracteres'); return; }
-
-    const r = await fetch('/api/users', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username,nombre:nombre||username,role,password})
-    });
+    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,nombre:nombre||username,role,password}) });
     if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
   }
-
   cerrarModalUsuario();
   cargarUsuarios();
 }
 
 async function toggleActivoUsuario(id, activo) {
-  const r = await fetch(`/api/users/${id}`, {
-    method:'PUT',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({activo:activo?0:1})
-  });
+  const r = await fetch(`/api/users/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({activo:activo?0:1}) });
   if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
   cargarUsuarios();
 }
@@ -1086,28 +992,18 @@ const COLOR_HEX  = {cyan:'rgba(0,180,216,.12)',blue:'rgba(59,130,246,.12)',green
 const COLOR_TEXT = {cyan:'var(--color-action)',blue:'#3b82f6',green:'#10b981',orange:'#f97316',purple:'#8b5cf6',red:'#ef4444',yellow:'#d97706',pink:'#ec4899'};
 
 async function cargarPM_Ajustes() {
-  try {
-    const r = await fetch('/api/payment-methods?all=1');
-    renderPmList(await r.json());
-  } catch(e) {
-    document.getElementById('pmList').innerHTML = '<div style="color:#ef4444;padding:10px;">Error cargando métodos</div>';
-  }
+  try { const r = await fetch('/api/payment-methods?all=1'); renderPmList(await r.json()); }
+  catch(e) { document.getElementById('pmList').innerHTML = '<div style="color:#ef4444;padding:10px;">Error cargando métodos</div>'; }
 }
 
 function renderPmList(lista) {
   const cont = document.getElementById('pmList');
-  if (!lista.length) {
-    cont.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:12px;text-align:center;">Sin métodos configurados</div>';
-    return;
-  }
-
+  if (!lista.length) { cont.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:12px;text-align:center;">Sin métodos configurados</div>'; return; }
   const tipos = {efectivo:'Efectivo',fiado:'Fiado',otro:'Tarjeta / Digital / Otro'};
-
   cont.innerHTML = lista.map(m => {
     const bg = COLOR_HEX[m.color]||COLOR_HEX.cyan, text = COLOR_TEXT[m.color]||COLOR_TEXT.cyan;
     const recargo  = m.recargo_cliente_pct  > 0 ? `<span style="font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#d97706;padding:1px 7px;border-radius:10px;margin-left:4px">+${m.recargo_cliente_pct}% cliente</span>` : '';
     const comision = m.comision_interna_pct > 0 ? `<span style="font-size:10px;font-weight:700;background:rgba(99,102,241,.1);color:#6366f1;padding:1px 7px;border-radius:10px;margin-left:4px">${m.comision_interna_pct}% com.</span>` : '';
-
     return `<div class="pm-row" data-id="${m.id}">
       <span class="pm-row-drag"><i class="bi bi-grip-vertical"></i></span>
       <div class="pm-row-icon" style="background:${bg};color:${text};"><i class="bi ${m.icono}"></i></div>
@@ -1124,9 +1020,7 @@ function renderPmList(lista) {
   }).join('');
 }
 
-async function togglePM(id) {
-  await fetch(`/api/payment-methods/${id}/toggle`,{method:'PATCH'});
-}
+async function togglePM(id) { await fetch(`/api/payment-methods/${id}/toggle`,{method:'PATCH'}); }
 
 function abrirModalPM(data) {
   document.getElementById('pmModalTitle').textContent = data ? 'Editar Método' : 'Nuevo Método de Pago';
@@ -1144,79 +1038,50 @@ function abrirModalPM(data) {
   setTimeout(() => document.getElementById('pm_nombre').focus(), 80);
 }
 
-function cerrarModalPM() {
-  document.getElementById('pmModalOverlay').classList.remove('open');
-}
+function cerrarModalPM() { document.getElementById('pmModalOverlay').classList.remove('open'); }
 
 function actualizarPreviewComision() {
   const recargo  = parseFloat(document.getElementById('pm_recargo').value)  || 0;
   const comision = parseFloat(document.getElementById('pm_comision').value) || 0;
   const prev = document.getElementById('pmComisionPreview');
-
-  if (recargo === 0 && comision === 0) {
-    prev.classList.remove('visible');
-    return;
-  }
-
+  if (recargo === 0 && comision === 0) { prev.classList.remove('visible'); return; }
   const ej = 100000;
   let partes = [];
   if (recargo  > 0) partes.push(`Venta de $${ej.toLocaleString('es-AR')} → cliente paga <strong>$${(ej*(1+recargo/100)).toLocaleString('es-AR')}</strong> (+${recargo}%)`);
-  if (comision > 0) partes.push(`Comisión del banco: <strong>-$${(ej*comision/100).toLocaleString('es-AR')}</strong> (${comision}% sobre bruto)`);
+  if (comision > 0) partes.push(`Comisión del banco: <strong>-$${(ej*comision/100).toLocaleString('es-AR')}</strong> (${comision}%)`);
   prev.innerHTML = '💡 ' + partes.join(' &nbsp;·&nbsp; ');
   prev.classList.add('visible');
 }
 
 function renderIconGrid(selected) {
   document.getElementById('iconGrid').innerHTML = PM_ICONS.map(ic =>
-    `<div class="icon-opt ${ic===selected?'selected':''}" onclick="selectIcon('${ic}')"><i class="bi ${ic}"></i></div>`
-  ).join('');
+    `<div class="icon-opt ${ic===selected?'selected':''}" onclick="selectIcon('${ic}')"><i class="bi ${ic}"></i></div>`).join('');
 }
-
-function selectIcon(ic) {
-  document.getElementById('pm_icono').value = ic;
-  renderIconGrid(ic);
-}
+function selectIcon(ic) { document.getElementById('pm_icono').value = ic; renderIconGrid(ic); }
 
 function renderColorRow(selected) {
   document.getElementById('colorRow').innerHTML = PM_COLORS.map(c =>
-    `<div class="color-dot ${c.key===selected?'selected':''}" style="background:${c.hex};" onclick="selectColor('${c.key}')"></div>`
-  ).join('');
+    `<div class="color-dot ${c.key===selected?'selected':''}" style="background:${c.hex};" onclick="selectColor('${c.key}')"></div>`).join('');
 }
+function selectColor(key) { document.getElementById('pm_color').value = key; renderColorRow(key); }
 
-function selectColor(key) {
-  document.getElementById('pm_color').value = key;
-  renderColorRow(key);
-}
-
-async function editarPM(id) {
-  const r = await fetch(`/api/payment-methods/${id}`);
-  abrirModalPM(await r.json());
-}
+async function editarPM(id) { const r = await fetch(`/api/payment-methods/${id}`); abrirModalPM(await r.json()); }
 
 async function guardarPM() {
   const id     = document.getElementById('pmEditId').value;
   const nombre = document.getElementById('pm_nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio'); return; }
-
   const body = JSON.stringify({
-    nombre,
-    tipo:    document.getElementById('pm_tipo').value,
-    icono:   document.getElementById('pm_icono').value,
-    color:   document.getElementById('pm_color').value,
+    nombre, tipo: document.getElementById('pm_tipo').value,
+    icono: document.getElementById('pm_icono').value, color: document.getElementById('pm_color').value,
     recargo_cliente_pct:  parseFloat(document.getElementById('pm_recargo').value)  || 0,
     comision_interna_pct: parseFloat(document.getElementById('pm_comision').value) || 0,
   });
-
   const r = await fetch(id ? `/api/payment-methods/${id}` : '/api/payment-methods', {
-    method: id ? 'PUT' : 'POST',
-    headers: {'Content-Type':'application/json'},
-    body
+    method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body
   });
-
   if (!r.ok) { alert('Error al guardar'); return; }
-
-  cerrarModalPM();
-  cargarPM_Ajustes();
+  cerrarModalPM(); cargarPM_Ajustes();
 }
 
 async function eliminarPM(id, nombre) {
@@ -1225,7 +1090,6 @@ async function eliminarPM(id, nombre) {
   cargarPM_Ajustes();
 }
 
-// ── Apariencia: toggle tema ──
 function setTema(tema) {
   document.documentElement.setAttribute('data-theme', tema);
   localStorage.setItem('theme', tema);
@@ -1236,13 +1100,12 @@ function actualizarBtnsTema(tema) {
   const btnClaro  = document.getElementById('btnTemaClaro');
   const btnOscuro = document.getElementById('btnTemaOscuro');
   if (!btnClaro || !btnOscuro) return;
-  const activeStyle  = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--color-action);background:rgba(0,180,216,.1);color:var(--color-action);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;';
-  const normalStyle  = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;';
+  const activeStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--color-action);background:rgba(0,180,216,.1);color:var(--color-action);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;';
+  const normalStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;';
   btnClaro.style.cssText  = tema === 'light' ? activeStyle : normalStyle;
   btnOscuro.style.cssText = tema === 'dark'  ? activeStyle : normalStyle;
 }
 
-// Sincronizar botones al cargar
 document.addEventListener('DOMContentLoaded', () => {
   const temaActual = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
   actualizarBtnsTema(temaActual);
