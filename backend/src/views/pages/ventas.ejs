@@ -2410,23 +2410,29 @@ const itemsHtml = lastSaleData.items.map(it => {
       <meta charset="UTF-8">
       <title>Ticket</title>
       <style>
-        @page {
-          size: ${es80 ? '80mm auto' : 'A4'};
-          margin: 6mm;
-        }
-        body {
-          font-family: monospace;
-          margin: 0;
-          padding: 0;
-          background: #fff;
-          color: #000;
-          font-size: ${fontSize};
-        }
-        .ticket {
-          width: ${contentWidth};
-          max-width: 100%;
-          margin: 0 auto;
-        }
+        * { box-sizing: border-box; }
+@page {
+  size: ${es80 ? '80mm auto' : 'A4'};
+  margin: ${es80 ? '2mm 3mm' : '12mm'};
+}
+@media print {
+  html, body { width: ${es80 ? '80mm' : '210mm'}; }
+}
+body {
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
+  padding: ${es80 ? '4px 3px' : '12px'};
+  background: #fff;
+  color: #000;
+  font-size: ${fontSize};
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.ticket {
+  width: ${es80 ? '74mm' : '180mm'};
+  max-width: 100%;
+  margin: 0 auto;
+}
         .center { text-align: center; }
         .title { font-size: ${titleSize}; font-weight: 700; margin-bottom: 2px; }
         .sub { font-size: ${es80 ? '11px' : '12px'}; margin-bottom: 10px; }
@@ -2497,7 +2503,7 @@ const itemsHtml = lastSaleData.items.map(it => {
     </html>
   `;
 
-  const w = window.open('', '_blank', `width=${es80 ? 420 : 900},height=700`);
+  const w = window.open('', '_blank', `width=${es80 ? 340 : 900},height=800,left=0,top=0`);
   if(!w){
     showToast('Permití ventanas emergentes para imprimir','warn');
     return;
