@@ -76,7 +76,6 @@
   .aj-toast.show { transform: translateY(0); opacity: 1; }
   .aj-toast i { font-size: 16px; color: #10b981; }
 
-  /* Divisor interno dentro de sección */
   .aj-divider { border: none; border-top: 1px solid var(--border-color); margin: 18px 0; }
 
   /* Métodos de pago */
@@ -115,7 +114,7 @@
   .icon-opt:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.07); }
   .icon-opt.selected { border-color: var(--color-action); background: rgba(0,180,216,.12); color: var(--color-action); }
   .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all .12s; }
+  .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all .12px; }
   .color-dot.selected { border-color: var(--text-primary); transform: scale(1.1); }
   .pm-comisiones-section { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
   .pm-comisiones-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); padding: 10px 14px 8px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; }
@@ -139,9 +138,7 @@
     <%- include('../partials/header', { module: 'Ajustes', user }) %>
     <div class="page-body">
 
-      <!-- ══════════════════════════════════════
-           DATOS DE LA EMPRESA
-      ══════════════════════════════════════ -->
+      <!-- ══ DATOS DE LA EMPRESA ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon blue"><i class="bi bi-building"></i></div>
@@ -151,8 +148,6 @@
           </div>
         </div>
         <div class="aj-section-body">
-
-          <!-- Nombre + Tagline -->
           <div class="aj-grid" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Nombre del negocio *</label>
@@ -166,16 +161,12 @@
               <div class="field-hint">Aparece debajo del nombre en el encabezado del presupuesto.</div>
             </div>
           </div>
-
-          <!-- Dirección -->
           <div class="aj-grid" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Dirección</label>
               <input type="text" id="aj_direccion" placeholder="Ej: Av. San Martín 123, Catamarca">
             </div>
           </div>
-
-          <!-- Teléfono + Email -->
           <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Teléfono</label>
@@ -186,10 +177,7 @@
               <input type="text" id="aj_email" placeholder="Ej: local@email.com">
             </div>
           </div>
-
           <hr class="aj-divider">
-
-          <!-- Datos fiscales -->
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">
             <i class="bi bi-file-earmark-text" style="margin-right:5px;"></i> Datos fiscales (opcionales — aparecen en presupuestos)
           </div>
@@ -203,13 +191,10 @@
               <input type="text" id="aj_iibb" placeholder="Ej: 76771">
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           LOGO
-      ══════════════════════════════════════ -->
+      <!-- ══ LOGO ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon purple"><i class="bi bi-image"></i></div>
@@ -239,9 +224,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           TICKET
-      ══════════════════════════════════════ -->
+      <!-- ══ TICKET ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon green"><i class="bi bi-receipt"></i></div>
@@ -254,18 +237,31 @@
           <div style="margin-bottom:18px;">
             <div class="aj-field" style="margin-bottom:0;"><label>Formato de impresión</label></div>
             <div class="formato-options" style="margin-top:8px;">
-              <label class="formato-card selected" id="fmt80card" onclick="selFormatoCard(this,'80mm')">
-                <input type="radio" name="aj_formato" value="80mm" id="aj_fmt80" checked>
+
+              <!-- 58mm — DEFAULT para Gadnic IT1050 -->
+              <label class="formato-card" id="fmt58card" onclick="selFormatoCard(this,'58mm')">
+                <input type="radio" name="aj_formato" value="58mm" id="aj_fmt58">
+                <div class="formato-icon">🧾</div>
+                <div class="formato-name">Térmica 58mm</div>
+                <div class="formato-desc">Gadnic IT1050, comandera chica</div>
+              </label>
+
+              <!-- 80mm -->
+              <label class="formato-card" id="fmt80card" onclick="selFormatoCard(this,'80mm')">
+                <input type="radio" name="aj_formato" value="80mm" id="aj_fmt80">
                 <div class="formato-icon">🧾</div>
                 <div class="formato-name">Térmica 80mm</div>
                 <div class="formato-desc">Impresora de tickets, rollos</div>
               </label>
+
+              <!-- A4 -->
               <label class="formato-card" id="fmtA4card" onclick="selFormatoCard(this,'A4')">
                 <input type="radio" name="aj_formato" value="A4" id="aj_fmtA4">
                 <div class="formato-icon">📄</div>
                 <div class="formato-name">Normal A4</div>
                 <div class="formato-desc">Impresora de escritorio</div>
               </label>
+
             </div>
           </div>
           <div class="aj-field" style="margin-bottom:18px;">
@@ -304,9 +300,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           USUARIOS
-      ══════════════════════════════════════ -->
+      <!-- ══ USUARIOS ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);"><i class="bi bi-people"></i></div>
@@ -333,9 +327,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           MÉTODOS DE PAGO
-      ══════════════════════════════════════ -->
+      <!-- ══ MÉTODOS DE PAGO ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="bi bi-credit-card"></i></div>
@@ -357,9 +349,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           FACTURA ELECTRÓNICA AFIP
-      ══════════════════════════════════════ -->
+      <!-- ══ FACTURA ELECTRÓNICA AFIP ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#6d28d9,#5b21b6);">
@@ -388,7 +378,6 @@
               </label>
             </div>
           </div>
-
           <div id="afipConfigWrap">
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
@@ -441,9 +430,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           BALANZA
-      ══════════════════════════════════════ -->
+      <!-- ══ BALANZA ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#d97706,#b45309);">
@@ -499,9 +486,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════
-           APARIENCIA
-      ══════════════════════════════════════ -->
+      <!-- ══ APARIENCIA ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
           <div class="aj-section-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">
@@ -530,7 +515,7 @@
         </div>
       </div>
 
-      <!-- Botones -->
+      <!-- Botones finales -->
       <div class="aj-actions">
         <button class="btn-guardar" onclick="guardarAjustes()">
           <i class="bi bi-check-circle-fill"></i> Guardar cambios
@@ -701,9 +686,12 @@ async function cargarConfig() {
   document.getElementById('aj_inicio_actividades').value = _config.empresa_inicio_actividades || '';
   document.getElementById('aj_iibb').value               = _config.empresa_iibb               || '';
 
-  const formato = _config.ticket_formato || '80mm';
+  // ── Formato ticket: 58mm / 80mm / A4 ──
+  const formato = _config.ticket_formato || '58mm';
+  document.getElementById('aj_fmt58').checked = formato === '58mm';
   document.getElementById('aj_fmt80').checked = formato === '80mm';
   document.getElementById('aj_fmtA4').checked = formato === 'A4';
+  document.getElementById('fmt58card').classList.toggle('selected', formato === '58mm');
   document.getElementById('fmt80card').classList.toggle('selected', formato === '80mm');
   document.getElementById('fmtA4card').classList.toggle('selected', formato === 'A4');
 
@@ -793,7 +781,7 @@ async function guardarAjustes() {
     empresa_inicio_actividades:   document.getElementById('aj_inicio_actividades').value.trim(),
     empresa_iibb:                 document.getElementById('aj_iibb').value.trim(),
     ticket_footer:                document.getElementById('aj_footer').value.trim(),
-    ticket_formato:               document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
+    ticket_formato:               document.querySelector('input[name="aj_formato"]:checked')?.value || '58mm',
     facturacion_habilitada:       document.getElementById('facturacion_habilitada')?.checked ? '1' : '0',
     balanza_habilitada:           document.getElementById('balanza_habilitada')?.checked ? '1' : '0',
     balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
@@ -835,33 +823,149 @@ async function testAfipConexion() {
   } catch(e) { el.textContent = '❌ Error: ' + e.message; el.style.color = '#ef4444'; }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  IMPRESIÓN DE TICKET DE PRUEBA — 58mm / 80mm / A4
+// ══════════════════════════════════════════════════════════════
 function imprimirTicketTest() {
   const cfg = {
     empresa_nombre:    document.getElementById('aj_nombre').value    || 'Mi Comercio',
-    empresa_direccion: document.getElementById('aj_direccion').value,
-    empresa_telefono:  document.getElementById('aj_telefono').value,
-    empresa_email:     document.getElementById('aj_email').value,
+    empresa_direccion: document.getElementById('aj_direccion').value || '',
+    empresa_telefono:  document.getElementById('aj_telefono').value  || '',
+    empresa_email:     document.getElementById('aj_email').value     || '',
     ticket_footer:     document.getElementById('aj_footer').value    || '¡Gracias por su compra!',
-    ticket_formato:    document.querySelector('input[name="aj_formato"]:checked')?.value || '80mm',
+    ticket_formato:    document.querySelector('input[name="aj_formato"]:checked')?.value || '58mm',
     empresa_logo:      _logoBase64 !== null ? _logoBase64 : (_config.empresa_logo || ''),
   };
-  const is80mm   = cfg.ticket_formato === '80mm';
-  const width    = is80mm ? '72mm' : '180mm';
-  const fontSize = is80mm ? '11px' : '13px';
-  const logoHTML = cfg.empresa_logo ? `<img src="${cfg.empresa_logo}" style="max-width:100%;max-height:60px;object-fit:contain;margin-bottom:4px;"><br>` : '';
-  const fecha    = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
-  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',Courier,monospace;font-size:${fontSize};padding:${is80mm?'4px 3px':'12px'};color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.ticket{width:${width};max-width:100%;margin:0 auto;}.c{text-align:center;}.s{border:none;border-top:1px dashed #999;margin:6px 0;}table{width:100%;border-collapse:collapse;}@media print{html,body{width:${is80mm?'80mm':'210mm'};}@page{margin:${is80mm?'2mm 3mm':'12mm'};size:${is80mm?'80mm auto':'A4'};}}</style>
-  </head><body><div class="c">${logoHTML}<strong style="font-size:${is80mm?'14px':'18px'};">${cfg.empresa_nombre}</strong><br>
-  ${cfg.empresa_direccion?`<span style="font-size:10px;">${cfg.empresa_direccion}</span><br>`:''}${cfg.empresa_telefono?`<span style="font-size:10px;">Tel: ${cfg.empresa_telefono}</span><br>`:''}${cfg.empresa_email?`<span style="font-size:10px;">${cfg.empresa_email}</span><br>`:''}</div>
-  <hr class="s"><p>Ticket N°: <strong>PRUEBA</strong></p><p>Fecha: ${fecha}</p>
-  <hr class="s"><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead>
-  <tbody><tr><td>Producto ejemplo</td><td style="text-align:center;">2</td><td style="text-align:right;">$1.000,00</td></tr></tbody></table>
-  <hr class="s"><div style="display:flex;justify-content:space-between;"><span>TOTAL:</span><strong>$1.000,00</strong></div>
-  <hr class="s"><p>Pago: <strong>Efectivo</strong></p>
-  <hr class="s"><div class="c" style="font-size:${is80mm?'10px':'12px'};">${cfg.ticket_footer}</div></body></html>`;
- const win = window.open('','_blank',`width=${is80mm?340:900},height=800,left=0,top=0,toolbar=0,menubar=0,scrollbars=1`);
-  win.document.write(html); win.document.close(); win.focus();
+
+  const es58 = cfg.ticket_formato === '58mm';
+  const es80 = cfg.ticket_formato === '80mm';
+  const esA4 = cfg.ticket_formato === 'A4';
+
+  const paperWidth   = es58 ? '58mm'  : es80 ? '80mm'  : '210mm';
+  const contentWidth = es58 ? '52mm'  : es80 ? '74mm'  : '180mm';
+  const winWidth     = es58 ? 240     : es80 ? 340     : 900;
+  const fontSize     = esA4 ? '13px'  : es58 ? '10px'  : '11px';
+  const titleSize    = esA4 ? '18px'  : es58 ? '13px'  : '15px';
+  const pageMargin   = esA4 ? '12mm'  : es58 ? '1mm 2mm' : '2mm 3mm';
+  const bodyPadding  = esA4 ? '12px'  : es58 ? '3px 2px' : '4px 3px';
+  const smSize       = esA4 ? '11px'  : es58 ? '9px'   : '10px';
+  const tableSize    = esA4 ? '12px'  : es58 ? '9px'   : '10px';
+  const totSize      = esA4 ? '13px'  : es58 ? '10px'  : '11px';
+  const totMainSize  = esA4 ? '15px'  : es58 ? '12px'  : '13px';
+
+  const logoHTML = cfg.empresa_logo
+    ? `<div style="text-align:center;margin-bottom:5px;"><img src="${cfg.empresa_logo}" style="max-width:100%;max-height:${es58?'40px':'55px'};object-fit:contain;"></div>`
+    : '';
+
+  const fecha = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
+
+  // Función local de formato moneda
+  const fmtM = n => '$' + Number(n).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ticket de prueba</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    @page {
+      size: ${paperWidth} auto;
+      margin: ${pageMargin};
+    }
+    @media print {
+      html, body { width: ${paperWidth}; }
+    }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: ${fontSize};
+      padding: ${bodyPadding};
+      color: #000;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .ticket  { width: ${contentWidth}; max-width: 100%; margin: 0 auto; }
+    .c       { text-align: center; }
+    .b       { font-weight: 700; }
+    .sm      { font-size: ${smSize}; color: #555; }
+    .sep     { border: none; border-top: 1px dashed #999; margin: 5px 0; }
+    table    { width: 100%; border-collapse: collapse; font-size: ${tableSize}; }
+    th       { text-align: left; padding-bottom: 3px; border-bottom: 1px solid #ccc; }
+    th:nth-child(2) { text-align: center; }
+    th:nth-child(3) { text-align: right; }
+    td       { padding: 3px 0; vertical-align: top; }
+    td:nth-child(2) { text-align: center; }
+    td:nth-child(3) { text-align: right; font-weight: 700; }
+    .tot     { display: flex; justify-content: space-between; margin: 3px 0; font-size: ${totSize}; }
+    .tot.main { font-weight: 700; font-size: ${totMainSize}; }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+
+    ${logoHTML}
+
+    <div class="c">
+      <div class="b" style="font-size:${titleSize};">${cfg.empresa_nombre}</div>
+      ${cfg.empresa_direccion ? `<div class="sm">${cfg.empresa_direccion}</div>` : ''}
+      ${cfg.empresa_telefono  ? `<div class="sm">Tel: ${cfg.empresa_telefono}</div>` : ''}
+      ${cfg.empresa_email     ? `<div class="sm">${cfg.empresa_email}</div>` : ''}
+    </div>
+
+    <hr class="sep">
+
+    <div>Ticket N°: <span class="b">PRUEBA</span></div>
+    <div>Fecha: ${fecha}</div>
+    <div>Cliente: Consumidor Final</div>
+    <div>Método: Efectivo</div>
+
+    <hr class="sep">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cant</th>
+          <th>Sub</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Queso cremoso<br><span class="sm">${fmtM(45000)} c/u</span></td>
+          <td>1</td>
+          <td>${fmtM(45000)}</td>
+        </tr>
+        <tr>
+          <td>Pan integral<br><span class="sm">${fmtM(3500)} c/u</span></td>
+          <td>2</td>
+          <td>${fmtM(7000)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <hr class="sep">
+
+    <div class="tot"><span>Subtotal:</span><span>${fmtM(52000)}</span></div>
+    <div class="tot main"><span>TOTAL:</span><span>${fmtM(52000)}</span></div>
+    <div class="tot"><span>Recibido:</span><span>${fmtM(60000)}</span></div>
+    <div class="tot"><span>Vuelto:</span><span>${fmtM(8000)}</span></div>
+
+    <hr class="sep">
+
+    <div class="c sm">${cfg.ticket_footer}</div>
+    <div class="c sm" style="margin-top:3px;opacity:.6;">— Ticket de PRUEBA — ${cfg.ticket_formato}</div>
+
+  </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', `width=${winWidth},height=800,left=0,top=0,toolbar=0,menubar=0,scrollbars=1`);
+  if (!win) { alert('Permití ventanas emergentes para imprimir el ticket de prueba'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
   setTimeout(() => win.print(), 400);
 }
 

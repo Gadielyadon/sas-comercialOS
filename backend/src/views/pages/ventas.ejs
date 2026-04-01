@@ -2371,10 +2371,18 @@ function imprimirTicket(){
     hour:'2-digit',minute:'2-digit'
   });
 
-  const es80 = String(cfg.formato || '80mm').toLowerCase() === '80mm';
-  const contentWidth = es80 ? '72mm' : '180mm';
-  const fontSize = es80 ? '11px' : '13px';
-  const titleSize = es80 ? '18px' : '24px';
+  const formato = String(cfg.formato || '58mm').toLowerCase();
+const es58 = formato === '58mm';
+const es80 = formato === '80mm';
+const fmtA4 = formato === 'a4';
+
+const paperWidth   = es58 ? '58mm' : es80 ? '80mm' : '210mm';
+const contentWidth = es58 ? '52mm' : es80 ? '74mm' : '180mm';
+const winWidth     = es58 ? 240    : es80 ? 340    : 900;
+const fontSize     = fmtA4 ? '13px' : es58 ? '10px' : '11px';
+const titleSize    = fmtA4 ? '24px' : es58 ? '13px' : '18px';
+const pageMargin   = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
+const bodyPadding  = fmtA4 ? '12px' : es58 ? '3px 2px' : '4px 3px';
 
 const itemsHtml = lastSaleData.items.map(it => {
   let badge = '';
@@ -2412,11 +2420,11 @@ const itemsHtml = lastSaleData.items.map(it => {
       <style>
         * { box-sizing: border-box; }
 @page {
-  size: ${es80 ? '80mm auto' : 'A4'};
-  margin: ${es80 ? '2mm 3mm' : '12mm'};
+  size: ${paperWidth} auto;
+  margin: ${pageMargin};
 }
 @media print {
-  html, body { width: ${es80 ? '80mm' : '210mm'}; }
+  html, body { width: ${paperWidth}; }
 }
 body {
   font-family: 'Courier New', Courier, monospace;
@@ -2502,8 +2510,8 @@ body {
     </body>
     </html>
   `;
+const w = window.open('', '_blank', `width=${winWidth},height=800,left=0,top=0`);
 
-  const w = window.open('', '_blank', `width=${es80 ? 340 : 900},height=800,left=0,top=0`);
   if(!w){
     showToast('Permití ventanas emergentes para imprimir','warn');
     return;
