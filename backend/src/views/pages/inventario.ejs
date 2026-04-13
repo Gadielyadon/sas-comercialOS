@@ -1228,7 +1228,7 @@ function impDrop(e) { e.preventDefault(); impDragLeave(e); const file=e.dataTran
 function impFileSelected(e) { const file=e.target.files[0]; if(file)impProcesarArchivo(file); }
 function impNormHeader(h) {
   const s = String(h||'').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
-  const map = { sku:'sku',codigo:'sku',code:'sku',cod:'sku',barcode:'sku', nombre:'name',name:'name',producto:'name', precio:'price',price:'price',costo:'price',valor:'price', categoria:'category',category:'category',rubro:'category',tipo:'category', stock:'stock',cantidad:'stock',qty:'stock',existencia:'stock', iva:'iva',impuesto:'iva', ieps:'ieps', ventapormayor:'price_mayorista',mayorista:'price_mayorista',preciomayorista:'price_mayorista' };
+  const map = { sku:'sku',codigo:'sku',code:'sku',cod:'sku',barcode:'sku', nombre:'name',name:'name',producto:'name', precio:'price',price:'price',costo:'price',valor:'price', categoria:'category',category:'category',rubro:'category',tipo:'category', stock:'stock',cantidad:'stock',qty:'stock',existencia:'stock', iva:'iva',impuesto:'iva', ieps:'ieps', ventapormayor:'price_mayorista',mayorista:'price_mayorista',preciomayorista:'price_mayorista',preciocosto:'price_cost',costo:'price_cost',preciominorista:'price',minorista:'price',margen:'margen',ganancia:'margen',gananciaporc:'margen',margenporc:'margen' };
   return map[s] || s;
 }
 async function impProcesarArchivo(file) {
@@ -1247,7 +1247,7 @@ async function impProcesarArchivo(file) {
       const rows = raw.map(r => {
         const mapped = {};
         Object.keys(r).forEach(k => { mapped[impNormHeader(k)] = r[k]; });
-        return { sku:String(mapped.sku||'').trim(), name:String(mapped.name||'').trim(), price:parseFloat(mapped.price)||0, category:String(mapped.category||'').trim(), stock:parseInt(mapped.stock)||0, iva:parseFloat(mapped.iva)||0, ieps:parseFloat(mapped.ieps)||0, price_mayorista:parseFloat(mapped.price_mayorista)||0, price_tarjeta:parseFloat(mapped.price_tarjeta)||0, _action:'new', _status:'new', _error:'' };
+        return { sku:String(mapped.sku||'').trim(), name:String(mapped.name||'').trim(), price:parseFloat(mapped.price)||0, category:String(mapped.category||'').trim(), stock:parseInt(mapped.stock)||0, iva:parseFloat(mapped.iva)||0, ieps:parseFloat(mapped.ieps)||0, price_mayorista:parseFloat(mapped.price_mayorista)||0, price_tarjeta:parseFloat(mapped.price_tarjeta)||0, price_cost:parseFloat(mapped.price_cost)||null, margen:parseFloat(mapped.margen)||null, _action:'new', _status:'new', _error:'' };
       });
       rows.forEach(r => { if(!r.sku){r._status='error';r._error='SKU vacío';} if(!r.name){r._status='error';r._error=(r._error?r._error+', ':'')+'Nombre vacío';} });
       document.getElementById('imp_subtitle').textContent = 'Verificando SKUs existentes…';
@@ -1294,11 +1294,11 @@ async function ejecutarImportacion() {
   const toUpdate=_impRows.filter(r=>r._status==='conflict'&&r._action==='update');
   let ok=0,err=0;
   for(const r of toCreate){
-    const res=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku:r.sku,name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,pesable:0,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null})});
+    const res=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku:r.sku,name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,pesable:0,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null,price_cost:r.price_cost||null,margen:r.margen||null})});
     res.ok?ok++:err++;
   }
   for(const r of toUpdate){
-    const res=await fetch(`/api/products/${encodeURIComponent(r.sku)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null})});
+    const res=await fetch(`/api/products/${encodeURIComponent(r.sku)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null,price_cost:r.price_cost||null,margen:r.margen||null})});
     res.ok?ok++:err++;
   }
   cerrarImportar();
