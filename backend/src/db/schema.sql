@@ -19,9 +19,11 @@ CREATE TABLE IF NOT EXISTS sales (
   payment_method TEXT NOT NULL,
   cash_received  REAL,
   change_amount  REAL,
+  cliente_id     INTEGER REFERENCES clientes(id) DEFAULT 1,
+  status         TEXT DEFAULT 'completada',
+  sucursal_id    INTEGER,
   created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
 CREATE TABLE IF NOT EXISTS sale_items (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   sale_id  INTEGER NOT NULL,
