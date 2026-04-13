@@ -216,7 +216,7 @@ body.sidebar-collapsed .ax-topbar {
 /* Empujar el contenido para que no quede bajo el topbar */
 .main-content {
   margin-left: var(--sidebar-width);
-  margin-top: 52px;
+  margin-top: 0;
   width: calc(100% - var(--sidebar-width));
   flex: 1;
   display: flex;
