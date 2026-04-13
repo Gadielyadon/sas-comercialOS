@@ -16,7 +16,7 @@
 
         <div style="display:flex; gap:10px; flex-wrap:wrap">
           <button type="button" class="btn-action btn-action-outline" onclick="exportCSV()">
-            <i class="bi bi-download"></i> Exportar
+            <i class="bi bi-file-earmark-excel"></i> Exportar XLSX
           </button>
           <button type="button" class="btn-action btn-action-outline" onclick="abrirImportar()"
             style="color:#10b981;border-color:rgba(16,185,129,.4);">
@@ -24,6 +24,9 @@
           </button>
           <button type="button" class="btn-action btn-action-primary" onclick="abrirModal()">
             <i class="bi bi-plus-lg"></i> Nuevo Producto
+          </button>
+          <button type="button" onclick="abrirVariantes()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.35);background:rgba(99,102,241,.07);color:#6366f1;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;" title="Crear múltiples variantes de un mismo producto">
+            <i class="bi bi-stack"></i> Carga rápida
           </button>
         </div>
       </div>
@@ -37,7 +40,7 @@
           </div>
           <input id="q" class="search-input"
             placeholder="Buscar por nombre, SKU o escaneá un código de barras…"
-            oninput="filterRows()" autocomplete="off" spellcheck="false"
+            oninput="debFilterRows()" autocomplete="off" spellcheck="false"
             style="padding-left:36px;width:100%;">
           <div id="scanModeBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
             background:rgba(16,185,129,.12);color:#10b981;border-radius:20px;padding:3px 10px;
@@ -55,7 +58,7 @@
             <span class="dot-stock naranja"></span> Stock bajo
           </button>
           <select id="filtroCat" onchange="filterRows()"
-            style="height:34px;padding:0 10px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-body);font-size:12.5px;font-weight:600;cursor:pointer;outline:none;transition:border-color .15s;">
+            style="height:34px;padding:0 10px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-body);font-size:12.5px;font-weight:600;cursor:pointer;outline:none;transition:border-color .15s;">
             <option value="">Todas las categorías</option>
             <% const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort(); %>
             <% cats.forEach(cat => { %>
@@ -71,10 +74,17 @@
       </div>
 
       <style>
+        /* Fondo modal producto — solo modo claro */
+        :root:not([data-theme="dark"]) #modalProducto > div {
+          background: #bbc3ca !important;
+        }
+        :root:not([data-theme="dark"]) #modalProducto > div > div[style*="padding:18px"] {
+          background: #f1f5f9;
+        }
         .btn-filtro-stock {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
-          background: var(--bg-card); color: var(--text-secondary);
+          background: var(--bg-surface); color: var(--text-secondary);
           font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s;
           white-space: nowrap;
         }
@@ -105,21 +115,21 @@
         }
         .stock-modal-overlay.open { display: flex; }
         .stock-modal-box {
-          background: var(--bg-card); border: 1px solid var(--border-color);
+          background: var(--bg-surface); border: 1px solid var(--border-color);
           border-radius: 20px; width: 100%; max-width: 420px;
           box-shadow: 0 24px 80px rgba(0,0,0,.3);
           animation: modalPop .16s ease; overflow: hidden;
         }
         .stock-modal-header {
           padding: 20px 24px 16px; border-bottom: 1px solid var(--border-color);
-          background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(0,180,216,.04));
+          background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(27,79,216,.04));
         }
         .stock-modal-producto { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
         .stock-modal-meta { font-size: 12.5px; color: var(--text-secondary); display: flex; gap: 12px; }
         .stock-modal-body { padding: 20px 24px; }
         .stock-actual-wrap {
           display: flex; align-items: center; justify-content: space-between;
-          background: var(--bg-body); border-radius: 12px; padding: 14px 18px;
+          background: var(--bg-surface-2); border-radius: 12px; padding: 14px 18px;
           margin-bottom: 18px; border: 1px solid var(--border-color);
         }
         .stock-actual-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin-bottom: 4px; }
@@ -127,7 +137,7 @@
         .stock-ajuste-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
         .btn-ajuste {
           padding: 14px 8px; border-radius: 12px; border: 2px solid var(--border-color);
-          background: var(--bg-body); cursor: pointer; transition: all .15s;
+          background: var(--bg-surface-2); cursor: pointer; transition: all .15s;
           font-size: 15px; font-weight: 800; display: flex; flex-direction: column;
           align-items: center; gap: 4px; color: var(--text-primary);
         }
@@ -140,11 +150,11 @@
         .stock-custom-row { display: flex; gap: 8px; align-items: center; }
         .stock-custom-input {
           flex: 1; padding: 10px 14px; border: 2px solid var(--border-color);
-          border-radius: 10px; background: var(--bg-body); color: var(--text-primary);
+          border-radius: 10px; background: var(--bg-surface-2); color: var(--text-primary);
           font-size: 16px; font-weight: 700; font-family: var(--font-mono);
           text-align: center; outline: none; transition: border-color .15s;
         }
-        .stock-custom-input:focus { border-color: var(--color-action); }
+        .stock-custom-input:focus { border-color: var(--color-primary); }
         .btn-stock-set {
           padding: 10px 18px; border-radius: 10px; border: none;
           background: var(--color-primary); color: #fff; font-size: 13.5px;
@@ -153,12 +163,32 @@
         .btn-stock-set:hover { opacity: .88; }
         .stock-modal-footer {
           padding: 12px 24px; border-top: 1px solid var(--border-color);
-          display: flex; gap: 8px; justify-content: flex-end; background: var(--bg-body);
+          display: flex; gap: 8px; justify-content: flex-end; background: var(--bg-surface-2);
         }
         .btn-stock-cancel { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
       </style>
 
       <!-- TABLA -->
+      <!-- ── Selector de lista de precio ── -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;">Lista de precios:</span>
+        <div style="display:flex;gap:5px;">
+          <button id="btnListaMin" onclick="setListaInventario('minorista')"
+            style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--color-primary);background:var(--color-primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;">
+            <i class="bi bi-person"></i> Minorista
+          </button>
+          <button id="btnListaMay" onclick="setListaInventario('mayorista')"
+            style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;">
+            <i class="bi bi-building"></i> Mayorista
+          </button>
+          <button id="btnListaTar" onclick="setListaInventario('tarjeta')"
+            style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;">
+            <i class="bi bi-credit-card"></i> Tarjeta
+          </button>
+        </div>
+        <span id="listaInfoTxt" style="font-size:11px;color:var(--text-muted);"></span>
+      </div>
+
       <div class="card-panel">
         <div class="card-panel-body">
           <table class="sales-table" id="productsTable">
@@ -168,11 +198,11 @@
                 <th>SKU</th>
                 <th>Nombre / Descripción</th>
                 <th>Categoría</th>
-                <th>Costo</th>
-                <th>Precio Venta</th>
-                <th>Mayorista</th>
-                <th>Margen</th>
-                <th>Promo</th>
+                <th id="thCosto">Costo</th>
+                <th id="thPrecio">Precio Minorista</th>
+                <th id="thMayorista">Mayorista</th>
+                <th id="thMargen">Margen</th>
+                <th id="thPromo">Promo</th>
                 <th>Stock</th>
                 <th style="width:150px">Acciones</th>
               </tr>
@@ -252,7 +282,7 @@
                       <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('<%= p.sku %>', 1)" title="Sumar stock">+1</button>
                       <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('<%= p.sku %>', -1)" title="Restar stock">-1</button>
                       <button type="button" class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%= JSON.stringify(p) %>)" title="Editar producto"
-                        style="color:var(--color-action); border-color:rgba(0,180,216,.3);">
+                        style="color:var(--color-primary); border-color:rgba(27,79,216,.3);">
                         <i class="bi bi-pencil"></i>
                       </button>
                       <button type="button" class="btn-action btn-action-ghost btn-sm" onclick="removeProduct('<%= p.sku %>')" title="Eliminar">
@@ -276,12 +306,12 @@
      MODAL NUEVO / EDITAR PRODUCTO
 ══════════════════════════════════════════════════════ -->
 <div class="sale-overlay" id="modalProducto" onclick="cerrarModalSiOverlay(event)">
-  <div style="width:100%;max-width:860px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+  <div style="width:100%;max-width:860px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;flex-shrink:0;">
           <i class="bi bi-box-seam"></i>
         </div>
         <div>
@@ -306,14 +336,14 @@
           <div>
             <label class="form-lbl">SKU / Código</label>
             <input type="text" id="m_sku" placeholder="ABC-001"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:12.5px;outline:none;transition:border .2s;"
-              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:12.5px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
           </div>
           <div>
             <label class="form-lbl">Nombre *</label>
             <input type="text" id="m_name" placeholder="Nombre del producto"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
           </div>
         </div>
 
@@ -321,14 +351,14 @@
           <div>
             <label class="form-lbl">Categoría</label>
             <input type="text" id="m_category" placeholder="Ej: Bebidas"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
           </div>
           <div>
             <label class="form-lbl">Stock inicial</label>
             <input type="number" id="m_stock" placeholder="0" min="0" step="1" value="0"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
             <div id="m_stock_edit_wrap" style="margin-top:6px;"></div>
           </div>
         </div>
@@ -336,14 +366,14 @@
         <div>
           <label class="form-lbl">Descripción <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
           <textarea id="m_descripcion" placeholder="Ej: Pack de 10 unidades..." rows="2"
-            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12.5px;outline:none;transition:border .2s;font-family:var(--font-body);resize:vertical;"
-            onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
+            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:12.5px;outline:none;transition:border .2s;font-family:var(--font-body);resize:vertical;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
         </div>
 
         <div>
           <label class="form-lbl">Imagen del producto <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
-          <div id="img-upload-area" style="border:1.5px dashed var(--border-color);border-radius:var(--radius-md);padding:12px;display:flex;align-items:center;gap:12px;background:var(--bg-body);transition:border-color .2s;">
-            <div id="img-preview-wrap" style="width:64px;height:64px;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative;">
+          <div id="img-upload-area" style="border:1.5px dashed var(--border-color);border-radius:var(--radius-md);padding:12px;display:flex;align-items:center;gap:12px;background:var(--bg-surface-2);transition:border-color .2s;">
+            <div id="img-preview-wrap" style="width:64px;height:64px;border-radius:var(--radius-sm);background:var(--bg-surface);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative;">
               <i id="img-placeholder-icon" class="bi bi-image" style="font-size:22px;color:var(--text-secondary);opacity:.4;"></i>
               <img id="img-preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:var(--radius-sm);">
               <button id="img-remove-btn" onclick="removerImagen()" style="display:none;position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#ef4444;border:none;color:#fff;font-size:10px;cursor:pointer;line-height:1;padding:0;" title="Quitar imagen">✕</button>
@@ -351,12 +381,12 @@
             <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
               <input type="file" id="img-file-input" accept="image/*" style="display:none;" onchange="onImageFileSelected(event)">
               <button type="button" onclick="document.getElementById('img-file-input').click()"
-                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
-                <i class="bi bi-images" style="font-size:14px;color:var(--color-action);"></i> Galería / Archivo
+                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
+                <i class="bi bi-images" style="font-size:14px;color:var(--color-primary);"></i> Galería / Archivo
               </button>
               <input type="file" id="img-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="onImageFileSelected(event)">
               <button type="button" id="btn-camara" onclick="document.getElementById('img-camera-input').click()"
-                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
+                style="width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);">
                 <i class="bi bi-camera" style="font-size:14px;color:#10b981;"></i> Sacar foto
               </button>
               <span id="img-filename" style="font-size:10.5px;color:var(--text-secondary);display:none;"></span>
@@ -365,7 +395,7 @@
           <input type="hidden" id="m_imagen" value="">
         </div>
 
-        <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;" for="m_pesable">
             <i class="bi bi-scales" style="color:#10b981;font-size:16px;"></i>
             <div>
@@ -381,16 +411,33 @@
           </div>
         </div>
 
+        <!-- Toggle venta sin control de stock -->
+        <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;" for="m_venta_sin_stock">
+            <i class="bi bi-cart-check" style="color:#f59e0b;font-size:16px;"></i>
+            <div>
+              <div style="font-size:12.5px;font-weight:600;color:var(--text-primary);">Vender sin control de stock</div>
+              <div style="font-size:11px;color:var(--text-secondary);">Permite vender aunque el stock esté en 0 — útil para fiambres, productos a granel, etc.</div>
+            </div>
+          </label>
+          <div style="position:relative;width:40px;height:22px;flex-shrink:0;">
+            <input type="checkbox" id="m_venta_sin_stock" style="opacity:0;width:0;height:0;position:absolute;" onchange="toggleVentaSinStock(this)">
+            <label for="m_venta_sin_stock" id="m_vss_track" style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;">
+              <span id="m_vss_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span>
+            </label>
+          </div>
+        </div>
+
         <div style="border-top:1px solid var(--border-color);padding-top:12px;">
           <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="bi bi-percent" style="margin-right:4px;"></i>IVA (opcional)</div>
-          <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
+          <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
             <label style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-              <input type="checkbox" id="m_iva_check" onchange="toggleIva(this)" style="width:14px;height:14px;accent-color:var(--color-action);cursor:pointer;">
-              IVA <span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(0,180,216,.1);color:var(--color-action);" id="m_iva_badge">0%</span>
+              <input type="checkbox" id="m_iva_check" onchange="toggleIva(this)" style="width:14px;height:14px;accent-color:var(--color-primary);cursor:pointer;">
+              IVA <span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);" id="m_iva_badge">0%</span>
             </label>
             <div style="display:flex;align-items:center;gap:5px;flex:1;">
               <input type="number" id="m_iva" value="21" min="0" max="100" step="0.01" disabled
-                style="width:100%;padding:6px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-size:12.5px;outline:none;"
+                style="width:100%;padding:6px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-secondary);font-size:12.5px;outline:none;"
                 oninput="actualizarBadge('m_iva','m_iva_badge','m_iva_check')">
               <span style="font-size:12px;color:var(--text-secondary);">%</span>
             </div>
@@ -410,8 +457,8 @@
         <div>
           <label class="form-lbl">Precio Costo ($) <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
           <input type="number" id="m_price_cost" placeholder="0.00" min="0" step="0.01"
-            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-            onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"
+            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"
             oninput="calcPrecioVenta()">
         </div>
 
@@ -420,7 +467,7 @@
             <label class="form-lbl">Margen (%)</label>
             <div style="display:flex;align-items:center;gap:5px;">
               <input type="number" id="m_margen" placeholder="50" min="0" step="0.1" value="50"
-                style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+                style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
                 onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
                 oninput="calcPrecioVenta()">
               <span style="font-size:13px;color:var(--text-secondary);flex-shrink:0;">%</span>
@@ -429,20 +476,20 @@
           <div>
             <label class="form-lbl">Precio Venta Final ($) *</label>
             <input type="number" id="m_price" placeholder="0.00" min="0" step="0.01"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;font-weight:700;outline:none;transition:border .2s;"
-              onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;font-weight:700;outline:none;transition:border .2s;"
+              onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"
               oninput="actualizarPreview()">
           </div>
         </div>
 
         <div id="margenIndicador" style="display:none;padding:7px 11px;border-radius:var(--radius-sm);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);font-size:12px;color:#059669;font-weight:600;"></div>
 
-        <div id="m_preview" style="display:none;background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-md);padding:11px;">
+        <div id="m_preview" style="display:none;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.2);border-radius:var(--radius-md);padding:11px;">
           <div style="font-size:10.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">Desglose fiscal estimado</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-items:center;">
             <div><span style="font-size:11px;color:var(--text-secondary);">Precio cargado: </span><span id="prev_base" style="font-weight:700;color:var(--text-primary);"></span></div>
             <div><span style="font-size:11px;color:var(--text-secondary);">Neto estimado: </span><span id="prev_neto" style="font-weight:600;color:var(--text-primary);"></span></div>
-            <div><span style="font-size:11px;color:var(--text-secondary);">IVA incluido: </span><span id="prev_iva" style="font-weight:600;color:var(--color-action);"></span></div>
+            <div><span style="font-size:11px;color:var(--text-secondary);">IVA incluido: </span><span id="prev_iva" style="font-weight:600;color:var(--color-primary);"></span></div>
             <div><span style="font-size:11px;color:var(--text-secondary);">IEPS incluido: </span><span id="prev_ieps" style="font-weight:600;color:#d97706;"></span></div>
             <div style="grid-column:1 / -1;border-top:1px dashed rgba(0,0,0,.08);padding-top:8px;">
               <span style="font-size:11px;color:var(--text-secondary);">Total facturado: </span><span id="prev_total" style="font-weight:700;font-size:14px;color:var(--text-primary);"></span>
@@ -450,8 +497,19 @@
           </div>
         </div>
 
+        <!-- ══ PRECIO TARJETA ══ -->
+        <div style="background:var(--bg-card);border:1.5px solid rgba(16,185,129,.35);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+            <i class="bi bi-credit-card" style="margin-right:5px;color:#10b981;"></i>Precio Tarjeta <span style="font-weight:400;font-size:10px;text-transform:none;">(opcional)</span>
+          </div>
+          <input type="number" id="m_price_tarjeta" placeholder="0.00 — dejar vacío para usar precio normal" min="0" step="0.01"
+            style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.3);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='rgba(16,185,129,.3)'">
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Se usa cuando el POS está en modo <strong>Tarjeta</strong>. Si está vacío usa el precio minorista.</div>
+        </div>
+
         <!-- ══ PRECIO MAYORISTA ══ -->
-        <div style="background:rgba(99,102,241,.04);border:1.5px solid rgba(99,102,241,.2);border-radius:var(--radius-md);padding:14px;">
+        <div style="background:var(--bg-card);border:1.5px solid rgba(99,102,241,.35);border-radius:var(--radius-md);padding:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#4338ca;text-transform:uppercase;letter-spacing:.5px;">
               <i class="bi bi-shop" style="margin-right:5px;color:#6366f1;"></i>Precio Mayorista
@@ -473,14 +531,14 @@
               <div>
                 <label class="form-lbl" style="color:#4338ca;">Precio Mayorista ($)</label>
                 <input type="number" id="m_price_mayorista" placeholder="0.00" min="0" step="0.01"
-                  style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
+                  style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
                   onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,.4)'"
                   oninput="mostrarAhorroMayorista()">
               </div>
               <div>
                 <label class="form-lbl" style="color:#4338ca;">Cantidad mínima (unidades)</label>
                 <input type="number" id="m_qty_mayorista" placeholder="Ej: 4" min="2" step="1"
-                  style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
+                  style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
                   onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,.4)'"
                   oninput="mostrarAhorroMayorista()">
               </div>
@@ -490,7 +548,7 @@
         </div>
 
         <!-- Promo -->
-        <div style="background:rgba(245,158,11,.04);border:1.5px solid rgba(245,158,11,.2);border-radius:var(--radius-md);padding:14px;">
+        <div style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,.35);border-radius:var(--radius-md);padding:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;">
               <i class="bi bi-tag-fill" style="margin-right:5px;color:#f59e0b;"></i>Promoción
@@ -510,7 +568,7 @@
           <div id="promoFields" style="display:none;">
             <label class="form-lbl" style="color:#92400e;">Precio Promo ($)</label>
             <input type="number" id="m_price_promo" placeholder="0.00" min="0" step="0.01"
-              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(245,158,11,.4);background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
+              style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid rgba(245,158,11,.4);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;transition:border .2s;"
               onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='rgba(245,158,11,.4)'"
               oninput="mostrarAhorroPromo()">
             <div id="promoAhorro" style="display:none;margin-top:8px;padding:8px 11px;background:rgba(245,158,11,.1);border-radius:var(--radius-sm);font-size:12.5px;font-weight:700;color:#d97706;"></div>
@@ -521,7 +579,7 @@
     </div>
 
     <!-- Footer botones -->
-    <div style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-body);flex-shrink:0;">
+    <div style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-surface-2);flex-shrink:0;">
       <button onclick="guardarProducto()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:10px;">
         <i class="bi bi-check-lg"></i> <span id="btnGuardarTexto">Guardar producto</span>
       </button>
@@ -535,6 +593,150 @@
 
 <script>
 let _editSku = null;
+
+// Catálogo en memoria — inicializado desde server, sin reload
+let _allProducts = <%- JSON.stringify(products) %>;
+
+const _fmt = n => '$' + Number(n).toLocaleString('es-AR', {minimumFractionDigits:2});
+
+/* ── Lista de precio activa en inventario ── */
+let _listaInv = 'minorista';
+
+function setListaInventario(lista) {
+  _listaInv = lista;
+
+  // Actualizar botones
+  const btns = { minorista:'btnListaMin', mayorista:'btnListaMay', tarjeta:'btnListaTar' };
+  const colores = { minorista:'var(--color-primary)', mayorista:'#6366f1', tarjeta:'#f59e0b' };
+  Object.entries(btns).forEach(([key, id]) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const activo = key === lista;
+    btn.style.background   = activo ? colores[key] : 'transparent';
+    btn.style.borderColor  = activo ? colores[key] : 'var(--border-color)';
+    btn.style.color        = activo ? '#fff' : 'var(--text-secondary)';
+  });
+
+  // Actualizar headers de tabla
+  const labels = { minorista:'Precio Minorista', mayorista:'Precio Mayorista', tarjeta:'Precio Tarjeta' };
+  const thP = document.getElementById('thPrecio');
+  if (thP) thP.textContent = labels[lista];
+
+  // En mayorista/tarjeta ocultar columnas que no aplican
+  const esMini = lista === 'minorista';
+  ['thCosto','thMayorista','thMargen','thPromo'].forEach(id => {
+    const th = document.getElementById(id);
+    if (th) th.style.display = esMini ? '' : 'none';
+  });
+
+  // Info hint
+  const info = document.getElementById('listaInfoTxt');
+  if (info) {
+    const conPrecio = _allProducts.filter(p => {
+      if (lista === 'mayorista') return p.price_mayorista && Number(p.price_mayorista) > 0;
+      if (lista === 'tarjeta')   return p.price_tarjeta   && Number(p.price_tarjeta)   > 0;
+      return true;
+    }).length;
+    info.textContent = lista !== 'minorista'
+      ? `${conPrecio} de ${_allProducts.length} productos con precio cargado`
+      : '';
+  }
+
+  renderTable(_allProducts);
+}
+
+function renderTable(list) {
+  const tbody = document.querySelector('#productsTable tbody');
+  if (!tbody) return;
+
+  const q   = (document.getElementById('q')?.value || '').trim().toLowerCase();
+  const cat = (document.getElementById('filtroCat')?.value || '').toLowerCase();
+
+  const filtered = list.filter(p => {
+    const matchQ   = !q   || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+    const matchCat = !cat || (p.category || '').toLowerCase().includes(cat);
+    let matchF = true;
+    if (typeof _filtroStockActivo !== 'undefined') {
+      if (_filtroStockActivo === 'sinstock') matchF = p.stock <= 0;
+      if (_filtroStockActivo === 'bajo')     matchF = p.stock > 0 && p.stock <= 3;
+    }
+    return matchQ && matchCat && matchF;
+  });
+
+  tbody.innerHTML = filtered.map(p => {
+    const sc = p.pesable ? '' : (p.stock <= 0 ? 'vacio' : p.stock <= 3 ? 'bajo' : 'ok');
+    const hayVal = p.hay == null || p.hay == 1;
+    const stockCell = p.pesable
+      ? `<span id="hayBadge_${p.id}" class="stock-badge ${hayVal?'ok':'vacio'}" style="cursor:pointer;user-select:none;" onclick="toggleHayInventario(${p.id},this)">
+           <span class="stock-dot ${hayVal?'ok':'vacio'}"></span>${hayVal?'Hay':'No hay'}
+         </span>`
+      : `<span class="stock-badge ${sc}"><span class="stock-dot ${sc}"></span>${p.stock}</span>`;
+
+    const mayorCell = p.price_mayorista && p.qty_mayorista
+      ? `<div><span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;background:rgba(99,102,241,.12);color:#6366f1;">🏪 MAYOR</span>
+           <div style="font-family:var(--font-mono);font-size:12px;color:#6366f1;font-weight:700;margin-top:2px;">${_fmt(p.price_mayorista)} <span style="font-size:10px;color:var(--text-secondary);font-weight:600;">x≥${p.qty_mayorista}</span></div></div>`
+      : `<span style="color:var(--text-secondary);font-size:12px">—</span>`;
+
+    const promoCell = p.en_promo && p.price_promo
+      ? `<div><span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;">🏷️ PROMO</span>
+           <div style="font-family:var(--font-mono);font-size:12px;color:#d97706;font-weight:700;margin-top:2px;">${_fmt(p.price_promo)}</div></div>`
+      : `<span style="color:var(--text-secondary);font-size:12px">—</span>`;
+
+    const margenCell = p.margen
+      ? `<span style="font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;">${Number(p.margen).toFixed(1)}%</span>`
+      : `<span style="color:var(--text-secondary);font-size:12px">—</span>`;
+
+    const descHTML = p.descripcion
+      ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;">${(p.descripcion.length>50?p.descripcion.slice(0,50)+'…':p.descripcion)}</div>`
+      : '';
+
+    const pesableBadge = p.pesable
+      ? `<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,.12);color:#059669;margin-left:5px;"><i class="bi bi-scales"></i> Pesable</span>`
+      : '';
+
+    const pEsc = JSON.stringify(p).replace(/"/g, '&quot;');
+    const esMini = _listaInv === 'minorista';
+
+    let precioCell;
+    if (_listaInv === 'mayorista') {
+      precioCell = p.price_mayorista && Number(p.price_mayorista) > 0
+        ? `<strong style="font-family:var(--font-mono);color:#6366f1;">${_fmt(p.price_mayorista)}</strong>${p.qty_mayorista ? `<div style="font-size:10px;color:var(--text-secondary);">x≥${p.qty_mayorista}</div>` : ''}`
+        : `<span style="color:var(--text-muted);font-size:12px;font-style:italic;">Sin precio</span>`;
+    } else if (_listaInv === 'tarjeta') {
+      precioCell = p.price_tarjeta && Number(p.price_tarjeta) > 0
+        ? `<strong style="font-family:var(--font-mono);color:#d97706;">${_fmt(p.price_tarjeta)}</strong>`
+        : `<span style="color:var(--text-muted);font-size:12px;font-style:italic;">Sin precio</span>`;
+    } else {
+      precioCell = `<strong style="font-family:var(--font-mono);">${_fmt(p.price)}</strong>`;
+    }
+
+    const costoTd  = esMini ? `<td style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)">${p.price_cost?_fmt(p.price_cost):'—'}</td>` : '';
+    const mayorTd  = esMini ? `<td>${mayorCell}</td>` : '';
+    const margenTd = esMini ? `<td>${margenCell}</td>` : '';
+    const promoTd  = esMini ? `<td>${promoCell}</td>` : '';
+
+    return `<tr data-sku="${p.sku}">
+      <td class="sale-id">${p.id}</td>
+      <td class="sale-id">${p.sku}</td>
+      <td><strong>${p.name}</strong>${pesableBadge}${descHTML}</td>
+      <td style="color:var(--text-secondary);font-size:12.5px">${p.category||'—'}</td>
+      ${costoTd}
+      <td>${precioCell}</td>
+      ${mayorTd}
+      ${margenTd}
+      ${promoTd}
+      <td data-stock="${p.stock}">${stockCell}</td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('${p.sku}',1)" title="Sumar stock">+1</button>
+          <button type="button" class="btn-action btn-action-outline btn-sm" onclick="stockDelta('${p.sku}',-1)" title="Restar stock">-1</button>
+          <button type="button" class="btn-action btn-action-outline btn-sm" onclick='abrirEditar(${pEsc})' title="Editar producto" style="color:var(--color-primary);border-color:rgba(27,79,216,.3);"><i class="bi bi-pencil"></i></button>
+          <button type="button" class="btn-action btn-action-ghost btn-sm" onclick="removeProduct('${p.sku}')" title="Eliminar"><i class="bi bi-trash3"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
 
 function toggleIva(cb) {
   const input = document.getElementById('m_iva');
@@ -552,8 +754,13 @@ function actualizarBadge(inputId, badgeId, checkId) {
   actualizarPreview();
 }
 function togglePesable(cb) {
-  document.getElementById('m_pesable_track').style.background = cb.checked ? 'var(--color-action)' : 'var(--border-color)';
+  document.getElementById('m_pesable_track').style.background = cb.checked ? 'var(--color-primary)' : 'var(--border-color)';
   document.getElementById('m_pesable_thumb').style.transform = cb.checked ? 'translateX(20px)' : 'translateX(0)';
+}
+
+function toggleVentaSinStock(cb) {
+  document.getElementById('m_vss_track').style.background = cb.checked ? '#f59e0b' : 'var(--border-color)';
+  document.getElementById('m_vss_thumb').style.transform  = cb.checked ? 'translateX(20px)' : 'translateX(0)';
 }
 
 /* ── Toggle mayorista ── */
@@ -700,12 +907,15 @@ function abrirModal(prefillSku = '') {
   toggleIva(document.getElementById('m_iva_check'));
   toggleIeps(document.getElementById('m_ieps_check'));
   togglePesable(document.getElementById('m_pesable'));
+  document.getElementById('m_venta_sin_stock').checked = false;
+  toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
   document.getElementById('m_preview').style.display = 'none';
   // Resetear mayorista
   document.getElementById('m_mayorista_check').checked = false;
   toggleMayorista(document.getElementById('m_mayorista_check'));
   if (document.getElementById('m_price_mayorista')) document.getElementById('m_price_mayorista').value = '';
   if (document.getElementById('m_qty_mayorista'))   document.getElementById('m_qty_mayorista').value   = '';
+  if (document.getElementById('m_price_tarjeta'))   document.getElementById('m_price_tarjeta').value   = '';
   setImagenPreview(null);
   document.getElementById('modalProducto').classList.add('open');
   setTimeout(() => document.getElementById(prefillSku ? 'm_name' : 'm_sku').focus(), 80);
@@ -743,6 +953,8 @@ function abrirEditar(p) {
   toggleIeps(document.getElementById('m_ieps_check'));
   document.getElementById('m_pesable').checked = Boolean(p.pesable);
   togglePesable(document.getElementById('m_pesable'));
+  document.getElementById('m_venta_sin_stock').checked = Boolean(p.venta_sin_stock);
+  toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
   // Mayorista
   const tieneMayorista = !!(p.price_mayorista && p.qty_mayorista);
   document.getElementById('m_mayorista_check').checked = tieneMayorista;
@@ -752,6 +964,8 @@ function abrirEditar(p) {
     if (document.getElementById('m_qty_mayorista'))   document.getElementById('m_qty_mayorista').value   = p.qty_mayorista   || '';
     mostrarAhorroMayorista();
   }
+  // Tarjeta
+  if (document.getElementById('m_price_tarjeta')) document.getElementById('m_price_tarjeta').value = p.price_tarjeta || '';
   setImagenPreview(p.imagen || null);
   actualizarPreview();
   document.getElementById('modalProducto').classList.add('open');
@@ -771,10 +985,13 @@ async function guardarProducto() {
   const iepsCheck   = document.getElementById('m_ieps_check').checked;
   const iva         = ivaCheck  ? (parseFloat(document.getElementById('m_iva').value)  || 0) : 0;
   const ieps        = iepsCheck ? (parseFloat(document.getElementById('m_ieps').value) || 0) : 0;
-  const pesable     = document.getElementById('m_pesable').checked ? 1 : 0;
+  const pesable         = document.getElementById('m_pesable').checked ? 1 : 0;
+  const venta_sin_stock = document.getElementById('m_venta_sin_stock').checked ? 1 : 0;
   const descripcion = document.getElementById('m_descripcion')?.value.trim() || null;
-  const price_cost  = parseFloat(document.getElementById('m_price_cost')?.value) || null;
-  const margen      = parseFloat(document.getElementById('m_margen')?.value) || null;
+  const price_cost  = document.getElementById('m_price_cost')?.value.trim()
+    ? (parseFloat(document.getElementById('m_price_cost').value) || null) : null;
+  const margen      = document.getElementById('m_margen')?.value.trim()
+    ? (parseFloat(document.getElementById('m_margen').value) || null) : null;
   const en_promo    = document.getElementById('m_en_promo')?.checked ? 1 : 0;
   const price_promo = en_promo ? (parseFloat(document.getElementById('m_price_promo')?.value) || null) : null;
   const imagen      = document.getElementById('m_imagen')?.value || null;
@@ -782,26 +999,37 @@ async function guardarProducto() {
   const tieneMayorista   = document.getElementById('m_mayorista_check')?.checked;
   const price_mayorista  = tieneMayorista ? (parseFloat(document.getElementById('m_price_mayorista')?.value) || null) : null;
   const qty_mayorista    = tieneMayorista ? (parseInt(document.getElementById('m_qty_mayorista')?.value)    || null) : null;
+  // Tarjeta — leer explícitamente: vacío = null, número = número
+  const _tarjetaVal = document.getElementById('m_price_tarjeta')?.value.trim();
+  const price_tarjeta = _tarjetaVal ? (parseFloat(_tarjetaVal) || null) : null;
 
   if (!sku || !name) { alert('SKU y Nombre son obligatorios.'); return; }
 
   try {
+    let saved;
     if (_editSku) {
       const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista })
+        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta })
       });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error editando: ' + (e.error || r.status)); return; }
+      saved = await r.json();
+      const idx = _allProducts.findIndex(p => p.sku === _editSku);
+      if (idx !== -1) _allProducts[idx] = saved;
+      else _allProducts.push(saved);
     } else {
       const r = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, descripcion, imagen, price_mayorista, qty_mayorista })
+        body: JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta })
       });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error creando: ' + (e.error || r.status)); return; }
+      saved = await r.json();
+      _allProducts.push(saved);
     }
-    location.reload();
+    cerrarModal();
+    renderTable(_allProducts);
   } catch(err) { alert('Error de red: ' + err.message); }
 }
 
@@ -863,6 +1091,9 @@ async function toggleHayInventario(id, badge) {
     }
   } catch(e) {}
 }
+let _invFiltrarTimer = null;
+function debFilterRows() { clearTimeout(_invFiltrarTimer); _invFiltrarTimer = setTimeout(filterRows, 80); }
+
 function filterRows() {
   const q = document.getElementById('q').value.trim().toLowerCase();
   document.querySelectorAll('#productsTable tbody tr').forEach(tr => {
@@ -877,15 +1108,19 @@ async function stockDelta(sku, delta) {
     body: JSON.stringify({ delta })
   });
   if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error'); return; }
-  location.reload();
+  const updated = await r.json();
+  const idx = _allProducts.findIndex(p => p.sku === sku);
+  if (idx !== -1) _allProducts[idx] = updated;
+  renderTable(_allProducts);
 }
 async function removeProduct(sku) {
   if (!confirm('¿Eliminar producto ' + sku + '?')) return;
   const r = await fetch(`/api/products/${encodeURIComponent(sku)}`, { method: 'DELETE' });
   if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error eliminando'); return; }
-  location.reload();
+  _allProducts = _allProducts.filter(p => p.sku !== sku);
+  renderTable(_allProducts);
 }
-function exportCSV() { window.location.href = '/api/products.csv'; }
+function exportCSV() { window.location.href = '/api/products.xlsx'; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModal(); cerrarImportar(); } });
 </script>
 
@@ -903,22 +1138,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModa
       <button onclick="cerrarImportar()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div id="imp_step1" style="padding:26px;flex:1;overflow-y:auto;">
-      <div id="imp_dropzone" style="border:2.5px dashed var(--border-color);border-radius:14px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-body);"
+      <div id="imp_dropzone" style="border:2.5px dashed var(--border-color);border-radius:14px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-surface-2);"
         onclick="document.getElementById('imp_fileInput').click()" ondragover="impDragOver(event)" ondragleave="impDragLeave(event)" ondrop="impDrop(event)">
         <div style="font-size:44px;color:rgba(16,185,129,.5);margin-bottom:12px;"><i class="bi bi-file-earmark-excel"></i></div>
         <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Arrastrá tu archivo acá</div>
         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">o hacé click para seleccionar</div>
-        <span style="font-size:11px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:6px;padding:4px 12px;color:var(--text-secondary);">.xlsx · .xls · .csv — máx. 5MB</span>
+        <span style="font-size:11px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:6px;padding:4px 12px;color:var(--text-secondary);">.xlsx · .xls · .csv — máx. 5MB</span>
       </div>
       <input type="file" id="imp_fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="impFileSelected(event)">
-      <div style="margin-top:20px;background:var(--bg-body);border:1px solid var(--border-color);border-radius:10px;padding:16px 18px;">
+      <div style="margin-top:20px;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:16px 18px;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:10px;">Formato de columnas esperado</div>
         <div style="display:flex;flex-wrap:wrap;gap:7px;">
           <% [['sku','SKU / Código','cyan'],['name','Nombre','cyan'],['price','Precio','cyan'],['category','Categoría','gray'],['stock','Stock','gray'],['iva','IVA (%)','gray'],['VENTA POR MAYOR','Precio mayorista','indigo']].forEach(([k,l,c]) => { %>
             <span style="font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;
-              background:<%= c==='cyan'?'rgba(0,180,216,.1)':c==='indigo'?'rgba(99,102,241,.1)':'rgba(100,116,139,.08)' %>;
-              color:<%= c==='cyan'?'var(--color-action)':c==='indigo'?'#6366f1':'var(--text-secondary)' %>;
-              border:1px solid <%= c==='cyan'?'rgba(0,180,216,.25)':c==='indigo'?'rgba(99,102,241,.25)':'var(--border-color)' %>;">
+              background:<%= c==='cyan'?'rgba(27,79,216,.1)':c==='indigo'?'rgba(99,102,241,.1)':'rgba(100,116,139,.08)' %>;
+              color:<%= c==='cyan'?'var(--color-primary)':c==='indigo'?'#6366f1':'var(--text-secondary)' %>;
+              border:1px solid <%= c==='cyan'?'rgba(27,79,216,.25)':c==='indigo'?'rgba(99,102,241,.25)':'var(--border-color)' %>;">
               <%= k %> <span style="opacity:.6;font-weight:400">(<%= l %>)</span>
               <% if(c==='cyan'){ %><i class="bi bi-asterisk" style="font-size:8px;vertical-align:super;"></i><% } %>
             </span>
@@ -927,26 +1162,26 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModa
         <div style="margin-top:10px;font-size:11px;color:var(--text-secondary);">
           <i class="bi bi-asterisk" style="font-size:8px;vertical-align:super;"></i> Obligatorias · Las columnas pueden estar en cualquier orden
         </div>
-        <button onclick="descargarPlantilla()" style="margin-top:10px;background:none;border:none;cursor:pointer;color:var(--color-action);font-size:12px;font-weight:600;padding:0;display:flex;align-items:center;gap:5px;">
+        <button onclick="descargarPlantilla()" style="margin-top:10px;background:none;border:none;cursor:pointer;color:var(--color-primary);font-size:12px;font-weight:600;padding:0;display:flex;align-items:center;gap:5px;">
           <i class="bi bi-download"></i> Descargar plantilla de ejemplo
         </button>
       </div>
     </div>
     <div id="imp_step2" style="display:none;flex:1;overflow-y:auto;padding:0;">
-      <div style="padding:16px 26px;background:var(--bg-body);border-bottom:1px solid var(--border-color);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0;">
+      <div style="padding:16px 26px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:7px;"><div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div><span style="font-size:13px;font-weight:600;" id="imp_countNew">0 nuevos</span></div>
         <div style="display:flex;align-items:center;gap:7px;"><div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div><span style="font-size:13px;font-weight:600;" id="imp_countConflict">0 conflictos</span></div>
         <div style="display:flex;align-items:center;gap:7px;"><div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div><span style="font-size:13px;font-weight:600;" id="imp_countError">0 errores</span></div>
         <div style="margin-left:auto;display:flex;gap:7px;" id="imp_resolveAll">
           <span style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;">Resolver conflictos:</span>
           <button onclick="resolverTodos('update')" style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.08);color:#10b981;cursor:pointer;">Actualizar todos</button>
-          <button onclick="resolverTodos('skip')"   style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);cursor:pointer;">Ignorar todos</button>
+          <button onclick="resolverTodos('skip')"   style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);cursor:pointer;">Ignorar todos</button>
         </div>
       </div>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;" id="imp_previewTable">
           <thead>
-            <tr style="background:var(--bg-body);border-bottom:1px solid var(--border-color);">
+            <tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
               <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);text-align:left;">Estado</th>
               <th style="padding:10px 14px;text-align:left;">SKU</th>
               <th style="padding:10px 14px;text-align:left;">Nombre</th>
@@ -961,7 +1196,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModa
         </table>
       </div>
     </div>
-    <div id="imp_footer" style="display:none;padding:16px 26px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg-card);">
+    <div id="imp_footer" style="display:none;padding:16px 26px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg-surface);">
       <button onclick="impVolver()" style="background:none;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;"><i class="bi bi-arrow-left"></i> Volver</button>
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:13px;color:var(--text-secondary);" id="imp_footerInfo"></span>
@@ -1012,7 +1247,7 @@ async function impProcesarArchivo(file) {
       const rows = raw.map(r => {
         const mapped = {};
         Object.keys(r).forEach(k => { mapped[impNormHeader(k)] = r[k]; });
-        return { sku:String(mapped.sku||'').trim(), name:String(mapped.name||'').trim(), price:parseFloat(mapped.price)||0, category:String(mapped.category||'').trim(), stock:parseInt(mapped.stock)||0, iva:parseFloat(mapped.iva)||0, ieps:parseFloat(mapped.ieps)||0, price_mayorista:parseFloat(mapped.price_mayorista)||0, _action:'new', _status:'new', _error:'' };
+        return { sku:String(mapped.sku||'').trim(), name:String(mapped.name||'').trim(), price:parseFloat(mapped.price)||0, category:String(mapped.category||'').trim(), stock:parseInt(mapped.stock)||0, iva:parseFloat(mapped.iva)||0, ieps:parseFloat(mapped.ieps)||0, price_mayorista:parseFloat(mapped.price_mayorista)||0, price_tarjeta:parseFloat(mapped.price_tarjeta)||0, _action:'new', _status:'new', _error:'' };
       });
       rows.forEach(r => { if(!r.sku){r._status='error';r._error='SKU vacío';} if(!r.name){r._status='error';r._error=(r._error?r._error+', ':'')+'Nombre vacío';} });
       document.getElementById('imp_subtitle').textContent = 'Verificando SKUs existentes…';
@@ -1039,7 +1274,7 @@ function impMostrarPreview() {
     const statusBadge={new:`<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,.1);color:#10b981;">NUEVO</span>`,conflict:`<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(245,158,11,.1);color:#d97706;">CONFLICTO</span>`,error:`<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(239,68,68,.1);color:#ef4444;">ERROR</span>`}[r._status]||'';
     const accion=r._status==='conflict'?`<div style="display:flex;gap:5px;justify-content:center;"><button onclick="setAccion(${i},'update')" style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;cursor:pointer;border:1.5px solid ${r._action==='update'?'#10b981':'var(--border-color)'};background:${r._action==='update'?'rgba(16,185,129,.1)':'transparent'};color:${r._action==='update'?'#10b981':'var(--text-secondary)'};">Actualizar</button><button onclick="setAccion(${i},'skip')" style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;cursor:pointer;border:1.5px solid ${r._action==='skip'?'#94a3b8':'var(--border-color)'};background:${r._action==='skip'?'rgba(100,116,139,.1)':'transparent'};color:${r._action==='skip'?'#64748b':'var(--text-secondary)'};">Ignorar</button></div>`:r._status==='error'?`<span style="font-size:11px;color:#ef4444;">${r._error}</span>`:`<span style="font-size:11px;color:#10b981;font-weight:600;">Crear</span>`;
     const rowBg=r._status==='error'?'rgba(239,68,68,.04)':r._status==='conflict'?'rgba(245,158,11,.03)':'';
-    return `<tr style="border-bottom:1px solid var(--border-color);background:${rowBg};" id="imp_row_${i}"><td style="padding:10px 14px;">${statusBadge}</td><td style="padding:10px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">${r.sku}</td><td style="padding:10px 14px;font-weight:600;color:var(--text-primary);">${r.name||'—'}</td><td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:700;">$${Number(r.price).toFixed(2)}</td><td style="padding:10px 14px;color:var(--text-secondary);">${r.category||'—'}</td><td style="padding:10px 14px;text-align:right;">${r.stock}</td><td style="padding:10px 14px;text-align:right;color:#6366f1;font-family:var(--font-mono);">${r.price_mayorista>0?'$'+r.price_mayorista.toFixed(2):'—'}</td><td style="padding:10px 14px;text-align:center;">${accion}</td></tr>`;
+    return `<tr style="border-bottom:1px solid var(--border-color);background:${rowBg};" id="imp_row_${i}"><td style="padding:10px 14px;">${statusBadge}</td><td style="padding:10px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">${r.sku}</td><td style="padding:10px 14px;font-weight:600;color:var(--text-primary);">${r.name||'—'}</td><td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:700;">$${Number(r.price).toFixed(2)}</td><td style="padding:10px 14px;color:var(--text-secondary);">${r.category||'—'}</td><td style="padding:10px 14px;text-align:right;">${r.stock}</td><td style="padding:10px 14px;text-align:right;color:#6366f1;font-family:var(--font-mono);">${r.price_mayorista>0?'$'+r.price_mayorista.toFixed(2):'—'}</td><td style="padding:10px 14px;text-align:right;color:#d97706;font-family:var(--font-mono);">${r.price_tarjeta>0?'$'+r.price_tarjeta.toFixed(2):'—'}</td><td style="padding:10px 14px;text-align:center;">${accion}</td></tr>`;
   }).join('');
   const activas=_impRows.filter(r=>r._status!=='error'&&r._action!=='skip').length;
   document.getElementById('imp_footerInfo').textContent=`Se procesarán ${activas} producto${activas!==1?'s':''}`;
@@ -1059,22 +1294,96 @@ async function ejecutarImportacion() {
   const toUpdate=_impRows.filter(r=>r._status==='conflict'&&r._action==='update');
   let ok=0,err=0;
   for(const r of toCreate){
-    const res=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku:r.sku,name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,pesable:0,price_mayorista:r.price_mayorista||null})});
+    const res=await fetch('/api/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku:r.sku,name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,pesable:0,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null})});
     res.ok?ok++:err++;
   }
   for(const r of toUpdate){
-    const res=await fetch(`/api/products/${encodeURIComponent(r.sku)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,price_mayorista:r.price_mayorista||null})});
+    const res=await fetch(`/api/products/${encodeURIComponent(r.sku)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:r.name,price:r.price,category:r.category,stock:r.stock,iva:r.iva,ieps:r.ieps,price_mayorista:r.price_mayorista||null,price_tarjeta:r.price_tarjeta||null})});
     res.ok?ok++:err++;
   }
   cerrarImportar();
   if(err)alert(`Importación completada:\n✅ ${ok} productos procesados\n❌ ${err} errores`);
-  location.reload();
+  // Refrescar desde server una sola vez (importación masiva justifica un fetch)
+  try {
+    const r = await fetch('/api/products?limit=9999');
+    if (r.ok) { _allProducts = await r.json(); renderTable(_allProducts); }
+  } catch(e) { location.reload(); }
 }
 function descargarPlantilla(){
-  const csv='sku,name,price,category,stock,iva,VENTA POR MAYOR\n'+'ABC-001,Coca Cola 1.5L,1500,Bebidas,20,21,0\n'+'ABC-024,Crema Tregar 200g,2500,LACTEOS,24,0,2000\n'+'ABC-039,Salchichas Nutryte,1200,SALCHICHA,105,0,950\n';
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='plantilla_productos.csv';a.click();URL.revokeObjectURL(url);
+  // Cargar SheetJS si no está
+  const generar = () => {
+    const data = [
+      {
+        SKU: 'ABC-001',
+        Nombre: 'Coca Cola 1.5L',
+        'Precio Minorista': 1500,
+        'Precio Mayorista': 1200,
+        'Precio Tarjeta': 1650,
+        'Precio Costo': 900,
+        'Cantidad Min. Mayorista': 6,
+        Stock: 20,
+        Categoria: 'Bebidas',
+        IVA: 0,
+        IEPS: 0,
+        Pesable: 'NO',
+        Descripcion: '',
+        'En Promo': 'NO',
+        'Precio Promo': '',
+      },
+      {
+        SKU: 'ABC-024',
+        Nombre: 'Crema Tregar 200g',
+        'Precio Minorista': 2500,
+        'Precio Mayorista': 2000,
+        'Precio Tarjeta': 2750,
+        'Precio Costo': 1500,
+        'Cantidad Min. Mayorista': 4,
+        Stock: 24,
+        Categoria: 'LACTEOS',
+        IVA: 0,
+        IEPS: 0,
+        Pesable: 'NO',
+        Descripcion: 'Crema entera 200g',
+        'En Promo': 'NO',
+        'Precio Promo': '',
+      },
+      {
+        SKU: 'ABC-039',
+        Nombre: 'Salchichas 500g',
+        'Precio Minorista': 1200,
+        'Precio Mayorista': 950,
+        'Precio Tarjeta': 1300,
+        'Precio Costo': 700,
+        'Cantidad Min. Mayorista': 3,
+        Stock: 105,
+        Categoria: 'CARNES',
+        IVA: 0,
+        IEPS: 0,
+        Pesable: 'NO',
+        Descripcion: '',
+        'En Promo': 'SI',
+        'Precio Promo': 1100,
+      },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      {wch:18},{wch:30},{wch:16},{wch:16},{wch:14},{wch:13},{wch:22},
+      {wch:7},{wch:16},{wch:5},{wch:5},{wch:8},{wch:30},{wch:8},{wch:13}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    XLSX.writeFile(wb, 'plantilla_productos.xlsx');
+  };
+
+  if (typeof XLSX === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = generar;
+    document.head.appendChild(s);
+  } else {
+    generar();
+  }
 }
 </script>
 
@@ -1107,7 +1416,7 @@ function descargarPlantilla(){
       </div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Cantidad personalizada</div>
       <div class="stock-custom-row">
-        <select id="smSigno" style="padding:10px 12px;border:2px solid var(--border-color);border-radius:10px;background:var(--bg-body);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;cursor:pointer;"><option value="1">+ Sumar</option><option value="-1">− Restar</option><option value="set">= Establecer</option></select>
+        <select id="smSigno" style="padding:10px 12px;border:2px solid var(--border-color);border-radius:10px;background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;cursor:pointer;"><option value="1">+ Sumar</option><option value="-1">− Restar</option><option value="set">= Establecer</option></select>
         <input type="number" id="smCantidad" class="stock-custom-input" placeholder="0" min="0" step="1" onkeydown="if(event.key==='Enter'){event.preventDefault();aplicarPersonalizado();}">
         <button class="btn-stock-set" onclick="aplicarPersonalizado()"><i class="bi bi-check-lg"></i> Aplicar</button>
       </div>
@@ -1139,7 +1448,240 @@ async function procesarCodigoScanner(code){try{const res=await fetch(`/api/produ
 
 let _filtroStockActivo='todos';
 function setFiltroStock(filtro,btn){_filtroStockActivo=filtro;document.querySelectorAll('.btn-filtro-stock').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filterRows();}
-function filterRows(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const cat=(document.getElementById('filtroCat')?.value||'').toLowerCase();document.querySelectorAll('#productsTable tbody tr').forEach(tr=>{const sku=(tr.children[1]?.innerText||'').toLowerCase();const name=(tr.children[2]?.innerText||'').toLowerCase();const trCat=(tr.children[3]?.innerText||'').toLowerCase().replace('—','');const stock=parseInt(tr.querySelector('[data-stock]')?.dataset.stock??'999');const matchQ=!q||sku.includes(q)||name.includes(q);const matchCat=!cat||trCat.includes(cat);let matchF=true;if(_filtroStockActivo==='sinstock')matchF=stock<=0;if(_filtroStockActivo==='bajo')matchF=stock>0&&stock<=3;tr.style.display=(matchQ&&matchCat&&matchF)?'':'none';});}
+function filterRows(){ renderTable(_allProducts); }
 </script>
 
+<!-- ══ MODAL CARGA RÁPIDA DE VARIANTES ══ -->
+<div class="modal-overlay" id="modalVariantes" onclick="if(event.target===this)cerrarVariantes()">
+  <div class="modal-box" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-stack" style="color:#6366f1;"></i> Carga rápida de variantes</span>
+      <button class="modal-close" onclick="cerrarVariantes()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Nombre base -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px;">Nombre base del producto *</label>
+          <input type="text" id="vr_nombre" placeholder="Ej: Llave Ferrawi, Aceite 1L..." style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px;">Categoría</label>
+          <input type="text" id="vr_categoria" placeholder="Ej: Herramientas, Fiambres..." style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px;">Precio *</label>
+          <input type="number" id="vr_precio" placeholder="0.00" min="0" step="0.01" style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px;">Stock inicial</label>
+          <input type="number" id="vr_stock" placeholder="0" min="0" value="1" style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px;">SKU base (opcional)</label>
+          <input type="text" id="vr_sku_base" placeholder="Ej: FERR, QUESO..." style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);">
+        </div>
+      </div>
+
+      <!-- Variantes -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);">Variantes (una por línea)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="vrAgregarSugeridas(['S','M','L','XL'])" style="padding:3px 10px;border-radius:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);font-size:11px;font-weight:600;cursor:pointer;color:var(--text-secondary);">S M L XL</button>
+            <button onclick="vrAgregarSugeridas(['11mm','12mm','13mm','14mm','17mm','19mm'])" style="padding:3px 10px;border-radius:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);font-size:11px;font-weight:600;cursor:pointer;color:var(--text-secondary);">Medidas mm</button>
+            <button onclick="vrAgregarSugeridas(['Rojo','Azul','Verde','Negro','Blanco'])" style="padding:3px 10px;border-radius:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);font-size:11px;font-weight:600;cursor:pointer;color:var(--text-secondary);">Colores</button>
+            <button onclick="vrAgregarSugeridas(['500g','1kg','2kg','5kg'])" style="padding:3px 10px;border-radius:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);font-size:11px;font-weight:600;cursor:pointer;color:var(--text-secondary);">Pesos</button>
+          </div>
+        </div>
+        <textarea id="vr_variantes" rows="5" placeholder="Escribí una variante por línea. Ejemplo:&#10;11mm&#10;12mm&#10;13mm&#10;14mm"
+          style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);resize:vertical;font-family:var(--font-body);font-size:13px;"></textarea>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+          Se crearán productos con nombre: <strong id="vr_preview_nombre" style="color:var(--color-primary);">Nombre base</strong> + cada variante. Ej: "Llave Ferrawi 11mm"
+        </div>
+      </div>
+
+      <!-- Opciones -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="vr_sin_stock" style="width:14px;height:14px;accent-color:var(--color-primary);">
+          <span>Vender sin control de stock</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="vr_pesable" style="width:14px;height:14px;accent-color:var(--color-primary);">
+          <span>Producto pesable</span>
+        </label>
+      </div>
+
+      <!-- Preview -->
+      <div id="vr_preview_list" style="display:none;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px 14px;max-height:160px;overflow-y:auto;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Se van a crear estos productos:</div>
+        <div id="vr_preview_items" style="display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+
+      <div id="vr_error" style="display:none;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);font-size:13px;color:#dc2626;"></div>
+
+      <!-- Botones -->
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button onclick="vrPreview()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid #6366f1;background:rgba(99,102,241,.07);color:#6366f1;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-eye"></i> Previsualizar
+        </button>
+        <button onclick="vrGuardar()" id="btnVrGuardar" style="flex:2;padding:11px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;">
+          <i class="bi bi-check-circle"></i> Crear productos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <%- include('../partials/scripts') %>
+<script>
+// ══ CARGA RÁPIDA DE VARIANTES ══
+function abrirVariantes() {
+  document.getElementById('vr_nombre').value    = '';
+  document.getElementById('vr_categoria').value = '';
+  document.getElementById('vr_precio').value    = '';
+  document.getElementById('vr_stock').value     = '1';
+  document.getElementById('vr_sku_base').value  = '';
+  document.getElementById('vr_variantes').value = '';
+  document.getElementById('vr_sin_stock').checked = false;
+  document.getElementById('vr_pesable').checked   = false;
+  document.getElementById('vr_preview_list').style.display = 'none';
+  document.getElementById('vr_error').style.display = 'none';
+  document.getElementById('vr_preview_nombre').textContent = 'Nombre base';
+  document.getElementById('modalVariantes').classList.add('active');
+  setTimeout(() => document.getElementById('vr_nombre').focus(), 150);
+}
+
+function cerrarVariantes() {
+  document.getElementById('modalVariantes').classList.remove('active');
+}
+
+document.getElementById('vr_nombre').addEventListener('input', function() {
+  document.getElementById('vr_preview_nombre').textContent = this.value.trim() || 'Nombre base';
+});
+
+function vrAgregarSugeridas(lista) {
+  const ta   = document.getElementById('vr_variantes');
+  const prev = ta.value.trim();
+  ta.value   = prev ? prev + '\n' + lista.join('\n') : lista.join('\n');
+}
+
+function vrObtenerVariantes() {
+  return document.getElementById('vr_variantes').value
+    .split('\n')
+    .map(v => v.trim())
+    .filter(v => v.length > 0);
+}
+
+function vrPreview() {
+  const nombre    = document.getElementById('vr_nombre').value.trim();
+  const precio    = parseFloat(document.getElementById('vr_precio').value);
+  const variantes = vrObtenerVariantes();
+  const errEl     = document.getElementById('vr_error');
+
+  errEl.style.display = 'none';
+
+  if (!nombre) { errEl.textContent = 'El nombre base es obligatorio'; errEl.style.display = 'block'; return; }
+  if (!precio || precio <= 0) { errEl.textContent = 'El precio es obligatorio'; errEl.style.display = 'block'; return; }
+  if (!variantes.length) { errEl.textContent = 'Agregá al menos una variante'; errEl.style.display = 'block'; return; }
+
+  const skuBase = document.getElementById('vr_sku_base').value.trim();
+  const stock   = parseInt(document.getElementById('vr_stock').value) || 0;
+  const fmt     = n => '$' + Number(n).toLocaleString('es-AR', {minimumFractionDigits:0});
+
+  const items = variantes.map((v, i) => {
+    const sku = skuBase ? `${skuBase}-${v.replace(/\s+/g,'-').toUpperCase()}` : `VAR-${Date.now()}-${i}`;
+    return { nombre: `${nombre} ${v}`, sku, precio, stock };
+  });
+
+  document.getElementById('vr_preview_items').innerHTML = items.map(it =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border-color);font-size:13px;">
+      <span style="color:var(--text-primary);font-weight:600;">${it.nombre}</span>
+      <div style="display:flex;gap:12px;color:var(--text-secondary);font-size:12px;">
+        <span style="font-family:var(--font-mono);">${it.sku}</span>
+        <span style="color:var(--color-primary);font-weight:700;">${fmt(it.precio)}</span>
+        <span>Stock: ${it.stock}</span>
+      </div>
+    </div>`
+  ).join('');
+
+  document.getElementById('vr_preview_list').style.display = 'block';
+}
+
+async function vrGuardar() {
+  const nombre    = document.getElementById('vr_nombre').value.trim();
+  const precio    = parseFloat(document.getElementById('vr_precio').value);
+  const variantes = vrObtenerVariantes();
+  const errEl     = document.getElementById('vr_error');
+  const btn       = document.getElementById('btnVrGuardar');
+
+  errEl.style.display = 'none';
+  if (!nombre) { errEl.textContent = 'El nombre base es obligatorio'; errEl.style.display = 'block'; return; }
+  if (!precio || precio <= 0) { errEl.textContent = 'El precio es obligatorio'; errEl.style.display = 'block'; return; }
+  if (!variantes.length) { errEl.textContent = 'Agregá al menos una variante'; errEl.style.display = 'block'; return; }
+
+  const skuBase       = document.getElementById('vr_sku_base').value.trim();
+  const stock         = parseInt(document.getElementById('vr_stock').value) || 0;
+  const categoria     = document.getElementById('vr_categoria').value.trim();
+  const sinStock      = document.getElementById('vr_sin_stock').checked ? 1 : 0;
+  const pesable       = document.getElementById('vr_pesable').checked ? 1 : 0;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:modalSpin .7s linear infinite;"></span> Creando...';
+
+  let ok = 0, errors = [];
+
+  for (let i = 0; i < variantes.length; i++) {
+    const v   = variantes[i];
+    const sku = skuBase
+      ? `${skuBase}-${v.replace(/\s+/g,'-').toUpperCase()}`
+      : `VAR-${Date.now()}-${i}`;
+
+    try {
+      const r = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku,
+          name: `${nombre} ${v}`,
+          price: precio,
+          category: categoria || null,
+          stock,
+          pesable,
+          venta_sin_stock: sinStock,
+          descripcion: null,
+        })
+      });
+      if (r.ok) { ok++; }
+      else {
+        const d = await r.json();
+        errors.push(`${v}: ${d.error || 'Error'}`);
+      }
+    } catch(e) {
+      errors.push(`${v}: ${e.message}`);
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle"></i> Crear productos';
+
+  if (errors.length) {
+    errEl.textContent = `${ok} creados. Errores: ${errors.join(', ')}`;
+    errEl.style.display = 'block';
+  }
+
+  if (ok > 0) {
+    cerrarVariantes();
+    try {
+      const rv = await fetch('/api/products?limit=9999');
+      if (rv.ok) { _allProducts = await rv.json(); renderTable(_allProducts); }
+    } catch(e) { location.reload(); }
+    showToast(`✅ ${ok} producto${ok!==1?'s':''} creado${ok!==1?'s':''}`, 'success');
+  }
+}
+</script>

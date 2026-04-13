@@ -4,6 +4,15 @@ const { get, all, run } = require('../db');
 
 const SALT_ROUNDS = 10;
 
+// Secciones que se pueden restringir a empleados
+const SECCIONES = [
+  'dashboard', 'ventas', 'historial', 'caja', 'clientes', 'presupuestos',
+  'inventario', 'stock', 'proveedores', 'gastos'
+];
+
+// Permisos por defecto para empleados nuevos
+const PERMISOS_DEFAULT_EMPLEADO = ['dashboard', 'ventas', 'historial', 'caja'];
+
 /* ── Crear tabla + usuario admin inicial ── */
 function initUsersTable() {
   run(`
@@ -18,6 +27,9 @@ function initUsersTable() {
     )
   `);
 
+  // Migración: agregar columna permisos si no existe
+  try { run(`ALTER TABLE users ADD COLUMN permisos TEXT DEFAULT NULL`); } catch(e) {}
+
   // Insertar admin inicial solo si no existe ningún usuario
   const existe = get('SELECT id FROM users LIMIT 1');
   if (!existe) {
@@ -27,6 +39,17 @@ function initUsersTable() {
       ['admin', hash, 'Administrador', 'admin']
     );
     console.log('[Auth] Usuario admin creado — contraseña: admin123');
+  }
+}
+
+/* ── Parsear permisos JSON → array ── */
+function parsePermisos(user) {
+  if (user.role === 'admin') return null; // admin ve todo
+  try {
+    if (!user.permisos) return PERMISOS_DEFAULT_EMPLEADO;
+    return JSON.parse(user.permisos);
+  } catch(e) {
+    return PERMISOS_DEFAULT_EMPLEADO;
   }
 }
 
@@ -40,33 +63,54 @@ function login(username, password) {
   const ok = bcrypt.compareSync(password, user.password);
   if (!ok) return null;
   const { password: _, ...safe } = user;
+  safe.permisosArray = parsePermisos(safe);
   return safe;
 }
 
 /* ── CRUD usuarios ── */
 function listUsers() {
-  return all('SELECT id, username, nombre, role, activo, created_at FROM users ORDER BY id');
+  return all('SELECT id, username, nombre, role, activo, permisos, created_at FROM users ORDER BY id');
 }
 
 function findById(id) {
-  return get('SELECT id, username, nombre, role, activo FROM users WHERE id = ?', [id]);
+  return get('SELECT id, username, nombre, role, activo, permisos FROM users WHERE id = ?', [id]);
 }
 
-function createUser({ username, password, nombre, role }) {
+function createUser({ username, password, nombre, role, permisos }) {
   const existing = get('SELECT id FROM users WHERE username = ?', [username.trim().toLowerCase()]);
   if (existing) throw new Error('El nombre de usuario ya existe');
   const hash = bcrypt.hashSync(password, SALT_ROUNDS);
+  // permisos solo aplica a empleados
+  const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
+    ? JSON.stringify(permisos)
+    : null;
   const r = run(
-    'INSERT INTO users (username, password, nombre, role) VALUES (?, ?, ?, ?)',
-    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado']
+    'INSERT INTO users (username, password, nombre, role, permisos) VALUES (?, ?, ?, ?, ?)',
+    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON]
   );
   return findById(r.lastInsertRowid);
 }
 
-function updateUser(id, { nombre, role, activo }) {
+function updateUser(id, { nombre, role, activo, permisos }) {
+  const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
+    ? JSON.stringify(permisos)
+    : (role === 'admin' ? null : undefined);
+
   run(
-    'UPDATE users SET nombre = COALESCE(?, nombre), role = COALESCE(?, role), activo = COALESCE(?, activo) WHERE id = ?',
-    [nombre ?? null, role ?? null, activo ?? null, id]
+    `UPDATE users SET
+      nombre  = COALESCE(?, nombre),
+      role    = COALESCE(?, role),
+      activo  = COALESCE(?, activo),
+      permisos = CASE WHEN ? IS NOT NULL THEN ? ELSE permisos END
+    WHERE id = ?`,
+    [
+      nombre ?? null,
+      role ?? null,
+      activo ?? null,
+      permisosJSON !== undefined ? permisosJSON : null,
+      permisosJSON !== undefined ? permisosJSON : null,
+      id
+    ]
   );
   return findById(id);
 }
@@ -77,7 +121,6 @@ function changePassword(id, newPassword) {
 }
 
 function deleteUser(id) {
-  // No se puede eliminar el último admin
   const admins = all("SELECT id FROM users WHERE role = 'admin' AND activo = 1");
   const target = findById(id);
   if (target?.role === 'admin' && admins.length <= 1) {
@@ -86,4 +129,8 @@ function deleteUser(id) {
   run('DELETE FROM users WHERE id = ?', [id]);
 }
 
-module.exports = { initUsersTable, login, listUsers, findById, createUser, updateUser, changePassword, deleteUser };
+module.exports = {
+  initUsersTable, login, listUsers, findById,
+  createUser, updateUser, changePassword, deleteUser,
+  parsePermisos, SECCIONES, PERMISOS_DEFAULT_EMPLEADO
+};

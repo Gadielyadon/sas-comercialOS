@@ -8,7 +8,7 @@ router.get('/', (req, res) => {
     const { q, limit } = req.query;
 
     if (q) {
-      const l = limit ? parseInt(limit, 10) : 10;
+      const l = limit ? Math.min(parseInt(limit, 10), 3500) : 3500;
       const results = productsService
         .list()
         .filter(
@@ -59,6 +59,7 @@ router.post('/', (req, res) => {
       price_promo = null,
       en_promo = 0,
       imagen = null,
+      price_tarjeta = null,
     } = req.body || {};
 
     if (!sku || !name || price === undefined || stock === undefined) {
@@ -66,21 +67,13 @@ router.post('/', (req, res) => {
     }
 
     const product = productsService.create({
-      sku,
-      name,
-      price,
-      category,
-      stock,
-      iva,
-      ieps,
-      pesable,
-      descripcion,
-      sucursal_id,
-      price_cost,
-      margen,
-      price_promo,
-      en_promo,
-      imagen,
+      sku, name, price, category, stock,
+      iva, ieps, pesable, descripcion, sucursal_id,
+      price_cost, margen, price_promo, en_promo, imagen,
+      price_mayorista: req.body.price_mayorista ?? null,
+      qty_mayorista:   req.body.qty_mayorista   ?? null,
+      venta_sin_stock: req.body.venta_sin_stock  ?? 0,
+      price_tarjeta,
     });
 
     res.status(201).json(product);
@@ -106,37 +99,18 @@ router.put('/:sku', (req, res) => {
     }
 
     const {
-      name,
-      price,
-      category,
-      stock,
-      iva,
-      ieps,
-      pesable,
-      descripcion,
-      price_cost,
-      margen,
-      price_promo,
-      en_promo,
-      sucursal_id,
-      imagen,
+      name, price, category, stock,
+      iva, ieps, pesable, descripcion,
+      price_cost, margen, price_promo, en_promo,
+      sucursal_id, imagen, price_mayorista,
+      qty_mayorista, venta_sin_stock, price_tarjeta,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
-      name,
-      price,
-      category,
-      stock,
-      iva,
-      ieps,
-      pesable,
-      descripcion,
-      price_cost,
-      margen,
-      price_promo,
-      en_promo,
-      sucursal_id,
+      name, price, category, stock, iva, ieps, pesable, descripcion,
+      price_cost, margen, price_promo, en_promo, sucursal_id,
       imagen: imagen !== undefined ? imagen : undefined,
+      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta,
     });
 
     res.json(updated);

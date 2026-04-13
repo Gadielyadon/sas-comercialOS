@@ -1,0 +1,410 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+.tab-bar { display:flex;gap:6px;margin-bottom:18px; }
+.tab-btn { padding:8px 18px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;display:flex;align-items:center;gap:6px; }
+.tab-btn.active { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
+.tab-btn.tab-faltante.active { background:#f59e0b;border-color:#f59e0b;color:#fff; }
+
+.pedido-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:box-shadow .15s;position:relative; }
+.pedido-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.pedido-card.urgente { border-left:4px solid #ef4444; }
+.pedido-card.listo   { opacity:.6; }
+.pedido-card.entregado { opacity:.5; }
+
+.prioridad-badge { font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px; }
+.prioridad-urgente { background:rgba(239,68,68,.12);color:#dc2626; }
+.prioridad-normal  { background:rgba(27,79,216,.1);color:var(--color-primary); }
+.prioridad-baja    { background:rgba(100,116,139,.1);color:var(--text-secondary); }
+
+.estado-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
+.estado-pendiente { background:rgba(245,158,11,.12);color:#d97706; }
+.estado-listo     { background:rgba(16,185,129,.12);color:#059669; }
+.estado-entregado { background:rgba(100,116,139,.1);color:var(--text-secondary); }
+.estado-cancelado { background:rgba(239,68,68,.08);color:#ef4444; }
+
+.pedido-titulo { font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:3px; }
+.pedido-meta   { font-size:12px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+.pedido-meta i { font-size:11px; }
+.pedido-actions { display:flex;gap:5px;flex-shrink:0; }
+.btn-accion { width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .12s; }
+.btn-accion:hover { border-color:var(--color-primary);color:var(--color-primary);background:rgba(27,79,216,.06); }
+.btn-accion.danger:hover { border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.06); }
+.btn-accion.success { border-color:rgba(16,185,129,.4);color:#10b981;background:rgba(16,185,129,.06); }
+
+.empty-pedidos { text-align:center;padding:48px 20px;color:var(--text-muted); }
+.empty-pedidos i { font-size:36px;display:block;margin-bottom:10px;opacity:.4; }
+
+.recordatorio-chip { background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#d97706;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px; }
+
+@media print {
+  .no-print { display:none !important; }
+  .sidebar  { display:none !important; }
+  .app-header { display:none !important; }
+  .main-content { margin-left:0 !important; padding-top:0 !important; }
+  .pedido-card { break-inside:avoid;border:1px solid #ccc !important;box-shadow:none !important; }
+  .tab-bar { display:none !important; }
+  body { background:#fff !important; }
+}
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active: 'pedidos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Pedidos y Faltantes', user }) %>
+
+    <main class="page-body">
+
+      <div class="page-header no-print">
+        <div class="page-header-title">
+          <h2>Pedidos y Faltantes</h2>
+          <p>Anotá pedidos de clientes y productos que te faltan comprar.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="window.print()" class="btn-action btn-action-outline">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <button onclick="abrirModal('faltante')" class="btn-action btn-action-outline" style="color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06);">
+            <i class="bi bi-exclamation-circle"></i> + Faltante
+          </button>
+          <button onclick="abrirModal('pedido')" class="btn-action btn-action-primary">
+            <i class="bi bi-plus-lg"></i> + Pedido
+          </button>
+        </div>
+      </div>
+
+      <% if (recordatorios > 0) { %>
+      <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;" class="no-print">
+        <i class="bi bi-bell-fill" style="color:#d97706;font-size:16px;"></i>
+        <span style="font-size:13px;font-weight:600;color:#d97706;">
+          Tenés <strong><%= recordatorios %></strong> pedido<%= recordatorios > 1 ? 's' : '' %> con recordatorio para hoy o vencido<%= recordatorios > 1 ? 's' : '' %>.
+        </span>
+      </div>
+      <% } %>
+
+      <!-- Tabs -->
+      <div class="tab-bar no-print">
+        <button class="tab-btn active" id="tabPedidos" onclick="setTab('pedidos')">
+          <i class="bi bi-journal-check"></i> Pedidos
+          <% if (pedidos.filter(p => p.estado === 'pendiente').length > 0) { %>
+            <span style="background:var(--color-primary);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;">
+              <%= pedidos.filter(p => p.estado === 'pendiente').length %>
+            </span>
+          <% } %>
+        </button>
+        <button class="tab-btn tab-faltante" id="tabFaltantes" onclick="setTab('faltantes')">
+          <i class="bi bi-cart-x"></i> Faltantes / Compras
+          <% if (faltantes.filter(p => p.estado === 'pendiente').length > 0) { %>
+            <span style="background:#f59e0b;color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;">
+              <%= faltantes.filter(p => p.estado === 'pendiente').length %>
+            </span>
+          <% } %>
+        </button>
+      </div>
+
+      <!-- Pedidos -->
+      <div id="seccionPedidos">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:10px;" class="no-print">
+          Pedidos de clientes
+        </div>
+        <h3 style="display:none;" class="print-only" style="margin-bottom:8px;">Pedidos de Clientes</h3>
+        <% if (pedidos.length === 0) { %>
+          <div class="empty-pedidos no-print">
+            <i class="bi bi-journal-x"></i>
+            <p>No hay pedidos registrados.<br>Tocá "+ Pedido" para agregar uno.</p>
+          </div>
+        <% } else { %>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="listaPedidos">
+            <% pedidos.forEach(p => { %>
+              <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %> <%= p.estado %>" data-id="<%= p.id %>">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;">
+                    <span class="prioridad-badge prioridad-<%= p.prioridad %>">
+                      <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
+                    </span>
+                    <span class="estado-badge estado-<%= p.estado %>"><%= p.estado.charAt(0).toUpperCase() + p.estado.slice(1) %></span>
+                  </div>
+                  <div class="pedido-titulo"><%= p.titulo %></div>
+                  <div class="pedido-meta">
+                    <% if (p.cliente) { %><span><i class="bi bi-person"></i> <%= p.cliente %></span><% } %>
+                    <% if (p.cantidad) { %><span><i class="bi bi-box"></i> <%= p.cantidad %></span><% } %>
+                    <% if (p.fecha_entrega) { %><span><i class="bi bi-calendar3"></i> Entrega: <%= p.fecha_entrega %></span><% } %>
+                    <% if (p.recordatorio) { %>
+                      <span class="recordatorio-chip"><i class="bi bi-bell"></i> Recordatorio: <%= p.recordatorio %></span>
+                    <% } %>
+                  </div>
+                  <% if (p.descripcion) { %>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:5px;font-style:italic;"><%= p.descripcion %></div>
+                  <% } %>
+                  <% if (p.notas) { %>
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;background:var(--bg-body);padding:5px 9px;border-radius:6px;border-left:3px solid var(--border-color);">
+                      📝 <%= p.notas %>
+                    </div>
+                  <% } %>
+                </div>
+                <div class="pedido-actions no-print">
+                  <% if (p.estado === 'pendiente') { %>
+                    <button class="btn-accion success" onclick="marcarListo(<%= p.id %>)" title="Marcar como listo"><i class="bi bi-check-lg"></i></button>
+                  <% } %>
+                  <% if (p.estado === 'listo') { %>
+                    <button class="btn-accion success" onclick="marcarEntregado(<%= p.id %>)" title="Marcar como entregado" style="border-color:rgba(99,102,241,.4);color:#6366f1;background:rgba(99,102,241,.06);"><i class="bi bi-bag-check"></i></button>
+                  <% } %>
+                  <button class="btn-accion" onclick="editarItem(<%= JSON.stringify(p).replace(/\"/g,'&quot;') %>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-accion danger" onclick="eliminarItem(<%= p.id %>)" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Faltantes -->
+      <div id="seccionFaltantes" style="display:none;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:10px;" class="no-print">
+          Lista de faltantes / compras
+        </div>
+        <% if (faltantes.length === 0) { %>
+          <div class="empty-pedidos no-print">
+            <i class="bi bi-cart-x"></i>
+            <p>No hay faltantes registrados.<br>Tocá "+ Faltante" para agregar uno.</p>
+          </div>
+        <% } else { %>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="listaFaltantes">
+            <% faltantes.forEach(p => { %>
+              <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %> <%= p.estado %>" data-id="<%= p.id %>">
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;">
+                    <span class="prioridad-badge prioridad-<%= p.prioridad %>">
+                      <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
+                    </span>
+                    <span class="estado-badge estado-<%= p.estado %>"><%= p.estado.charAt(0).toUpperCase() + p.estado.slice(1) %></span>
+                  </div>
+                  <div class="pedido-titulo"><%= p.titulo %></div>
+                  <div class="pedido-meta">
+                    <% if (p.cantidad) { %><span><i class="bi bi-box"></i> <%= p.cantidad %></span><% } %>
+                    <% if (p.proveedor) { %><span><i class="bi bi-truck"></i> <%= p.proveedor %></span><% } %>
+                    <% if (p.recordatorio) { %>
+                      <span class="recordatorio-chip"><i class="bi bi-bell"></i> Recordatorio: <%= p.recordatorio %></span>
+                    <% } %>
+                  </div>
+                  <% if (p.descripcion) { %>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:5px;font-style:italic;"><%= p.descripcion %></div>
+                  <% } %>
+                  <% if (p.notas) { %>
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;background:var(--bg-body);padding:5px 9px;border-radius:6px;border-left:3px solid var(--border-color);">
+                      📝 <%= p.notas %>
+                    </div>
+                  <% } %>
+                </div>
+                <div class="pedido-actions no-print">
+                  <% if (p.estado === 'pendiente') { %>
+                    <button class="btn-accion success" onclick="marcarListo(<%= p.id %>)" title="Marcar como conseguido"><i class="bi bi-check-lg"></i></button>
+                  <% } %>
+                  <button class="btn-accion" onclick="editarItem(<%= JSON.stringify(p).replace(/\"/g,'&quot;') %>)" title="Editar"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-accion danger" onclick="eliminarItem(<%= p.id %>)" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- ══ MODAL NUEVO / EDITAR ══ -->
+<div class="sale-overlay" id="modalPedido" onclick="if(event.target.id==='modalPedido')cerrarModal()">
+  <div class="sale-modal" style="max-width:500px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div id="modalIcono" style="width:36px;height:36px;border-radius:10px;background:rgba(27,79,216,.12);display:flex;align-items:center;justify-content:center;color:var(--color-primary);font-size:16px;">
+          <i class="bi bi-journal-check"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalTitulo">Nuevo Pedido</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Completá los datos</div>
+        </div>
+      </div>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <input type="hidden" id="m_id">
+    <input type="hidden" id="m_tipo" value="pedido">
+
+    <div style="display:flex;flex-direction:column;gap:11px;">
+
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">¿Qué es? *</label>
+        <input type="text" id="m_titulo" placeholder="Ej: 2kg de queso cremoso / Aceite girasol 1L"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:600;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Cantidad</label>
+          <input type="text" id="m_cantidad" placeholder="Ej: 2kg, 3 unidades"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Prioridad</label>
+          <select id="m_prioridad" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;font-family:var(--font-body);">
+            <option value="normal">Normal</option>
+            <option value="urgente">🔴 Urgente</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="campoCliente">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Cliente</label>
+        <input type="text" id="m_cliente" placeholder="Nombre del cliente (opcional)"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+
+      <div id="campoProveedor" style="display:none;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Proveedor</label>
+        <input type="text" id="m_proveedor" placeholder="¿Dónde lo comprás? (opcional)"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div id="campoFechaEntrega">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Fecha de entrega</label>
+          <input type="date" id="m_fecha_entrega"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="bi bi-bell" style="color:#d97706;"></i> Recordatorio</label>
+          <input type="date" id="m_recordatorio"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Descripción / Notas</label>
+        <textarea id="m_descripcion" placeholder="Detalles adicionales..." rows="2"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:var(--font-body);"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button onclick="guardar()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:11px;">
+        <i class="bi bi-check-lg"></i> <span id="btnGuardarTxt">Guardar</span>
+      </button>
+      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _tabActual = 'pedidos';
+
+function setTab(tab) {
+  _tabActual = tab;
+  document.getElementById('seccionPedidos').style.display   = tab === 'pedidos'   ? 'block' : 'none';
+  document.getElementById('seccionFaltantes').style.display = tab === 'faltantes' ? 'block' : 'none';
+  document.getElementById('tabPedidos').classList.toggle('active', tab === 'pedidos');
+  document.getElementById('tabFaltantes').classList.toggle('active', tab === 'faltantes');
+}
+
+function abrirModal(tipo, item = null) {
+  document.getElementById('m_id').value           = item?.id || '';
+  document.getElementById('m_tipo').value         = tipo;
+  document.getElementById('m_titulo').value       = item?.titulo || '';
+  document.getElementById('m_cantidad').value     = item?.cantidad || '';
+  document.getElementById('m_prioridad').value    = item?.prioridad || 'normal';
+  document.getElementById('m_cliente').value      = item?.cliente || '';
+  document.getElementById('m_proveedor').value    = item?.proveedor || '';
+  document.getElementById('m_fecha_entrega').value= item?.fecha_entrega || '';
+  document.getElementById('m_recordatorio').value = item?.recordatorio || '';
+  document.getElementById('m_descripcion').value  = item?.descripcion || '';
+
+  const esPedido = tipo === 'pedido';
+  document.getElementById('campoCliente').style.display   = esPedido ? 'block' : 'none';
+  document.getElementById('campoProveedor').style.display = esPedido ? 'none' : 'block';
+  document.getElementById('campoFechaEntrega').style.display = esPedido ? 'block' : 'none';
+
+  document.getElementById('modalTitulo').textContent = item
+    ? (esPedido ? 'Editar Pedido' : 'Editar Faltante')
+    : (esPedido ? 'Nuevo Pedido' : 'Nuevo Faltante');
+  document.getElementById('btnGuardarTxt').textContent = item ? 'Guardar cambios' : 'Guardar';
+
+  const icono = document.getElementById('modalIcono');
+  icono.style.background = esPedido ? 'rgba(27,79,216,.12)' : 'rgba(245,158,11,.12)';
+  icono.style.color      = esPedido ? 'var(--color-primary)' : '#d97706';
+  icono.innerHTML        = esPedido ? '<i class="bi bi-journal-check"></i>' : '<i class="bi bi-cart-x"></i>';
+
+  document.getElementById('modalPedido').classList.add('open');
+  setTimeout(() => document.getElementById('m_titulo').focus(), 80);
+}
+
+function cerrarModal() { document.getElementById('modalPedido').classList.remove('open'); }
+
+function editarItem(p) { abrirModal(p.tipo, p); }
+
+async function guardar() {
+  const titulo = document.getElementById('m_titulo').value.trim();
+  if (!titulo) { alert('El campo "¿Qué es?" es obligatorio'); return; }
+
+  const id   = document.getElementById('m_id').value;
+  const body = {
+    tipo:          document.getElementById('m_tipo').value,
+    titulo,
+    cantidad:      document.getElementById('m_cantidad').value.trim() || null,
+    prioridad:     document.getElementById('m_prioridad').value,
+    cliente:       document.getElementById('m_cliente').value.trim() || null,
+    proveedor:     document.getElementById('m_proveedor').value.trim() || null,
+    fecha_entrega: document.getElementById('m_fecha_entrega').value || null,
+    recordatorio:  document.getElementById('m_recordatorio').value || null,
+    descripcion:   document.getElementById('m_descripcion').value.trim() || null,
+  };
+
+  const url    = id ? `/pedidos/api/${id}` : '/pedidos/api';
+  const method = id ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error'); return; }
+  location.reload();
+}
+
+async function marcarListo(id) {
+  await fetch(`/pedidos/api/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:'listo'}) });
+  location.reload();
+}
+
+async function marcarEntregado(id) {
+  await fetch(`/pedidos/api/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:'entregado'}) });
+  location.reload();
+}
+
+async function eliminarItem(id) {
+  if (!confirm('¿Eliminar este ítem?')) return;
+  await fetch(`/pedidos/api/${id}`, { method:'DELETE' });
+  location.reload();
+}
+
+// Badge en sidebar
+(async function() {
+  try {
+    const r = await fetch('/pedidos/api/badge');
+    const d = await r.json();
+    const badge = document.getElementById('pedidosBadge');
+    if (badge && (d.urgentes + d.recordatorios) > 0) {
+      badge.textContent = d.urgentes + d.recordatorios;
+      badge.style.display = 'flex';
+    }
+  } catch(e) {}
+})();
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+</script>
+

@@ -12,8 +12,8 @@
   transition: all .15s;
   font-family: var(--font-body);
 }
-.filtro-chip:hover { background: var(--bg-body); color: var(--text-primary); }
-.filtro-chip.on    { background: var(--color-action); color: #fff; }
+.filtro-chip:hover { background: var(--bg-surface-2); color: var(--text-primary); }
+.filtro-chip.on    { background: var(--color-primary); color: #fff; }
 </style>
 
 <div class="app-wrapper">
@@ -29,9 +29,14 @@
           <h2>Clientes</h2>
           <p>Gestión de clientes y cuentas corrientes.</p>
         </div>
-        <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
-          <i class="bi bi-person-plus"></i> Nuevo Cliente
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-action btn-action-outline" onclick="abrirImportarClientes()">
+            <i class="bi bi-file-earmark-excel"></i> Importar Excel
+          </button>
+          <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
+            <i class="bi bi-person-plus"></i> Nuevo Cliente
+          </button>
+        </div>
       </div>
 
       <!-- Buscador + Filtros + Exportar -->
@@ -42,7 +47,7 @@
         </div>
 
         <!-- Filtro estado -->
-        <div style="display:flex;gap:5px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px;">
+        <div style="display:flex;gap:5px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px;">
           <button class="filtro-chip on" data-filtro="todos"    onclick="setFiltro(this)">Todos</button>
           <button class="filtro-chip"    data-filtro="deudores" onclick="setFiltro(this)"><i class="bi bi-exclamation-circle" style="color:#ef4444;margin-right:4px;"></i>Deudores</button>
           <button class="filtro-chip"    data-filtro="al-dia"   onclick="setFiltro(this)"><i class="bi bi-check-circle" style="color:#10b981;margin-right:4px;"></i>Al día</button>
@@ -81,6 +86,7 @@
                 <th>Nombre</th>
                 <th>CUIT / DNI</th>
                 <th>Saldo</th>
+                <th>Límite crédito</th>
                 <th style="width:240px">Acciones</th>
               </tr>
             </thead>
@@ -91,7 +97,7 @@
                   <td>
                     <strong><%= c.nombre %></strong>
                     <% if (c.id === 1) { %>
-                      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(0,180,216,.1);color:var(--color-action);margin-left:6px;font-weight:600;">Default</span>
+                      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);margin-left:6px;font-weight:600;">Default</span>
                     <% } %>
                   </td>
                   <td style="color:var(--text-secondary);font-family:var(--font-mono)"><%= c.documento || '—' %></td>
@@ -102,6 +108,21 @@
                       <span class="badge-status badge-pendiente">A favor $<%= Math.abs(Number(c.saldo)).toFixed(2) %></span>
                     <% } else { %>
                       <span class="badge-status badge-pagado">Al día</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (c.limite_credito != null) { %>
+                      <% const usado = Math.max(0, c.saldo || 0); %>
+                      <% const pct = Math.min(100, Math.round((usado / c.limite_credito) * 100)); %>
+                      <% const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981'; %>
+                      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">
+                        $<%= Number(usado).toLocaleString('es-AR') %> / $<%= Number(c.limite_credito).toLocaleString('es-AR') %>
+                      </div>
+                      <div style="width:100%;max-width:120px;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden;">
+                        <div style="width:<%= pct %>%;height:100%;background:<%= color %>;border-radius:3px;transition:width .3s;"></div>
+                      </div>
+                    <% } else { %>
+                      <span style="color:var(--text-muted);font-size:12px;">Sin límite</span>
                     <% } %>
                   </td>
                   <td>
@@ -121,7 +142,7 @@
                         </button>
                       <% } %>
                       <% if (c.id !== 1) { %>
-                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%= JSON.stringify(c) %>)" title="Editar" style="color:var(--color-action);border-color:rgba(0,180,216,.3);">
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirEditar(<%= JSON.stringify(c) %>)" title="Editar" style="color:var(--color-primary);border-color:rgba(27,79,216,.3);">
                           <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn-action btn-action-ghost btn-sm" onclick="eliminar(<%= c.id %>)" title="Eliminar">
@@ -149,7 +170,7 @@
   <div class="sale-modal" style="max-width:440px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
           <i class="bi bi-person"></i>
         </div>
         <div>
@@ -161,16 +182,56 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Nombre *</label>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Nombre *</label>
         <input type="text" id="c_nombre" placeholder="Nombre completo o razón social"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;transition:border .2s;"
-          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">CUIT / DNI</label>
+          <input type="text" id="c_documento" placeholder="Opcional"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Teléfono</label>
+          <input type="text" id="c_telefono" placeholder="Opcional"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
       </div>
       <div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">CUIT / DNI</label>
-        <input type="text" id="c_documento" placeholder="Opcional"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;transition:border .2s;"
-          onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Email</label>
+        <input type="email" id="c_email" placeholder="Opcional"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Dirección</label>
+        <input type="text" id="c_direccion" placeholder="Opcional"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+      <!-- Límite de crédito -->
+      <div style="background:rgba(27,79,216,.04);border:1.5px solid rgba(27,79,216,.15);border-radius:var(--radius-md);padding:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:var(--color-primary);text-transform:uppercase;letter-spacing:.5px;">
+            <i class="bi bi-shield-check" style="margin-right:5px;"></i>Límite de crédito (cuenta corriente)
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
+            Activar
+            <input type="checkbox" id="c_limite_check" onchange="toggleLimiteCredito(this)" style="cursor:pointer;">
+          </label>
+        </div>
+        <div id="c_limite_off" style="font-size:11.5px;color:var(--text-secondary);font-style:italic;">Sin límite — puede fiarse sin restricción</div>
+        <div id="c_limite_fields" style="display:none;">
+          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:5px;">Monto máximo de deuda ($)</label>
+          <input type="number" id="c_limite_credito" placeholder="Ej: 50000" min="0" step="100"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:16px;font-weight:700;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='rgba(27,79,216,.3)'">
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Si el cliente supera este monto, el sistema bloquea la venta.</div>
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
@@ -207,15 +268,15 @@
 
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Monto ($) *</label>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Monto ($) *</label>
         <input type="number" id="cargo_monto" min="0.01" step="0.01" placeholder="0.00"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Descripción</label>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
         <input type="text" id="cargo_desc" placeholder="Ej: Bolsa de harina, Semana 1…"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
     </div>
@@ -226,6 +287,88 @@
         <i class="bi bi-plus-circle-fill"></i> Registrar cargo
       </button>
       <button onclick="cerrarModalCargo()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL IMPORTAR CLIENTES
+══════════════════════════════════════════ -->
+<div class="sale-overlay" id="modalImportarClientes" onclick="if(event.target.id==='modalImportarClientes')cerrarImportarClientes()">
+  <div class="sale-modal" style="max-width:680px;text-align:left;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:18px;">
+          <i class="bi bi-file-earmark-excel"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Importar Clientes</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="imp_cli_subtitle">Seleccioná un archivo .xlsx o .csv</div>
+        </div>
+      </div>
+      <button onclick="cerrarImportarClientes()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Step 1: subir archivo -->
+    <div id="imp_cli_step1">
+      <div style="border:2px dashed var(--border-color);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s;"
+        onclick="document.getElementById('imp_cli_file').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--color-primary)'"
+        ondragleave="this.style.borderColor='var(--border-color)'"
+        ondrop="event.preventDefault();this.style.borderColor='var(--border-color)';impCliFileSelected({target:{files:event.dataTransfer.files}})">
+        <i class="bi bi-cloud-upload" style="font-size:32px;color:var(--text-muted);display:block;margin-bottom:8px;"></i>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Arrastrá el archivo o hacé click</div>
+        <div style="font-size:12px;color:var(--text-secondary);">.xlsx · .xls · .csv — máx. 5MB</div>
+      </div>
+      <input type="file" id="imp_cli_file" accept=".xlsx,.xls,.csv" style="display:none" onchange="impCliFileSelected(event)">
+
+      <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text-secondary);">¿No tenés el formato? Descargá la plantilla:</span>
+        <button onclick="descargarPlantillaClientes()"
+          style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.06);color:#059669;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-download"></i> Plantilla Excel
+        </button>
+      </div>
+
+      <div style="margin-top:12px;background:var(--bg-surface-2);border-radius:8px;padding:10px 14px;font-size:11.5px;color:var(--text-secondary);">
+        <strong>Columnas reconocidas:</strong> nombre · documento · telefono · email · direccion · limite_credito<br>
+        Si el cliente ya existe (mismo documento o nombre), se actualiza. Si no existe, se crea.
+      </div>
+    </div>
+
+    <!-- Step 2: preview -->
+    <div id="imp_cli_step2" style="display:none;">
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <span id="imp_cli_countNew"    style="padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;font-size:12px;font-weight:700;">0 nuevos</span>
+        <span id="imp_cli_countUpdate" style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.1);color:#d97706;font-size:12px;font-weight:700;">0 actualizar</span>
+        <span id="imp_cli_countError"  style="padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444;font-size:12px;font-weight:700;">0 errores</span>
+      </div>
+      <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:320px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead style="background:var(--bg-surface-2);position:sticky;top:0;">
+            <tr>
+              <th style="padding:8px 12px;text-align:left;font-weight:700;color:var(--text-secondary);">Estado</th>
+              <th style="padding:8px 12px;text-align:left;">Nombre</th>
+              <th style="padding:8px 12px;text-align:left;">Documento</th>
+              <th style="padding:8px 12px;text-align:left;">Teléfono</th>
+              <th style="padding:8px 12px;text-align:right;">Límite</th>
+            </tr>
+          </thead>
+          <tbody id="imp_cli_previewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="imp_cli_footer" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <span id="imp_cli_footerInfo" style="font-size:12px;color:var(--text-secondary);"></span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="impCliVolver()" class="btn-action btn-action-outline" style="padding:9px 16px;">← Volver</button>
+        <button onclick="ejecutarImportacionClientes()" id="imp_cli_btnImportar"
+          style="padding:9px 20px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:var(--font-body);">
+          <i class="bi bi-check-lg"></i> <span id="imp_cli_btnLabel">Importar</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -258,12 +401,12 @@
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
           <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;">Monto a cobrar ($)</label>
-          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
+          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-primary);background:rgba(27,79,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
             Cobrar todo
           </button>
         </div>
         <input type="number" id="p_monto" min="0.01" step="0.01" placeholder="0.00"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
           oninput="calcRestante()">
       </div>
@@ -275,9 +418,9 @@
       </div>
 
       <div>
-        <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;">Descripción</label>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
         <input type="text" id="p_desc" placeholder="Ej: Pago en efectivo, Transferencia…"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
     </div>
@@ -296,12 +439,12 @@
      MODAL CUENTA CORRIENTE / MOVIMIENTOS
 ══════════════════════════════════════════ -->
 <div class="sale-overlay" id="modalMovimientos" onclick="if(event.target.id==='modalMovimientos')cerrarModalMovimientos()">
-  <div style="width:100%;max-width:900px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+  <div style="width:100%;max-width:900px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
           <i class="bi bi-person-lines-fill"></i>
         </div>
         <div>
@@ -328,7 +471,7 @@
     <div style="display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;">
 
       <!-- IZQUIERDA: Resumen del cliente -->
-      <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-body);">
+      <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-surface-2);">
 
         <!-- Saldo grande -->
         <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
@@ -381,22 +524,41 @@ let _movSaldo       = 0;
 /* ════════════════════════════════════
    CRUD CLIENTES
 ════════════════════════════════════ */
+function toggleLimiteCredito(cb) {
+  document.getElementById('c_limite_off').style.display    = cb.checked ? 'none'  : 'block';
+  document.getElementById('c_limite_fields').style.display = cb.checked ? 'block' : 'none';
+  if (!cb.checked) document.getElementById('c_limite_credito').value = '';
+}
+
 function abrirNuevo() {
   _editClienteId = null;
-  document.getElementById('modalClienteTitulo').textContent    = 'Nuevo Cliente';
-  document.getElementById('btnGuardarClienteTxt').textContent  = 'Guardar';
+  document.getElementById('modalClienteTitulo').textContent   = 'Nuevo Cliente';
+  document.getElementById('btnGuardarClienteTxt').textContent = 'Guardar';
   document.getElementById('c_nombre').value    = '';
   document.getElementById('c_documento').value = '';
+  document.getElementById('c_telefono').value  = '';
+  document.getElementById('c_email').value     = '';
+  document.getElementById('c_direccion').value = '';
+  document.getElementById('c_limite_check').checked = false;
+  toggleLimiteCredito(document.getElementById('c_limite_check'));
+  document.getElementById('c_limite_credito').value = '';
   document.getElementById('modalCliente').classList.add('open');
   setTimeout(() => document.getElementById('c_nombre').focus(), 80);
 }
 
 function abrirEditar(c) {
   _editClienteId = c.id;
-  document.getElementById('modalClienteTitulo').textContent    = 'Editar Cliente';
-  document.getElementById('btnGuardarClienteTxt').textContent  = 'Guardar cambios';
+  document.getElementById('modalClienteTitulo').textContent   = 'Editar Cliente';
+  document.getElementById('btnGuardarClienteTxt').textContent = 'Guardar cambios';
   document.getElementById('c_nombre').value    = c.nombre;
   document.getElementById('c_documento').value = c.documento || '';
+  document.getElementById('c_telefono').value  = c.telefono  || '';
+  document.getElementById('c_email').value     = c.email     || '';
+  document.getElementById('c_direccion').value = c.direccion || '';
+  const tieneLimit = c.limite_credito != null;
+  document.getElementById('c_limite_check').checked = tieneLimit;
+  toggleLimiteCredito(document.getElementById('c_limite_check'));
+  if (tieneLimit) document.getElementById('c_limite_credito').value = c.limite_credito;
   document.getElementById('modalCliente').classList.add('open');
   setTimeout(() => document.getElementById('c_nombre').focus(), 80);
 }
@@ -406,10 +568,16 @@ function cerrarModal() { document.getElementById('modalCliente').classList.remov
 async function guardarCliente() {
   const nombre    = document.getElementById('c_nombre').value.trim();
   const documento = document.getElementById('c_documento').value.trim();
+  const telefono  = document.getElementById('c_telefono').value.trim();
+  const email     = document.getElementById('c_email').value.trim();
+  const direccion = document.getElementById('c_direccion').value.trim();
+  const tieneLimit = document.getElementById('c_limite_check').checked;
+  const limite_credito = tieneLimit ? (parseFloat(document.getElementById('c_limite_credito').value) || null) : null;
   if (!nombre) { alert('El nombre es obligatorio'); return; }
   const url    = _editClienteId ? `/api/clientes/${_editClienteId}` : '/api/clientes';
   const method = _editClienteId ? 'PUT' : 'POST';
-  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify({nombre, documento}) });
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ nombre, documento, telefono, email, direccion, limite_credito }) });
   if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
   location.reload();
 }
@@ -571,7 +739,7 @@ async function verMovimientos(id, nombre, saldo) {
   const totalPagos  = movs.filter(m=>m.tipo==='pago').reduce((a,m)=>a+Number(m.monto),0);
   const statsEl = document.getElementById('movStats');
   if (statsEl) statsEl.innerHTML = `
-    <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
       <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="display:flex;justify-content:space-between;font-size:12.5px;">
@@ -648,7 +816,12 @@ function setFiltro(btn) {
   filtrar();
 }
 
+let _filtrarTimer = null;
 function filtrar() {
+  clearTimeout(_filtrarTimer);
+  _filtrarTimer = setTimeout(_filtrarNow, 80);
+}
+function _filtrarNow() {
   const q      = (document.getElementById('q')?.value || '').toLowerCase();
   const orden  = document.getElementById('ordenSelect')?.value || 'nombre';
   const rows   = [...document.querySelectorAll('#tablaClientes tbody tr')];
@@ -720,10 +893,10 @@ function exportarClientesPDF() {
   }).join('');
   const win = window.open('','_blank','width=800,height=600');
   win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-    <title>Clientes — ComercialOS</title>
+    <title>Clientes — AxSoft</title>
     <style>body{font-family:Arial,sans-serif;font-size:13px;margin:24px}h2{font-size:18px;margin-bottom:4px}p{color:#666;font-size:12px;margin:0 0 16px}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
   </head><body>
-    <h2>Clientes — ComercialOS</h2>
+    <h2>Clientes — AxSoft</h2>
     <p>Generado: ${new Date().toLocaleString('es-AR')} · ${rows.length} clientes</p>
     <table><thead><tr><th>ID</th><th>Nombre</th><th>Documento</th><th>Saldo</th></tr></thead>
     <tbody>${filas}</tbody></table>
@@ -772,7 +945,7 @@ function exportarEstadoCuenta(formato) {
     <title>Estado de Cuenta — ${nombre}</title>
     <style>body{font-family:Arial,sans-serif;font-size:13px;margin:28px}h2{font-size:18px;margin-bottom:2px}h2 span{font-size:14px;font-weight:400;color:#666;margin-left:10px}.saldo{font-size:22px;font-weight:800;margin:10px 0 20px;padding:12px 18px;border-radius:8px;display:inline-block;background:#fee2e2;color:#dc2626}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
   </head><body>
-    <h2>Estado de Cuenta <span>ComercialOS</span></h2>
+    <h2>Estado de Cuenta <span>AxSoft</span></h2>
     <p style="color:#666;font-size:12px;">Cliente: <strong>${nombre}</strong> · Impreso: ${new Date().toLocaleString('es-AR')}</p>
     <div class="saldo">Saldo actual: ${saldo}</div>
     <table>
@@ -798,15 +971,152 @@ document.addEventListener('keydown', e => {
   const el = document.getElementById('resumenClientes');
   if (!el) return;
   const stat = (icon, label, value, color) =>
-    `<div style="display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
+    `<div style="display:flex;align-items:center;gap:10px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
       <i class="bi ${icon}" style="font-size:18px;color:${color};"></i>
       <div><div style="font-size:11px;color:var(--text-secondary);">${label}</div>
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${value}</div></div>
     </div>`;
   el.innerHTML =
-    stat('bi-people', 'Total clientes', clientes.length, 'var(--color-action)') +
+    stat('bi-people', 'Total clientes', clientes.length, 'var(--color-primary)') +
     stat('bi-exclamation-circle', 'Con deuda', deudores.length, '#ef4444') +
     stat('bi-cash-stack', 'Deuda total', '$' + totalDeuda.toLocaleString('es-AR',{minimumFractionDigits:2}), '#dc2626') +
     stat('bi-check-circle', 'Al día', clientes.length - deudores.length, '#10b981');
 })();
+
+/* ════════════════════════════════════
+   IMPORTAR CLIENTES
+════════════════════════════════════ */
+let _impCliRows = [];
+
+function abrirImportarClientes() {
+  _impCliRows = [];
+  document.getElementById('imp_cli_step1').style.display  = 'block';
+  document.getElementById('imp_cli_step2').style.display  = 'none';
+  document.getElementById('imp_cli_footer').style.display = 'none';
+  document.getElementById('imp_cli_subtitle').textContent = 'Seleccioná un archivo .xlsx o .csv';
+  document.getElementById('imp_cli_file').value = '';
+  document.getElementById('modalImportarClientes').classList.add('open');
+}
+function cerrarImportarClientes() {
+  document.getElementById('modalImportarClientes').classList.remove('open');
+}
+function impCliVolver() {
+  document.getElementById('imp_cli_step1').style.display  = 'block';
+  document.getElementById('imp_cli_step2').style.display  = 'none';
+  document.getElementById('imp_cli_footer').style.display = 'none';
+}
+
+function _impCliNorm(k) {
+  return k.toLowerCase().trim()
+    .replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
+    .replace(/[óò]/g,'o').replace(/[úù]/g,'u')
+    .replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+}
+
+async function impCliFileSelected(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  document.getElementById('imp_cli_subtitle').textContent = 'Procesando…';
+  if (typeof XLSX === 'undefined') {
+    await new Promise((res,rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    });
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb   = XLSX.read(e.target.result, { type:'array' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const raw  = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      if (!raw.length) { alert('Archivo vacío'); return; }
+
+      _impCliRows = raw.map(r => {
+        const m = {};
+        Object.keys(r).forEach(k => { m[_impCliNorm(k)] = r[k]; });
+        // Mapear variantes de nombre en español
+        const nombre   = String(m.nombre || m.name || m.cliente || '').trim();
+        const documento= String(m.documento || m.cuit || m.dni || m.doc || '').trim();
+        const telefono = String(m.telefono || m.tel || m.phone || '').trim();
+        const email    = String(m.email || m.mail || m.correo || '').trim();
+        const direccion= String(m.direccion || m.address || m.domicilio || '').trim();
+        const limite   = parseFloat(m.limite_credito || m.limite || m.credito || '') || null;
+        const err      = !nombre ? 'Nombre vacío' : '';
+        return { nombre, documento, telefono, email, direccion, limite_credito: limite, _error: err };
+      });
+
+      // Mostrar preview
+      const countNew = _impCliRows.filter(r => !r._error).length;
+      const countErr = _impCliRows.filter(r => r._error).length;
+      document.getElementById('imp_cli_countNew').textContent    = countNew + ' a importar';
+      document.getElementById('imp_cli_countUpdate').textContent = '—';
+      document.getElementById('imp_cli_countError').textContent  = countErr + ' errores';
+
+      const tbody = document.getElementById('imp_cli_previewBody');
+      const fmt = n => n ? '$' + Number(n).toLocaleString('es-AR') : '—';
+      tbody.innerHTML = _impCliRows.map(r => {
+        const badge = r._error
+          ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,.1);color:#ef4444;">ERROR</span>`
+          : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(16,185,129,.1);color:#10b981;">OK</span>`;
+        return `<tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:8px 12px;">${badge}${r._error ? `<span style="font-size:10px;color:#ef4444;margin-left:4px;">${r._error}</span>` : ''}</td>
+          <td style="padding:8px 12px;font-weight:600;color:var(--text-primary);">${r.nombre||'—'}</td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);">${r.documento||'—'}</td>
+          <td style="padding:8px 12px;color:var(--text-secondary);">${r.telefono||'—'}</td>
+          <td style="padding:8px 12px;text-align:right;font-family:var(--font-mono);color:var(--color-primary);">${fmt(r.limite_credito)}</td>
+        </tr>`;
+      }).join('');
+
+      const activos = _impCliRows.filter(r => !r._error).length;
+      document.getElementById('imp_cli_footerInfo').textContent = `Se importarán ${activos} cliente${activos !== 1 ? 's' : ''}`;
+      document.getElementById('imp_cli_subtitle').textContent   = `${_impCliRows.length} filas encontradas`;
+      document.getElementById('imp_cli_step1').style.display    = 'none';
+      document.getElementById('imp_cli_step2').style.display    = 'block';
+      document.getElementById('imp_cli_footer').style.display   = 'flex';
+    } catch(err) { console.error(err); alert('Error leyendo el archivo.'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function ejecutarImportacionClientes() {
+  const btn   = document.getElementById('imp_cli_btnImportar');
+  const label = document.getElementById('imp_cli_btnLabel');
+  btn.disabled = true; label.textContent = 'Importando…';
+  const rows = _impCliRows.filter(r => !r._error);
+  try {
+    const r = await fetch('/api/clientes/importar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows })
+    });
+    const res = await r.json();
+    cerrarImportarClientes();
+    alert(`✅ Importación completada:\n• ${res.creados} creados\n• ${res.actualizados} actualizados${res.errores ? `\n• ${res.errores} errores` : ''}`);
+    location.reload();
+  } catch(e) {
+    btn.disabled = false; label.textContent = 'Importar';
+    alert('Error al importar: ' + e.message);
+  }
+}
+
+function descargarPlantillaClientes() {
+  const generar = () => {
+    const data = [
+      { nombre:'Juan Pérez', documento:'20-12345678-9', telefono:'2664-123456', email:'juan@mail.com', direccion:'Av. San Martín 123', limite_credito:50000 },
+      { nombre:'María García', documento:'27-87654321-0', telefono:'2664-654321', email:'maria@mail.com', direccion:'Mitre 456', limite_credito:30000 },
+      { nombre:'Comercio El Sol', documento:'30-11223344-5', telefono:'', email:'', direccion:'Belgrano 789', limite_credito:'' },
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{wch:25},{wch:18},{wch:15},{wch:25},{wch:25},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+    XLSX.writeFile(wb, 'plantilla_clientes.xlsx');
+  };
+  if (typeof XLSX === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = generar; document.head.appendChild(s);
+  } else { generar(); }
+}
 </script>

@@ -3,12 +3,24 @@ const express = require('express');
 const path    = require('path');
 const app     = express();
 
+// ── Compresión gzip — reduce respuestas hasta 6x ──────────────
+try {
+  const compression = require('compression');
+  app.use(compression());
+} catch(e) {
+  // Si no está instalado, instalar con: npm install compression
+  console.log('ℹ️  compression no instalado — ejecutar: npm install compression');
+}
+
 // ── Views ─────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // ── Middlewares base ──────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '7d',        // browser cachea CSS/JS/imágenes por 7 días
+  etag: true,
+}));
 // ── Favicon ───────────────────────────────────────────────────
 app.get('/favicon.ico', (req, res) => res.redirect('/favicon (3).svg'));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -154,18 +166,33 @@ try {
   console.log('ℹ️   sucursal.middleware no encontrado, usando fallback');
 }
 
-// ── Empresa middleware — inyecta nombre/logo en todas las vistas ──
+// ── Empresa middleware — cachea nombre/logo para no ir a DB en cada request ──
+let _empresaCache = null;
+let _empresaCacheAt = 0;
+const _EMPRESA_TTL = 30000; // refresca cada 30 segundos
+
+function invalidarCacheEmpresa() { _empresaCache = null; }
+// Exportar solo la función, sin pisar el module.exports del app
+if (typeof exports !== 'undefined') exports.invalidarCacheEmpresa = invalidarCacheEmpresa;
+
 app.use((req, res, next) => {
-  try {
-    const { get } = require('./db');
-    const getNombre = get(`SELECT value FROM config WHERE key=?`, ['empresa_nombre']);
-    const getLogo   = get(`SELECT value FROM config WHERE key=?`, ['empresa_logo']);
-    res.locals.empresa_nombre = getNombre ? getNombre.value : '';
-    res.locals.empresa_logo   = getLogo   ? getLogo.value   : '';
-  } catch(e) {
-    res.locals.empresa_nombre = '';
-    res.locals.empresa_logo   = '';
+  const now = Date.now();
+  if (!_empresaCache || (now - _empresaCacheAt) > _EMPRESA_TTL) {
+    try {
+      const { get } = require('./db');
+      const getNombre = get(`SELECT value FROM config WHERE key=?`, ['empresa_nombre']);
+      const getLogo   = get(`SELECT value FROM config WHERE key=?`, ['empresa_logo']);
+      _empresaCache = {
+        nombre: getNombre ? getNombre.value : '',
+        logo:   getLogo   ? getLogo.value   : '',
+      };
+      _empresaCacheAt = now;
+    } catch(e) {
+      _empresaCache = { nombre: '', logo: '' };
+    }
   }
+  res.locals.empresa_nombre = _empresaCache.nombre;
+  res.locals.empresa_logo   = _empresaCache.logo;
   next();
 });
 
@@ -207,6 +234,13 @@ try {
   console.log('✅  Presupuestos routes OK');
 } catch(e) { console.log('⚠️   presupuestos.routes error:', e.message); }
 
+// Pedidos y Faltantes
+try {
+  const pedidosRoutes = require('./routes/pedidos.routes');
+  app.use('/pedidos', pedidosRoutes);
+  console.log('✅  Pedidos routes OK');
+} catch(e) { console.log('⚠️   pedidos.routes error:', e.message); }
+
 // AFIP / Factura Electrónica
 try {
   const afipRoutes = require('./routes/afip.routes');
@@ -214,9 +248,36 @@ try {
   console.log('✅  AFIP routes OK');
 } catch(e) { console.log('⚠️   afip.routes error:', e.message); }
 
+// Email — envío de comprobantes
+try {
+  const emailRoutes = require('./routes/email.routes');
+  app.use('/api/email', emailRoutes);
+  console.log('✅  Email routes OK');
+} catch(e) { console.log('⚠️   email.routes error:', e.message); }
+
 // Main (dashboard, ventas, inventario, sucursales)
 const mainRoutes = require('./routes/main.routes');
 app.use('/', mainRoutes);
+
+// ── 404 ───────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).send('Página no encontrada');
+});
+
+// ── Error handler global ──────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('❌ Error no manejado:', err.message);
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
+
+// ── Evitar que crashes de promesas tiren el server ────────────
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️  unhandledRejection:', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('❌ uncaughtException:', err.message);
+  // No llamamos process.exit() — pm2 lo maneja si es fatal
+});
 
 // ── Start ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;

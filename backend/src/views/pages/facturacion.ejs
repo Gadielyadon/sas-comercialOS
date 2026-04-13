@@ -7,7 +7,7 @@
     min-height: calc(100vh - var(--header-height));
     display: flex;
     flex-direction: column;
-    background: var(--bg-body);
+    background: var(--bg-surface-2);
   }
 
   .page-body {
@@ -35,7 +35,7 @@
 
   .fact-title-wrap p {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
     margin: 0;
   }
 
@@ -52,7 +52,7 @@
     padding: 11px 13px;
     border-radius: 10px;
     border: 1.5px solid var(--border-color);
-    background: var(--bg-card);
+    background: var(--bg-surface);
     color: var(--text-primary);
     font-family: var(--font-body);
     font-size: 13.5px;
@@ -63,8 +63,8 @@
 
   .fact-input:focus,
   .fact-select:focus {
-    border-color: var(--color-action);
-    box-shadow: 0 0 0 3px rgba(0,180,216,.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(27,79,216,.1);
   }
 
   .fact-btn {
@@ -75,7 +75,7 @@
     padding: 11px 14px;
     border-radius: 10px;
     border: 1.5px solid var(--border-color);
-    background: var(--bg-card);
+    background: var(--bg-surface);
     color: var(--text-primary);
     font-size: 13px;
     font-weight: 700;
@@ -85,9 +85,9 @@
   }
 
   .fact-btn:hover {
-    border-color: var(--color-action);
-    color: var(--color-action);
-    background: rgba(0,180,216,.04);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(27,79,216,.04);
   }
 
   .stats-grid {
@@ -97,7 +97,7 @@
   }
 
   .stat-card {
-    background: var(--bg-card);
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 14px;
     padding: 14px 15px;
@@ -109,7 +109,7 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: .6px;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
     margin-bottom: 8px;
   }
 
@@ -122,7 +122,7 @@
   }
 
   .fact-panel {
-    background: var(--bg-card);
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     overflow: hidden;
@@ -136,7 +136,7 @@
     gap: 12px;
     padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-body);
+    background: var(--bg-surface-2);
   }
 
   .fact-panel-title {
@@ -147,7 +147,7 @@
 
   .fact-panel-sub {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
   }
 
   .fact-table-wrap {
@@ -167,8 +167,8 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: .6px;
-    color: var(--text-secondary);
-    background: var(--bg-body);
+    color: var(--table-head-color);
+    background: var(--bg-surface-2);
     border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
   }
@@ -182,7 +182,7 @@
   }
 
   .fact-table tbody tr:hover {
-    background: rgba(0,180,216,.03);
+    background: rgba(27,79,216,.03);
   }
 
   .tipo-badge {
@@ -207,7 +207,7 @@
 
   .subtxt {
     font-size: 11px;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
     margin-top: 2px;
   }
 
@@ -226,7 +226,7 @@
     border-radius: 8px;
     border: 1.5px solid var(--border-color);
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -236,22 +236,22 @@
   }
 
   .btn-mini:hover {
-    border-color: var(--color-action);
-    color: var(--color-action);
-    background: rgba(0,180,216,.05);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(27,79,216,.05);
   }
 
   .btn-mini.pdf:hover {
-    border-color: #6d28d9;
-    color: #6d28d9;
-    background: rgba(109,40,217,.06);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(27,79,216,.06);
   }
 
   .empty-box,
   .disabled-box {
     padding: 36px 22px;
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--table-head-color);
   }
 
   .empty-box i,
@@ -263,8 +263,8 @@
   }
 
   .disabled-box {
-    background: rgba(109,40,217,.04);
-    border: 1px solid rgba(109,40,217,.15);
+    background: rgba(27,79,216,.04);
+    border: 1px solid rgba(27,79,216,.15);
     border-radius: 16px;
   }
 
@@ -374,6 +374,9 @@
             <div class="fact-panel-title">Comprobantes emitidos</div>
             <div class="fact-panel-sub" id="factPanelSub">Cargando historial...</div>
           </div>
+          <button onclick="exportarFacturasXLSX()" style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);flex-shrink:0;">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+          </button>
         </div>
 
         <div class="fact-table-wrap">
@@ -666,4 +669,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   cargarFacturas();
 });
+
+function exportarFacturasXLSX() {
+  const q    = document.getElementById('factSearch')?.value || '';
+  const tipo = document.getElementById('factTipo')?.value   || '';
+  const params = new URLSearchParams();
+  if (q)    params.set('q', q);
+  if (tipo) params.set('tipo', tipo);
+  window.location.href = '/afip/facturas.xlsx?' + params.toString();
+}
 </script>

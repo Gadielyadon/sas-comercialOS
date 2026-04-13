@@ -1,142 +1,68 @@
 <%- include('../partials/head', { title }) %>
 
 <style>
-.dash-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: box-shadow .15s;
-}
-.dash-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,.08);
-}
-.dash-card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-color);
-}
-.dash-card-title {
-  font-size: 13px; font-weight: 700; color: var(--text-primary);
-  display: flex; align-items: center; gap: 7px;
-}
+.dash-card { background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .18s,transform .18s; }
+.dash-card:hover { box-shadow:var(--shadow-md); }
+.dash-card-header { display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border-color); }
+.dash-card-title  { font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:7px; }
 
-/* ── STAT CHIPS — fondo color sólido, texto blanco ── */
-.stat-chip {
-  border-radius: 14px;
-  padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 8px;
-  position: relative; overflow: hidden;
-  border: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15);
-  transition: transform .15s, box-shadow .15s;
+.stat-chip { border-radius:var(--radius-lg);padding:20px 22px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .15s,box-shadow .15s; }
+.stat-chip:hover  { transform:translateY(-2px);box-shadow:var(--shadow-lg); }
+.stat-chip.azul   { background:#1B4FD8; }
+.stat-chip.indigo { background:#4F46E5; }
+.stat-chip.verde  { background:#10b981; }
+.stat-chip.alerta { background:#f59e0b; }
+.stat-chip-label  { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.80); }
+.stat-chip-value  { font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff; }
+.stat-chip-trend  { font-size:12px;color:rgba(255,255,255,.70);font-weight:500;margin-top:2px; }
+.stat-chip-icon   { position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:38px;opacity:.12;color:#fff;pointer-events:none; }
+
+.insight-card  { background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow-sm);transition:box-shadow .15s,transform .15s; }
+.insight-card:hover { box-shadow:var(--shadow-md);transform:translateY(-1px); }
+.insight-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
+.insight-value { font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;line-height:1.1; }
+.insight-sub   { font-size:12px;color:var(--text-secondary);margin-top:2px; }
+.insight-icon  { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px; }
+
+.rent-card { border-radius:var(--radius-lg);padding:20px 24px;border:1.5px solid;box-shadow:var(--shadow-sm); }
+.rent-bar-bg { height:10px;border-radius:5px;overflow:hidden;margin-top:12px; }
+.rent-bar-fg { height:100%;border-radius:5px;transition:width .8s cubic-bezier(.4,0,.2,1); }
+
+.th-dash { padding:11px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--table-head-color);border-bottom:none; }
+#tablaActividad thead tr { background:var(--table-head-bg); }
+#tablaActividad thead tr th:first-child { border-radius:8px 0 0 8px; }
+#tablaActividad thead tr th:last-child  { border-radius:0 8px 8px 0; }
+.fila-act:hover td { background:var(--table-row-hover); }
+
+.stock-alert-item { display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border-color);font-size:13px;transition:background .12s; }
+.stock-alert-item:last-child { border-bottom:none; }
+.stock-alert-item:hover { background:var(--bg-hover); }
+
+.badge-up   { color:#10b981;font-weight:700; }
+.badge-down { color:#ef4444;font-weight:700; }
+
+@keyframes spin    { to { transform:rotate(360deg); } }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation:fadeUp .3s ease both; }
+
+[data-theme="dark"] .stat-chip.azul   { background:#1e40af; }
+[data-theme="dark"] .stat-chip.indigo { background:#4338ca; }
+[data-theme="dark"] .stat-chip.verde  { background:#059669; }
+[data-theme="dark"] .stat-chip.alerta { background:#d97706; }
+
+@media (max-width:1100px){
+  .grid-3cols { grid-template-columns:1fr 1fr !important; }
+  .grid-main  { grid-template-columns:1fr !important; }
 }
-.stat-chip:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.20); }
-
-.stat-chip.cyan   { background: #3b82f6; }
-.stat-chip.indigo { background: #6366f1; }
-.stat-chip.green  { background: #10b981; }
-.stat-chip.orange { background: #f59e0b; }
-.stat-chip.red    { background: #ef4444; }
-
-.stat-chip-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: rgba(255,255,255,.80); }
-.stat-chip-value { font-size: 28px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; color: #ffffff; }
-.stat-chip-sub   { font-size: 12px; color: rgba(255,255,255,.70); font-weight: 500; }
-.stat-chip-icon  { position: absolute; right: 16px; top: 16px; font-size: 22px; opacity: .25; color: #fff; }
-
-/* Modo oscuro — mismos colores, un tono más profundo */
-[data-theme="dark"] .stat-chip.cyan   { background: #2563eb; }
-[data-theme="dark"] .stat-chip.indigo { background: #4f46e5; }
-[data-theme="dark"] .stat-chip.green  { background: #059669; }
-[data-theme="dark"] .stat-chip.orange { background: #d97706; }
-[data-theme="dark"] .stat-chip.red    { background: #dc2626; }
-[data-theme="dark"] .stat-chip-label  { color: rgba(255,255,255,.75); }
-[data-theme="dark"] .stat-chip-value  { color: #ffffff; }
-[data-theme="dark"] .stat-chip-sub    { color: rgba(255,255,255,.65); }
-
-/* Rentabilidad */
-.rentab-bar { height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden; margin-top: 6px; }
-.rentab-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
-
-/* Stock alert */
-.stock-alert-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 18px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 13px;
+@media (max-width:768px){
+  .stat-chip-value { font-size:20px; }
+  .stat-chip { padding:14px 16px; }
+  .grid-chips { grid-template-columns:1fr 1fr !important; }
+  .insight-value { font-size:18px; }
 }
-.stock-alert-item:last-child { border-bottom: none; }
-.stock-alert-item:hover { background: var(--bg-hover); }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.th-v {
-  padding: 10px 14px;
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .5px;
-  color: #ffffff;
-  text-align: left;
-}
-
-/* Tabla historial cabecera */
-#tablaVentas thead tr {
-  background: #6366f1 !important;
-}
-
-/* Total del día */
-.total-dia-row {
-  background: linear-gradient(90deg, #059669, #10b981);
-  border-radius: 0 0 14px 14px;
-}
-.total-dia-row td {
-  padding: 12px 18px;
-  color: #fff !important;
-  font-weight: 800;
-  font-size: 15px;
-}
-
-/* Inputs filtros */
-#filtroDesde, #filtroHasta {
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-radius: 7px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-body);
-  outline: none;
-  transition: border-color .15s;
-}
-#filtroDesde:focus, #filtroHasta:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,.12);
-}
-
-.fila-venta:hover td { background: var(--bg-hover) !important; }
-
-[data-theme="light"] .dash-card {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-}
-
-[data-theme="dark"] .dash-card {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-}
-
-@media (max-width: 1100px) {
-  main.page-body > div[style*="grid-template-columns:2fr 1fr"],
-  main.page-body > div[style*="grid-template-columns: 2fr 1fr"],
-  main.page-body > div[style*="grid-template-columns:1fr 2fr 1fr"],
-  main.page-body > div[style*="grid-template-columns: 1fr 2fr 1fr"] {
-    display: flex !important; flex-direction: column !important;
-  }
-}
-@media (max-width: 768px) {
-  .stat-chip-value { font-size: 24px; }
-  #paginacion { flex-direction: column; gap: 10px; align-items: stretch !important; }
-  #btnsPagina { flex-wrap: wrap; }
+@media (max-width:480px){
+  .grid-chips { grid-template-columns:1fr !important; }
 }
 </style>
 
@@ -144,284 +70,294 @@
   <%- include('../partials/sidebar', { active, user }) %>
   <div class="main-content">
     <%- include('../partials/header', { module, user }) %>
+    <main class="page-body" style="padding:24px 28px;max-width:1440px;margin:0 auto;">
 
-    <main class="page-body" style="padding:20px 24px;max-width:1400px;margin:0 auto;">
-
-      <!-- ══ HEADER ══ -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
-        <div>
-          <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 3px;">
-            Bienvenido, <%= user?.name || 'Admin' %> 👋
-          </h2>
-          <p style="font-size:13px;color:var(--text-secondary);margin:0;" id="fechaHoy"></p>
+      <!-- BIENVENIDA -->
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Bienvenido, <%= user?.name || 'Admin' %> 👋</h2>
+          <p id="fechaHoy"></p>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <% if (cajaActual) { %>
-          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-md);background:rgba(16,185,129,.1);border:1.5px solid rgba(16,185,129,.3);color:#065f46;font-size:13px;font-weight:700;text-decoration:none;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
+          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:rgba(16,185,129,.10);border:1.5px solid rgba(16,185,129,.3);color:#065f46;font-size:13px;font-weight:700;text-decoration:none;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.3);display:inline-block;"></span>
             Caja abierta — Ver turno
           </a>
           <% } else { %>
-          <a href="/caja/abrir" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-md);background:var(--bg-card);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size:13px;font-weight:600;text-decoration:none;">
+          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size:13px;font-weight:600;text-decoration:none;">
             <i class="bi bi-cash-coin"></i> Abrir caja
           </a>
           <% } %>
+          <a href="/historial" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size:13px;font-weight:600;text-decoration:none;">
+            <i class="bi bi-clock-history"></i> Historial
+          </a>
         </div>
       </div>
 
-      <!-- ══ STATS (4 chips) ══ -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;">
-        <% const colors = ['cyan','indigo','green','orange'];
-           const iconColors = ['#ffffff','#ffffff','#ffffff','#ffffff'];
-           for (let si = 0; si < stats.length; si++) {
-             const s = stats[si]; const i = si;
-        %>
-        <div class="stat-chip <%= colors[i] || 'cyan' %>">
+      <!-- STAT CHIPS HOY -->
+      <div class="grid-chips" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px;">
+        <% const chipColors = ['azul','indigo','verde','alerta'];
+           for (let si = 0; si < stats.length; si++) { const s = stats[si]; %>
+        <div class="stat-chip <%= chipColors[si]||'azul' %> fade-up" style="animation-delay:<%=si*.06%>s;">
           <i class="bi <%= s.icon %> stat-chip-icon"></i>
           <div class="stat-chip-label"><%= s.label %></div>
           <div class="stat-chip-value"><%= s.value %></div>
-          <div class="stat-chip-sub"><%= s.trend %></div>
+          <div class="stat-chip-trend"><%= s.trend %></div>
         </div>
         <% } %>
       </div>
 
-      <!-- ══ RENTABILIDAD ══ -->
+      <!-- RENTABILIDAD DEL MES -->
       <%
-        const vm  = ventasMes?.total   || 0;
-        const gm  = gastosMes?.total   || 0;
+        const vm  = ventasMes?.total || 0;
+        const gm  = gastosMes?.total || 0;
         const gan = vm - gm;
-        const pct = vm > 0 ? Math.round((gan / vm) * 100) : 0;
-        const rentColor   = gan >= 0 ? '#10b981' : '#ef4444';
-        const rentBg      = gan >= 0 ? 'rgba(16,185,129,.07)' : 'rgba(239,68,68,.07)';
-        const rentBorde   = gan >= 0 ? 'rgba(16,185,129,.2)'  : 'rgba(239,68,68,.2)';
-        const rentColorBg = gan >= 0 ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)';
+        const pct = vm > 0 ? Math.round((gan/vm)*100) : 0;
+        const esPos      = gan >= 0;
+        const rentColor  = esPos ? '#10b981' : '#ef4444';
+        const rentBg     = esPos ? 'rgba(16,185,129,.07)' : 'rgba(239,68,68,.07)';
+        const rentBorde  = esPos ? 'rgba(16,185,129,.25)'  : 'rgba(239,68,68,.25)';
+        const barW       = vm > 0 ? Math.min(100, Math.max(0, Math.round((vm-gm)/vm*100))) : 0;
+        const fmtPesos   = n => '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:0});
       %>
-      <div style="background:<%= rentBg %>;border:1.5px solid <%= rentBorde %>;border-radius:14px;padding:18px 22px;margin-bottom:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:42px;height:42px;border-radius:12px;background:<%= rentColorBg %>;display:flex;align-items:center;justify-content:center;font-size:20px;color:<%= rentColor %>;">
-              <i class="bi bi-<%= gan >= 0 ? 'graph-up-arrow' : 'graph-down-arrow' %>"></i>
+      <div class="rent-card fade-up" style="background:<%=rentBg%>;border-color:<%=rentBorde%>;margin-bottom:20px;animation-delay:.10s;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:52px;height:52px;border-radius:14px;background:<%=esPos?'rgba(16,185,129,.15)':'rgba(239,68,68,.15)'%>;display:flex;align-items:center;justify-content:center;font-size:24px;color:<%=rentColor%>;flex-shrink:0;">
+              <i class="bi bi-<%=esPos?'graph-up-arrow':'graph-down-arrow'%>"></i>
             </div>
             <div>
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Rentabilidad del mes</div>
-              <div style="font-size:28px;font-weight:800;color:<%= rentColor %>;letter-spacing:-1.5px;line-height:1;">
-                <%= gan >= 0 ? '+' : '' %>$<%= Math.abs(gan).toLocaleString('es-AR', {minimumFractionDigits:2}) %>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;">Lo que ganaste este mes</div>
+              <div style="font-size:32px;font-weight:900;color:<%=rentColor%>;letter-spacing:-1.5px;line-height:1;">
+                <%=esPos?'+':''%><%=fmtPesos(Math.abs(gan))%>
+              </div>
+              <div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">
+                De cada $100 que cobrás, te quedan <strong style="color:<%=rentColor%>;">$<%=Math.max(0,pct)%></strong> de ganancia
               </div>
             </div>
           </div>
-          <div style="display:flex;gap:28px;flex-wrap:wrap;">
+          <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:center;">
             <div style="text-align:center;">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Ventas</div>
-              <div style="font-size:18px;font-weight:800;color:#10b981;font-family:var(--font-mono);">$<%= vm.toLocaleString('es-AR', {minimumFractionDigits:2}) %></div>
-              <div style="font-size:11px;color:var(--text-secondary);"><%= ventasMes?.count || 0 %> transacciones</div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;">Cobré en ventas</div>
+              <div style="font-size:20px;font-weight:800;color:#10b981;font-family:var(--font-mono);"><%=fmtPesos(vm)%></div>
+              <div style="font-size:11px;color:var(--text-secondary);"><%=ventasMes?.count||0%> ventas</div>
             </div>
-            <div style="width:1px;background:var(--border-color);"></div>
+            <div style="font-size:24px;color:var(--text-muted);font-weight:300;">−</div>
             <div style="text-align:center;">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Gastos</div>
-              <div style="font-size:18px;font-weight:800;color:#ef4444;font-family:var(--font-mono);">$<%= gm.toLocaleString('es-AR', {minimumFractionDigits:2}) %></div>
-              <div style="font-size:11px;color:var(--text-secondary);"><%= gastosMes?.porCat?.length || 0 %> categorías</div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;">Gasté en el negocio</div>
+              <div style="font-size:20px;font-weight:800;color:#ef4444;font-family:var(--font-mono);"><%=fmtPesos(gm)%></div>
+              <div style="font-size:11px;color:var(--text-secondary);"><%=gastosMes?.porCat?.length||0%> categorías</div>
             </div>
-            <div style="width:1px;background:var(--border-color);"></div>
+            <div style="font-size:24px;color:var(--text-muted);font-weight:300;">=</div>
             <div style="text-align:center;">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Margen</div>
-              <div style="font-size:18px;font-weight:800;color:<%= rentColor %>;font-family:var(--font-mono);"><%= pct %>%</div>
-              <div style="font-size:11px;color:var(--text-secondary);">del mes actual</div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;">Margen de ganancia</div>
+              <div style="font-size:20px;font-weight:800;color:<%=rentColor%>;font-family:var(--font-mono);"><%=pct%>%</div>
+              <div style="font-size:11px;color:var(--text-secondary);">del total vendido</div>
             </div>
           </div>
         </div>
         <% if (vm > 0) { %>
-        <div style="margin-top:14px;">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:5px;">
-            <span>Ventas $<%= vm.toLocaleString('es-AR',{minimumFractionDigits:0}) %></span>
-            <span>Gastos $<%= gm.toLocaleString('es-AR',{minimumFractionDigits:0}) %></span>
+        <div style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-secondary);margin-bottom:6px;">
+            <span>Ganancia <strong style="color:<%=rentColor%>;"><%=fmtPesos(Math.abs(gan))%></strong></span>
+            <span>Gastos <strong style="color:#ef4444;"><%=fmtPesos(gm)%></strong></span>
           </div>
-          <div style="height:8px;border-radius:4px;background:rgba(239,68,68,.15);overflow:hidden;">
-            <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#10b981,#059669);width:<%= Math.min(100, Math.round((vm - gm) / vm * 100)) %>%;transition:width .6s;"></div>
+          <div class="rent-bar-bg" style="background:rgba(239,68,68,.15);">
+            <div class="rent-bar-fg" style="width:<%=barW%>%;background:linear-gradient(90deg,#10b981,#059669);"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+            <% if (barW >= 50) { %>✅ Muy buen margen — más de la mitad de lo que cobrás es ganancia pura
+            <% } else if (barW >= 25) { %>⚠️ Margen moderado — los gastos se llevan bastante, revisá si podés reducir alguno
+            <% } else if (barW > 0) { %>🔴 Margen bajo — los gastos son casi iguales a lo que vendés
+            <% } else { %>🔴 Este mes los gastos superaron las ventas — revisá los números
+            <% } %>
           </div>
         </div>
         <% } %>
       </div>
 
-      <!-- ══ FILA: Gráficos + Gastos ══ -->
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px;">
-        <div class="dash-card">
-          <div class="dash-card-header">
-            <span class="dash-card-title"><i class="bi bi-bar-chart-line" style="color:#6366f1;"></i> Ventas últimos 7 días</span>
-            <button onclick="exportarSemanaCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-              <i class="bi bi-download"></i> CSV
-            </button>
-          </div>
-          <div style="padding:16px 18px;"><canvas id="chartSemana" height="160"></canvas></div>
+      <!-- INSIGHTS -->
+      <%
+        const me      = metricasExtra || {};
+        const semAct  = me.semanaActual || 0;
+        const diffSem = me.diffSemPct;
+      %>
+      <div class="grid-chips" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px;">
+
+        <div class="insight-card fade-up" style="animation-delay:.15s;">
+          <div class="insight-icon" style="background:rgba(99,102,241,.10);color:#6366f1;"><i class="bi bi-receipt"></i></div>
+          <div class="insight-label">Ticket promedio del mes</div>
+          <div class="insight-value"><%=fmtPesos(me.ticketMes||0)%></div>
+          <div class="insight-sub">Lo que gasta cada cliente en promedio por visita</div>
         </div>
-        <div class="dash-card">
+
+        <div class="insight-card fade-up" style="animation-delay:.20s;">
+          <div class="insight-icon" style="background:<%=diffSem===null?'rgba(107,114,128,.1)':diffSem>=0?'rgba(16,185,129,.1)':'rgba(239,68,68,.1)'%>;color:<%=diffSem===null?'#9ca3af':diffSem>=0?'#10b981':'#ef4444'%>;"><i class="bi bi-arrow-left-right"></i></div>
+          <div class="insight-label">Esta semana</div>
+          <div class="insight-value"><%=fmtPesos(semAct)%></div>
+          <div class="insight-sub">
+            <% if (diffSem === null) { %>Sin datos de semana anterior
+            <% } else if (diffSem > 0) { %><span class="badge-up">▲ <%=diffSem%>% más</span> que la semana pasada
+            <% } else if (diffSem < 0) { %><span class="badge-down">▼ <%=Math.abs(diffSem)%>% menos</span> que la semana pasada
+            <% } else { %>Igual que la semana pasada<% } %>
+          </div>
+        </div>
+
+        <div class="insight-card fade-up" style="animation-delay:.25s;">
+          <div class="insight-icon" style="background:rgba(245,158,11,.10);color:#f59e0b;"><i class="bi bi-clock"></i></div>
+          <div class="insight-label">Hora de mayor venta</div>
+          <div class="insight-value"><%=me.horaPico||'—'%></div>
+          <div class="insight-sub">
+            <% if (me.horaPico) { %>A esta hora vendés más (últimos 30 días)
+            <% } else { %>Sin datos suficientes todavía<% } %>
+          </div>
+        </div>
+
+        <div class="insight-card fade-up" style="animation-delay:.30s;">
+          <div class="insight-icon" style="background:<%=deudaProvs>0?'rgba(239,68,68,.10)':'rgba(16,185,129,.10)'%>;color:<%=deudaProvs>0?'#ef4444':'#10b981'%>;"><i class="bi bi-truck"></i></div>
+          <div class="insight-label">Deuda a proveedores</div>
+          <div class="insight-value" style="color:<%=deudaProvs>0?'#ef4444':'#10b981'%>;">
+            <% if (deudaProvs > 0) { %><%=fmtPesos(deudaProvs)%><% } else { %>Sin deudas<% } %>
+          </div>
+          <div class="insight-sub">
+            <% if (deudaProvs > 0) { %>Tenés deuda pendiente con proveedores
+            <% } else { %>✓ Estás al día con todos los proveedores<% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRÁFICO 7 DÍAS + GASTOS -->
+      <div class="grid-main" style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="dash-card fade-up" style="animation-delay:.18s;">
           <div class="dash-card-header">
-            <span class="dash-card-title"><i class="bi bi-receipt" style="color:#ef4444;"></i> Gastos del mes por categoría</span>
-            <a href="/gastos" style="font-size:11.5px;color:var(--color-action);font-weight:600;text-decoration:none;">Ver todos →</a>
+            <span class="dash-card-title"><i class="bi bi-bar-chart-line" style="color:var(--color-primary);"></i> Ventas de los últimos 7 días</span>
+            <button onclick="exportarSemanaCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+          </div>
+          <div style="padding:16px 18px;"><canvas id="chartSemana" height="155"></canvas></div>
+        </div>
+        <div class="dash-card fade-up" style="animation-delay:.22s;">
+          <div class="dash-card-header">
+            <span class="dash-card-title"><i class="bi bi-receipt" style="color:#ef4444;"></i> En qué gasté este mes</span>
+            <a href="/gastos" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todos →</a>
           </div>
           <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
             <% if (!gastosMes?.porCat?.length) { %>
-            <div style="text-align:center;padding:24px;color:var(--text-secondary);">
-              <i class="bi bi-receipt" style="font-size:24px;display:block;opacity:.2;margin-bottom:6px;"></i>
-              Sin gastos este mes
+            <div style="text-align:center;padding:28px;color:var(--text-secondary);">
+              <i class="bi bi-receipt" style="font-size:28px;display:block;opacity:.2;margin-bottom:8px;"></i>
+              Sin gastos registrados este mes
             </div>
             <% } else {
-              const totalCatG = gastosMes.porCat.reduce((a,c) => a + Number(c.total), 0) || 1;
+              const totalCatG = gastosMes.porCat.reduce((a,c)=>a+Number(c.total),0)||1;
               const catColors = {'Alquiler':'#6366f1','Servicios':'#00b4d8','Sueldos':'#10b981','Insumos':'#f59e0b','Impuestos':'#ef4444','Mantenimiento':'#a855f7','Otros':'#9ca3af'};
             %>
-            <% for (let ci = 0; ci < gastosMes.porCat.length; ci++) {
-               const cat = gastosMes.porCat[ci];
-               const cc = catColors[cat.categoria] || '#9ca3af';
-               const w  = Math.round(Number(cat.total) / totalCatG * 100);
+            <% for (const cat of gastosMes.porCat) {
+               const cc = catColors[cat.categoria]||'#9ca3af';
+               const w  = Math.round(Number(cat.total)/totalCatG*100);
             %>
             <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:5px;">
-                  <span style="width:8px;height:8px;border-radius:2px;background:<%= cc %>;flex-shrink:0;"></span>
-                  <%= cat.categoria %>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                  <span style="width:8px;height:8px;border-radius:2px;background:<%=cc%>;flex-shrink:0;"></span><%=cat.categoria%>
                 </span>
-                <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#ef4444;">
-                  $<%= Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:0}) %>
-                </span>
+                <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#ef4444;">$<%=Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
               </div>
-              <div style="height:5px;border-radius:3px;background:var(--border-color);overflow:hidden;">
-                <div style="height:100%;background:<%= cc %>;width:<%= w %>%;border-radius:3px;"></div>
+              <div style="height:6px;border-radius:3px;background:var(--border-color);overflow:hidden;">
+                <div style="height:100%;background:<%=cc%>;width:<%=w%>%;border-radius:3px;transition:width .6s;"></div>
               </div>
             </div>
             <% } %>
+            <div style="padding-top:10px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Total gastado este mes</span>
+              <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:#ef4444;">$<%=gm.toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
+            </div>
             <% } %>
           </div>
         </div>
       </div>
 
-      <!-- ══ FILA: Métodos + Top productos + Stock ══ -->
-      <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;margin-bottom:18px;">
-        <div class="dash-card" style="display:flex;flex-direction:column;">
+      <!-- MÉTODOS + TOP PRODUCTOS + STOCK -->
+      <div class="grid-3cols" style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="dash-card fade-up" style="display:flex;flex-direction:column;animation-delay:.24s;">
           <div class="dash-card-header">
-            <span class="dash-card-title"><i class="bi bi-pie-chart" style="color:#10b981;"></i> Métodos de pago hoy</span>
-            <button onclick="exportarMetodosCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-              <i class="bi bi-download"></i> CSV
-            </button>
+            <span class="dash-card-title"><i class="bi bi-pie-chart" style="color:#10b981;"></i> Cómo te pagaron hoy</span>
+            <button onclick="exportarMetodosCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
           </div>
-          <div style="padding:14px 18px 8px;"><canvas id="chartMetodos" height="140"></canvas></div>
+          <div style="padding:14px 18px 8px;"><canvas id="chartMetodos" height="130"></canvas></div>
           <div id="metodosDesglose" style="padding:0 14px 14px;display:flex;flex-direction:column;gap:6px;">
             <div style="text-align:center;padding:10px;color:var(--text-muted);font-size:12px;">Cargando...</div>
           </div>
           <div style="padding:10px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
-            <a href="/dashboard/reportes/metodos" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:8px;background:rgba(99,102,241,.07);border:1.5px solid rgba(99,102,241,.2);color:#6366f1;font-size:12px;font-weight:700;text-decoration:none;" onmouseenter="this.style.background='rgba(99,102,241,.13)'" onmouseleave="this.style.background='rgba(99,102,241,.07)'">
+            <a href="/dashboard/reportes/metodos" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:8px;background:rgba(99,102,241,.07);border:1.5px solid rgba(99,102,241,.2);color:#6366f1;font-size:12px;font-weight:700;text-decoration:none;">
               <i class="bi bi-bar-chart-line"></i> Ver reporte completo
             </a>
           </div>
         </div>
 
-        <div class="dash-card">
+        <div class="dash-card fade-up" style="animation-delay:.28s;">
           <div class="dash-card-header">
-            <span class="dash-card-title"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Productos más vendidos (30 días)</span>
-            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-              <i class="bi bi-download"></i> CSV
-            </button>
+            <span class="dash-card-title"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Lo más vendido (últimos 30 días)</span>
+            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
           </div>
-          <div style="padding:14px 18px;"><canvas id="chartProductos" height="180"></canvas></div>
+          <div style="padding:14px 18px;"><canvas id="chartProductos" height="170"></canvas></div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div class="dash-card" style="flex-shrink:0;">
-            <div class="dash-card-header" style="padding:12px 16px;">
-              <span class="dash-card-title" style="font-size:12px;"><i class="bi bi-truck" style="color:#6366f1;"></i> Deuda proveedores</span>
-              <a href="/proveedores" style="font-size:11px;color:var(--color-action);font-weight:600;text-decoration:none;">Ver →</a>
-            </div>
-            <div style="padding:14px 16px;text-align:center;">
-              <% if (deudaProvs > 0) { %>
-              <div style="font-size:22px;font-weight:800;color:#dc2626;font-family:var(--font-mono);letter-spacing:-1px;">
-                $<%= Number(deudaProvs).toLocaleString('es-AR',{minimumFractionDigits:2}) %>
-              </div>
-              <div style="font-size:12px;color:#dc2626;margin-top:3px;">deuda pendiente</div>
-              <% } else { %>
-              <div style="font-size:14px;font-weight:700;color:#10b981;">✓ Sin deudas</div>
-              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Al día con todos</div>
-              <% } %>
-            </div>
+        <div class="dash-card fade-up" style="animation-delay:.32s;">
+          <div class="dash-card-header">
+            <span class="dash-card-title"><i class="bi bi-exclamation-triangle" style="color:#f59e0b;"></i> Stock a reponer</span>
+            <a href="/inventario" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todo →</a>
           </div>
-          <div class="dash-card" style="flex:1;">
-            <div class="dash-card-header" style="padding:12px 16px;">
-              <span class="dash-card-title" style="font-size:12px;"><i class="bi bi-exclamation-triangle" style="color:#f59e0b;"></i> Stock crítico</span>
-              <a href="/inventario" style="font-size:11px;color:var(--color-action);font-weight:600;text-decoration:none;">Ver →</a>
-            </div>
-            <% if (!stockCritico?.length) { %>
-            <div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:12.5px;">
-              <i class="bi bi-check-circle" style="color:#10b981;font-size:18px;display:block;margin-bottom:4px;"></i>
-              Todo el stock OK
-            </div>
-            <% } else { %>
-            <div style="max-height:180px;overflow-y:auto;">
-              <% stockCritico.slice(0,8).forEach(p => { %>
-              <div class="stock-alert-item">
-                <span style="font-size:12px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="<%= p.name %>">
-                  <%= p.name.length > 20 ? p.name.slice(0,18)+'…' : p.name %>
-                </span>
-                <span style="font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:<%= p.stock<=0?'rgba(239,68,68,.12)':'rgba(245,158,11,.12)' %>;color:<%= p.stock<=0?'#dc2626':'#d97706' %>;flex-shrink:0;">
-                  <%= p.stock %> ud
-                </span>
-              </div>
-              <% }) %>
-            </div>
-            <% } %>
+          <% if (!stockCritico?.length) { %>
+          <div style="padding:28px;text-align:center;color:var(--text-secondary);">
+            <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:600;">Todo el stock está bien</div>
+            <div style="font-size:12px;margin-top:3px;">Ningún producto con stock crítico</div>
           </div>
+          <% } else { %>
+          <div style="overflow-y:auto;max-height:260px;">
+            <% stockCritico.slice(0,10).forEach(p => { %>
+            <div class="stock-alert-item">
+              <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="<%=p.name%>">
+                <%=p.name.length>22?p.name.slice(0,20)+'…':p.name%>
+              </span>
+              <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=p.stock<=0?'rgba(239,68,68,.12)':'rgba(245,158,11,.12)'%>;color:<%=p.stock<=0?'#dc2626':'#d97706'%>;">
+                <%=p.stock<=0?'Sin stock':p.stock+' ud'%>
+              </span>
+            </div>
+            <% }) %>
+          </div>
+          <div style="padding:10px 16px;border-top:1px solid var(--border-color);">
+            <div style="font-size:12px;color:var(--text-secondary);text-align:center;"><%=stockCritico.length%> producto<%=stockCritico.length!==1?'s':''%> con stock crítico</div>
+          </div>
+          <% } %>
         </div>
       </div>
 
-      <!-- ══ HISTORIAL DE VENTAS ══ -->
-      <div class="dash-card">
+      <!-- ACTIVIDAD RECIENTE -->
+      <div class="dash-card fade-up" style="animation-delay:.35s;">
         <div class="dash-card-header">
-          <span class="dash-card-title">
-            <i class="bi bi-clock-history" style="color:#6366f1;"></i> Historial de ventas
-          </span>
-          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-            <input type="date" id="filtroDesde">
-            <span style="font-size:12px;color:var(--text-secondary);">→</span>
-            <input type="date" id="filtroHasta">
-            <button onclick="buscarVentas(1)" style="padding:6px 13px;border-radius:7px;border:none;background:#6366f1;color:#fff;font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;">
-              <i class="bi bi-search"></i>
-            </button>
-            <button onclick="limpiarFiltros()" style="padding:6px 13px;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer;">Limpiar</button>
-            <button onclick="exportarVentasCSV()" style="padding:6px 13px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;">
-              <i class="bi bi-filetype-csv"></i>
-            </button>
-          </div>
+          <span class="dash-card-title"><i class="bi bi-lightning-charge" style="color:var(--color-primary);"></i> Últimas ventas de hoy</span>
+          <a href="/historial" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size:12px;font-weight:700;text-decoration:none;">
+            <i class="bi bi-clock-history"></i> Ver historial completo
+          </a>
         </div>
         <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;" id="tablaVentas">
+          <table style="width:100%;border-collapse:collapse;" id="tablaActividad">
             <thead>
-              <tr style="background:#6366f1;">
-                <th class="th-v" style="width:28px;"></th>
-                <th class="th-v">N°</th>
-                <th class="th-v">Fecha</th>
-                <th class="th-v">Hora</th>
-                <th class="th-v">Método</th>
-                <th class="th-v">Facturación</th>
-                <th class="th-v" style="text-align:right;">Total</th>
+              <tr>
+                <th class="th-dash">N°</th>
+                <th class="th-dash">Hora</th>
+                <th class="th-dash">Método</th>
+                <th class="th-dash">Factura</th>
+                <th class="th-dash" style="text-align:right;">Total</th>
               </tr>
             </thead>
-            <tbody id="tbodyVentas">
-              <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--text-secondary);font-size:13.5px;">
-                <i class="bi bi-search" style="font-size:24px;display:block;margin-bottom:8px;opacity:.3;"></i>
-                Cargando ventas de hoy...
+            <tbody id="tbodyActividad">
+              <tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-secondary);">
+                <span style="display:inline-block;width:16px;height:16px;border:2.5px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
               </td></tr>
             </tbody>
-            <tfoot id="tfootVentas" style="display:none;">
-              <tr class="total-dia-row">
-                <td colspan="5" style="padding:12px 18px;color:#fff;font-weight:700;font-size:13px;">
-                  <i class="bi bi-calculator" style="margin-right:6px;"></i>
-                  Total del período
-                </td>
-                <td></td>
-                <td style="padding:12px 18px;color:#fff;font-weight:900;font-size:16px;text-align:right;font-family:var(--font-mono);" id="totalDiaValor">$0,00</td>
-              </tr>
-            </tfoot>
           </table>
-        </div>
-        <div id="paginacion" style="padding:12px 18px;border-top:1px solid var(--border-color);display:none;align-items:center;justify-content:space-between;">
-          <span id="infoResultados" style="font-size:12.5px;color:var(--text-secondary);"></span>
-          <div style="display:flex;gap:5px;" id="btnsPagina"></div>
         </div>
       </div>
 
@@ -434,312 +370,131 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 'use strict';
-
 document.getElementById('fechaHoy').textContent =
-  new Date().toLocaleDateString('es-AR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  new Date().toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
 const dataSemana  = <%- graficoSemana %>;
 const dataMetodos = <%- graficoMetodos %>;
 const dataTopProd = <%- graficoTopProd %>;
-const COLORS = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316'];
+const COLORS = ['#1B4FD8','#10b981','#f59e0b','#6366f1','#ec4899','#8b5cf6','#14b8a6','#f97316'];
 
-function parseFechaLocal(value) {
-  if (!value) return new Date();
-  return new Date(String(value).replace(' ', 'T'));
-}
+function parseFechaLocal(v){return v?new Date(String(v).replace(' ','T')):new Date();}
 
-// Chart ventas 7 días
-(function() {
-  const dias = [], totales = [];
-  for (let i = 6; i >= 0; i--) {
-    const d   = new Date(Date.now() - i * 86400000);
-    const key = d.toISOString().split('T')[0];
-    const found = dataSemana.find(r => r.fecha === key);
-    dias.push(d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric' }));
-    totales.push(found ? found.total : 0);
+// Gráfico 7 días
+(function(){
+  const dias=[],totales=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(Date.now()-i*86400000);
+    const k=d.toISOString().split('T')[0];
+    const f=dataSemana.find(r=>r.fecha===k);
+    dias.push(d.toLocaleDateString('es-AR',{weekday:'short',day:'numeric'}));
+    totales.push(f?f.total:0);
   }
-  new Chart(document.getElementById('chartSemana'), {
-    type: 'bar',
-    data: {
-      labels: dias,
-      datasets: [{ label: 'Ventas $', data: totales,
-        backgroundColor: totales.map((v, i) => i === 6 ? 'rgba(99,102,241,.9)' : 'rgba(99,102,241,.45)'),
-        borderRadius: 7, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, plugins: { legend: { display: false } },
-      scales: {
-        y: { ticks: { callback: v => '$' + v.toLocaleString('es-AR'), font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.04)' } },
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
-      }
-    }
+  new Chart(document.getElementById('chartSemana'),{
+    type:'bar',
+    data:{labels:dias,datasets:[{label:'Ventas $',data:totales,
+      backgroundColor:totales.map((v,i)=>i===6?'rgba(27,79,216,.9)':'rgba(27,79,216,.32)'),
+      borderRadius:8,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+Number(ctx.raw).toLocaleString('es-AR',{minimumFractionDigits:2})}}},
+      scales:{y:{ticks:{callback:v=>'$'+Number(v).toLocaleString('es-AR'),font:{size:11}},grid:{color:'rgba(0,0,0,.04)'}},
+              x:{grid:{display:false},ticks:{font:{size:11}}}}}
   });
 })();
 
-// Chart métodos
-(function() {
-  const desglose = document.getElementById('metodosDesglose');
-  if (!dataMetodos.length) {
-    document.getElementById('chartMetodos').style.display = 'none';
-    desglose.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);text-align:center;padding:12px 0;">Sin ventas hoy</p>';
+// Gráfico métodos
+(function(){
+  const desglose=document.getElementById('metodosDesglose');
+  if(!dataMetodos.length){
+    document.getElementById('chartMetodos').style.display='none';
+    desglose.innerHTML='<p style="font-size:12px;color:var(--text-secondary);text-align:center;padding:12px 0;">Sin ventas hoy</p>';
     return;
   }
-  new Chart(document.getElementById('chartMetodos'), {
-    type: 'doughnut',
-    data: {
-      labels: dataMetodos.map(m => m.payment_method),
-      datasets: [{ data: dataMetodos.map(m => m.total), backgroundColor: COLORS, borderWidth: 2, borderColor: 'var(--bg-card)' }]
-    },
-    options: {
-      responsive: true, cutout: '68%',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' $' + ctx.raw.toLocaleString('es-AR', {minimumFractionDigits:2}) } } }
-    }
+  new Chart(document.getElementById('chartMetodos'),{
+    type:'doughnut',
+    data:{labels:dataMetodos.map(m=>m.payment_method),
+          datasets:[{data:dataMetodos.map(m=>m.total),backgroundColor:COLORS,borderWidth:2,borderColor:'var(--bg-surface)'}]},
+    options:{responsive:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+Number(ctx.raw).toLocaleString('es-AR',{minimumFractionDigits:2})}}}}
   });
-  const hoy = new Date().toISOString().split('T')[0];
-  fetch('/api/reporte/metodos?' + new URLSearchParams({ desde: hoy, hasta: hoy }))
-    .then(r => r.json())
-    .then(data => {
-      if (!data.metodos || !data.metodos.length) { desglose.innerHTML = ''; return; }
-      const fmt = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2 });
-      const totalBruto    = data.metodos.reduce((s, m) => s + m.total, 0);
-      const totalComision = data.metodos.reduce((s, m) => s + m.comision_monto, 0);
-      const totalNeto     = data.metodos.reduce((s, m) => s + m.neto, 0);
-      let html = '';
-      data.metodos.forEach((m, i) => {
-        const color = COLORS[i % COLORS.length];
-        html += '<div style="background:var(--bg-body);border-radius:9px;padding:8px 10px;">'
-          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (m.comision_pct > 0 ? '5px' : '0') + ';">'
-          + '<span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text-primary);">'
-          + '<span style="width:8px;height:8px;border-radius:2px;background:' + color + ';flex-shrink:0;"></span>' + m.metodo
-          + '</span><span style="font-family:var(--font-mono);font-size:12.5px;font-weight:800;color:var(--text-primary);">' + fmt(m.total) + '</span></div>';
-        if (m.comision_pct > 0) {
-          html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span style="color:#d97706;">Comisión ' + m.comision_pct + '%</span><span style="color:#d97706;font-family:var(--font-mono);">− ' + fmt(m.comision_monto) + '</span></div>'
-            + '<div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:#10b981;font-weight:700;">Lo que te llega</span><span style="color:#10b981;font-weight:800;font-family:var(--font-mono);">' + fmt(m.neto) + '</span></div>';
-        } else {
-          html += '<div style="font-size:11px;color:#10b981;font-weight:600;">Sin comisión</div>';
-        }
-        html += '</div>';
-      });
-      if (data.metodos.length > 1) {
-        html += '<div style="border-top:1.5px solid var(--border-color);padding-top:8px;margin-top:2px;">'
-          + '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span style="color:var(--text-secondary);font-weight:600;">Total bruto</span><span style="font-family:var(--font-mono);font-weight:700;">' + fmt(totalBruto) + '</span></div>'
-          + (totalComision > 0 ? '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span style="color:#d97706;font-weight:600;">Comisiones</span><span style="color:#d97706;font-family:var(--font-mono);font-weight:700;">− ' + fmt(totalComision) + '</span></div>' : '')
-          + '<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#10b981;font-weight:800;">Lo que te llega</span><span style="color:#10b981;font-family:var(--font-mono);font-weight:800;">' + fmt(totalNeto) + '</span></div></div>';
-      }
-      desglose.innerHTML = html;
+  const hoy=new Date().toISOString().split('T')[0];
+  fetch('/api/reporte/metodos?'+new URLSearchParams({desde:hoy,hasta:hoy}))
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.metodos?.length){desglose.innerHTML='';return;}
+      const fmt=n=>'$'+Number(n).toLocaleString('es-AR',{minimumFractionDigits:2});
+      const totalNeto=data.metodos.reduce((s,m)=>s+m.neto,0);
+      let html=data.metodos.map((m,i)=>`
+        <div style="background:var(--bg-surface-2);border-radius:9px;padding:8px 10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${m.comision_pct>0?'5px':'0'};">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text-primary);">
+              <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i%COLORS.length]};flex-shrink:0;"></span>${m.metodo}
+            </span>
+            <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:800;color:var(--text-primary);">${fmt(m.total)}</span>
+          </div>
+          ${m.comision_pct>0?`<div style="font-size:11px;color:#d97706;">Comisión ${m.comision_pct}% → te llegan ${fmt(m.neto)}</div>`:`<div style="font-size:11px;color:#10b981;font-weight:600;">Sin comisión</div>`}
+        </div>`).join('');
+      if(data.metodos.length>1)
+        html+=`<div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:#10b981;font-weight:800;">Lo que te llega</span>
+          <span style="color:#10b981;font-family:var(--font-mono);font-weight:800;">${fmt(totalNeto)}</span></div>`;
+      desglose.innerHTML=html;
     })
-    .catch(() => {
-      desglose.innerHTML = dataMetodos.map((m, i) => {
-        const tot = dataMetodos.reduce((a, x) => a + Number(x.total), 0);
-        const pct = Math.round(Number(m.total) / tot * 100);
-        return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;"><span style="display:flex;align-items:center;gap:5px;color:var(--text-secondary);"><span style="width:9px;height:9px;border-radius:2px;background:' + COLORS[i] + ';"></span>' + m.payment_method + '</span><span style="font-weight:700;font-family:var(--font-mono);font-size:11.5px;">' + pct + '%</span></div>';
-      }).join('');
+    .catch(()=>{
+      const tot=dataMetodos.reduce((a,x)=>a+Number(x.total),0);
+      desglose.innerHTML=dataMetodos.map((m,i)=>`
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;">
+          <span style="display:flex;align-items:center;gap:5px;color:var(--text-secondary);">
+            <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]};"></span>${m.payment_method}
+          </span>
+          <span style="font-weight:700;font-family:var(--font-mono);">${Math.round(Number(m.total)/tot*100)}%</span>
+        </div>`).join('');
     });
 })();
 
-// Chart top productos
-(function() {
-  if (!dataTopProd.length) return;
-  new Chart(document.getElementById('chartProductos'), {
-    type: 'bar',
-    data: {
-      labels: dataTopProd.map(p => p.name.length > 22 ? p.name.slice(0,20)+'…' : p.name),
-      datasets: [{ label: 'Unidades', data: dataTopProd.map(p => p.cantidad), backgroundColor: COLORS, borderRadius: 5, borderSkipped: false }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 11 } } },
-        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-      }
-    }
+// Gráfico top productos
+(function(){
+  if(!dataTopProd.length)return;
+  new Chart(document.getElementById('chartProductos'),{
+    type:'bar',
+    data:{labels:dataTopProd.map(p=>p.name.length>22?p.name.slice(0,20)+'…':p.name),
+          datasets:[{label:'Unidades',data:dataTopProd.map(p=>p.cantidad),backgroundColor:COLORS,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
   });
 })();
 
-// ── Historial de ventas con TOTAL DEL PERÍODO ──
-let paginaActual = 1;
-let _lastVentas  = [];
-
-async function buscarVentas(page = 1) {
-  paginaActual = page;
-  const desde  = document.getElementById('filtroDesde').value;
-  const hasta  = document.getElementById('filtroHasta').value;
-  const params = new URLSearchParams({ page });
-  if (desde) params.append('desde', desde);
-  if (hasta) params.append('hasta', hasta);
-
-  const tbody = document.getElementById('tbodyVentas');
-  const tfoot = document.getElementById('tfootVentas');
-  tfoot.style.display = 'none';
-
-  tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;">
-    <span style="display:inline-block;width:18px;height:18px;border:2.5px solid #6366f1;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
-  </td></tr>`;
-
-  try {
-    const r    = await fetch(`/api/ventas/buscar?${params}`);
-    const data = await r.json();
-    _lastVentas = data.ventas || [];
-
-    if (!_lastVentas.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--text-secondary);">Sin ventas para ese período</td></tr>`;
-      document.getElementById('paginacion').style.display = 'none';
-      return;
-    }
-
-    tbody.innerHTML = _lastVentas.map(v => {
-      const badgeFact = v.facturada
-        ? `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;background:${v.factura_tipo_letra==='A'?'rgba(37,99,235,.12)':v.factura_tipo_letra==='B'?'rgba(16,185,129,.12)':'rgba(245,158,11,.14)'};color:${v.factura_tipo_letra==='A'?'#2563eb':v.factura_tipo_letra==='B'?'#059669':'#d97706'};">Factura ${v.factura_tipo_letra}</span>`
-        : `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;background:rgba(107,114,128,.10);color:#6b7280;">Sin factura</span>`;
-
-      return `
-        <tr class="fila-venta" style="border-bottom:1px solid var(--border-color);cursor:pointer;" onclick="toggleDetalle(${v.id}, this)">
-          <td style="padding:10px 6px 10px 16px;"><i class="bi bi-chevron-right" id="chev-${v.id}" style="font-size:11px;color:var(--text-secondary);transition:transform .15s;"></i></td>
+// Actividad reciente
+(function(){
+  const tbody=document.getElementById('tbodyActividad');
+  const hoy=new Date().toISOString().split('T')[0];
+  fetch('/api/ventas/buscar?'+new URLSearchParams({desde:hoy,hasta:hoy,limit:8}))
+    .then(r=>r.json())
+    .then(data=>{
+      const ventas=data.ventas||[];
+      if(!ventas.length){
+        tbody.innerHTML=`<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-secondary);font-size:13px;">
+          <i class="bi bi-bag-x" style="font-size:24px;display:block;margin-bottom:6px;opacity:.2;"></i>
+          Sin ventas registradas hoy todavía</td></tr>`;
+        return;
+      }
+      tbody.innerHTML=ventas.map(v=>{
+        const hora=parseFechaLocal(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+        const bf=v.facturada
+          ?`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra||''}</span>`
+          :`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
+        return `<tr class="fila-act" style="border-bottom:1px solid var(--border-color);">
           <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">#${v.id}</td>
-          <td style="padding:10px 14px;font-size:13.5px;">${parseFechaLocal(v.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</td>
-          <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">${parseFechaLocal(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})}</td>
-          <td style="padding:10px 14px;"><span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(99,102,241,.1);color:#6366f1;">${v.payment_method}</span></td>
-          <td style="padding:10px 14px;">${badgeFact}</td>
-          <td style="padding:10px 18px 10px 14px;text-align:right;font-weight:800;font-size:14px;color:var(--text-primary);">$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
-        </tr>
-        <tr id="detalle-${v.id}" style="display:none;background:var(--bg-body);">
-          <td colspan="7" style="padding:0;">
-            <div style="padding:12px 18px 14px 48px;border-bottom:2px solid var(--border-color);">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
-                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;">Items de la venta</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <button onclick="event.stopPropagation();reimprimirTicketVenta(${v.id})" style="padding:7px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:700;cursor:pointer;">
-                    <i class="bi bi-printer"></i> Reimprimir ticket
-                  </button>
-                  ${v.facturada ? `<a href="/afip/pdf/${v.id}" target="_blank" onclick="event.stopPropagation()" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(109,40,217,.35);background:rgba(109,40,217,.07);color:#6d28d9;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><i class="bi bi-file-earmark-pdf"></i> PDF AFIP</a>` : ''}
-                </div>
-              </div>
-              <table style="width:100%;border-collapse:collapse;">
-                ${(v.items||[]).map(it => `<tr><td style="padding:3px 8px 3px 0;font-size:13px;color:var(--text-primary);">${it.name}</td><td style="padding:3px 8px;font-size:12px;color:var(--text-secondary);">× ${it.qty}</td><td style="padding:3px 0;font-size:13px;text-align:right;font-weight:600;">$${Number(it.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr>`).join('')}
-              </table>
-              <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary);">
-                ${v.cash_received ? `<span>Recibido: <strong style="color:var(--text-primary)">$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>` : ''}
-                ${v.cash_received ? `<span>Vuelto: <strong style="color:var(--text-primary)">$${Number(v.change_amount||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>` : ''}
-                ${v.facturada ? `<span>CAE: <strong style="color:var(--text-primary)">${v.factura_cae||'-'}</strong></span>` : ''}
-              </div>
-            </div>
-          </td>
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;">${hora}</td>
+          <td style="padding:10px 14px;"><span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span></td>
+          <td style="padding:10px 14px;">${bf}</td>
+          <td style="padding:10px 18px;text-align:right;font-weight:800;font-size:14px;">$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
         </tr>`;
-    }).join('');
+      }).join('');
+    })
+    .catch(()=>{tbody.innerHTML=`<tr><td colspan="5" style="padding:20px;text-align:center;color:#ef4444;">Error al cargar</td></tr>`;});
+})();
 
-    // ── TOTAL DEL PERÍODO ──
-    const totalPeriodo = _lastVentas.reduce((sum, v) => sum + Number(v.total), 0);
-    const cantVentas   = data.total || _lastVentas.length;
-    document.getElementById('totalDiaValor').textContent =
-      '$' + totalPeriodo.toLocaleString('es-AR', { minimumFractionDigits: 2 });
-    tfoot.querySelector('td:first-child').innerHTML =
-      `<i class="bi bi-calculator" style="margin-right:6px;"></i> Total del período <span style="font-size:11px;font-weight:600;opacity:.8;margin-left:8px;">(${cantVentas} venta${cantVentas!==1?'s':''})</span>`;
-    tfoot.style.display = '';
-
-    // Paginación
-    const totalPags = Math.ceil(data.total / data.limit);
-    document.getElementById('infoResultados').textContent = `${data.total} resultado${data.total!==1?'s':''}`;
-    const btnsPag = document.getElementById('btnsPagina');
-    btnsPag.innerHTML = '';
-    for (let p = 1; p <= totalPags; p++) {
-      btnsPag.innerHTML += `<button onclick="buscarVentas(${p})" style="padding:5px 11px;border-radius:7px;border:1.5px solid ${p===page?'#6366f1':'var(--border-color)'};background:${p===page?'#6366f1':'var(--bg-body)'};color:${p===page?'#fff':'var(--text-secondary)'};font-size:12px;font-weight:600;cursor:pointer;">${p}</button>`;
-    }
-    document.getElementById('paginacion').style.display = 'flex';
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:#ef4444;">Error al cargar ventas</td></tr>`;
-  }
-}
-
-function toggleDetalle(id) {
-  const det  = document.getElementById(`detalle-${id}`);
-  const chev = document.getElementById(`chev-${id}`);
-  const open = det.style.display !== 'none';
-  document.querySelectorAll('[id^="detalle-"]').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('[id^="chev-"]').forEach(el => el.style.transform = '');
-  if (!open) { det.style.display = 'table-row'; chev.style.transform = 'rotate(90deg)'; }
-}
-
-function limpiarFiltros() {
-  document.getElementById('filtroDesde').value = '';
-  document.getElementById('filtroHasta').value = '';
-  buscarVentas(1);
-}
-
-function exportarVentasCSV() {
-  if (!_lastVentas.length) { alert('No hay ventas para exportar'); return; }
-  let csv = '\uFEFFN°;Fecha;Hora;Método;Total\n';
-  _lastVentas.forEach(v => {
-    const d = parseFechaLocal(v.created_at);
-    csv += [v.id, d.toLocaleDateString('es-AR'), d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), v.payment_method, Number(v.total).toFixed(2)].join(';') + '\n';
-  });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'})), download: 'ventas.csv' });
-  a.click();
-}
-
-function exportarSemanaCSV() {
-  let csv = '﻿Fecha;Total ventas\n';
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000);
-    const key = d.toISOString().split('T')[0];
-    const found = dataSemana.find(r => r.fecha === key);
-    csv += `${key};${found ? Number(found.total).toFixed(2) : '0'}\n`;
-  }
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})), download: 'ventas_semana.csv' });
-  a.click();
-}
-
-function exportarTopCSV() {
-  let csv = '﻿Producto;Unidades vendidas\n';
-  dataTopProd.forEach(p => { csv += `${p.name};${p.cantidad}\n`; });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})), download: 'top_productos.csv' });
-  a.click();
-}
-
-function exportarMetodosCSV() {
-  let csv = '﻿Método;Total\n';
-  dataMetodos.forEach(m => { csv += `${m.payment_method};${Number(m.total).toFixed(2)}\n`; });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})), download: 'metodos_pago.csv' });
-  a.click();
-}
-
-let _ticketCfgDashboard = null;
-
-async function loadTicketConfigDashboard() {
-  if (_ticketCfgDashboard) return _ticketCfgDashboard;
-  _ticketCfgDashboard = { formato:'80mm', footer:'¡Gracias por su compra!', nombre:'Mi Comercio', direccion:'', telefono:'', logo:'' };
-  try {
-    const r = await fetch('/api/config');
-    if (!r.ok) return _ticketCfgDashboard;
-    const cfg = await r.json();
-    _ticketCfgDashboard = { formato: cfg.ticket_formato||'80mm', footer: cfg.ticket_footer||'¡Gracias por su compra!', nombre: cfg.empresa_nombre||'Mi Comercio', direccion: cfg.empresa_direccion||'', telefono: cfg.empresa_telefono||'', logo: cfg.empresa_logo||'' };
-  } catch(e) {}
-  return _ticketCfgDashboard;
-}
-
-function escapeHtmlTicket(str='') {
-  return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
-}
-
-async function reimprimirTicketVenta(saleId) {
-  const venta = _lastVentas.find(v => Number(v.id) === Number(saleId));
-  if (!venta) { alert('No se encontró la venta'); return; }
-  const cfg = await loadTicketConfigDashboard();
-  const fechaObj = parseFechaLocal(venta.created_at);
-  const fechaTxt = fechaObj.toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const es80 = String(cfg.formato||'80mm').toLowerCase() === '80mm';
-  const itemsHtml = (venta.items||[]).map(it => `<tr><td style="padding:4px 0;">${escapeHtmlTicket(it.name)}</td><td style="padding:4px 0;text-align:center;">${it.qty}</td><td style="padding:4px 0;text-align:right;">$${Number(it.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr>`).join('');
-  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #${venta.id}</title><style>@page{size:${es80?'80mm auto':'A4'};margin:6mm;}body{font-family:monospace;margin:0;padding:0;background:#fff;color:#000;font-size:${es80?'11px':'13px'};}.ticket{width:${es80?'72mm':'180mm'};max-width:100%;margin:0 auto;}.center{text-align:center;}.line{border-top:1px dashed #000;margin:10px 0;}.tot{display:flex;justify-content:space-between;font-size:${es80?'12px':'13px'};margin:4px 0;}.tot.main{font-weight:700;font-size:${es80?'14px':'16px'};}table{width:100%;border-collapse:collapse;font-size:${es80?'10px':'12px'};}</style></head><body><div class="ticket">${cfg.logo?`<div class="center"><img src="${escapeHtmlTicket(cfg.logo)}" style="max-width:100%;max-height:60px;"></div>`:''}<div class="center"><div style="font-size:${es80?'18px':'24px'};font-weight:700;">${escapeHtmlTicket(cfg.nombre)}</div>${cfg.direccion?`<div style="font-size:10px;">${escapeHtmlTicket(cfg.direccion)}</div>`:''}</div><div class="line"></div><div>Venta: #${venta.id}</div><div>Fecha: ${escapeHtmlTicket(fechaTxt)}</div><div>Método: ${escapeHtmlTicket(venta.payment_method||'-')}</div><div class="line"></div><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead><tbody>${itemsHtml}</tbody></table><div class="line"></div><div class="tot main"><span>TOTAL:</span><span>$${Number(venta.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>${venta.cash_received?`<div class="tot"><span>Recibido:</span><span>$${Number(venta.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}${venta.cash_received?`<div class="tot"><span>Vuelto:</span><span>$${Number(venta.change_amount||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}<div class="line"></div><div class="center" style="font-size:10px;">${escapeHtmlTicket(cfg.footer)}</div></div></body></html>`;
-  const w = window.open('', '_blank', `width=${es80?420:900},height=700`);
-  if (!w) { alert('Permití ventanas emergentes'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
-  w.focus(); setTimeout(() => w.print(), 250);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  const hoy = new Date().toISOString().split('T')[0];
-  document.getElementById('filtroDesde').value = hoy;
-  document.getElementById('filtroHasta').value = hoy;
-  buscarVentas(1);
-});
+function descargaCSV(csv,nombre){const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:nombre});a.click();}
+function exportarSemanaCSV(){let csv='\uFEFFfecha;total\n';for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);const k=d.toISOString().split('T')[0];const f=dataSemana.find(r=>r.fecha===k);csv+=`${k};${f?Number(f.total).toFixed(2):'0'}\n`;}descargaCSV(csv,'ventas_semana.csv');}
+function exportarTopCSV(){let csv='\uFEFFproducto;unidades\n';dataTopProd.forEach(p=>{csv+=`${p.name};${p.cantidad}\n`;});descargaCSV(csv,'top_productos.csv');}
+function exportarMetodosCSV(){let csv='\uFEFFmetodo;total\n';dataMetodos.forEach(m=>{csv+=`${m.payment_method};${Number(m.total).toFixed(2)}\n`;});descargaCSV(csv,'metodos_pago.csv');}
 </script>

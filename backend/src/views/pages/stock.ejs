@@ -35,7 +35,7 @@
             style="padding-left:36px;width:100%;">
         </div>
         <select id="filtroCat" onchange="filtrar()"
-          style="height:38px;padding:0 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;outline:none;">
+          style="height:38px;padding:0 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;outline:none;">
           <option value="">Todas las categorías</option>
           <% const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort(); %>
           <% cats.forEach(cat => { %>
@@ -52,28 +52,32 @@
       <style>
         .btn-tab {
           padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
-          background: var(--bg-card); color: var(--text-secondary);
+          background: var(--bg-surface); color: var(--text-secondary);
           font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s;
         }
         .btn-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
         .btn-tab.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
 
         .stock-table { width:100%; border-collapse:collapse; }
+        .stock-table thead tr { background: var(--table-head-bg); }
         .stock-table th {
-          text-align:left; padding:10px 14px; font-size:11.5px; font-weight:700;
-          color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;
-          border-bottom:2px solid var(--border-color); background:var(--bg-card);
+          text-align:left; padding:11px 14px; font-size:11px; font-weight:600;
+          color:var(--table-head-color); text-transform:uppercase; letter-spacing:.07em;
+          border-bottom:none; background:transparent;
         }
+        .stock-table th:first-child { border-radius:8px 0 0 8px; }
+        .stock-table th:last-child  { border-radius:0 8px 8px 0; }
         .stock-table td {
           padding:12px 14px; font-size:13.5px; color:var(--text-primary);
           border-bottom:1px solid var(--border-color); vertical-align:middle;
+          transition:background .12s;
         }
-        .stock-table tr:hover td { background: rgba(249,115,22,0.04); }
+        .stock-table tr:hover td { background: var(--table-row-hover); }
         .stock-table tr.oculto { display:none; }
 
         .badge-cat {
           display:inline-block; padding:3px 10px; border-radius:20px;
-          background:rgba(249,115,22,0.1); color:var(--color-primary);
+          background:rgba(27,79,216,0.1); color:var(--color-primary);
           font-size:11px; font-weight:700;
         }
         .badge-pesable {
@@ -105,7 +109,7 @@
         .qty-wrap { display:flex; align-items:center; gap:8px; }
         .qty-input {
           width:80px; padding:6px 10px; border-radius:8px;
-          border:1.5px solid var(--border-color); background:var(--bg-card);
+          border:1.5px solid var(--border-color); background:var(--bg-surface);
           color:var(--text-primary); font-family:var(--font-mono);
           font-size:13px; font-weight:700; text-align:center; outline:none;
           transition:border-color .15s;
@@ -135,7 +139,7 @@
         #sinResultados i { font-size:40px; display:block; margin-bottom:12px; opacity:.4; }
       </style>
 
-      <div style="background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-color);overflow:hidden;">
+      <div style="background:var(--bg-surface);border-radius:var(--radius-lg);border:1px solid var(--border-color);overflow:hidden;">
         <table class="stock-table" id="tablaStock">
           <thead>
             <tr>
@@ -156,6 +160,7 @@
                 data-pesable="<%= p.pesable ? '1' : '0' %>"
                 data-hay="<%= p.hay != null ? p.hay : 1 %>"
                 data-stock="<%= p.stock %>"
+                data-sincontrol="<%= p.venta_sin_stock ? '1' : '0' %>"
               >
                 <td>
                   <div style="font-weight:700;font-size:13.5px;"><%= p.name %></div>
@@ -169,14 +174,26 @@
                   <% } %>
                 </td>
                 <td>
-                  <% if (p.pesable) { %>
+                  <% if (p.venta_sin_stock) { %>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;font-size:11.5px;font-weight:700;">
+                      <i class="bi bi-infinity"></i> Sin control
+                    </span>
+                  <% } else if (p.pesable) { %>
                     <span class="badge-pesable"><i class="bi bi-rulers"></i> Pesable</span>
                   <% } else { %>
                     <span style="color:var(--text-muted);font-size:12px;font-weight:600;"><i class="bi bi-hash"></i> Cantidad</span>
                   <% } %>
                 </td>
                 <td>
-                  <% if (p.pesable) { %>
+                  <% if (p.venta_sin_stock) { %>
+                    <!-- Sin control de stock — solo info -->
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size:12px;font-weight:700;">
+                        <i class="bi bi-cart-check"></i> Venta libre
+                      </span>
+                      <span style="font-size:11px;color:var(--text-muted);">Se vende sin importar el stock</span>
+                    </div>
+                  <% } else if (p.pesable) { %>
                     <!-- Switch Hay / No hay -->
                     <div class="switch-wrap">
                       <label class="switch">

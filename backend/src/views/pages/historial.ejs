@@ -1,0 +1,587 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+/* ── FILTROS ── */
+.hist-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 18px; border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface);
+}
+.hist-input {
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-surface-2); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 13px; outline: none;
+  transition: border-color .15s;
+}
+.hist-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27,79,216,.10); }
+.hist-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
+.hist-search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none; }
+.hist-search-wrap input { padding-left: 32px; width: 100%; }
+
+/* ── TABS DE ESTADO ── */
+.estado-tabs { display: flex; gap: 6px; }
+.estado-tab {
+  padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700;
+  border: 1.5px solid var(--border-color); background: var(--bg-surface-2);
+  color: var(--text-secondary); cursor: pointer; transition: all .15s; font-family: var(--font-body);
+}
+.estado-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.estado-tab.on { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+.estado-tab.on-anulada { border-color: #ef4444; background: #ef4444; color: #fff; }
+
+/* ── TABLA ── */
+.hist-table { width: 100%; border-collapse: collapse; }
+.hist-th {
+  padding: 11px 14px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--table-head-color); border-bottom: none; text-align: left;
+}
+.hist-thead tr { background: var(--table-head-bg); }
+.hist-thead tr th:first-child { border-radius: 8px 0 0 8px; }
+.hist-thead tr th:last-child  { border-radius: 0 8px 8px 0; }
+.hist-td { padding: 11px 14px; font-size: 13.5px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); transition: background .12s; vertical-align: middle; }
+.hist-row:last-child .hist-td { border-bottom: none; }
+.hist-row:hover .hist-td { background: var(--table-row-hover); cursor: pointer; }
+.hist-row.anulada .hist-td { opacity: .5; }
+.hist-row.anulada .hist-td:first-child { opacity: 1; }
+
+/* Detalle expandible */
+.hist-detalle { display: none; background: var(--bg-surface-2); }
+.hist-detalle.open { display: table-row; }
+.hist-detalle-inner { padding: 14px 18px 16px 44px; border-bottom: 2px solid var(--border-color); }
+
+/* ── RESUMEN INFERIOR ── */
+.hist-resumen {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-top: 1px solid var(--border-color);
+  background: var(--bg-surface); flex-wrap: wrap; gap: 12px;
+}
+.hist-resumen-item { display: flex; flex-direction: column; gap: 2px; }
+.hist-resumen-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+.hist-resumen-val   { font-size: 16px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+
+/* ── MODAL ANULACIÓN ── */
+.anular-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.55); z-index: 500;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.anular-overlay.open { display: flex; }
+.anular-modal {
+  background: var(--bg-surface); border-radius: var(--radius-xl);
+  width: 100%; max-width: 440px;
+  box-shadow: var(--shadow-xl); animation: modalPop .15s ease; overflow: hidden;
+}
+@keyframes modalPop { from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── PAGINACIÓN ── */
+.pag-btn { padding: 6px 12px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: all .15s; }
+.pag-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.pag-btn.on { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+
+@media (max-width: 768px) {
+  .hist-toolbar { flex-direction: column; align-items: stretch; }
+  .hist-search-wrap { max-width: 100%; }
+  .estado-tabs { flex-wrap: wrap; }
+  .hist-col-hora, .hist-col-metodo { display: none; }
+}
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module, user }) %>
+
+    <main class="page-body" style="padding:24px 28px;">
+
+      <!-- HEADER -->
+      <div class="page-header">
+        <div class="page-header-title">
+          <h2>Historial de Ventas</h2>
+          <p>Todas las ventas del negocio — filtrá, buscá y anulá cuando sea necesario.</p>
+        </div>
+        <button onclick="exportarXLSX()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </button>
+      </div>
+
+      <!-- CARD PRINCIPAL -->
+      <div class="ax-card">
+
+        <!-- FILTROS -->
+        <div class="hist-toolbar">
+          <!-- Búsqueda -->
+          <div class="hist-search-wrap">
+            <i class="bi bi-search"></i>
+            <input type="text" class="hist-input" id="filtroQ" placeholder="Buscar por N°, producto, CAE..." oninput="debounceSearch()">
+          </div>
+
+          <!-- Fechas -->
+          <input type="date" class="hist-input" id="filtroDesde" onchange="buscar(1)">
+          <span style="font-size:12px;color:var(--text-muted);">→</span>
+          <input type="date" class="hist-input" id="filtroHasta" onchange="buscar(1)">
+
+          <!-- Método de pago -->
+          <select class="hist-input" id="filtroMetodo" onchange="buscar(1)" style="min-width:130px;">
+            <option value="">Todos los métodos</option>
+            <option>Efectivo</option>
+            <option>Débito</option>
+            <option>Crédito</option>
+            <option>Transferencia</option>
+          </select>
+
+          <!-- Botones -->
+          <button onclick="buscar(1)" style="padding:8px 16px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+          <button onclick="limpiar()" style="padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+            Limpiar
+          </button>
+        </div>
+
+        <!-- TABS ESTADO -->
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div class="estado-tabs">
+            <button class="estado-tab on" id="tabTodas"       onclick="setTab('todas')">Todas</button>
+            <button class="estado-tab"     id="tabCompletada" onclick="setTab('completada')">✅ Completadas</button>
+            <button class="estado-tab"     id="tabAnulada"    onclick="setTab('anulada')">❌ Anuladas</button>
+          </div>
+          <span id="infoResultados" style="font-size:12px;color:var(--text-muted);"></span>
+        </div>
+
+        <!-- TABLA -->
+        <div style="overflow-x:auto;">
+          <table class="hist-table">
+            <thead class="hist-thead">
+              <tr>
+                <th class="hist-th" style="width:28px;"></th>
+                <th class="hist-th">N°</th>
+                <th class="hist-th">Fecha</th>
+                <th class="hist-th hist-col-hora">Hora</th>
+                <th class="hist-th hist-col-metodo">Método</th>
+                <th class="hist-th">Factura</th>
+                <th class="hist-th">Estado</th>
+                <th class="hist-th" style="text-align:right;">Total</th>
+                <th class="hist-th" style="width:44px;"></th>
+              </tr>
+            </thead>
+            <tbody id="histTbody">
+              <tr><td colspan="9" style="padding:48px;text-align:center;color:var(--text-secondary);">
+                <span style="display:inline-block;width:18px;height:18px;border:2.5px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="hist-resumen" id="histResumen" style="display:none;">
+          <div style="display:flex;gap:28px;flex-wrap:wrap;">
+            <div class="hist-resumen-item">
+              <span class="hist-resumen-label">Total período</span>
+              <span class="hist-resumen-val" id="resTotal" style="color:var(--color-primary);">$0,00</span>
+            </div>
+            <div class="hist-resumen-item">
+              <span class="hist-resumen-label">Ventas</span>
+              <span class="hist-resumen-val" id="resCant">0</span>
+            </div>
+            <div class="hist-resumen-item" id="resAnuladasWrap" style="display:none;">
+              <span class="hist-resumen-label">Anuladas</span>
+              <span class="hist-resumen-val" id="resAnuladas" style="color:#ef4444;">0</span>
+            </div>
+          </div>
+          <div id="histPaginacion" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+        </div>
+
+      </div>
+
+    </main>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- MODAL ANULACIÓN -->
+<div class="anular-overlay" id="anularOverlay" onclick="if(event.target===this)cerrarAnular()">
+  <div class="anular-modal">
+    <div class="modal-header" style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-x-circle-fill" style="color:#ef4444;"></i>
+        Anular venta <span id="anularNumero" style="color:#ef4444;"></span>
+      </span>
+      <button onclick="cerrarAnular()" style="background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <!-- Info de la venta a anular -->
+      <div id="anularInfo" style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;font-size:13px;">
+      </div>
+
+      <!-- Advertencia -->
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#92400e;display:flex;gap:8px;">
+        <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px;"></i>
+        <span>Esta acción <strong>devuelve el stock</strong> de los productos y <strong>no se puede deshacer</strong>. La venta quedará marcada como anulada.</span>
+      </div>
+
+      <!-- Motivo -->
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:6px;">
+          Motivo de anulación <span style="color:#ef4444;">*</span>
+        </label>
+        <textarea id="anularMotivo" placeholder="Ej: Error en la carga, devolución del cliente, venta duplicada..." rows="3"
+          style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;resize:vertical;transition:border .15s;">
+        </textarea>
+        <div id="anularMotivoError" style="color:#ef4444;font-size:12px;margin-top:4px;display:none;">El motivo es obligatorio</div>
+      </div>
+
+      <!-- Botones -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="cerrarAnular()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+          Cancelar
+        </button>
+        <button onclick="confirmarAnulacion()" id="btnConfirmarAnular" style="flex:2;padding:11px;border-radius:var(--radius-sm);border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;">
+          <i class="bi bi-x-circle"></i> Confirmar anulación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+'use strict';
+
+let _ventas      = [];
+let _paginaActual = 1;
+let _tabActual    = 'todas';
+let _searchDeb    = null;
+let _anularId     = null;
+
+const fmt = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+function parseFecha(v) { return v ? new Date(String(v).replace(' ','T')) : new Date(); }
+
+// ── Inicializar con HOY por defecto ──
+window.addEventListener('DOMContentLoaded', () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('filtroDesde').value = hoy;
+  document.getElementById('filtroHasta').value = hoy;
+  buscar(1);
+});
+
+function setTab(tab) {
+  _tabActual = tab;
+  ['tabTodas','tabCompletada','tabAnulada'].forEach(id => {
+    const btn = document.getElementById(id);
+    btn.className = 'estado-tab';
+  });
+  if (tab === 'todas')       { document.getElementById('tabTodas').classList.add('on'); }
+  if (tab === 'completada')  { document.getElementById('tabCompletada').classList.add('on'); }
+  if (tab === 'anulada')     { document.getElementById('tabAnulada').className = 'estado-tab on-anulada'; }
+  buscar(1);
+}
+
+function debounceSearch() {
+  clearTimeout(_searchDeb);
+  _searchDeb = setTimeout(() => buscar(1), 380);
+}
+
+function limpiar() {
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('filtroDesde').value = hoy;
+  document.getElementById('filtroHasta').value = hoy;
+  document.getElementById('filtroHasta').value = hoy;
+  document.getElementById('filtroQ').value = '';
+  document.getElementById('filtroMetodo').value = '';
+  _tabActual = 'todas';
+  ['tabTodas','tabCompletada','tabAnulada'].forEach(id => document.getElementById(id).className = 'estado-tab');
+  document.getElementById('tabTodas').classList.add('on');
+  buscar(1);
+}
+
+async function buscar(page = 1) {
+  _paginaActual = page;
+  const tbody = document.getElementById('histTbody');
+  tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;">
+    <span style="display:inline-block;width:18px;height:18px;border:2.5px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
+  </td></tr>`;
+  document.getElementById('histResumen').style.display = 'none';
+
+  const params = new URLSearchParams({ page, limit: 25 });
+  const desde  = document.getElementById('filtroDesde').value;
+  const hasta  = document.getElementById('filtroHasta').value;
+  const q      = document.getElementById('filtroQ').value.trim();
+  const metodo = document.getElementById('filtroMetodo').value;
+
+  if (desde)  params.set('desde', desde);
+  if (hasta)  params.set('hasta', hasta);
+  if (q)      params.set('q', q);
+  if (metodo) params.set('metodo', metodo);
+  if (_tabActual !== 'todas') params.set('status', _tabActual);
+
+  try {
+    const r    = await fetch('/api/ventas/buscar?' + params);
+    const data = await r.json();
+    _ventas    = data.ventas || [];
+
+    if (!_ventas.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="padding:48px;text-align:center;color:var(--text-secondary);">
+        <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:10px;opacity:.2;"></i>
+        No hay ventas para ese filtro
+      </td></tr>`;
+      document.getElementById('infoResultados').textContent = '0 resultados';
+      return;
+    }
+
+    renderTabla(_ventas);
+
+    // Resumen
+    const completadas = _ventas.filter(v => v.status !== 'anulada');
+    const anuladas    = _ventas.filter(v => v.status === 'anulada');
+    const totalPeriodo = completadas.reduce((s, v) => s + Number(v.total), 0);
+
+    document.getElementById('resTotal').textContent  = fmt(totalPeriodo);
+    document.getElementById('resCant').textContent   = data.total || _ventas.length;
+    document.getElementById('resAnuladas').textContent = anuladas.length;
+    document.getElementById('resAnuladasWrap').style.display = anuladas.length ? 'flex' : 'none';
+    document.getElementById('infoResultados').textContent = `${data.total} resultado${data.total!==1?'s':''}`;
+    document.getElementById('histResumen').style.display = 'flex';
+
+    // Paginación
+    const totalPags = Math.ceil(data.total / 25);
+    const pagDiv    = document.getElementById('histPaginacion');
+    pagDiv.innerHTML = '';
+    if (totalPags > 1) {
+      for (let p = 1; p <= Math.min(totalPags, 10); p++) {
+        pagDiv.innerHTML += `<button class="pag-btn ${p===page?'on':''}" onclick="buscar(${p})">${p}</button>`;
+      }
+    }
+
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:#ef4444;">Error al cargar: ${e.message}</td></tr>`;
+  }
+}
+
+function renderTabla(ventas) {
+  const tbody = document.getElementById('histTbody');
+  tbody.innerHTML = ventas.map(v => {
+    const fecha  = parseFecha(v.created_at);
+    const fDate  = fecha.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const fTime  = fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    const esAnulada = v.status === 'anulada';
+
+    const badgeEstado = esAnulada
+      ? `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;">❌ Anulada</span>`
+      : `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(16,185,129,.12);color:#059669;">✅ Completada</span>`;
+
+    const badgeFact = v.facturada
+      ? `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra}</span>`
+      : `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
+
+    const btnAnular = !esAnulada
+      ? `<button onclick="event.stopPropagation();abrirAnular(${v.id})"
+           style="padding:5px 10px;border-radius:7px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);transition:all .15s;"
+           title="Anular venta">
+           <i class="bi bi-x-circle"></i>
+         </button>`
+      : `<span style="font-size:11px;color:var(--text-muted);padding:0 6px;">—</span>`;
+
+    const totalStyle = esAnulada
+      ? `text-decoration:line-through;color:var(--text-muted);`
+      : `font-weight:800;color:var(--text-primary);`;
+
+    // Items del detalle
+    const itemsHtml = (v.items||[]).map(it =>
+      `<tr>
+        <td style="padding:4px 8px 4px 0;font-size:13px;color:var(--text-primary);">${it.name}</td>
+        <td style="padding:4px 8px;font-size:12px;color:var(--text-secondary);white-space:nowrap;">× ${it.qty}</td>
+        <td style="padding:4px 0;font-size:13px;text-align:right;font-weight:600;">$${Number(it.subtotal||it.price*it.qty).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      </tr>`).join('');
+
+    const esMixto = v.payment_method && v.payment_method.includes(' + ');
+    const metodos = esMixto ? v.payment_method.split(' + ') : null;
+    const tieneMontosDetalle = esMixto && v.monto_mixto2 != null && v.cash_received != null;
+
+    const extraInfo = [
+      esMixto && tieneMontosDetalle
+        ? `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
+             <span style="font-size:11.5px;font-weight:700;color:#059669;">${metodos[0]}: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
+             <span style="color:var(--text-muted);">+</span>
+             <span style="font-size:11.5px;font-weight:700;color:var(--color-primary);">${metodos[1]}: <strong>$${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
+           </span>`
+        : (!esMixto && v.cash_received ? `Recibido: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null),
+      !esMixto && v.cash_received ? `Vuelto: <strong>$${Number(v.change_amount||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null,
+      v.facturada ? `CAE: <strong style="font-family:var(--font-mono)">${v.factura_cae||'-'}</strong>` : null,
+      esAnulada && v.anulacion_motivo ? `<span style="color:#dc2626;">Motivo anulación: <strong>${v.anulacion_motivo}</strong></span>` : null,
+      esAnulada && v.anulada_by ? `<span style="color:var(--text-muted);">Anulada por: ${v.anulada_by}</span>` : null,
+    ].filter(Boolean);
+
+    return `
+      <tr class="hist-row ${esAnulada?'anulada':''}" onclick="toggleDetalle(${v.id})">
+        <td class="hist-td" style="padding:10px 6px 10px 14px;">
+          <i class="bi bi-chevron-right" id="hchev-${v.id}" style="font-size:11px;color:var(--text-muted);transition:transform .15s;"></i>
+        </td>
+        <td class="hist-td" style="color:var(--text-muted);font-size:12px;">#${v.id}</td>
+        <td class="hist-td">${fDate}</td>
+        <td class="hist-td hist-col-hora" style="color:var(--text-secondary);">${fTime}</td>
+        <td class="hist-td hist-col-metodo">
+          ${esMixto && tieneMontosDetalle
+            ? `<span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(16,185,129,.08);color:#059669;">${metodos[0]} $${Number(v.cash_received||0).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>
+               <span style="font-size:10px;color:var(--text-muted);margin:0 2px;">+</span>
+               <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${metodos[1]} $${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>`
+            : `<span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span>`
+          }
+        </td>
+        <td class="hist-td">${badgeFact}</td>
+        <td class="hist-td">${badgeEstado}</td>
+        <td class="hist-td" style="text-align:right;font-size:14px;${totalStyle}">${fmt(v.total)}</td>
+        <td class="hist-td" style="text-align:center;">${btnAnular}</td>
+      </tr>
+      <tr class="hist-detalle" id="hdet-${v.id}">
+        <td colspan="9" style="padding:0;">
+          <div class="hist-detalle-inner">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;">Items de la venta</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="event.stopPropagation();reimprimirTicket(${v.id})" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+                  <i class="bi bi-printer"></i> Reimprimir ticket
+                </button>
+                ${v.facturada ? `<a href="/afip/pdf/${v.id}" target="_blank" onclick="event.stopPropagation()" style="padding:6px 12px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.07);color:var(--color-primary);font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-file-earmark-pdf"></i> PDF Factura</a>` : ''}
+              </div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+              <tbody>${itemsHtml}</tbody>
+            </table>
+            ${extraInfo.length ? `<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary);">${extraInfo.map(i=>`<span>${i}</span>`).join('')}</div>` : ''}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleDetalle(id) {
+  const det  = document.getElementById(`hdet-${id}`);
+  const chev = document.getElementById(`hchev-${id}`);
+  const open = det.classList.contains('open');
+  document.querySelectorAll('.hist-detalle.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('[id^="hchev-"]').forEach(el => el.style.transform = '');
+  if (!open) { det.classList.add('open'); chev.style.transform = 'rotate(90deg)'; }
+}
+
+// ── ANULACIÓN ──
+function abrirAnular(id) {
+  _anularId = id;
+  const v = _ventas.find(x => x.id === id);
+  if (!v) return;
+
+  document.getElementById('anularNumero').textContent = `#${id}`;
+  document.getElementById('anularMotivo').value = '';
+  document.getElementById('anularMotivoError').style.display = 'none';
+
+  const fecha = parseFecha(v.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  const itemsTexto = (v.items||[]).slice(0,3).map(it=>`${it.name} ×${it.qty}`).join(', ');
+  const masItems   = (v.items||[]).length > 3 ? ` y ${v.items.length-3} más` : '';
+
+  document.getElementById('anularInfo').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <strong style="font-size:14px;color:var(--text-primary);">Venta #${id}</strong>
+      <strong style="font-size:16px;color:#dc2626;">${fmt(v.total)}</strong>
+    </div>
+    <div style="font-size:12px;color:var(--text-secondary);">${fecha} · ${v.payment_method}</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">${itemsTexto}${masItems}</div>`;
+
+  document.getElementById('anularOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('anularMotivo').focus(), 150);
+}
+
+function cerrarAnular() {
+  document.getElementById('anularOverlay').classList.remove('open');
+  _anularId = null;
+}
+
+async function confirmarAnulacion() {
+  const motivo = document.getElementById('anularMotivo').value.trim();
+  const errEl  = document.getElementById('anularMotivoError');
+
+  if (!motivo) {
+    errEl.style.display = 'block';
+    document.getElementById('anularMotivo').focus();
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const btn = document.getElementById('btnConfirmarAnular');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Anulando...';
+
+  try {
+    const r = await fetch(`/api/ventas/${_anularId}/anular`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motivo })
+    });
+    const d = await r.json();
+
+    if (!r.ok) throw new Error(d.error || 'Error al anular');
+
+    cerrarAnular();
+    buscar(_paginaActual); // Recargar tabla
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-x-circle"></i> Confirmar anulación';
+    document.getElementById('anularMotivoError').textContent = '❌ ' + e.message;
+    document.getElementById('anularMotivoError').style.display = 'block';
+  }
+}
+
+// ── REIMPRIMIR TICKET ──
+let _ticketCfg = null;
+async function loadTicketCfg() {
+  if (_ticketCfg) return _ticketCfg;
+  _ticketCfg = { formato:'80mm', footer:'¡Gracias por su compra!', nombre:'Mi Comercio', direccion:'', telefono:'', logo:'' };
+  try {
+    const r = await fetch('/api/config');
+    if (!r.ok) return _ticketCfg;
+    const cfg = await r.json();
+    _ticketCfg = { formato:cfg.ticket_formato||'80mm', footer:cfg.ticket_footer||'¡Gracias por su compra!', nombre:cfg.empresa_nombre||'Mi Comercio', direccion:cfg.empresa_direccion||'', telefono:cfg.empresa_telefono||'', logo:cfg.empresa_logo||'' };
+  } catch(_) {}
+  return _ticketCfg;
+}
+
+function escHtml(s='') {
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+
+async function reimprimirTicket(id) {
+  const v = _ventas.find(x => x.id === id);
+  if (!v) return;
+  const cfg = await loadTicketCfg();
+  const es80 = String(cfg.formato||'80mm').toLowerCase() === '80mm';
+  const fechaTxt = parseFecha(v.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const items = (v.items||[]).map(it =>
+    `<tr><td style="padding:4px 0;">${escHtml(it.name)}</td><td style="padding:4px 0;text-align:center;">${it.qty}</td><td style="padding:4px 0;text-align:right;">$${Number(it.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr>`
+  ).join('');
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #${v.id}</title>
+    <style>@page{size:${es80?'80mm auto':'A4'};margin:6mm;}body{font-family:monospace;margin:0;padding:0;background:#fff;color:#000;font-size:${es80?'11px':'13px'};}.t{width:${es80?'72mm':'180mm'};max-width:100%;margin:0 auto;}.c{text-align:center;}.l{border-top:1px dashed #000;margin:10px 0;}.r{display:flex;justify-content:space-between;font-size:${es80?'12px':'13px'};margin:4px 0;}.r.m{font-weight:700;font-size:${es80?'14px':'16px'};}table{width:100%;border-collapse:collapse;font-size:${es80?'10px':'12px'};}</style></head>
+    <body><div class="t">${cfg.logo?`<div class="c"><img src="${escHtml(cfg.logo)}" style="max-width:100%;max-height:60px;"></div>`:''}<div class="c"><div style="font-size:${es80?'18px':'24px'};font-weight:700;">${escHtml(cfg.nombre)}</div>${cfg.direccion?`<div style="font-size:10px;">${escHtml(cfg.direccion)}</div>`:''}</div><div class="l"></div><div>Venta: #${v.id}</div><div>Fecha: ${escHtml(fechaTxt)}</div><div>Método: ${escHtml(v.payment_method||'-')}</div>${v.status==='anulada'?`<div style="color:red;font-weight:700;">*** VENTA ANULADA ***</div>`:''}
+    <div class="l"></div><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead><tbody>${items}</tbody></table><div class="l"></div><div class="r m"><span>TOTAL:</span><span>$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>${v.cash_received?`<div class="r"><span>Recibido:</span><span>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}<div class="l"></div><div class="c" style="font-size:10px;">${escHtml(cfg.footer)}</div></div></body></html>`;
+  const w = window.open('','_blank',`width=${es80?420:900},height=700`);
+  if (!w) { alert('Permití ventanas emergentes'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  w.focus(); setTimeout(()=>w.print(),250);
+}
+
+// ── EXPORTAR XLSX ──
+function exportarXLSX() {
+  if (!_ventas.length) { alert('No hay datos para exportar. Hacé una búsqueda primero.'); return; }
+  const params = new URLSearchParams();
+  const desde  = document.getElementById('filtroDesde')?.value || '';
+  const hasta  = document.getElementById('filtroHasta')?.value  || '';
+  const metodo = document.getElementById('filtroMetodo')?.value || '';
+  const q      = document.getElementById('filtroQ')?.value      || '';
+  if (desde)  params.set('desde', desde);
+  if (hasta)  params.set('hasta',  hasta);
+  if (metodo && metodo !== 'todos') params.set('metodo', metodo);
+  if (q)      params.set('q', q);
+  window.location.href = '/api/historial.xlsx?' + params.toString();
+}
+</script>

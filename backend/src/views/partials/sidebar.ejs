@@ -1,74 +1,145 @@
 <aside class="sidebar" id="sidebar">
 
-  <div class="sidebar-logo">
-    <a class="logo-mark" href="/ventas">
-      <div class="logo-icon">F</div>
+  <!-- ── HEADER DEL SIDEBAR: Logo + Campanita en la misma fila ── -->
+  <div class="sidebar-logo" style="display:flex;align-items:center;gap:8px;">
+
+    <a class="logo-mark" href="/dashboard" style="flex:1;min-width:0;text-decoration:none;">
+      <div class="logo-icon">AX</div>
       <div class="logo-text">
-        <strong><%= (typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre) ? locals.empresa_nombre : 'ComercialOS' %></strong>
-        <% if (typeof sucursal !== 'undefined' && sucursal && sucursal.nombre && sucursal.nombre !== 'Casa Central') { %>
-          <span style="color:var(--color-primary);font-weight:600;letter-spacing:.3px;"><%= sucursal.nombre %></span>
-        <% } else { %>
-          <span style="color:var(--text-muted);font-size:11px;">Sistema</span>
-        <% } %>
+        <strong>AxSoft</strong>
+        <span style="font-size:10px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;display:block;">
+          <%
+            const _sucNombre = (typeof locals.sucursal !== 'undefined' && locals.sucursal && locals.sucursal.nombre)
+              ? locals.sucursal.nombre : 'Sistema de Gestión';
+          %>
+          <%= _sucNombre %>
+        </span>
       </div>
     </a>
+
+    <!-- Campanita — misma fila que AxSoft, bien a la derecha -->
+    <div id="notifWrap" style="position:relative;flex-shrink:0;margin-left:auto;">
+      <button id="notifBtn" onclick="axNotif.toggle(event)" title="Notificaciones"
+        style="position:relative;width:32px;height:32px;border-radius:9px;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;"
+        onmouseover="this.style.background='rgba(255,255,255,.28)'"
+        onmouseout="this.style.background='rgba(255,255,255,.18)'">
+        <i class="bi bi-bell-fill"></i>
+        <span id="notifBadge" style="display:none;position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;min-width:17px;height:17px;border-radius:20px;padding:0 3px;line-height:17px;text-align:center;border:2.5px solid #1B4FD8;"></span>
+      </button>
+    </div>
+
+    <%
+      const _sucLista = (typeof locals.sucursales_lista !== 'undefined' && Array.isArray(locals.sucursales_lista))
+        ? locals.sucursales_lista : [];
+      const _sucActualId = (typeof locals.sucursal !== 'undefined' && locals.sucursal) ? locals.sucursal.id : 1;
+    %>
+    <% if (_sucLista.length > 1) { %>
+    <div style="position:relative;flex-shrink:0;">
+      <button id="btnCambiarSuc" onclick="toggleDropSuc(event)" title="Cambiar sucursal"
+        style="width:28px;height:28px;border:none;background:rgba(255,255,255,.13);border-radius:7px;color:rgba(255,255,255,.75);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;"
+        onmouseover="this.style.background='rgba(255,255,255,.22)'"
+        onmouseout="this.style.background='rgba(255,255,255,.13)'">
+        <i class="bi bi-arrow-left-right"></i>
+      </button>
+      <div id="dropSuc" style="display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:#1e2436;border:1px solid rgba(255,255,255,.12);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:999;overflow:hidden;">
+        <div style="padding:7px 12px 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.35);">Cambiar a</div>
+        <% _sucLista.forEach(s => { const esActual = s.id === _sucActualId; %>
+        <button onclick="cambiarSucursal(<%= s.id %>, '<%= s.nombre.replace(/'/g,"\\'") %>')"
+          style="width:100%;padding:9px 14px;border:none;background:<%= esActual ? 'rgba(27,79,216,.4)' : 'transparent' %>;color:<%= esActual ? '#fff' : 'rgba(255,255,255,.75)' %>;font-size:12.5px;font-weight:<%= esActual ? '700' : '500' %>;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:background .12s;font-family:var(--font-body);"
+          onmouseover="if(<%= !esActual %>)this.style.background='rgba(255,255,255,.07)'"
+          onmouseout="if(<%= !esActual %>)this.style.background='transparent'">
+          <i class="bi bi-<%= esActual ? 'check-circle-fill' : 'circle' %>" style="font-size:10px;color:<%= esActual ? '#10b981' : 'inherit' %>;opacity:.8;"></i>
+          <%= s.nombre %>
+        </button>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
   </div>
+
+  <!-- ── NOMBRE DEL LOCAL ── -->
+  <% if (typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre) { %>
+  <div style="padding:8px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">
+    <div style="font-size:12px;font-weight:800;color:#fff;letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      <%= locals.empresa_nombre %>
+    </div>
+  </div>
+  <% } %>
 
   <nav class="sidebar-nav">
 
-    <div class="nav-section-label">Principal</div>
-
+    <div class="nav-section-label">Operaciones</div>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('dashboard')) { %>
     <a href="/dashboard" class="nav-item <%= (typeof active !== 'undefined' && active === 'dashboard') ? 'active' : '' %>">
-      <i class="bi bi-bar-chart-line"></i>
-      <span class="nav-text">Dashboard</span>
+      <i class="bi bi-speedometer2"></i><span class="nav-text">Dashboard</span>
     </a>
+    <% } %>
 
+    <div class="nav-section-label" style="margin-top:10px;">Ventas</div>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('ventas')) { %>
     <a href="/ventas" class="nav-item <%= (typeof active !== 'undefined' && active === 'ventas') ? 'active' : '' %>">
-      <i class="bi bi-cart-check"></i>
-      <span class="nav-text">Ventas</span>
+      <i class="bi bi-cart-check"></i><span class="nav-text">Punto de venta</span>
     </a>
-
-    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
-      <i class="bi bi-people"></i>
-      <span class="nav-text">Clientes</span>
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('historial')) { %>
+    <a href="/historial" class="nav-item <%= (typeof active !== 'undefined' && active === 'historial') ? 'active' : '' %>">
+      <i class="bi bi-clock-history"></i><span class="nav-text">Historial</span>
     </a>
-
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('caja')) { %>
     <a href="/caja/turno" class="nav-item <%= (typeof active !== 'undefined' && active === 'caja') ? 'active' : '' %>">
-      <i class="bi bi-cash-coin"></i>
-      <span class="nav-text">Caja</span>
+      <i class="bi bi-cash-coin"></i><span class="nav-text">Caja</span>
     </a>
-
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('presupuestos')) { %>
     <a href="/presupuestos" class="nav-item <%= (typeof active !== 'undefined' && active === 'presupuestos') ? 'active' : '' %>">
-      <i class="bi bi-file-earmark-text"></i>
-      <span class="nav-text">Presupuestos</span>
+      <i class="bi bi-file-earmark-text"></i><span class="nav-text">Presupuestos</span>
+    </a>
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('clientes')) { %>
+    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
+      <i class="bi bi-people"></i><span class="nav-text">Clientes</span>
+    </a>
+    <% } %>
+    <a href="/pedidos" class="nav-item <%= (typeof active !== 'undefined' && active === 'pedidos') ? 'active' : '' %>" style="position:relative;">
+      <i class="bi bi-journal-check"></i><span class="nav-text">Pedidos</span>
+      <span id="pedidosBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
     </a>
 
-    <div class="nav-section-label" style="margin-top:8px;">Administración</div>
-
+    <div class="nav-section-label" style="margin-top:10px;">Administración</div>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('inventario')) { %>
     <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
-      <i class="bi bi-box-seam"></i>
-      <span class="nav-text">Inventario</span>
+      <i class="bi bi-box-seam"></i><span class="nav-text">Inventario</span>
     </a>
-
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('stock')) { %>
     <a href="/stock" class="nav-item <%= (typeof active !== 'undefined' && active === 'stock') ? 'active' : '' %>">
-      <i class="bi bi-clipboard2-check"></i>
-      <span class="nav-text">Stock</span>
+      <i class="bi bi-clipboard2-check"></i><span class="nav-text">Stock</span>
     </a>
-
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('proveedores')) { %>
     <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>">
-      <i class="bi bi-truck"></i>
-      <span class="nav-text">Proveedores</span>
+      <i class="bi bi-truck"></i><span class="nav-text">Proveedores</span>
     </a>
-
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('gastos')) { %>
     <a href="/gastos" class="nav-item <%= (typeof active !== 'undefined' && active === 'gastos') ? 'active' : '' %>">
-      <i class="bi bi-receipt"></i>
-      <span class="nav-text">Gastos</span>
+      <i class="bi bi-receipt"></i><span class="nav-text">Gastos</span>
     </a>
+    <% } %>
 
-    <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
-      <i class="bi bi-sliders"></i>
-      <span class="nav-text">Ajustes</span>
+    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+    <div class="nav-section-label" style="margin-top:10px;">Sistema</div>
+    <a href="/sucursales" class="nav-item <%= (typeof active !== 'undefined' && active === 'sucursales') ? 'active' : '' %>">
+      <i class="bi bi-building"></i><span class="nav-text">Sucursales</span>
     </a>
+    <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
+      <i class="bi bi-sliders"></i><span class="nav-text">Ajustes</span>
+    </a>
+    <a href="/afip/historial" class="nav-item <%= (typeof active !== 'undefined' && active === 'facturacion') ? 'active' : '' %>">
+      <i class="bi bi-file-earmark-check"></i><span class="nav-text">Facturación AFIP</span>
+    </a>
+    <% } %>
 
   </nav>
 
@@ -79,18 +150,12 @@
       </div>
       <div class="user-mini-info">
         <strong><%= (typeof user !== 'undefined' && user && user.name) ? user.name : 'Admin' %></strong>
-        <span>
-          <%= (typeof user !== 'undefined' && user && user.role)
-            ? (user.role === 'admin' ? 'Administrador' : 'Empleado')
-            : 'Usuario' %>
-        </span>
+        <span><%= (typeof user !== 'undefined' && user && user.role) ? (user.role === 'admin' ? 'Administrador' : 'Empleado') : 'Usuario' %></span>
       </div>
     </div>
-
-    <a href="/logout" class="btn-logout" title="Cerrar sesión"
-       style="margin-left:auto;color:var(--text-muted);font-size:17px;text-decoration:none;padding:5px 7px;border-radius:6px;transition:color .15s;flex-shrink:0;"
-       onmouseenter="this.style.color='var(--color-danger)'"
-       onmouseleave="this.style.color='var(--text-muted)'">
+    <a href="/logout" title="Cerrar sesión"
+       style="margin-left:auto;color:rgba(255,255,255,0.45);font-size:17px;text-decoration:none;padding:5px 7px;border-radius:6px;transition:color .15s;flex-shrink:0;"
+       onmouseenter="this.style.color='#f87171'" onmouseleave="this.style.color='rgba(255,255,255,0.45)'">
       <i class="bi bi-box-arrow-right"></i>
     </a>
   </div>
@@ -99,33 +164,149 @@
 
 <div id="sidebarOverlay"></div>
 
+<!-- ── PANEL DE NOTIFICACIONES FLOTANTE ── -->
+<div id="notifPanel" style="display:none;position:fixed;top:70px;left:12px;width:320px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25),0 4px 16px rgba(0,0,0,.12);z-index:9999;overflow:hidden;">
+  <div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-color);">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <i class="bi bi-bell-fill" style="color:var(--color-primary);font-size:13px;"></i>
+      <span style="font-size:13px;font-weight:800;color:var(--text-primary);">Notificaciones</span>
+    </div>
+    <button onclick="axNotif.marcarLeidas()" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;color:var(--color-primary);padding:0;">Marcar leídas</button>
+  </div>
+  <div id="notifList" style="max-height:380px;overflow-y:auto;"></div>
+</div>
+
+<style>
+@keyframes axNotifIn { from{opacity:0;transform:translateY(-8px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+.ax-nrow { display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border-color);text-decoration:none;transition:background .12s;cursor:pointer; }
+.ax-nrow:last-child { border-bottom:none; }
+.ax-nrow:hover { background:var(--bg-hover); }
+.ax-nrow.leida .ax-ntitle,.ax-nrow.leida .ax-ndetail { opacity:.5; }
+.ax-nico { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0; }
+.ax-ntitle { font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.35;margin-bottom:2px; }
+.ax-ndetail { font-size:11px;color:var(--text-secondary);line-height:1.4; }
+.ax-nempty { padding:36px 16px;text-align:center; }
+.ax-nempty i { font-size:30px;display:block;margin-bottom:10px;color:#10b981; }
+.ax-nempty-title { font-size:13px;font-weight:700;color:var(--text-primary); }
+.ax-nempty-sub { font-size:11px;color:var(--text-muted);margin-top:3px; }
+</style>
+
 <script>
-(function() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  if (!sidebar) return;
+/* ── Sidebar ── */
+(function(){
+  const sb=document.getElementById('sidebar'), ov=document.getElementById('sidebarOverlay');
+  if(!sb) return;
+  window.openSidebar=()=>{sb.classList.add('open');ov?.classList.add('open');};
+  window.closeSidebar=()=>{sb.classList.remove('open');ov?.classList.remove('open');};
+  window.toggleSidebar=()=>sb.classList.contains('open')?closeSidebar():openSidebar();
+  ov?.addEventListener('click',closeSidebar);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSidebar();axNotif?.close();}});
+})();
 
-  window.openSidebar = function() {
-    sidebar.classList.add('open');
-    if (overlay) overlay.classList.add('open');
-  };
+/* ── Sucursales ── */
+function toggleDropSuc(e){
+  e.stopPropagation();
+  const d=document.getElementById('dropSuc');
+  if(d) d.style.display=d.style.display==='none'?'block':'none';
+}
+async function cambiarSucursal(id){
+  const d=document.getElementById('dropSuc');
+  if(d) d.style.display='none';
+  try{
+    const r=await fetch('/api/cambiar-sucursal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sucursal_id:id})});
+    const data=await r.json();
+    if(data.ok) window.location.reload();
+    else alert('Error: '+(data.error||'No se pudo cambiar'));
+  }catch(e){alert('Error de conexión');}
+}
+document.addEventListener('click',e=>{
+  const drop=document.getElementById('dropSuc'),btn=document.getElementById('btnCambiarSuc');
+  if(drop&&drop.style.display!=='none'&&!drop.contains(e.target)&&btn&&!btn.contains(e.target)) drop.style.display='none';
+});
 
-  window.closeSidebar = function() {
-    sidebar.classList.remove('open');
-    if (overlay) overlay.classList.remove('open');
-  };
+/* ── Notificaciones ── */
+window.axNotif=(function(){
+  const leidas=new Set(JSON.parse(localStorage.getItem('axNotifLeidas')||'[]'));
+  let open=false, data=[];
 
-  window.toggleSidebar = function() {
-    if (sidebar.classList.contains('open')) window.closeSidebar();
-    else window.openSidebar();
-  };
+  async function cargar(){
+    try{
+      const r=await fetch('/api/notificaciones');
+      if(!r.ok) return;
+      const d=await r.json();
+      data=d.notifs||[];
+      const n=data.filter(x=>!leidas.has(x.id)).length;
+      const badge=document.getElementById('notifBadge');
+      if(badge){
+        badge.textContent=n>9?'9+':n;
+        badge.style.display=n>0?'flex':'none';
+        badge.style.cssText+=';align-items:center;justify-content:center;';
+      }
+      const lista=document.getElementById('notifList');
+      if(!lista) return;
+      if(!data.length){
+        lista.innerHTML=`<div class="ax-nempty">
+          <i class="bi bi-check-circle-fill"></i>
+          <div class="ax-nempty-title">Todo en orden</div>
+          <div class="ax-nempty-sub">Sin notificaciones pendientes</div>
+        </div>`;
+        return;
+      }
+      lista.innerHTML=data.filter(n=>!leidas.has(n.id)).map(n=>{
+        return `<a href="${n.link}" class="ax-nrow" onclick="axNotif.close()">
+          <div class="ax-nico" style="background:${n.color}18;color:${n.color};"><i class="bi ${n.icono}"></i></div>
+          <div style="flex:1;min-width:0;">
+            <div class="ax-ntitle">${n.titulo}</div>
+            <div class="ax-ndetail">${n.detalle}</div>
+          </div>
+          <div style="width:7px;height:7px;border-radius:50%;background:${n.color};flex-shrink:0;margin-top:7px;"></div>
+        </a>`;
+      }).join('') || `<div class="ax-nempty">
+        <i class="bi bi-check-circle-fill"></i>
+        <div class="ax-nempty-title">Todo en orden</div>
+        <div class="ax-nempty-sub">Sin notificaciones pendientes</div>
+      </div>`;
+    }catch(e){}
+  }
 
-  window.closeSidebarMobile = window.closeSidebar;
+  function toggle(e){
+    if(e) e.stopPropagation();
+    open=!open;
+    const p=document.getElementById('notifPanel');
+    const btn=document.getElementById('notifBtn');
+    if(p && btn){
+      if(open){
+        // Posicionar justo debajo del botón
+        const rect=btn.getBoundingClientRect();
+        p.style.top=(rect.bottom+8)+'px';
+        p.style.left='12px';
+        p.style.animation='none'; p.offsetHeight;
+        p.style.animation='axNotifIn .18s cubic-bezier(.2,.8,.3,1) both';
+        p.style.display='block';
+        cargar();
+      } else {
+        p.style.display='none';
+      }
+    }
+  }
+  function close(){
+    open=false;
+    const p=document.getElementById('notifPanel');
+    if(p) p.style.display='none';
+  }
+  function marcarLeidas(){
+    data.forEach(n=>leidas.add(n.id));
+    localStorage.setItem('axNotifLeidas',JSON.stringify([...leidas]));
+    cargar();
+  }
 
-  if (overlay) overlay.addEventListener('click', window.closeSidebar);
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') window.closeSidebar();
+  document.addEventListener('click',e=>{
+    if(!open) return;
+    const wrap=document.getElementById('notifWrap'), panel=document.getElementById('notifPanel');
+    if(wrap&&!wrap.contains(e.target)&&panel&&!panel.contains(e.target)) close();
   });
+  document.addEventListener('DOMContentLoaded',()=>{ cargar(); setInterval(cargar,60000); });
+
+  return {toggle,close,marcarLeidas};
 })();
 </script>

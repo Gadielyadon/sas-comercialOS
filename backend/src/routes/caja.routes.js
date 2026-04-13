@@ -34,10 +34,18 @@ function ventasDelTurno(sucursal_id) {
 
 
 function nowArgentina() {
-  const now = new Date();
-  const offset = -3 * 60;
-  const local = new Date(now.getTime() + offset * 60 * 1000);
-  return local.toISOString().replace('T', ' ').substring(0, 19);
+  try {
+    const str = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).format(new Date()).replace('T', ' ');
+    return str.substring(0, 19);
+  } catch(e) {
+    const local = new Date(Date.now() + (-3 * 60 * 60 * 1000));
+    return local.toISOString().replace('T', ' ').substring(0, 19);
+  }
 }
 
 function enviarResumenCaja(req, res) {
@@ -220,18 +228,21 @@ router.post('/cerrar', (req, res) => {
 /* ── POST /caja/movimiento ── */
 router.post('/movimiento', (req, res) => {
   const caja = cajaActual(req);
-  if (!caja) return res.redirect('/caja');
+  if (!caja) return res.status(400).json({ ok: false, error: 'No hay caja abierta' });
 
   try {
-    run(
-      `INSERT INTO caja_movimientos (caja_id, tipo, monto, descripcion) VALUES (?, ?, ?, ?)`,
-      [caja.id, req.body.tipo, parseFloat(req.body.monto) || 0, req.body.descripcion || '']
+    const monto = parseFloat(req.body.monto) || 0;
+    if (monto <= 0) return res.status(400).json({ ok: false, error: 'El monto debe ser mayor a 0' });
+
+    const result = run(
+      `INSERT INTO caja_movimientos (caja_id, tipo, monto, descripcion, created_at) VALUES (?, ?, ?, ?, ?)`,
+      [caja.id, req.body.tipo, monto, req.body.descripcion || '', nowArgentina()]
     );
+    res.json({ ok: true, id: result.lastInsertRowid });
   } catch (e) {
     console.error('movimiento:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
   }
-
-  res.redirect('/caja');
 });
 
 /* ── Rutas de compatibilidad ── */

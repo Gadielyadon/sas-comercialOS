@@ -83,3 +83,17 @@ INSERT OR IGNORE INTO config (key, value) VALUES ('empresa_telefono',  '');
 INSERT OR IGNORE INTO config (key, value) VALUES ('empresa_email',     '');
 INSERT OR IGNORE INTO config (key, value) VALUES ('ticket_formato',    '80mm');
 INSERT OR IGNORE INTO config (key, value) VALUES ('ticket_footer',     '¡Gracias por su compra!');
+
+-- ── Índices para producción ───────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_products_sku      ON products(sku);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_stock    ON products(stock);
+CREATE INDEX IF NOT EXISTS idx_sales_created_at  ON sales(created_at);
+CREATE INDEX IF NOT EXISTS idx_sales_cliente_id  ON sales(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_sales_payment     ON sales(payment_method);
+CREATE INDEX IF NOT EXISTS idx_sales_status      ON sales(status);
+CREATE INDEX IF NOT EXISTS idx_sales_sucursal    ON sales(sucursal_id);
+CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id ON sale_items(sale_id);
+CREATE INDEX IF NOT EXISTS idx_sale_items_sku     ON sale_items(sku);
+CREATE INDEX IF NOT EXISTS idx_cuenta_corriente_cliente ON cuenta_corriente(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_config_key        ON config(key);

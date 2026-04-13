@@ -387,4 +387,111 @@ router.get('/pdf/:sale_id', async (req, res) => {
   }
 });
 
+
+// ─────────────────────────────────────────────────────────────
+// GET /afip/facturas.xlsx — exportar historial de facturas a Excel
+// ─────────────────────────────────────────────────────────────
+router.get('/facturas.xlsx', (req, res) => {
+  try {
+    const XLSX = require('xlsx');
+    const { all } = require('../db');
+    const { q, tipo } = req.query;
+
+    let conditions = [];
+    let params = [];
+    if (tipo && ['A','B','C'].includes(tipo.toUpperCase())) {
+      const tipoCbte = { A:1, B:6, C:11 }[tipo.toUpperCase()];
+      conditions.push('f.tipo_cbte = ?');
+      params.push(tipoCbte);
+    }
+    if (q) {
+      conditions.push('(f.cae LIKE ? OR f.cliente_nombre LIKE ? OR f.cliente_cuit LIKE ? OR CAST(f.nro_cbte AS TEXT) LIKE ?)');
+      params.push(`%${q}%`,`%${q}%`,`%${q}%`,`%${q}%`);
+    }
+    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    const facturas = all(`
+      SELECT
+        f.id, f.sale_id, f.tipo_cbte, f.punto_venta, f.nro_cbte,
+        f.cae, f.cae_vto, f.importe_total, f.importe_neto, f.importe_iva,
+        f.cliente_cuit, f.cliente_nombre, f.created_at,
+        s.payment_method
+      FROM facturas f
+      LEFT JOIN sales s ON s.id = f.sale_id
+      ${where}
+      ORDER BY f.id DESC
+    `, params);
+
+    const wb = XLSX.utils.book_new();
+    const tipoLetraMap = { 1:'A', 6:'B', 11:'C' };
+    const fmt = n => Number(n || 0);
+
+    // ── Hoja 1: Detalle de facturas ──
+    const h1 = [['Fecha','Tipo','Punto de venta','Nro comprobante','Cliente','CUIT/Doc','Método pago',
+      'Importe neto','IVA','Importe total','CAE','Vto. CAE','Venta N°']];
+
+    facturas.forEach(f => {
+      const fecha = f.created_at ? new Date(f.created_at.replace(' ','T')).toLocaleDateString('es-AR') : '';
+      const letra = tipoLetraMap[f.tipo_cbte] || '?';
+      const pvFmt = `${letra} ${String(f.punto_venta).padStart(4,'0')}-${String(f.nro_cbte).padStart(8,'0')}`;
+      const caeVto = f.cae_vto
+        ? `${String(f.cae_vto).slice(6,8)}/${String(f.cae_vto).slice(4,6)}/${String(f.cae_vto).slice(0,4)}`
+        : '';
+      h1.push([
+        fecha,
+        `Factura ${letra}`,
+        f.punto_venta,
+        pvFmt,
+        f.cliente_nombre || 'Consumidor Final',
+        f.cliente_cuit || '-',
+        f.payment_method || '-',
+        fmt(f.importe_neto),
+        fmt(f.importe_iva),
+        fmt(f.importe_total),
+        f.cae,
+        caeVto,
+        f.sale_id,
+      ]);
+    });
+
+    const ws1 = XLSX.utils.aoa_to_sheet(h1);
+    ws1['!cols'] = [{wch:12},{wch:11},{wch:13},{wch:26},{wch:28},{wch:16},{wch:14},{wch:14},{wch:10},{wch:14},{wch:18},{wch:12},{wch:9}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Facturas');
+
+    // ── Hoja 2: Resumen por tipo ──
+    const tipoMap = { A:{cantidad:0,neto:0,iva:0,total:0}, B:{cantidad:0,neto:0,iva:0,total:0}, C:{cantidad:0,neto:0,iva:0,total:0} };
+    facturas.forEach(f => {
+      const t = tipoLetraMap[f.tipo_cbte] || 'A';
+      if (tipoMap[t]) {
+        tipoMap[t].cantidad++;
+        tipoMap[t].neto  += fmt(f.importe_neto);
+        tipoMap[t].iva   += fmt(f.importe_iva);
+        tipoMap[t].total += fmt(f.importe_total);
+      }
+    });
+    const h2 = [['Tipo','Cantidad','Importe neto','IVA','Total']];
+    ['A','B','C'].forEach(t => {
+      const d = tipoMap[t];
+      if (d.cantidad > 0) h2.push([`Factura ${t}`, d.cantidad, d.neto, d.iva, d.total]);
+    });
+    h2.push(['TOTAL', facturas.length,
+      facturas.reduce((s,f)=>s+fmt(f.importe_neto),0),
+      facturas.reduce((s,f)=>s+fmt(f.importe_iva),0),
+      facturas.reduce((s,f)=>s+fmt(f.importe_total),0)
+    ]);
+    const ws2 = XLSX.utils.aoa_to_sheet(h2);
+    ws2['!cols'] = [{wch:12},{wch:10},{wch:14},{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Resumen por tipo');
+
+    const fecha = new Date().toISOString().split('T')[0];
+    const buf = XLSX.write(wb, { type:'buffer', bookType:'xlsx' });
+    res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="facturas-${fecha}.xlsx"`);
+    res.send(buf);
+  } catch(e) {
+    console.error('AFIP facturas xlsx =>', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

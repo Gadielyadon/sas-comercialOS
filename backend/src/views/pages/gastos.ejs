@@ -24,16 +24,15 @@ function catIcon(cat) {
 %>
 
 <style>
-.form-lbl { font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px; }
-.form-input { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
-.form-input:focus { border-color:var(--color-action); }
+/* form-lbl → definido en styles.css global */
+/* form-input → definido en styles.css global */
+.form-input:focus { border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,216,.12); }
 .cat-pill { display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:20px;font-size:11.5px;font-weight:700; }
 .metodo-txt { font-size:12px;color:var(--text-secondary);font-style:italic; }
 .estado-pill { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s; }
 .estado-pill.pendiente { background:rgba(245,158,11,.12);color:#d97706; }
 .estado-pill.pagado    { background:rgba(16,185,129,.12);color:#059669; }
-/* Toggle pago en modal */
-.pago-toggle-wrap { display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-body);border:1px solid var(--border-color);border-radius:var(--radius-md); }
+.pago-toggle-wrap { display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md); }
 .pago-toggle-info { display:flex;flex-direction:column;gap:2px; }
 .pago-toggle-label { font-size:13px;font-weight:700;color:var(--text-primary); }
 .pago-toggle-sub   { font-size:11px;color:var(--text-secondary); }
@@ -51,14 +50,82 @@ function catIcon(cat) {
     <%- include('../partials/header', { module: 'Gastos', user }) %>
     <main class="page-body">
 
-      <div class="page-header">
+      <div class="page-header" style="margin-bottom:20px;">
         <div class="page-header-title">
           <h2>Gastos</h2>
           <p>Control de gastos operativos del negocio.</p>
         </div>
-        <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
-          <i class="bi bi-plus-circle"></i> Nuevo Gasto
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="abrirResumen()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.06);color:var(--color-primary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-file-earmark-text"></i> Resumen
+          </button>
+          <button class="btn-action btn-action-primary" onclick="abrirNuevo()">
+            <i class="bi bi-plus-circle"></i> Nuevo Gasto
+          </button>
+        </div>
+      </div>
+
+      <!-- ── WIDGET FONDO DE CAJA ── -->
+      <div id="fondoWidget" style="margin-bottom:20px;">
+        <% const fondoMonto = fondo ? fondo.monto : 0; %>
+        <% const fondoPct = fondoMonto > 0 ? Math.min(Math.round((gastadoPagado / fondoMonto) * 100), 100) : 0; %>
+        <% const fondoRestante = Math.max(fondoMonto - gastadoPagado, 0); %>
+        <% const fondoColor = fondoPct > 90 ? '#ef4444' : fondoPct > 70 ? '#f59e0b' : '#10b981'; %>
+
+        <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:20px 24px;box-shadow:var(--shadow-sm);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:<%= fondoMonto > 0 ? '16px' : '0' %>;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:18px;">
+                <i class="bi bi-wallet2"></i>
+              </div>
+              <div>
+                <div style="font-size:13px;font-weight:800;color:var(--text-primary);">Fondo del día</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);">Plata disponible para gastos de hoy</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <% if (fondoMonto > 0) { %>
+                <div style="text-align:right;">
+                  <div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Disponible</div>
+                  <div style="font-size:22px;font-weight:900;color:#10b981;letter-spacing:-1px;">$<%= fondoMonto.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
+                </div>
+              <% } %>
+              <button onclick="abrirFondo()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;">
+                <i class="bi bi-pencil"></i> <%= fondoMonto > 0 ? 'Editar' : 'Cargar fondo' %>
+              </button>
+            </div>
+          </div>
+
+          <% if (fondoMonto > 0) { %>
+          <!-- Barra de progreso -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+            <div style="background:var(--bg-body);border-radius:8px;padding:10px 14px;border:1px solid var(--border-color);">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Gastado (pagado)</div>
+              <div style="font-size:16px;font-weight:800;color:#ef4444;">$<%= gastadoPagado.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
+            </div>
+            <div style="background:var(--bg-body);border-radius:8px;padding:10px 14px;border:1px solid var(--border-color);">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Restante</div>
+              <div style="font-size:16px;font-weight:800;color:#2563eb;">$<%= fondoRestante.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
+            </div>
+            <div style="background:var(--bg-body);border-radius:8px;padding:10px 14px;border:1px solid var(--border-color);">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:3px;">Uso del fondo</div>
+              <div style="font-size:16px;font-weight:800;color:<%= fondoColor %>;"><%= fondoPct %>%</div>
+            </div>
+          </div>
+          <div style="height:8px;background:var(--border-color);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:<%= fondoPct %>%;background:<%= fondoColor %>;border-radius:4px;transition:width .4s ease;"></div>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:7px;">
+            <% if (fondoPct >= 100) { %>
+              <span style="color:#ef4444;font-weight:700;">⚠ Fondo agotado</span>
+            <% } else if (fondoPct >= 80) { %>
+              <span style="color:#f59e0b;font-weight:700;">⚡ Queda poco fondo — revisá los gastos</span>
+            <% } else { %>
+              <span style="color:#10b981;font-weight:600;">✓ Fondo disponible</span>
+            <% } %>
+          </div>
+          <% } %>
+        </div>
       </div>
 
       <!-- Resumen tarjetas -->
@@ -88,12 +155,12 @@ function catIcon(cat) {
         <form method="GET" action="/gastos" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;">
           <div>
             <label style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-right:5px;">Desde</label>
-            <input type="date" name="desde" value="<%= filtros.desde %>"
+            <input type="date" id="filtroDesde" name="desde" value="<%= filtros.desde %>"
               style="padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12.5px;outline:none;font-family:var(--font-body);">
           </div>
           <div>
             <label style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-right:5px;">Hasta</label>
-            <input type="date" name="hasta" value="<%= filtros.hasta %>"
+            <input type="date" id="filtroHasta" name="hasta" value="<%= filtros.hasta %>"
               style="padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12.5px;outline:none;font-family:var(--font-body);">
           </div>
           <select name="categoria" class="filter-select" style="padding:7px 28px 7px 10px;font-size:12.5px;">
@@ -106,8 +173,8 @@ function catIcon(cat) {
           <a href="/gastos" class="btn-action btn-action-outline btn-sm"><i class="bi bi-x-circle"></i> Limpiar</a>
         </form>
         <div style="display:flex;gap:6px;">
-          <button onclick="exportarCSV()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-            <i class="bi bi-filetype-csv"></i> CSV
+          <button onclick="exportarExcel()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-file-earmark-excel"></i> Excel
           </button>
           <button onclick="exportarPDF()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-printer"></i> PDF
@@ -333,10 +400,102 @@ function catIcon(cat) {
   </div>
 </div>
 
+<!-- ── MODAL FONDO DE CAJA ── -->
+<div class="modal-overlay" id="modalFondo" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title"><i class="bi bi-wallet2"></i> Fondo del día</span>
+      <button class="modal-close" onclick="document.getElementById('modalFondo').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+      <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#065f46;">
+        <i class="bi bi-info-circle" style="margin-right:6px;"></i>
+        Ingresá cuánta plata tenés disponible hoy para gastar. Al marcar gastos como pagados se irá descontando automáticamente.
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Fecha</label>
+        <input type="date" id="fondo_fecha" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Monto disponible</label>
+        <div style="position:relative;">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:700;color:var(--text-secondary);">$</span>
+          <input type="number" id="fondo_monto" class="form-input" style="padding-left:28px;font-size:20px;font-weight:800;" placeholder="0" min="0" step="100">
+        </div>
+        <!-- Montos rápidos -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <% [50000,100000,200000,500000].forEach(v => { %>
+          <button onclick="document.getElementById('fondo_monto').value='<%= v %>'"
+            style="flex:1;min-width:70px;padding:6px 4px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;">
+            $<%= v.toLocaleString('es-AR') %>
+          </button>
+          <% }) %>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Nota <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>
+        <input type="text" id="fondo_descripcion" class="form-input" placeholder="Ej: Caja chica semana, fondo proveedor...">
+      </div>
+      <button onclick="guardarFondo()" style="width:100%;padding:13px;border:none;border-radius:var(--radius-md);background:#10b981;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);">
+        <i class="bi bi-check-circle-fill"></i> Guardar fondo
+      </button>
+      <div id="fondoError" style="display:none;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+    </div>
+  </div>
+</div>
+
 <%- include('../partials/scripts') %>
 
 <script>
 'use strict';
+
+/* ── Fondo de caja ── */
+function abrirFondo() {
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('fondo_fecha').value = hoy;
+  document.getElementById('fondo_descripcion').value = '';
+  document.getElementById('fondoError').style.display = 'none';
+  // Pre-cargar valor actual si existe
+  const fondoActual = <%- JSON.stringify(fondo) %>;
+  document.getElementById('fondo_monto').value = fondoActual ? fondoActual.monto : '';
+  document.getElementById('modalFondo').classList.add('active');
+  setTimeout(() => document.getElementById('fondo_monto').focus(), 100);
+}
+
+async function guardarFondo() {
+  const fecha = document.getElementById('fondo_fecha').value;
+  const monto = parseFloat(document.getElementById('fondo_monto').value) || 0;
+  const desc  = document.getElementById('fondo_descripcion').value.trim();
+  const errEl = document.getElementById('fondoError');
+
+  if (monto <= 0) { errEl.textContent = 'Ingresá un monto mayor a 0'; errEl.style.display = 'block'; return; }
+
+  try {
+    const r = await fetch('/gastos/api/fondo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha, monto, descripcion: desc })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('modalFondo').classList.remove('active');
+      location.reload();
+    } else {
+      errEl.textContent = data.error || 'Error al guardar';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Error de conexión';
+    errEl.style.display = 'block';
+  }
+}
+
+function abrirResumen() {
+  const desde = document.getElementById('filtroDesde')?.value || new Date().toISOString().split('T')[0];
+  const hasta  = document.getElementById('filtroHasta')?.value  || desde;
+  window.open(`/gastos/resumen?desde=${desde}&hasta=${hasta}`, '_blank');
+}
+
 let _editGastoId = null;
 
 // ── Gastos en memoria (sin JSON.stringify en onclick) ──────────
@@ -480,26 +639,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Exportar CSV ──────────────────────────────────────────────
-function exportarCSV() {
-  const rows = [...document.querySelectorAll('#tablaGastos tbody tr')];
-  let csv = '\uFEFFFecha;Categoría;Descripción;Forma de pago;Estado;Fecha pago;Monto\n';
-  rows.forEach(r => {
-    const t = r.querySelectorAll('td');
-    csv += [
-      t[0]?.innerText.trim(),
-      t[1]?.innerText.trim(),
-      t[2]?.innerText.trim(),
-      t[3]?.innerText.trim(),
-      t[4]?.innerText.trim(),
-      t[5]?.innerText.trim(),
-      t[6]?.innerText.trim()  // monto — ahora es la 7ma columna
-    ].join(';') + '\n';
-  });
-  const a = Object.assign(document.createElement('a'), {
-    href:     URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
-    download: 'gastos.csv'
-  });
-  a.click();
+function exportarExcel() {
+  const desde    = document.getElementById('filtroDesde')?.value || '';
+  const hasta    = document.getElementById('filtroHasta')?.value  || '';
+  const categoria = document.getElementById('filtroCategoria')?.value || '';
+  const params   = new URLSearchParams();
+  if (desde)     params.set('desde', desde);
+  if (hasta)     params.set('hasta', hasta);
+  if (categoria) params.set('categoria', categoria);
+  window.location.href = '/api/gastos.xlsx?' + params.toString();
 }
 
 // ── Exportar PDF ──────────────────────────────────────────────
@@ -522,7 +670,7 @@ function exportarPDF() {
     </tr>`;
   }).join('');
   const win = window.open('', '_blank', 'width=860,height=600');
-  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos — ComercialOS</title>
+  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos — AxSoft</title>
   <style>
     body{font-family:Arial,sans-serif;font-size:13px;margin:28px}
     h2{font-size:18px;margin-bottom:2px}
@@ -534,7 +682,7 @@ function exportarPDF() {
     @media print{body{margin:0}}
   </style>
   </head><body>
-  <h2>Gastos — ComercialOS</h2>
+  <h2>Gastos — AxSoft</h2>
   <p style="color:#666;font-size:12px;">Impreso: ${new Date().toLocaleString('es-AR')} · ${rows.length} registros</p>
   <table>
     <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Forma de pago</th><th>Estado</th><th style="text-align:right">Monto</th></tr></thead>

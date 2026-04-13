@@ -17,6 +17,7 @@
   .scan-dot.scanner-mode { background:#10b981;animation:pulseDotGreen 1s ease-in-out infinite; }
   @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(0,180,216,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(0,180,216,0)}}
   @keyframes pulseDotGreen{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(16,185,129,0)}}
+  @keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}
   .scan-icon { font-size:16px;color:var(--color-action);flex-shrink:0; }
   #barcodeInput { flex:1;border:none;background:transparent;font-family:var(--font-body);font-size:14px;font-weight:500;color:var(--text-primary);outline:none; }
   #barcodeInput::placeholder { color:var(--text-secondary);font-weight:400;font-size:13px; }
@@ -36,74 +37,160 @@
   }
   .sc-chip.chip-cobrar kbd { background:#10b981; }
   .sc-chip.chip-limpiar kbd { background:#6b7280; }
-  .sc-chip.chip-deptos {
-    border-color:rgba(31,60,136,.3);color:var(--color-primary);
+  .sc-chip.chip-deptos {    border-color:rgba(31,60,136,.3);color:var(--color-primary);
     background:rgba(31,60,136,.05);
   }
   .sc-chip.chip-deptos.active {
     border-color:var(--color-primary);background:var(--color-primary);color:#fff;
   }
   .sc-chip.chip-deptos.active kbd { background:rgba(255,255,255,.2); }
-  .products-scroll { flex:1;overflow-y:auto;padding:12px 14px;min-height:0; }
-  .products-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px; }
 
-  /* CARD PRODUCTO — estilo StartBiz: imagen arriba, datos abajo */
+  /* Lista de precio */
+  .sc-chip.chip-lista { border-color:rgba(16,185,129,.35);color:#059669;background:rgba(16,185,129,.06); }
+  .sc-chip.chip-lista:hover { border-color:#10b981;background:rgba(16,185,129,.12); }
+  .sc-chip.chip-lista kbd { background:#10b981; }
+  .sc-chip.chip-lista.lista-mayorista { border-color:rgba(99,102,241,.4);color:#4f46e5;background:rgba(99,102,241,.07); }
+  .sc-chip.chip-lista.lista-mayorista kbd { background:#6366f1; }
+  .sc-chip.chip-lista.lista-tarjeta { border-color:rgba(245,158,11,.4);color:#d97706;background:rgba(245,158,11,.07); }
+  .sc-chip.chip-lista.lista-tarjeta kbd { background:#f59e0b; }
+
+  .products-scroll { flex:1;overflow-y:auto;padding:0;min-height:0; }
+
+  /* ── TABLA DE PRODUCTOS ── */
+  .products-grid { display:table;width:100%;border-collapse:collapse; }
+
+  /* Header fijo de la tabla */
+  .prod-table-head {
+    display:table-row;
+    background:var(--table-head-bg);
+    position:sticky;top:0;z-index:10;
+  }
+  .prod-th {
+    display:table-cell;
+    padding:10px 14px;
+    font-size:10.5px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.07em;
+    color:var(--table-head-color);
+    white-space:nowrap;
+    border-bottom:none;
+  }
+  .prod-th:first-child { border-radius:0; padding-left:14px; }
+  .prod-th.th-img   { width:62px;text-align:center; }
+  .prod-th.th-stock { width:90px;text-align:center; }
+  .prod-th.th-price { width:130px;text-align:right; }
+
+  /* Fila de producto */
   .prod-card {
-    background:var(--bg-card);
-    border:1.5px solid var(--border-color);
-    border-radius:12px;
-    padding:0;
+    display:table-row;
+    background:var(--bg-surface);
     cursor:pointer;
-    transition:all .15s;
+    transition:background .12s;
     position:relative;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-    min-height:180px;
   }
-  .prod-card:hover { border-color:var(--color-action);box-shadow:0 4px 16px rgba(0,180,216,.18);transform:translateY(-2px); }
-  .prod-card:active { transform:translateY(0); }
-  .prod-card.in-cart { border-color:var(--color-action);background:rgba(0,180,216,.04); }
-  .prod-card.out-stock { opacity:.4;cursor:not-allowed; }
-  .prod-card.out-stock:hover { transform:none;box-shadow:none;border-color:var(--border-color); }
-  .prod-card.kb-selected {
-    border-color: var(--color-primary) !important;
-    box-shadow: 0 0 0 3px rgba(249,115,22,.18), 0 4px 16px rgba(249,115,22,.15) !important;
-    transform: translateY(-2px);
-    outline: none;
+  .prod-card:hover { background:var(--table-row-hover); }
+  .prod-card.in-cart { background:#EEF2FF; }
+  .prod-card.in-cart:hover { background:#E0E7FF; }
+  .prod-card.out-stock { opacity:.45;cursor:not-allowed; }
+  .prod-card.out-stock:hover { background:var(--bg-surface); }
+  .prod-card.kb-selected { background:rgba(27,79,216,.08) !important;outline:2px solid var(--color-primary);outline-offset:-1px; }
+
+  /* Celdas */
+  .prod-td {
+    display:table-cell;
+    padding:9px 14px;
+    border-bottom:0.5px solid var(--border-color);
+    vertical-align:middle;
   }
-  /* imagen arriba — ocupa todo el ancho */
+  .prod-card:last-child .prod-td { border-bottom:none; }
+
+  /* Celda imagen / thumbnail */
+  .prod-td-img {
+    display:table-cell;
+    width:62px;
+    padding:6px 8px;
+    border-bottom:0.5px solid var(--border-color);
+    vertical-align:middle;
+    text-align:center;
+  }
   .prod-thumb {
-    width:100%;
-    height:110px;
-    flex-shrink:0;
-    background:var(--bg-body);
-    border-bottom:1px solid var(--border-color);
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    width:46px;height:46px;
+    border-radius:8px;
     overflow:hidden;
-    position:relative;
+    border:0.5px solid var(--border-color);
     cursor:zoom-in;
-    border-radius:0;
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    background:var(--bg-surface-2);
+    transition:box-shadow .15s;
+    flex-shrink:0;
   }
-  .prod-thumb img { width:100%;height:100%;object-fit:cover; }
-  .prod-thumb-empty { display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);font-size:28px;opacity:.3; }
-  /* info debajo de la imagen */
-  .prod-info { flex:1;display:flex;flex-direction:column;gap:2px;padding:9px 10px 10px; }
-  .prod-badge-promo { position:absolute;top:6px;right:6px;font-size:8px;font-weight:800;text-transform:uppercase;background:#f59e0b;color:#fff;padding:2px 5px;border-radius:6px;z-index:2; }
-  .prod-badge-qty { position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--color-action);color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,180,216,.4);z-index:2; }
-  .prod-card.in-cart .prod-badge-qty { display:flex; }
-  .prod-sin-stock { font-size:10px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.3px; }
-  .prod-name { font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
-  .prod-desc { font-size:10.5px;color:var(--text-secondary);line-height:1.3;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;margin-top:1px; }
-  .prod-price-old { font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);text-decoration:line-through;padding-top:3px; }
-  .prod-price { font-family:var(--font-mono);font-size:14px;font-weight:800;color:var(--color-action);line-height:1;margin-top:auto;padding-top:4px; }
-  .prod-stock { font-size:10px;font-weight:600;margin-top:2px; }
-  .prod-stock.ok  { color:#10b981; }
-  .prod-stock.low { color:#f59e0b; }
-  .prod-stock.zero{ color:#ef4444; }
-  .products-empty { grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:10px;color:var(--text-secondary); }
+  .prod-thumb:hover { box-shadow:0 0 0 2px var(--color-primary); }
+  .prod-thumb img { width:100%;height:100%;object-fit:cover;display:block; }
+  .prod-thumb-empty {
+    width:46px;height:46px;
+    border-radius:8px;
+    background:var(--bg-surface-2);
+    border:0.5px solid var(--border-color);
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    color:var(--text-muted);
+    font-size:18px;
+  }
+
+  /* Datos del producto */
+  .prod-name {
+    font-size:13px;font-weight:700;
+    color:var(--text-primary);
+    line-height:1.3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:260px;
+  }
+  .prod-desc {
+    font-size:11px;color:var(--text-secondary);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:260px;margin-top:2px;
+  }
+  .prod-badge-promo {
+    display:inline-block;font-size:9px;font-weight:800;
+    text-transform:uppercase;background:#f59e0b;color:#fff;
+    padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;
+  }
+  .prod-badge-qty {
+    display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;border-radius:50%;
+    background:var(--color-primary);color:#fff;
+    font-size:9px;font-weight:800;margin-left:6px;vertical-align:middle;
+  }
+
+  /* Stock badge */
+  .prod-stock-badge {
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:52px;padding:3px 10px;border-radius:20px;
+    font-family:var(--font-mono);font-size:12px;font-weight:800;
+  }
+  .prod-stock-badge.ok   { background:#10b981;color:#fff; }
+  .prod-stock-badge.low  { background:#f59e0b;color:#fff; }
+  .prod-stock-badge.zero { background:#ef4444;color:#fff; }
+
+  /* Precio */
+  .prod-price {
+    font-family:var(--font-mono);font-size:14px;font-weight:800;
+    color:var(--color-primary);text-align:right;white-space:nowrap;
+  }
+  .prod-price-old {
+    font-family:var(--font-mono);font-size:11px;
+    color:var(--text-muted);text-decoration:line-through;
+    text-align:right;display:block;
+  }
+  .prod-sin-stock {
+    font-size:10px;font-weight:700;color:#ef4444;
+    text-transform:uppercase;letter-spacing:.3px;display:block;
+  }
+
+  .products-empty {
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:50px 20px;gap:10px;color:var(--text-secondary);
+  }
   .products-empty i { font-size:42px;opacity:.18; }
   .products-empty p { font-size:13px;opacity:.5; }
 
@@ -125,7 +212,7 @@
   .cart-empty-state p { font-size:13px;opacity:.5;line-height:1.5; }
 
   /* CARRITO — estilo StartBiz: lista vertical, cada item con precio unitario y controles */
-  .cart-items-grid { display:flex;flex-direction:column;gap:8px; }
+  .cart-items-grid { display:flex;flex-direction:column;gap:3px; }
 
   .cart-card {
     background:var(--bg-card2, #f9fafb);
@@ -366,7 +453,7 @@
   }
   .btn-mixto {
     font-size:12px;font-weight:800;padding:8px 14px;border-radius:999px;border:1.5px solid var(--border-color);
-    background:#fff;color:var(--text-secondary);cursor:pointer;transition:all .15s;font-family:var(--font-body);
+    background:var(--bg-card);color:var(--text-secondary);cursor:pointer;transition:all .15s;font-family:var(--font-body);
   }
 
   .pm-grid {
@@ -427,14 +514,16 @@
     font-size:12px;color:var(--text-secondary);margin-top:10px;text-align:center;
   }
 
-  .exito-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px); }
+  .exito-overlay { position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px); }
   .exito-overlay.open { display:flex; }
-  .exito-modal { background:var(--bg-card);border-radius:20px;padding:32px;width:300px;text-align:center;box-shadow:var(--shadow-lg);animation:modalIn .2s ease; }
+  .exito-modal { background:var(--bg-card);border-radius:20px;padding:28px 28px 24px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:modalIn .2s ease; }
   .exito-icon  { width:60px;height:60px;background:rgba(16,185,129,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#10b981;margin:0 auto 14px; }
   .exito-modal h3 { font-size:18px;font-weight:700;margin-bottom:4px; }
   .exito-total { font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--color-action);letter-spacing:-1px;margin:8px 0; }
   .exito-modal p { font-size:12.5px;color:var(--text-secondary); }
-  .btn-nueva-venta { width:100%;margin-top:14px;padding:11px;border-radius:var(--radius-sm);border:none;background:var(--color-action);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px; }
+  .btn-nueva-venta { width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--color-action);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px; }
+  .exito-kbd-hint { display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);margin-top:5px; }
+  .exito-kbd-hint kbd { background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;color:var(--text-secondary); }
 
   @media (max-width:860px) {
     .pos-wrapper { flex-direction:column; }
@@ -586,34 +675,33 @@
     border:none !important;
     border-radius:20px;
     overflow:hidden;
-    box-shadow:0 10px 28px rgba(15,23,42,.08);
+    box-shadow:0 4px 16px rgba(15,23,42,.07);
   }
   .pos-left{
     width:64%;
-    background:#ffffff;
+    background:var(--bg-card);
   }
   .pos-right{
     width:36%;
-    background:#f8fafc;
+    background:var(--bg-surface, #f1f5f9);
   }
 
   /* Topbar izquierda */
   .pos-topbar{
     padding:14px 16px;
-    background:#ffffff;
-    border-bottom:1px solid #e5e7eb;
+    background:var(--bg-card);
+    border-bottom:1px solid var(--border-color);
     gap:12px;
   }
   .scan-zone{
     height:48px;
-    background:#f8fafc;
-    border:1.5px solid #d8e0ea;
+    background:var(--bg-body);
+    border:1.5px solid var(--border-color);
     border-radius:16px;
-    box-shadow:inset 0 1px 1px rgba(255,255,255,.8);
   }
   .scan-zone:focus-within{
     border-color:var(--color-primary);
-    box-shadow:0 0 0 4px rgba(249,115,22,.12);
+    box-shadow:0 0 0 4px rgba(27,79,216,.12);
   }
   .scan-icon{
     color:var(--color-primary);
@@ -641,8 +729,8 @@
   }
   .sc-chip:hover{
     transform:translateY(-1px);
-    background:#fff7ed;
-    border-color:rgba(249,115,22,.45);
+    background:#EEF2FF;
+    border-color:rgba(27,79,216,.45);
     color:var(--color-primary);
   }
   .sc-chip.chip-cobrar{
@@ -666,226 +754,91 @@
 
   /* Zona productos */
   .products-scroll{
-    padding:16px;
-    background:linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+    padding:0;
+    background:var(--bg-surface);
   }
+  /* Tabla de productos — usa el sistema de tabla global */
   .products-grid{
-    grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
-    gap:14px;
-  }
-
-  .prod-card{
-    min-height:255px;
-    border:1px solid #e5e7eb;
-    border-radius:18px;
-    background:#ffffff;
-    box-shadow:0 3px 10px rgba(15,23,42,.05);
-  }
-  .prod-card:hover{
-    border-color:rgba(249,115,22,.45);
-    box-shadow:0 14px 28px rgba(15,23,42,.12);
-    transform:translateY(-3px);
-  }
-  .prod-card.in-cart{
-    border-color:rgba(249,115,22,.65);
-    background:#fffaf5;
-    box-shadow:0 10px 24px rgba(249,115,22,.12);
-  }
-  .prod-thumb{
-    height:132px;
-    background:#f1f5f9;
-    border-bottom:1px solid #edf2f7;
-  }
-  .prod-info{
-    padding:12px 13px 13px;
-    gap:4px;
-  }
-  .prod-name{
-    font-size:14px;
-    font-weight:800;
-    color:#0f172a;
-    line-height:1.25;
-  }
-  .prod-desc{
-    font-size:11px;
-    color:#64748b;
-  }
-  .prod-price-old{
-    font-size:11px;
-  }
-  .prod-price{
-    font-size:23px;
-    font-weight:900;
-    color:var(--color-primary);
-    letter-spacing:-1px;
-    margin-top:8px;
-  }
-  .prod-stock{
-    margin-top:5px;
-    font-size:11px;
-    font-weight:700;
-  }
-  .prod-badge-qty{
-    width:24px;
-    height:24px;
-    font-size:10px;
-    box-shadow:0 8px 16px rgba(249,115,22,.35);
-  }
-  .prod-badge-promo{
-    top:8px;
-    right:8px;
-    padding:3px 7px;
-    font-size:9px;
-    border-radius:999px;
-    box-shadow:0 4px 10px rgba(245,158,11,.25);
+    display:table;
+    width:100%;
+    border-collapse:collapse;
   }
 
   /* Header carrito */
+  /* ══ PANEL DERECHO — REDISEÑO ══ */
+
   .cart-header{
-    padding:16px 18px 14px;
-    background:#ffffff;
-    border-bottom:1px solid #e5e7eb;
+    padding:12px 14px 10px;
+    background:transparent;
+    border-bottom:1px solid var(--border-color);
+    display:flex;align-items:center;justify-content:space-between;
+    flex-shrink:0;
   }
-  .cart-title-icon{
-    width:38px;
-    height:38px;
-    border-radius:12px;
-    background:rgba(249,115,22,.10);
-    color:var(--color-primary);
-    font-size:18px;
-  }
-  .cart-title-txt{
-    font-size:18px;
-    font-weight:800;
-    color:#0f172a;
-  }
-  .cart-count-badge{
-    background:rgba(249,115,22,.12);
-    color:var(--color-primary);
-    font-size:12px;
-    padding:3px 9px;
-  }
-  .cart-sub{
-    color:#64748b;
-    font-size:12px;
-    margin-top:2px;
-  }
-  .btn-clear-sm{
-    height:38px;
-    padding:0 12px;
-    border-radius:10px;
-    border:1.5px solid #d7dee8;
-    background:#fff;
-    color:#475569;
-    font-weight:700;
-  }
+  .cart-title-txt{ font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px; }
+  .cart-count-badge{ background:var(--color-primary);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px; }
+  .cart-sub{ font-size:11px;color:var(--text-secondary);margin-top:2px; }
+  .btn-clear-sm{ padding:4px 10px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s;font-family:var(--font-body); }
+  .btn-clear-sm:hover{ border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.05); }
+
+  /* Bloque cliente + comprobante */
+  .cart-cliente-bloque{ padding:8px 10px 6px;background:transparent;border-bottom:1px solid var(--border-color);flex-shrink:0; }
+  .cart-field-row{ display:flex;flex-direction:column;gap:3px; }
+  .cart-field-lbl{ font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);display:flex;align-items:center;gap:4px; }
+  .comprobante-toggle{ display:flex;gap:4px; }
+  .comp-btn{ flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--font-body);transition:all .15s; }
+  .comp-btn.active{ background:var(--color-primary);border-color:var(--color-primary);color:#fff;box-shadow:0 2px 8px rgba(27,79,216,.25); }
 
   /* Lista carrito */
-  .cart-list{
-    padding:12px;
-    background:linear-gradient(180deg,#fcfcfd 0%, #f4f7fb 100%);
-  }
-  .cart-empty-state{
-    border:2px dashed #dbe3ee;
-    border-radius:18px;
-    background:#fff;
-    min-height:220px;
-  }
-  .cart-empty-state i{
-    color:#cbd5e1;
-  }
-  .cart-empty-state p{
-    color:#94a3b8;
-    font-size:14px;
-  }
-  .cart-card{
-    background:#ffffff;
-    border:1px solid #e5e7eb;
-    border-left:4px solid rgba(249,115,22,.35);
-    border-radius:14px;
-    padding:12px 13px;
-    box-shadow:0 3px 9px rgba(15,23,42,.05);
-  }
-  .cart-card:hover{
-    border-left-color:var(--color-primary);
-    box-shadow:0 10px 20px rgba(15,23,42,.08);
-  }
-  .cart-card-name{
-    font-size:14px;
-    font-weight:800;
-    color:#0f172a;
-  }
-  .cart-card-unit{
-    font-size:11px;
-    color:#64748b;
-  }
-  .cart-card-price{
-    font-size:20px;
-    color:var(--color-primary);
-    letter-spacing:-.5px;
-  }
-  .qty-ctrl{
-    background:#f8fafc;
-    border-color:#dbe3ee;
-    border-radius:10px;
-  }
-  .qty-btn:hover{
-    background:#fff7ed;
-    color:var(--color-primary);
-  }
-  .qty-val{
-    min-width:34px;
-    height:30px;
-    line-height:30px;
-    background:#fff;
-  }
-  .btn-del:hover{
-    background:rgba(239,68,68,.08);
-  }
+  .cart-list{ padding:5px 7px;background:transparent;display:flex;flex-direction:column;gap:3px; }
+  .cart-empty-state{ border:2px dashed var(--border-color);border-radius:12px;background:var(--bg-card);min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin:4px 0; }
+  .cart-empty-state i{ color:var(--text-muted);font-size:22px; }
+  .cart-empty-state p{ color:var(--text-muted);font-size:11.5px;text-align:center;line-height:1.4;margin:0; }
+  .cart-items-grid{ display:flex;flex-direction:column;gap:3px; }
 
-  /* Footer carrito */
-  .cart-footer{
-    background:#ffffff !important;
-    border-top:1px solid #e5e7eb !important;
-    padding:12px !important;
-    gap:10px !important;
-  }
-  .field-label{
-    font-size:11px;
-    font-weight:800;
-    color:#475569;
-  }
-  .cobro-section-cliente,
-  .cobro-section-descuento{
-    background:#f8fafc;
-    border:1px solid #e2e8f0;
-    border-radius:14px;
-    padding:10px 12px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.65);
-  }
-  .cart-cliente-inp,
-  .disc-input{
-    background:#ffffff;
-    border:1.5px solid #d7dee8;
-    border-radius:10px;
-  }
-  .cart-cliente-inp:focus,
-  .disc-input:focus{
-    border-color:var(--color-primary);
-    box-shadow:0 0 0 3px rgba(249,115,22,.10);
-  }
-  .disc-bar{
-    background:transparent;
-  }
-  .disc-type-btn{
-    border-radius:8px;
-    border:1.5px solid #d7dee8;
-    background:#fff;
-    padding:4px 9px;
-  }
-  .disc-type-btn.on{
-    background:#fff7ed;
-    border-color:rgba(249,115,22,.45);
+  /* Cart-card — fila única */
+  .cart-card{ background:var(--bg-card);border:1px solid var(--border-color);border-radius:7px;padding:5px 8px;display:flex;flex-direction:row;align-items:center;gap:5px;position:relative;transition:background .1s; }
+  .cart-card:hover{ background:var(--bg-hover); }
+  .cart-card-top{ flex:1;min-width:0;display:flex;align-items:center; }
+  .cart-card-name{ font-size:12px;font-weight:600;color:var(--text-primary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px; }
+  .cart-card-unit{ display:none; }
+  .cart-card-bottom{ display:flex;align-items:center;gap:5px;flex-shrink:0; }
+  .cart-card-price{ font-size:12.5px;font-weight:800;color:var(--color-primary);letter-spacing:-.3px;min-width:65px;text-align:right; }
+  .qty-ctrl{ display:inline-flex;align-items:center;border:1px solid var(--border-color);border-radius:5px;overflow:hidden;background:var(--bg-body); }
+  .qty-btn{ width:19px;height:19px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:11px;cursor:pointer;font-weight:700; }
+  .qty-btn:hover{ background:rgba(27,79,216,.1);color:var(--color-primary); }
+  .qty-val{ min-width:19px;text-align:center;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text-primary);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);height:19px;line-height:19px; }
+  .btn-del{ width:17px;height:17px;border:none;background:transparent;color:var(--text-muted);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0; }
+  .btn-del:hover{ background:rgba(239,68,68,.1);color:#ef4444; }
+  .cart-promo-tag{ position:absolute;top:2px;right:28px;font-size:7px;font-weight:800;background:#f59e0b;color:#fff;padding:1px 4px;border-radius:4px;text-transform:uppercase; }
+
+  /* Footer */
+  .cart-footer{ flex-shrink:0;border-top:1px solid var(--border-color);background:transparent;padding:8px 10px;display:flex;flex-direction:column;gap:5px; }
+
+  /* Descuento */
+  .cart-disc-row{ display:flex;align-items:center;justify-content:space-between;gap:8px; }
+  .cart-disc-lbl{ font-size:10.5px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:4px;white-space:nowrap; }
+  .disc-bar{ display:flex;gap:4px;align-items:center; }
+  .disc-type-btn{ padding:2px 7px;border-radius:5px;border:1.5px solid var(--border-color);background:var(--bg-body);font-size:11px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .1s; }
+  .disc-type-btn.on{ border-color:var(--color-primary);background:rgba(27,79,216,.08);color:var(--color-primary); }
+  .disc-input{ width:50px;border:1.5px solid var(--border-color);background:var(--bg-body);border-radius:5px;padding:2px 5px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-primary);outline:none;text-align:right; }
+  .disc-input:focus{ border-color:var(--color-primary); }
+  .disc-suffix{ font-size:11px;font-weight:700;color:var(--text-secondary);flex-shrink:0; }
+
+  /* Resumen numérico */
+  .cart-resumen{ background:var(--bg-body);border:1px solid var(--border-color);border-radius:9px;overflow:hidden; }
+  .res-row{ display:flex;justify-content:space-between;align-items:center;padding:5px 11px;font-size:12px;border-bottom:1px solid var(--border-color); }
+  .res-row span:first-child{ color:var(--text-secondary);font-weight:500; }
+  .res-row span:last-child{ font-family:var(--font-mono);font-weight:700;color:var(--text-primary); }
+  .res-total{ display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--color-primary); }
+  .res-total span:first-child{ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.85); }
+  .res-total span:last-child{ font-family:var(--font-mono);font-size:20px;font-weight:900;color:#fff;letter-spacing:-1px; }
+
+  /* Botón */
+  .btn-confirm{ width:100%;padding:11px;border-radius:9px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(27,79,216,.3); }
+  .btn-confirm:hover:not(:disabled){ transform:translateY(-1px);box-shadow:0 5px 18px rgba(27,79,216,.45); }
+  .btn-confirm:disabled{ opacity:.35;cursor:not-allowed;box-shadow:none;transform:none; }
+  .kbd-hint{ font-size:10px;opacity:.75;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-family:var(--font-mono); }
+
   }
 
   /* Bloque total */
@@ -927,74 +880,76 @@
   .btn-confirm{
     min-height:54px;
     border-radius:16px;
-    background:linear-gradient(135deg,#f97316,#ea580c);
-    box-shadow:0 10px 24px rgba(249,115,22,.25);
+    background:var(--color-primary);
+    box-shadow:0 10px 24px rgba(27,79,216,.25);
     font-size:16px;
     font-weight:800;
   }
   .btn-confirm:hover:not(:disabled){
-    box-shadow:0 14px 30px rgba(249,115,22,.35);
+    box-shadow:0 14px 30px rgba(27,79,216,.35);
   }
   .btn-confirm:disabled{
     background:linear-gradient(135deg,#fecaca,#fca5a5);
     opacity:.9;
   }
-
   /* Cobro modal */
   .cobro-modal{
     border-radius:24px;
+    background:var(--bg-card);
   }
   .cobro-header{
-    background:#ffffff;
-    border-bottom:1px solid #e5e7eb;
+    background:var(--bg-card);
+    border-bottom:1px solid var(--border-color);
   }
   .cobro-title{
     font-size:19px;
     font-weight:900;
-    color:#0f172a;
+    color:var(--text-primary);
   }
   .cobro-left{
-    background:#fff;
+    background:var(--bg-body);
   }
   .cobro-right{
-    background:#f8fafc;
+    background:var(--bg-card);
   }
   .cobro-total-box{
-    background:linear-gradient(180deg,#fff7ed 0%, #ffedd5 100%);
-    border:1.5px solid rgba(249,115,22,.22);
-    box-shadow:0 8px 20px rgba(249,115,22,.10);
+    background:#1fa24f;
+    border:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.25);
   }
   .cobro-total-lbl{
-    color:#c2410c;
+    color:rgba(255,255,255,.65);
   }
   .cobro-total-amt{
-    color:#0f172a;
+    color:#ffffff;
   }
   .cobro-section{
-    background:#fff;
-    border:1px solid #e5e7eb;
-    box-shadow:0 3px 10px rgba(15,23,42,.04);
+    background:var(--bg-card);
+    border:1px solid var(--border-color);
+    box-shadow:none;
   }
   .pm-btn{
-    min-height:120px;
-    border-radius:18px;
-    background:#fff;
-    border:1.5px solid #d7dee8;
-    box-shadow:0 2px 8px rgba(15,23,42,.03);
+    min-height:110px;
+    border-radius:16px;
+    background:var(--bg-card);
+    border:1.5px solid var(--border-color);
+    box-shadow:none;
   }
+  .pm-btn i { color:var(--text-secondary); }
+  .pm-btn span { color:var(--text-secondary); }
   .pm-btn:hover{
-    background:#fff7ed;
-    border-color:rgba(249,115,22,.45);
-    box-shadow:0 8px 18px rgba(249,115,22,.10);
+    background:var(--bg-hover);
+    border-color:var(--color-primary);
   }
   .pm-btn.on{
-    background:#fff7ed;
+    background:rgba(27,79,216,.1);
     border-color:var(--color-primary);
-    box-shadow:0 0 0 4px rgba(249,115,22,.10);
+    box-shadow:0 0 0 3px rgba(27,79,216,.12);
   }
+  .pm-btn.on i,.pm-btn.on span{ color:var(--color-primary); }
   .btn-cobrar{
-    border-radius:18px;
-    box-shadow:0 12px 26px rgba(16,185,129,.24);
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(16,185,129,.2);
   }
 
   /* Modal éxito */
@@ -1031,9 +986,8 @@
     }
     .pos-left{ width:60%; }
     .pos-right{ width:40%; }
-    .products-grid{
-      grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
-    }
+    /* En tablet ocultar columna de descripción */
+    .prod-desc { display:none; }
   }
   @media (max-width: 860px){
     body{ overflow:auto; }
@@ -1043,16 +997,25 @@
       overflow:visible;
     }
     .pos-wrapper{
-      padding:10px;
-      gap:10px;
+      padding:8px;
+      gap:8px;
+      /* En mobile: apilar paneles y ocultar uno */
+      flex-direction: column;
     }
     .pos-left,
     .pos-right{
       width:100%;
       border-radius:18px;
     }
+    /* Mobile: un panel a la vez */
+    .pos-left  { display: flex; }
+    .pos-right { display: none; }
+    .pos-left.panel-hidden  { display: none; }
+    .pos-right.panel-visible { display: flex; }
+
     .pos-topbar{
       flex-wrap:wrap;
+      gap:8px;
     }
     .sc-chips{
       width:100%;
@@ -1061,41 +1024,79 @@
     .sc-chip{
       flex:1;
       justify-content:center;
-      min-width:110px;
+      min-width:90px;
+      font-size:12px;
     }
-    .products-grid{
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-    }
-    .prod-card{
-      min-height:220px;
-    }
-    .prod-thumb{
-      height:118px;
-    }
-    .total-highlight-value{
-      font-size:34px;
+    /* Ocultar columnas no críticas */
+    .prod-desc { display:none; }
+    .prod-price-old { display:none; }
+    .prod-th.th-stock { display:none; }
+    .prod-td:nth-child(3) { display:none; }
+
+    /* FAB — botón flotante para alternar carrito/catálogo */
+    .fab-cart {
+      display: flex !important;
     }
   }
   @media (max-width: 520px){
-    .products-grid{
-      grid-template-columns:1fr 1fr;
-    }
-    .prod-card{
-      min-height:205px;
-    }
-    .prod-thumb{
-      height:100px;
-    }
-    .prod-name{
-      font-size:13px;
-    }
-    .prod-price{
-      font-size:20px;
-    }
-    .total-highlight-value{
-      font-size:30px;
-    }
+    .prod-td-img { display:none; }
+    .prod-th.th-img { display:none; }
+    .total-highlight-value{ font-size:30px; }
+    .sc-chip kbd { display:none; }
+    .pos-wrapper { padding:6px; gap:6px; }
+  }
+
+  /* FAB flotante — siempre oculto en desktop */
+  .fab-cart {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 16px;
+    z-index: 300;
+    align-items: center;
+    gap: 0;
+    flex-direction: column;
+  }
+  .fab-btn {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(27,79,216,.5);
+    transition: transform .15s, box-shadow .15s;
+    position: relative;
+  }
+  .fab-btn:active { transform: scale(.93); }
+  .fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+  }
+  .fab-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-align: center;
+    letter-spacing: .3px;
   }
 
   /* Oscuro refinado */
@@ -1115,43 +1116,51 @@
     background:#171b22;
     border-color:rgba(255,255,255,.08);
   }
-  [data-theme="dark"] .products-scroll,
-  [data-theme="dark"] .cart-list{
+  [data-theme="dark"] .products-scroll{
     background:#11161c;
   }
-  [data-theme="dark"] .scan-zone,
-  [data-theme="dark"] .cart-cliente-inp,
-  [data-theme="dark"] .disc-input,
-  [data-theme="dark"] .qty-ctrl,
-  [data-theme="dark"] .pm-btn,
-  [data-theme="dark"] .cobro-section,
-  [data-theme="dark"] .cobro-section-cliente,
-  [data-theme="dark"] .cobro-section-descuento,
-  [data-theme="dark"] .cart-card,
   [data-theme="dark"] .prod-card{
+    background:#171b22;
+  }
+  [data-theme="dark"] .prod-card:hover{
+    background:#1e2640;
+  }
+  [data-theme="dark"] .prod-card.in-cart{
+    background:#1e2a4a;
+  }
+  [data-theme="dark"] .prod-thumb-empty{
     background:#1b222c;
-    border-color:rgba(255,255,255,.09);
-    color:#f3f4f6;
+    border-color:rgba(255,255,255,.08);
   }
-  [data-theme="dark"] .prod-thumb{
-    background:#0f1319;
-    border-color:rgba(255,255,255,.06);
+  [data-theme="dark"] .prod-table-head{
+    background:#1e3a8a;
   }
-  [data-theme="dark"] .prod-name,
-  [data-theme="dark"] .cart-card-name,
-  [data-theme="dark"] .cart-title-txt,
-  [data-theme="dark"] .cobro-title{
-    color:#f8fafc;
-  }
-  [data-theme="dark"] .products-scroll,
-  [data-theme="dark"] .cart-list,
-  [data-theme="dark"] .cobro-right{
-    background:#11161c;
-  }
-  [data-theme="dark"] .cart-footer{
-    background:#171b22 !important;
-    border-color:rgba(255,255,255,.08) !important;
-  }
+
+  /* ── Dark mode carrito ── */
+  [data-theme="dark"] .cart-list { background:transparent; }
+  [data-theme="dark"] .cart-header,
+  [data-theme="dark"] .cart-cliente-bloque,
+  [data-theme="dark"] .cart-footer { background:transparent; border-color:rgba(255,255,255,.07) !important; }
+  [data-theme="dark"] .pos-right { background:#12171d; }
+  [data-theme="dark"] .pos-left { background:#171b22; }
+  [data-theme="dark"] .cart-empty-state { background:#161b24; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .cart-card { background:#161b24; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .cart-card:hover { background:#1a2133; }
+  [data-theme="dark"] .cart-card-name { color:#e2e8f0; }
+  [data-theme="dark"] .cart-card-price { color:#60a5fa; }
+  [data-theme="dark"] .qty-ctrl { background:#0f1319; border-color:rgba(255,255,255,.1); }
+  [data-theme="dark"] .qty-val { color:#e2e8f0; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .qty-btn { color:#94a3b8; }
+  [data-theme="dark"] .qty-btn:hover { background:rgba(96,165,250,.12); color:#60a5fa; }
+  [data-theme="dark"] .comp-btn { background:#161b24; border-color:rgba(255,255,255,.1); color:#94a3b8; }
+  [data-theme="dark"] .cart-cliente-inp,
+  [data-theme="dark"] .disc-input { background:#0f1319; border-color:rgba(255,255,255,.1); color:#e2e8f0; }
+  [data-theme="dark"] .disc-type-btn { background:#161b24; border-color:rgba(255,255,255,.1); color:#94a3b8; }
+  [data-theme="dark"] .disc-type-btn.on { background:rgba(96,165,250,.15); border-color:rgba(96,165,250,.4); color:#60a5fa; }
+  [data-theme="dark"] .cart-resumen { background:#0f1319; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .res-row { border-color:rgba(255,255,255,.06); }
+  [data-theme="dark"] .res-row span:first-child { color:#94a3b8; }
+  [data-theme="dark"] .res-row span:last-child { color:#e2e8f0; }
 </style>
 
 
@@ -1175,6 +1184,36 @@
             <div class="sc-chip chip-deptos" id="chipDeptos" onclick="toggleDeptosChip(this)" title="F5 — Departamentos">
               <kbd>F5</kbd> Departamentos
             </div>
+            <!-- Selector lista de precio — desplegable simple -->
+            <div style="position:relative;flex-shrink:0;" id="listaWrap">
+              <button id="btnLista" onclick="toggleDropLista()" title="F6 — Lista de precio"
+                style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.35);background:rgba(16,185,129,.06);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;white-space:nowrap;">
+                <kbd style="background:#10b981;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.3px;">F6</kbd>
+                <i class="bi bi-tags" id="listaIcon"></i>
+                <span id="listaNombre">Minorista</span>
+                <i class="bi bi-chevron-down" style="font-size:10px;opacity:.7;"></i>
+              </button>
+              <div id="dropLista"
+                style="display:none;position:absolute;top:calc(100% + 5px);right:0;min-width:160px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;overflow:hidden;">
+                <div style="padding:5px;">
+                  <button onclick="selLista(0)" id="listaOpt0"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-person" style="color:#10b981;width:14px;"></i> Minorista
+                  </button>
+                  <button onclick="selLista(1)" id="listaOpt1"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-building" style="color:#6366f1;width:14px;"></i> Mayorista
+                  </button>
+                  <button onclick="selLista(2)" id="listaOpt2"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-credit-card" style="color:#f59e0b;width:14px;"></i> Tarjeta
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <!-- ── DEPARTAMENTOS DE PRECIO MANUAL ── -->
@@ -1195,33 +1234,40 @@
       </div>
 
       <!-- DERECHA -->
-      <div class="pos-right">
+      <div class="pos-right" id="posRight">
+
+      <!-- FAB — botón flotante solo en mobile -->
+      <div class="fab-cart" id="fabCart">
+        <button class="fab-btn" id="fabBtn" onclick="togglePanelMobile()" title="Ver carrito / catálogo">
+          <i class="bi bi-cart3" id="fabIcon"></i>
+          <span class="fab-badge" id="fabBadge" style="display:none;">0</span>
+        </button>
+        <span class="fab-label" id="fabLabel">Carrito</span>
+      </div>
+
+        <!-- ── HEADER ── -->
         <div class="cart-header">
-          <div class="cart-title-wrap">
-            <div class="cart-title-icon"><i class="bi bi-cart3"></i></div>
-            <div>
-              <span class="cart-title-txt">Carrito</span>
-              <span class="cart-count-badge" id="cartCount">0</span>
-              <div class="cart-sub" id="cartSub">Sin productos</div>
-            </div>
+          <div>
+            <div class="cart-title-txt">Resumen de la Venta</div>
+            <div class="cart-sub" id="cartSub">Sin productos</div>
           </div>
-          <button class="btn-clear-sm" onclick="clearCart()"><i class="bi bi-x-circle"></i> Limpiar</button>
-        </div>
-        <div class="cart-list" id="cartList">
-          <div class="cart-empty-state" id="cartEmptyState">
-            <i class="bi bi-cart3"></i>
-            <p>Tocá un producto<br>para agregarlo al carrito</p>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="cart-count-badge" id="cartCount" style="display:none;">0</span>
+            <button class="btn-clear-sm" onclick="clearCart()"><i class="bi bi-x-circle"></i> Limpiar</button>
           </div>
-          <div class="cart-items-grid" id="cartItemsGrid"></div>
         </div>
-        <div class="cart-footer">
-          <div class="cobro-section-cliente">
-            <div class="field-label" style="margin-bottom:6px;display:flex;align-items:center;gap:5px;">
-              <i class="bi bi-person" style="color:var(--color-action);font-size:12px;"></i> Cliente
-            </div>
+
+        <!-- ── CLIENTE ── -->
+        <div class="cart-cliente-bloque">
+          <div class="cart-field-row">
+            <label class="cart-field-lbl"><i class="bi bi-person"></i> Cliente</label>
             <div class="cart-cliente-wrap">
               <i class="bi bi-person cart-cliente-ico"></i>
-              <input type="text" class="cart-cliente-inp" id="posClienteSearch" placeholder="Consumidor Final" autocomplete="off" oninput="buscarClientePos(this.value)" onfocus="mostrarTodosClientes()" onblur="setTimeout(cerrarDropCliente,200)">
+              <input type="text" class="cart-cliente-inp" id="posClienteSearch"
+                placeholder="Consumidor Final" autocomplete="off"
+                oninput="buscarClientePos(this.value)"
+                onfocus="mostrarTodosClientes()"
+                onblur="setTimeout(cerrarDropCliente,200)">
               <div class="cart-cliente-drop" id="posClienteResultados"></div>
               <div class="cart-cliente-sel" id="posClienteSeleccionado">
                 <span id="posClienteNombre" style="font-weight:600;color:var(--text-primary)"></span>
@@ -1229,35 +1275,57 @@
               </div>
             </div>
           </div>
-          <div class="cobro-section-descuento">
-            <div class="field-label" style="margin-bottom:6px;display:flex;align-items:center;gap:5px;">
-              <i class="bi bi-percent" style="color:var(--color-alert);font-size:12px;"></i> Descuento
+
+          <!-- ── TIPO COMPROBANTE ── -->
+          <div class="cart-field-row" style="margin-top:6px;">
+            <label class="cart-field-lbl"><i class="bi bi-file-earmark-text"></i> Comprobante</label>
+            <div class="comprobante-toggle">
+              <button class="comp-btn active" id="compVenta" onclick="setComprobante('venta')">
+                <i class="bi bi-receipt"></i> Venta
+              </button>
+              <button class="comp-btn" id="compFactura" onclick="setComprobante('factura')">
+                <i class="bi bi-file-earmark-ruled"></i> Factura
+              </button>
             </div>
-            <div class="disc-bar" style="border:none;background:transparent;padding:0;">
-              <label>Tipo</label>
+          </div>
+        </div>
+
+        <!-- ── ITEMS ── -->
+        <div class="cart-list" id="cartList">
+          <div class="cart-empty-state" id="cartEmptyState">
+            <i class="bi bi-cart3"></i>
+            <p>Tocá un producto<br>para agregarlo al carrito</p>
+          </div>
+          <div class="cart-items-grid" id="cartItemsGrid"></div>
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div class="cart-footer">
+
+          <!-- Descuento -->
+          <div class="cart-disc-row">
+            <span class="cart-disc-lbl"><i class="bi bi-percent" style="color:var(--color-alert);"></i> Descuento</span>
+            <div class="disc-bar">
               <button class="disc-type-btn on" id="btnPct" onclick="setDiscType('pct')">%</button>
               <button class="disc-type-btn" id="btnFixed" onclick="setDiscType('fixed')">$</button>
               <input type="number" class="disc-input" id="discInput" placeholder="0" min="0" step="0.01" oninput="updateTotals()">
               <span class="disc-suffix" id="discSuffix">%</span>
             </div>
           </div>
-        <div class="totals-block">
-  <div class="tot-row">
-    <span>Subtotal</span>
-    <span id="subtotalVal">$0,00</span>
-  </div>
 
-  <div class="tot-row" id="discRow" style="display:none">
-    <span style="color:rgba(255,255,255,.85)">Descuento</span>
-    <span id="discVal" style="color:#fde68a">-$0,00</span>
-  </div>
+          <!-- Resumen numérico -->
+          <div class="cart-resumen">
+            <div class="res-row"><span>Subtotal</span><span id="subtotalVal">$0,00</span></div>
+            <div class="res-row" id="discRow" style="display:none;"><span style="color:var(--color-alert);">Descuento</span><span id="discVal" style="color:var(--color-alert);">-$0,00</span></div>
+            <div class="res-row" id="netoRow" style="display:none;"><span>Neto</span><span id="netoVal">$0,00</span></div>
+            <div class="res-row" id="ivaRow" style="display:none;"><span>IVA</span><span id="ivaVal">$0,00</span></div>
+            <div class="res-total">
+              <span>TOTAL</span>
+              <span id="totalVal">$0,00</span>
+            </div>
+          </div>
 
-  <div class="total-highlight">
-    <div class="total-highlight-label">Total</div>
-    <div class="total-highlight-value" id="totalVal">$0,00</div>
-  </div>
-</div>
-
+          <!-- Botón vender -->
           <button class="btn-confirm" id="btnConfirm" disabled onclick="openCobroModal()">
             <i class="bi bi-cash-coin"></i> Finalizar Venta <span class="kbd-hint">F4</span>
           </button>
@@ -1417,6 +1485,59 @@
           </div>
         </div>
 
+        <!-- ── FACTURACIÓN AFIP — dentro del cobro ── -->
+        <div class="cobro-section" id="facturacionSection" style="margin-bottom:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <i class="bi bi-file-earmark-text" style="font-size:15px;color:var(--color-primary);"></i>
+              <span class="cobro-stitle" style="margin:0;">Factura electrónica AFIP</span>
+            </div>
+            <label class="afip-toggle-wrap" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:12px;color:var(--text-secondary);" id="facturaTglLabel">No emitir</span>
+              <div class="afip-tgl-switch">
+                <input type="checkbox" id="facturaTgl" onchange="toggleFacturacionEnCobro(this.checked)" style="display:none;">
+                <div class="afip-tgl-slider" id="facturaTglSlider"></div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Opciones que aparecen al activar -->
+          <div id="facturaOpciones" style="display:none;margin-top:14px;display:none;">
+            <!-- Tipo de factura -->
+            <div style="margin-bottom:12px;">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">Tipo de comprobante</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                <button class="afip-tipo-mini on" id="tipoMiniA" onclick="selTipoMini('A')">
+                  <div style="font-size:22px;font-weight:900;line-height:1;">A</div>
+                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Resp. Inscripto</div>
+                </button>
+                <button class="afip-tipo-mini" id="tipoMiniB" onclick="selTipoMini('B')">
+                  <div style="font-size:22px;font-weight:900;line-height:1;">B</div>
+                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Consumidor Final</div>
+                </button>
+                <button class="afip-tipo-mini" id="tipoMiniC" onclick="selTipoMini('C')">
+                  <div style="font-size:22px;font-weight:900;line-height:1;">C</div>
+                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Monotributista</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- CUIT (solo Factura A) -->
+            <div id="cuitMiniWrap" style="display:none;margin-bottom:10px;">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">CUIT del receptor</div>
+              <input type="text" id="cuitMiniInp" placeholder="20-12345678-9" maxlength="13"
+                style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+            </div>
+
+            <!-- Nombre receptor -->
+            <div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Nombre / Razón social</div>
+              <input type="text" id="receptorMiniNombre" placeholder="Consumidor Final"
+                style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+            </div>
+          </div>
+        </div>
+
         <button class="btn-cobrar" id="btnCobrar" onclick="confirmSale()">
           <i class="bi bi-check-circle-fill"></i>
           <span id="btnCobrarTxt">Cobrar $0,00</span>
@@ -1443,20 +1564,43 @@
     <p id="exitoDetalle">Método: Efectivo</p>
     <p id="exitoVuelto" style="margin-top:4px;font-weight:600;color:#10b981"></p>
 
+    <!-- Estado factura -->
+    <div id="exitoFacturaEstado" style="margin-top:10px;text-align:center;"></div>
+
     <button
       onclick="imprimirTicket()"
-      style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+      style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
       <i class="bi bi-printer"></i> Imprimir ticket
+      <kbd style="margin-left:auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;color:var(--text-secondary);">F5</kbd>
     </button>
 
     <button
-      onclick="abrirModalFactura()"
-      id="btnEmitirFactura"
-      style="width:100%;margin-top:8px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid #6d28d9;background:rgba(109,40,217,.07);color:#6d28d9;font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
-      <i class="bi bi-file-earmark-text"></i> Emitir factura electrónica
+      onclick="abrirPdfFacturaExistente()"
+      id="btnVerFacturaAfip"
+      style="display:none;width:100%;margin-top:8px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;">
+      <i class="bi bi-download"></i> Ver factura emitida
     </button>
 
-    <button class="btn-nueva-venta" onclick="nuevaVenta()"><i class="bi bi-plus-circle"></i> Nueva Venta</button>
+    <button class="btn-nueva-venta" onclick="nuevaVenta()">
+      <i class="bi bi-plus-circle"></i> Nueva Venta
+      <kbd style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;">Enter</kbd>
+    </button>
+
+    <!-- ── Envío por email ── -->
+    <div id="emailComprobanteWrap" style="margin-top:14px;border-top:1px solid var(--border-color);padding-top:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
+        <i class="bi bi-envelope" style="margin-right:4px;"></i>Enviar comprobante por email
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="email" id="emailDestinoInput" placeholder="cliente@email.com"
+          style="flex:1;padding:9px 12px;border-radius:8px;font-size:13px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);outline:none;font-family:var(--font-body);">
+        <button onclick="enviarComprobantePorEmail()"
+          style="padding:9px 14px;border-radius:8px;border:none;background:var(--color-primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s;">
+          <i class="bi bi-send"></i> Enviar
+        </button>
+      </div>
+      <div id="emailEnvioResult" style="font-size:12px;font-weight:600;margin-top:6px;min-height:18px;"></div>
+    </div>
   </div>
 </div>
 
@@ -1466,39 +1610,54 @@
 <style>
   .afip-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
   .afip-overlay.open{opacity:1;pointer-events:all;}
-  .afip-modal{background:var(--bg-card);border-radius:16px;padding:28px;width:400px;max-width:95vw;box-shadow:var(--shadow-lg);animation:modalIn .2s ease;}
+  .afip-modal{background:var(--bg-card);border-radius:var(--radius-xl);padding:28px;width:420px;max-width:95vw;box-shadow:var(--shadow-xl);animation:modalIn .2s ease;}
   .afip-modal h3{font-size:17px;font-weight:700;color:var(--text-primary);margin:0 0 4px;}
   .afip-modal .afip-sub{font-size:12px;color:var(--text-secondary);margin-bottom:20px;}
   .afip-tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
-  .afip-tipo-btn{padding:14px 8px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-body);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);}
-  .afip-tipo-btn:hover{border-color:#6d28d9;background:rgba(109,40,217,.05);}
-  .afip-tipo-btn.sel{border-color:#6d28d9;background:rgba(109,40,217,.08);}
-  .afip-tipo-letra{font-size:28px;font-weight:800;color:#6d28d9;line-height:1;}
+  .afip-tipo-btn{padding:14px 8px;border-radius:12px;border:2px solid var(--border-color);background:var(--bg-surface-2);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);}
+  .afip-tipo-btn:hover{border-color:var(--color-primary);background:rgba(27,79,216,.05);}
+  .afip-tipo-btn.sel{border-color:var(--color-primary);background:rgba(27,79,216,.08);}
+  .afip-tipo-letra{font-size:28px;font-weight:800;color:var(--color-primary);line-height:1;}
   .afip-tipo-desc{font-size:10px;color:var(--text-secondary);margin-top:4px;line-height:1.3;}
   .afip-field{margin-bottom:14px;}
   .afip-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:5px;}
-  .afip-field input{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;box-sizing:border-box;transition:border-color .15s;}
-  .afip-field input:focus{border-color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.1);}
+  .afip-field input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;box-sizing:border-box;transition:border-color .15s;}
+  .afip-field input:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,216,.12);}
   .afip-actions{display:flex;gap:10px;margin-top:20px;}
-  .btn-afip-emit{flex:1;padding:12px;border-radius:8px;border:none;background:#6d28d9;color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
-  .btn-afip-emit:hover{background:#5b21b6;}
+  .btn-afip-emit{flex:1;padding:12px;border-radius:10px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+  .btn-afip-emit:hover{background:#1540b8;}
   .btn-afip-emit:disabled{opacity:.5;cursor:not-allowed;}
-  .btn-afip-cancel{padding:12px 18px;border-radius:8px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-afip-cancel{padding:12px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
   .btn-afip-cancel:hover{border-color:var(--text-secondary);color:var(--text-primary);}
   .afip-result{display:none;text-align:center;padding:10px 0;}
   .afip-result.show{display:block;}
-  .afip-cae-box{background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:10px;padding:14px;margin-top:12px;font-family:var(--font-mono);font-size:13px;word-break:break-all;}
+  .afip-cae-box{background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:12px;padding:14px;margin-top:12px;font-family:var(--font-mono);font-size:13px;word-break:break-all;}
   .afip-cae-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;}
-  .afip-cae-val{font-size:15px;font-weight:800;color:#6d28d9;}
+  .afip-cae-val{font-size:15px;font-weight:800;color:var(--color-primary);}
   .afip-spinner{display:none;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:8px 0;}
   .afip-spinner.show{display:flex;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .afip-spin-icon{width:18px;height:18px;border:2px solid #6d28d9;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;}
+  .afip-spin-icon{width:18px;height:18px;border:2px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;}
+
+  /* ── Toggle facturación dentro del cobro ── */
+  .afip-tgl-switch{position:relative;width:40px;height:22px;flex-shrink:0;}
+  .afip-tgl-slider{position:absolute;inset:0;border-radius:11px;background:var(--border-strong);cursor:pointer;transition:background .2s;}
+  .afip-tgl-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  #facturaTgl:checked + .afip-tgl-slider{background:var(--color-primary);}
+  #facturaTgl:checked + .afip-tgl-slider::before{transform:translateX(18px);}
+
+  /* Botones tipo mini dentro del cobro */
+  .afip-tipo-mini{padding:10px 6px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);color:var(--text-primary);width:100%;}
+  .afip-tipo-mini:hover{border-color:var(--color-primary);background:rgba(27,79,216,.05);}
+  .afip-tipo-mini.on{border-color:var(--color-primary);background:rgba(27,79,216,.10);color:var(--color-primary);}
+
+  /* Badge factura en modal de éxito */
+  .fact-badge-ok{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(27,79,216,.10);color:var(--color-primary);font-size:12.5px;font-weight:700;margin-top:8px;}
+  .fact-badge-pend{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size:12.5px;font-weight:700;margin-top:8px;}
 </style>
 
 <div class="afip-overlay" id="afipOverlay">
   <div class="afip-modal">
-    <h3><i class="bi bi-shield-check" style="color:#6d28d9;margin-right:6px;"></i>Factura Electrónica AFIP</h3>
+    <h3><i class="bi bi-shield-check" style="color:var(--color-primary);margin-right:6px;"></i>Factura Electrónica AFIP</h3>
     <div class="afip-sub">Seleccioná el tipo de comprobante a emitir</div>
 
     <div class="afip-tipo-grid">
@@ -1530,17 +1689,17 @@
     </div>
 
     <div class="afip-result" id="afipResult">
-      <div style="font-size:32px;">✅</div>
-      <div style="font-size:15px;font-weight:700;margin-top:6px;">¡Factura emitida!</div>
+      <div style="font-size:40px;">✅</div>
+      <div style="font-size:15px;font-weight:700;margin-top:6px;color:var(--text-primary);">¡Factura emitida con éxito!</div>
       <div class="afip-cae-box">
         <div class="afip-cae-label">CAE</div>
         <div class="afip-cae-val" id="afipCaeVal">—</div>
         <div class="afip-cae-label" style="margin-top:8px;">Vencimiento CAE</div>
-        <div id="afipCaeVto" style="font-size:13px;font-weight:600;">—</div>
+        <div id="afipCaeVto" style="font-size:13px;font-weight:600;color:var(--text-primary);">—</div>
         <div class="afip-cae-label" style="margin-top:8px;">Nro. Comprobante</div>
-        <div id="afipNroCbte" style="font-size:13px;font-weight:600;">—</div>
+        <div id="afipNroCbte" style="font-size:13px;font-weight:600;color:var(--text-primary);">—</div>
       </div>
-      <button onclick="descargarPdfFactura()" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;border:1.5px solid #6d28d9;background:rgba(109,40,217,.07);color:#6d28d9;font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+      <button onclick="descargarPdfFactura()" style="width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
         <i class="bi bi-download"></i> Descargar PDF
       </button>
     </div>
@@ -1630,7 +1789,147 @@ function beep(type){try{const ctx=new(window.AudioContext||window.webkitAudioCon
 
 const apiBySku=async sku=>{try{const r=await fetch(`/api/products/${encodeURIComponent(sku)}`);return r.ok?r.json():null;}catch(e){return null;}};
 
-async function loadCatalog(){try{const r=await fetch('/api/products?limit=1000');allProducts=r.ok?await r.json():[];}catch(e){allProducts=[];}buildCatBar();renderGrid(allProducts);}
+async function loadCatalog(){
+  // Mostrar skeleton mientras carga
+  const grid = document.getElementById('productsGrid');
+  if (grid) {
+    grid.innerHTML = '<div style="padding:24px 16px;display:flex;flex-direction:column;gap:8px;">'
+      + Array(6).fill('<div style="height:44px;border-radius:8px;background:var(--bg-hover);animation:shimmer 1.2s infinite;"></div>').join('')
+      + '</div>';
+  }
+  try {
+    const r = await fetch('/api/products');
+    allProducts = r.ok ? await r.json() : [];
+  } catch(e) {
+    allProducts = [];
+  }
+  actualizarChipLista();
+  buildCatBar();
+  renderGrid(allProducts);
+}
+
+/* ══════════════════════════════════════════════
+   LISTAS DE PRECIO — Minorista / Mayorista / Tarjeta
+   F6 cicla entre las listas disponibles
+══════════════════════════════════════════════ */
+const LISTAS = [
+  { key: 'minorista', label: 'Minorista', icon: 'bi-person',       campo: 'price',          clase: '' },
+  { key: 'mayorista', label: 'Mayorista', icon: 'bi-building',     campo: 'price_mayorista', clase: 'lista-mayorista' },
+  { key: 'tarjeta',   label: 'Tarjeta',   icon: 'bi-credit-card',  campo: 'price_tarjeta',   clase: 'lista-tarjeta' },
+];
+let _listaIdx = 0; // índice activo
+
+function getPrecioLista(product) {
+  const lista = LISTAS[_listaIdx];
+  const val   = product[lista.campo];
+  // Si no tiene precio en esa lista → fallback al precio base
+  return (val && Number(val) > 0) ? Number(val) : Number(product.price);
+}
+
+function toggleDropLista() {
+  const drop = document.getElementById('dropLista');
+  if (!drop) return;
+  drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+}
+
+function selLista(idx) {
+  _listaIdx = idx;
+  document.getElementById('dropLista').style.display = 'none';
+  actualizarChipLista();
+  renderGrid(catActiva ? allProducts.filter(p => p.category === catActiva) : allProducts);
+  if (cart.length) recalcularPreciosCarrito();
+}
+
+// F6 — cicla entre listas disponibles
+function ciclarLista() {
+  const listasDisponibles = LISTAS.filter((l, i) => {
+    if (i === 0) return true;
+    return allProducts.some(p => p[l.campo] && Number(p[l.campo]) > 0);
+  });
+  if (listasDisponibles.length <= 1) { showToast('Sin otras listas. Cargá precios en Inventario.', 'warn'); return; }
+  const currentKey   = LISTAS[_listaIdx].key;
+  const currentInD   = listasDisponibles.findIndex(l => l.key === currentKey);
+  const nextLista    = listasDisponibles[(currentInD + 1) % listasDisponibles.length];
+  selLista(LISTAS.findIndex(l => l.key === nextLista.key));
+  showToast(`Lista: ${LISTAS[_listaIdx].label}`, 'info');
+}
+
+function actualizarChipLista() {
+  const lista  = LISTAS[_listaIdx];
+  const btn    = document.getElementById('btnLista');
+  const nombre = document.getElementById('listaNombre');
+  const icon   = document.getElementById('listaIcon');
+  if (!btn) return;
+
+  // Colores por lista
+  const estilos = {
+    minorista: { border:'rgba(16,185,129,.35)', bg:'rgba(16,185,129,.06)', color:'#059669', kbdBg:'#10b981' },
+    mayorista: { border:'rgba(99,102,241,.4)',  bg:'rgba(99,102,241,.07)', color:'#4f46e5', kbdBg:'#6366f1' },
+    tarjeta:   { border:'rgba(245,158,11,.4)',  bg:'rgba(245,158,11,.07)', color:'#d97706', kbdBg:'#f59e0b' },
+  };
+  const s = estilos[lista.key] || estilos.minorista;
+  btn.style.borderColor = s.border;
+  btn.style.background  = s.bg;
+  btn.style.color       = s.color;
+  const kbd = btn.querySelector('kbd');
+  if (kbd) kbd.style.background = s.kbdBg;
+  if (nombre) nombre.textContent = lista.label;
+  if (icon)   icon.className = `bi ${lista.icon}`;
+
+  // Marcar la opción activa en el dropdown
+  LISTAS.forEach((l, i) => {
+    const opt = document.getElementById(`listaOpt${i}`);
+    if (opt) opt.style.fontWeight = i === _listaIdx ? '800' : '600';
+  });
+}
+
+function recalcularPreciosCarrito() {
+  cart.forEach(item => {
+    const prod = allProducts.find(p => p.sku === item.sku);
+    if (!prod) return;
+    const nuevoPrecio = getPrecioLista(prod);
+    item.price      = nuevoPrecio;
+    item.price_base = nuevoPrecio;
+    item.isMayorista = false;
+  });
+  renderCartList();
+  updateTotals();
+  showToast('Precios del carrito actualizados', 'info');
+}
+
+/* ── Toggle mobile: alterna entre catálogo y carrito ── */
+let _showingCart = false;
+function togglePanelMobile() {
+  const left   = document.querySelector('.pos-left');
+  const right  = document.getElementById('posRight');
+  const icon   = document.getElementById('fabIcon');
+  const label  = document.getElementById('fabLabel');
+  if (!left || !right) return;
+  _showingCart = !_showingCart;
+  if (_showingCart) {
+    left.classList.add('panel-hidden');
+    right.classList.add('panel-visible');
+    icon.className  = 'bi bi-grid-3x3-gap';
+    label.textContent = 'Catálogo';
+  } else {
+    left.classList.remove('panel-hidden');
+    right.classList.remove('panel-visible');
+    icon.className  = 'bi bi-cart3';
+    label.textContent = 'Carrito';
+  }
+}
+// Al cobrar en mobile, volver al catálogo automáticamente
+function _resetMobilePanel() {
+  _showingCart = false;
+  const left  = document.querySelector('.pos-left');
+  const right = document.getElementById('posRight');
+  if (left)  left.classList.remove('panel-hidden');
+  if (right) right.classList.remove('panel-visible');
+  const icon  = document.getElementById('fabIcon');
+  const label = document.getElementById('fabLabel');
+  if (icon)  icon.className = 'bi bi-cart3';
+  if (label) label.textContent = 'Carrito';
+}
 
 async function loadTicketConfig(){
   ticketConfig = {
@@ -1672,46 +1971,76 @@ function renderGrid(products){
     grid.innerHTML='<div class="products-empty"><i class="bi bi-box-seam"></i><p>Sin productos</p></div>';
     return;
   }
-  grid.innerHTML=products.map(p=>{
-    const ep=p.en_promo&&p.price_promo?Number(p.price_promo):Number(p.price);
-    const stock=Number(p.stock??0),sinStock=stock<=0;
+  const header=`<div class="prod-table-head">
+    <div class="prod-th th-img"></div>
+    <div class="prod-th">Producto</div>
+    <div class="prod-th th-stock" style="text-align:center;">Stock</div>
+    <div class="prod-th th-price" style="text-align:right;">Precio</div>
+  </div>`;
+  const rows=products.map(p=>{
+    const ep = getPrecioLista(p);
+    const esPromo = p.en_promo && p.price_promo && _listaIdx === 0;
+    const lista   = LISTAS[_listaIdx];
+    // Precio tachado: si es lista base y hay promo → tachar precio normal
+    // Si es lista mayorista/tarjeta y tiene precio propio → tachar minorista
+    const precioBase = Number(p.price);
+    const tienePrecioEspecial = lista.campo !== 'price' && p[lista.campo] && Number(p[lista.campo]) > 0;
+    const promoOld = esPromo
+      ? `<span class="prod-price-old">${fmt(p.price)}</span>`
+      : tienePrecioEspecial
+        ? `<span class="prod-price-old" style="font-size:9px;">${fmt(precioBase)}</span>`
+        : '';
+    const promoBadge = esPromo
+      ? '<span class="prod-badge-promo">Promo</span>'
+      : tienePrecioEspecial
+        ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size:8px;">${lista.label}</span>`
+        : '';
+    const stock=Number(p.stock??0),sinStock=stock<=0 && !p.venta_sin_stock;
     const inCart=cart.find(i=>i.sku===p.sku);
     const stockCls=stock<=0?'zero':stock<=5?'low':'ok';
-    const stockTxt=stock<=0?'Sin stock':stock<=5?`Stock: ${stock} (bajo)`:`Stock: ${stock}`;
-    const descHTML=p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:'';
-    const promoOld=p.en_promo&&p.price_promo?`<div class="prod-price-old">${fmt(p.price)}</div>`:'';
+    const stockTxt=stock<=0?'0':String(stock);
     const skuSafe=p.sku.replace(/'/g,"\\'");
     const nameSafe=p.name.replace(/"/g,'&quot;');
     const imgSafe=p.imagen?p.imagen.replace(/"/g,'&quot;'):'';
-    const thumbHTML=p.imagen
-      ? `<div class="prod-thumb" data-zoom-sku="${nameSafe}" data-zoom-img="${imgSafe}"><img src="${imgSafe}" alt="" loading="lazy"></div>`
-      : ``;
-    return `<div class="prod-card ${sinStock?'out-stock':''} ${inCart?'in-cart':''}" id="pcard-${CSS.escape(p.sku)}" data-name="${nameSafe}" data-img="${imgSafe}" onclick="${sinStock?'':` addBySku('${skuSafe}',this)`}">
-      <span class="prod-badge-qty" id="badge-${CSS.escape(p.sku)}">${inCart?inCart.qty:''}</span>
-      ${p.en_promo&&p.price_promo?'<span class="prod-badge-promo">Promo</span>':''}
-      ${p.imagen
-        ? `<div class="prod-thumb" data-zoom-sku="${nameSafe}" data-zoom-img="${imgSafe}"><img src="${imgSafe}" alt="" loading="lazy"></div>`
-        : ``
-      }
-      <div class="prod-info">
-        ${sinStock?'<div class="prod-sin-stock">Sin stock</div>':''}
-        <div class="prod-name">${p.name}</div>
+    const inCartBadge=inCart?`<span class="prod-badge-qty">${inCart.qty}</span>`:'';
+    const descHTML=p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:'';
+    const sinStockBadge=sinStock?'<span class="prod-sin-stock">Sin stock</span>':'';
+    const thumbCell=p.imagen
+      ? `<div class="prod-td-img"><div class="prod-thumb" onclick="event.stopPropagation();abrirZoom('${nameSafe}','${imgSafe}')" title="Ver imagen"><img src="${imgSafe}" alt="" loading="lazy"></div></div>`
+      : `<div class="prod-td-img"><div class="prod-thumb-empty"><i class="bi bi-box-seam"></i></div></div>`;
+    return `<div class="prod-card ${sinStock?'out-stock':''} ${inCart?'in-cart':''}" id="pcard-${CSS.escape(p.sku)}" onclick="${sinStock?'':` addBySku('${skuSafe}',this)`}">
+      ${thumbCell}
+      <div class="prod-td">
+        ${sinStockBadge}
+        <div class="prod-name">${p.name}${inCartBadge}${promoBadge}</div>
         ${descHTML}
-        <div style="margin-top:auto;padding-top:5px;">${promoOld}<div class="prod-price">${fmt(ep)}</div><div class="prod-stock ${stockCls}">${stockTxt}</div></div>
       </div>
+      <div class="prod-td" style="text-align:center;"><span class="prod-stock-badge ${stockCls}">${stockTxt}</span></div>
+      <div class="prod-td" style="text-align:right;">${promoOld}<div class="prod-price">${fmt(ep)}</div></div>
     </div>`;
   }).join('');
+  grid.innerHTML=header+rows;
 }
 
+
 function updateCardState(sku){
-  const card=document.getElementById('pcard-'+CSS.escape(sku));
-  const badge=document.getElementById('badge-'+CSS.escape(sku));
-  if(!card)return;
-  const item=cart.find(i=>i.sku===sku);
-  card.classList.toggle('in-cart',!!item);
-  if(badge){
-    badge.style.display=item?'flex':'';
-    badge.textContent=item?item.qty:'';
+  const card = document.getElementById('pcard-' + CSS.escape(sku));
+  if (!card) return;
+  const item = cart.find(i => i.sku === sku);
+  card.classList.toggle('in-cart', !!item);
+  // Actualizar solo el badge de qty en la card — sin re-renderizar todo el grid
+  const nameDiv = card.querySelector('.prod-name');
+  if (nameDiv) {
+    // Remover badge viejo
+    const oldBadge = nameDiv.querySelector('.prod-badge-qty');
+    if (oldBadge) oldBadge.remove();
+    // Agregar badge nuevo si está en carrito
+    if (item) {
+      const badge = document.createElement('span');
+      badge.className = 'prod-badge-qty';
+      badge.textContent = item.qty;
+      nameDiv.appendChild(badge);
+    }
   }
 }
 
@@ -1736,7 +2065,7 @@ function aplicarPrecioMayorista(item) {
 }
 
 function addToCart(product){
-  const ep = product.precio_efectivo !== undefined ? Number(product.precio_efectivo) : Number(product.price);
+  const ep = getPrecioLista(product);
   const existing=cart.find(i=>i.sku===product.sku);
   if(existing){
     existing.qty++;
@@ -1761,6 +2090,11 @@ function addToCart(product){
   updateCardState(product.sku);
   renderCartList();
   updateTotals();
+  // En mobile: al agregar el primer item, mostrar el FAB animado
+  if (window.innerWidth <= 860) {
+    const fab = document.getElementById('fabBtn');
+    if (fab) { fab.style.transform = 'scale(1.2)'; setTimeout(()=>fab.style.transform='', 200); }
+  }
 }
 
 function renderCartList(){
@@ -1809,6 +2143,12 @@ function renderCartList(){
   const total = cart.reduce((s,i) => s+i.qty, 0);
   document.getElementById('cartSub').textContent = `${cart.length} prod. · ${total} ud.`;
   document.getElementById('cartCount').textContent = total;
+  // Actualizar badge del FAB
+  const badge = document.getElementById('fabBadge');
+  if (badge) {
+    if (total > 0) { badge.textContent = total > 99 ? '99+' : total; badge.style.display = 'flex'; }
+    else { badge.style.display = 'none'; }
+  }
 }
 
 function chgQty(sku,d){
@@ -1861,14 +2201,54 @@ function getBaseTotal(){
   const sub=cart.reduce((s,i)=>s+i.price*i.qty,0),disc=getDiscount(sub);
   return{sub,disc,total:Math.max(0,sub-disc)};
 }
+/* ── Tipo de comprobante ── */
+let _tipoComprobante = 'venta';
+function setComprobante(tipo) {
+  _tipoComprobante = tipo;
+  document.getElementById('compVenta').classList.toggle('active', tipo === 'venta');
+  document.getElementById('compFactura').classList.toggle('active', tipo === 'factura');
+  updateTotals();
+}
+
 function updateTotals(){
   const{sub,disc,total}=getBaseTotal();
   document.getElementById('subtotalVal').textContent=fmt(sub);
   document.getElementById('totalVal').textContent=fmt(total);
+
   const dr=document.getElementById('discRow');
   dr.style.display=disc>0?'flex':'none';
   document.getElementById('discVal').textContent='-'+fmt(disc);
-  document.getElementById('cartCount').textContent=cart.reduce((s,i)=>s+i.qty,0);
+
+  // Neto e IVA — solo si hay productos con IVA y es factura
+  const tieneIva = cart.some(i => {
+    const prod = allProducts.find(p => p.sku === i.sku);
+    return prod && Number(prod.iva) > 0;
+  });
+  const mostrarFiscal = _tipoComprobante === 'factura' && tieneIva;
+  let netoTotal = 0, ivaTotal = 0;
+  if (mostrarFiscal) {
+    cart.forEach(i => {
+      const prod = allProducts.find(p => p.sku === i.sku);
+      const iva  = prod ? Number(prod.iva || 0) : 0;
+      const linea = i.price * i.qty;
+      if (iva > 0) {
+        const neto = linea / (1 + iva / 100);
+        netoTotal += neto;
+        ivaTotal  += linea - neto;
+      } else {
+        netoTotal += linea;
+      }
+    });
+    if (disc > 0) { const r = (total / sub); netoTotal *= r; ivaTotal *= r; }
+  }
+  const netoRow = document.getElementById('netoRow');
+  const ivaRow  = document.getElementById('ivaRow');
+  if (netoRow) { netoRow.style.display = mostrarFiscal ? 'flex' : 'none'; document.getElementById('netoVal').textContent = fmt(netoTotal); }
+  if (ivaRow)  { ivaRow.style.display  = mostrarFiscal ? 'flex' : 'none'; document.getElementById('ivaVal').textContent  = fmt(ivaTotal); }
+
+  const cnt = cart.reduce((s,i)=>s+i.qty,0);
+  const badge = document.getElementById('cartCount');
+  if (badge) { badge.textContent = cnt; badge.style.display = cnt > 0 ? 'inline-flex' : 'none'; }
   document.getElementById('btnConfirm').disabled=cart.length===0;
   updateCobroTotals();
 }
@@ -1912,10 +2292,30 @@ function movePmFocusVertical(deltaRows){
   focusPmButton(next);
 }
 
-function openCobroModal(){
+async function openCobroModal(){
   if(!cart.length)return;
+
+  // Aviso preventivo si el cliente tiene límite configurado
+  if (clienteId && clienteId !== 1) {
+    try {
+      const {total} = getBaseTotal();
+      const r = await fetch(`/api/clientes/${clienteId}/check-limite`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ monto: total })
+      });
+      if (r.ok) {
+        const check = await r.json();
+        if (!check.ok) {
+          const fmtN = n => '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:2});
+          showToast(`⚠️ Cliente supera límite — disponible ${fmtN(Math.max(0,check.disponible))}`, 'warn');
+        }
+      }
+    } catch(e) {}
+  }
+
   recargoVal=0;
   mixtoActivo=false;
+  resetFacturacionToggle();
   document.getElementById('mixtoRow').classList.remove('visible');
   document.getElementById('btnMixto').innerHTML='<i class="bi bi-plus-circle"></i> Activar';
   document.getElementById('btnMixto').style.borderColor='';
@@ -2178,6 +2578,31 @@ async function confirmSale() {
     return;
   }
 
+  // ── Verificar límite de crédito (solo para cuenta corriente/fiado) ──
+  if (isCuentaCorriente && clienteId && clienteId !== 1) {
+    try {
+      const { total } = getBaseTotal();
+      const conRec = total * (1 + recargoVal / 100);
+      const r = await fetch(`/api/clientes/${clienteId}/check-limite`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ monto: conRec })
+      });
+      if (r.ok) {
+        const check = await r.json();
+        if (!check.ok) {
+          const fmtN = n => '$' + Number(n).toLocaleString('es-AR', {minimumFractionDigits:2});
+          // BLOQUEO — modal de error, no confirm
+          showToast(`Límite de crédito superado — disponible ${fmtN(Math.max(0, check.disponible))}`, 'error');
+          beep('error');
+          // Mostrar modal de bloqueo
+          _mostrarBloqueoLimite(check, conRec);
+          return;
+        }
+      }
+    } catch(e) { /* si falla el check, continuar */ }
+  }
+
   const { total } = getBaseTotal();
   const conRecargo = total * (1 + recargoVal / 100);
   const isEfectivo = payMethod.toLowerCase() === 'efectivo';
@@ -2215,23 +2640,24 @@ async function confirmSale() {
   let paymentMethod = payMethod;
   let cashReceived = isEfectivo ? received : null;
   let changeAmount = isEfectivo ? Math.max(received - conRecargo, 0) : null;
+  let montoMixto2 = null;
 
   if (mixtoActivo) {
-    const m1 = parseFloat(document.getElementById('mixtoMonto1').value) || 0;
+    const m1  = parseFloat(document.getElementById('mixtoMonto1').value) || 0;
+    const m2  = parseFloat(document.getElementById('mixtoMonto2').value) || 0;
     const m2v = document.getElementById('mixtoMetodo2').value;
 
     paymentMethod = `${payMethod} + ${m2v}`;
-    cashReceived = m1;
-    changeAmount = Math.max(
-      (m1 + parseFloat(document.getElementById('mixtoMonto2').value || 0)) - conRecargo,
-      0
-    );
+    cashReceived  = m1;
+    montoMixto2   = m2;
+    changeAmount  = Math.max((m1 + m2) - conRecargo, 0);
   }
 
   const payload = {
     payment_method: paymentMethod,
     cash_received: cashReceived,
     change_amount: changeAmount,
+    monto_mixto2: montoMixto2,
     discount_pct: pctVal,
     discount_fixed: fixedVal,
     recargo_pct: recargoVal,
@@ -2269,8 +2695,6 @@ async function confirmSale() {
       data = {};
     }
 
-    console.log('POST /api/sales =>', r.status, data || rawText);
-
     if (!r.ok) {
       throw new Error(data.error || `Error ${r.status} al guardar la venta`);
     }
@@ -2278,7 +2702,6 @@ async function confirmSale() {
     afipSaleId = data?.sale?.id || data?.id || data?.sale_id || null;
 
     if (!afipSaleId) {
-      console.warn('La venta se guardó pero el backend no devolvió sale_id', data);
       showToast('Venta guardada, pero el servidor no devolvió el ID', 'warn');
     }
 
@@ -2299,7 +2722,6 @@ async function confirmSale() {
       return;
     }
 
-    console.error('Error guardando venta:', e);
     showToast(msg || 'Error al guardar la venta', 'error');
   }
 }
@@ -2338,8 +2760,22 @@ items: cart.map(i => ({
   document.getElementById('exitoTotal').textContent=fmt(conRecargo);
   document.getElementById('exitoDetalle').textContent=`Método: ${metodoFinal}${recargoVal>0?` (+${recargoVal}% recargo)`:''}${offline?' · ⚠ Offline':''}`;
   document.getElementById('exitoVuelto').textContent=isEfectivo&&!mixtoActivo&&received>0?`Vuelto: ${fmt(vuelto)}`:'';
+
+  /* Reset estado factura */
+  const estadoEl = document.getElementById('exitoFacturaEstado');
+  if (estadoEl) estadoEl.innerHTML = '';
+  const btnVer = document.getElementById('btnVerFacturaAfip');
+  if (btnVer) btnVer.style.display = 'none';
+  const btnEmitir = document.getElementById('btnEmitirFactura');
+  if (btnEmitir) btnEmitir.style.display = 'flex';
+
   document.getElementById('exitoOverlay').classList.add('open');
   beep('confirm');
+
+  /* Si el usuario activó facturación durante el cobro → emitir automáticamente */
+  if (facturarEnCobro && afipSaleId && !offline) {
+    emitirFacturaPosCobro(afipSaleId);
+  }
 }
 
 function escapeHtml(str=''){
@@ -2536,7 +2972,19 @@ function nuevaVenta(){
 let _deptoActual = null;
 
 function _getDeptos() {
-  try { return JSON.parse(localStorage.getItem('pos_deptos') || '[]'); } catch(e){ return []; }
+  try {
+    const saved = localStorage.getItem('pos_deptos');
+    if (saved !== null) return JSON.parse(saved);
+    const defaults = [
+      { id:'d1', nombre:'Mantenimiento', icono:'🔧', color:'#3b82f6' },
+      { id:'d2', nombre:'Mano de obra',  icono:'👷', color:'#10b981' },
+      { id:'d3', nombre:'Materiales',    icono:'🪵', color:'#f59e0b' },
+      { id:'d4', nombre:'Traslado',      icono:'🚚', color:'#8b5cf6' },
+      { id:'d5', nombre:'Servicio',      icono:'⚙️', color:'#ef4444' },
+    ];
+    localStorage.setItem('pos_deptos', JSON.stringify(defaults));
+    return defaults;
+  } catch(e){ return []; }
 }
 function _saveDeptos(arr) {
   localStorage.setItem('pos_deptos', JSON.stringify(arr));
@@ -2574,13 +3022,16 @@ function renderDeptosGrid() {
     return;
   }
 
-  container.innerHTML = deptos.map(d => `
-    <button class="depto-btn" onclick="abrirDeptoPrecio('${d.id}','${escapeHtml(d.nombre)}','${d.icono||'🏷️'}')">
-      <span class="depto-btn-icon">${d.icono || '🏷️'}</span>
+  container.innerHTML = deptos.map((d, i) => {
+    const fkey = i < 11 ? 'F'+(i+1) : '';
+    return `
+    <button class="depto-btn" onclick="abrirDeptoPrecio('${d.id}','${escapeHtml(d.nombre)}','${d.icono||'🏷️'}')" title="${fkey ? fkey+' — ' : ''}${escapeHtml(d.nombre)}">
+      ${fkey ? `<kbd style="position:absolute;top:4px;left:5px;font-size:8px;font-weight:800;background:rgba(27,79,216,.15);color:var(--color-primary);border:1px solid rgba(27,79,216,.25);border-radius:3px;padding:1px 4px;line-height:1.4;">${fkey}</kbd>` : ''}
+      <span class="depto-btn-icon" style="margin-top:${fkey?'6px':'0'}">${d.icono || '🏷️'}</span>
       <span class="depto-btn-label">${escapeHtml(d.nombre)}</span>
       <button class="depto-btn-edit" onclick="event.stopPropagation();eliminarDepto('${d.id}')" title="Eliminar" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-    </button>
-  `).join('') + `
+    </button>`;
+  }).join('') + `
     <button class="depto-btn" onclick="abrirGestorDeptos()" style="border-style:dashed;opacity:.6;">
       <span class="depto-btn-icon">➕</span>
       <span class="depto-btn-label">Agregar</span>
@@ -2698,6 +3149,13 @@ function abrirZoom(nombre, imgSrc){
 }
 
 document.addEventListener('click', function(e){
+  // Cerrar dropdown lista si click fuera
+  const wrap = document.getElementById('listaWrap');
+  const drop = document.getElementById('dropLista');
+  if (drop && drop.style.display !== 'none' && wrap && !wrap.contains(e.target)) {
+    drop.style.display = 'none';
+  }
+
   const thumb = e.target.closest('.prod-thumb');
   if(!thumb) return;
   e.stopPropagation();
@@ -2710,8 +3168,48 @@ function cerrarZoom(){
   document.getElementById('prodZoomOverlay').classList.remove('open');
 }
 
-function showToast(msg,type='success'){
-  const t=document.getElementById('posToast'),
+/* ── Bloqueo por límite de crédito ── */
+function _mostrarBloqueoLimite(check, montoVenta) {
+  const fmtN = n => '$' + Number(n).toLocaleString('es-AR', {minimumFractionDigits:2});
+  // Crear overlay si no existe
+  let ov = document.getElementById('bloqueoLimiteOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'bloqueoLimiteOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+    ov.innerHTML = `
+      <div style="background:var(--bg-card);border-radius:18px;padding:28px;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:26px;color:#ef4444;margin:0 auto 14px;">
+          <i class="bi bi-shield-x"></i>
+        </div>
+        <div style="font-size:17px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Límite de crédito superado</div>
+        <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:18px;">No se puede registrar esta venta como cuenta corriente.</div>
+        <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:10px;padding:12px 16px;text-align:left;margin-bottom:18px;display:flex;flex-direction:column;gap:6px;" id="bloqueoLimiteDetalle"></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="document.getElementById('bloqueoLimiteOverlay').remove()"
+            style="width:100%;padding:11px;border-radius:9px;border:none;background:#ef4444;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-x-circle"></i> Entendido — no procesar
+          </button>
+          <button onclick="document.getElementById('bloqueoLimiteOverlay').remove();closeCobroModal();"
+            style="width:100%;padding:9px;border-radius:9px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+            Cancelar venta
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  // Llenar detalle
+  const det = document.getElementById('bloqueoLimiteDetalle');
+  if (det) {
+    det.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Deuda actual</span><span style="font-family:var(--font-mono);font-weight:700;color:#ef4444;">${fmtN(check.saldo)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Esta venta</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">+${fmtN(montoVenta)}</span></div>
+      <div style="border-top:1px solid var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Límite configurado</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtN(check.limite)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Excede en</span><span style="font-family:var(--font-mono);font-weight:800;color:#ef4444;">${fmtN(Math.abs(check.disponible - montoVenta))}</span></div>`;
+  }
+}
+
+function showToast(msg,type='success'){  const t=document.getElementById('posToast'),
         icons={success:'bi-check-circle-fill',info:'bi-plus-circle-fill',error:'bi-x-circle-fill',warn:'bi-exclamation-triangle-fill'};
   t.className=`pos-toast toast-${type} show`;
   document.getElementById('toastIcon').className=`bi ${icons[type]||icons.success}`;
@@ -2753,7 +3251,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if (idx < 0 || idx >= cards.length) { kbCardIdx = -1; return; }
     kbCardIdx = idx;
     cards[idx].classList.add('kb-selected');
-    cards[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // scroll centrado — 'center' garantiza que el item siempre sea visible
+    cards[idx].scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 
   function kbClearCards() {
@@ -2772,22 +3271,23 @@ document.addEventListener('DOMContentLoaded',async()=>{
       return;
     }
 
-    // Navegación con flechas en la grilla
-    const cols = Math.max(1, Math.floor(document.getElementById('productsGrid').offsetWidth / 160));
+    // Navegación con flechas en la grilla de productos
+    // Es una tabla vertical — Down/Up mueven de a 1 fila
     const cards = getVisibleCards();
 
     if(e.key==='ArrowDown'){
       e.preventDefault();
       if(kbCardIdx < 0) kbSelectCard(0);
-      else kbSelectCard(Math.min(kbCardIdx + cols, cards.length - 1));
+      else kbSelectCard(Math.min(kbCardIdx + 1, cards.length - 1));
       return;
     }
     if(e.key==='ArrowUp'){
       e.preventDefault();
-      if(kbCardIdx < 0) kbSelectCard(0);
-      else kbSelectCard(Math.max(kbCardIdx - cols, 0));
+      if(kbCardIdx < 0) kbSelectCard(cards.length - 1);
+      else kbSelectCard(Math.max(kbCardIdx - 1, 0));
       return;
     }
+    // Izquierda/derecha: misma fila (no aplica en lista, pero no romper)
     if(e.key==='ArrowRight'){
       e.preventDefault();
       if(kbCardIdx < 0) kbSelectCard(0);
@@ -2954,9 +3454,38 @@ document.addEventListener('keydown',e=>{
   const inInput=['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)&&e.target.id!=='barcodeInput';
   if(inInput)return;
 
+  const _fMatch = e.key.match(/^F(\d+)$/);
+  if (_fMatch) {
+    const _fi = parseInt(_fMatch[1]) - 1;
+    if (_fi >= 0 && _fi <= 10) {
+      const _depList = _getDeptos();
+      if (_depList[_fi]) {
+        e.preventDefault();
+        const d = _depList[_fi];
+        abrirDeptoPrecio(d.id, d.nombre, d.icono || '🏷️');
+        return;
+      }
+    }
+  }
   if(e.key==='F2'){e.preventDefault();focusScanner();showToast('Scanner listo','info');}
   if(e.key==='F4'){e.preventDefault();cart.length?openCobroModal():showToast('Carrito vacío','warn');}
-  if(e.key==='F5'){e.preventDefault();const c=document.getElementById('chipDeptos');if(c)toggleDeptosChip(c);}
+  if(e.key==='F5'){
+    e.preventDefault();
+    // F5 en modal éxito → imprimir ticket; fuera → departamentos
+    if(document.getElementById('exitoOverlay')?.classList.contains('open')){
+      imprimirTicket();
+    } else {
+      const c=document.getElementById('chipDeptos');if(c)toggleDeptosChip(c);
+    }
+  }
+  if(e.key==='F6'){e.preventDefault();ciclarLista();}
+  if(e.key==='Enter'){
+    if(document.getElementById('exitoOverlay')?.classList.contains('open')){
+      e.preventDefault();
+      nuevaVenta();
+      return;
+    }
+  }
   if(e.key==='Escape'){
     if(document.getElementById('cobroOverlay').classList.contains('open')){closeCobroModal();return;}
     if(document.getElementById('exitoOverlay').classList.contains('open')){nuevaVenta();return;}
@@ -3000,22 +3529,15 @@ window.addEventListener('load',()=>document.getElementById('barcodeInput').focus
     const id  = document.activeElement?.id;
     const tag = document.activeElement?.tagName;
 
-    // Desde el barcodeInput: flecha abajo → ir a cliente
-    if (id === 'barcodeInput' && e.key === 'ArrowDown') {
-      e.preventDefault();
-      const el = document.getElementById('posClienteSearch');
-      if (el) { el.focus(); el.select?.(); }
-      return;
-    }
-
-    // Dentro de los campos del footer
+    // Dentro de los campos del footer — solo Tab navega entre ellos
+    // Las flechas ↑↓ NO se capturan acá para no interferir con la lista de productos
     if (FOOTER_FIELDS.includes(id)) {
-      if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+      if (e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
         moveFocus(id, 1);
         return;
       }
-      if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+      if (e.key === 'Tab' && e.shiftKey) {
         e.preventDefault();
         moveFocus(id, -1);
         return;
@@ -3032,8 +3554,6 @@ window.addEventListener('load',()=>document.getElementById('barcodeInput').focus
         if (!document.getElementById('btnConfirm').disabled) openCobroModal();
         return;
       }
-      // Flechas ← → en discInput: no capturar (son para mover cursor en el número)
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && id === 'discInput') return;
     }
   });
 })();
@@ -3050,6 +3570,121 @@ let afipTipoSel          = 'B';
 let afipSaleId           = null;
 let afipEmitido          = false;
 let afipFacturaExistente = null;
+let facturarEnCobro      = false;
+let tipoMiniSel          = 'B';
+
+/* ── Toggle facturación dentro del modal de cobro ── */
+function toggleFacturacionEnCobro(activo) {
+  facturarEnCobro = activo;
+  const label = document.getElementById('facturaTglLabel');
+  const opts  = document.getElementById('facturaOpciones');
+  if (activo) {
+    label.textContent = 'Emitir factura';
+    label.style.color = 'var(--color-primary)';
+    opts.style.display = 'block';
+  } else {
+    label.textContent = 'No emitir';
+    label.style.color = '';
+    opts.style.display = 'none';
+  }
+}
+
+function selTipoMini(tipo) {
+  tipoMiniSel = tipo;
+  ['A','B','C'].forEach(t => {
+    const btn = document.getElementById('tipoMini'+t);
+    if (btn) btn.classList.toggle('on', t === tipo);
+  });
+  const cuitWrap = document.getElementById('cuitMiniWrap');
+  if (cuitWrap) cuitWrap.style.display = tipo === 'A' ? 'block' : 'none';
+}
+
+/* Resetear el toggle al abrir el modal de cobro — se llama directamente desde openCobroModal */
+function resetFacturacionToggle() {
+  const tgl = document.getElementById('facturaTgl');
+  if (tgl) { tgl.checked = false; toggleFacturacionEnCobro(false); }
+  selTipoMini('B');
+}
+
+/* ── Después de confirmar venta, si tenía facturación activada → emitir ── */
+async function enviarComprobantePorEmail() {
+  const emailInp = document.getElementById('emailDestinoInput');
+  const result   = document.getElementById('emailEnvioResult');
+  const email    = (emailInp?.value || '').trim();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    result.textContent = '⚠️ Ingresá un email válido';
+    result.style.color = '#f59e0b';
+    return;
+  }
+
+  if (!afipSaleId) {
+    result.textContent = '⚠️ No hay venta activa';
+    result.style.color = '#f59e0b';
+    return;
+  }
+
+  result.textContent = '⏳ Enviando...';
+  result.style.color = 'var(--text-muted)';
+
+  try {
+    const r = await fetch('/api/email/comprobante', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ sale_id: afipSaleId, email_destino: email }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      result.textContent = `✅ Comprobante enviado a ${email}${d.adjuntos > 0 ? ' (con PDF de factura)' : ''}`;
+      result.style.color = '#10b981';
+      emailInp.value = '';
+    } else {
+      result.textContent = '❌ ' + (d.error || 'Error al enviar');
+      result.style.color = '#ef4444';
+    }
+  } catch(e) {
+    result.textContent = '❌ ' + e.message;
+    result.style.color = '#ef4444';
+  }
+}
+
+async function emitirFacturaPosCobro(saleId) {
+  if (!saleId) return;
+  const cuit   = (document.getElementById('cuitMiniInp')?.value||'').trim();
+  const nombre = (document.getElementById('receptorMiniNombre')?.value||'').trim()||'Consumidor Final';
+
+  const estadoEl = document.getElementById('exitoFacturaEstado');
+  if (estadoEl) estadoEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Emitiendo factura con AFIP...</span>';
+
+  try {
+    const r = await fetch('/afip/emitir', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sale_id: saleId, tipo: tipoMiniSel, cliente: { cuit: cuit||null, nombre } })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error AFIP');
+
+    const tipoLetra = tipoMiniSel;
+    const nro = String(data.nro_cbte).padStart(8,'0');
+    const pv  = String(data.punto_venta).padStart(4,'0');
+    if (estadoEl) estadoEl.innerHTML =
+      `<span class="fact-badge-ok"><i class="bi bi-patch-check-fill"></i> Factura ${tipoLetra} N° ${pv}-${nro} emitida</span>`;
+
+    // Ocultar botón de emitir, mostrar ver PDF
+    const btnEmitir = document.getElementById('btnEmitirFactura');
+    const btnVer    = document.getElementById('btnVerFacturaAfip');
+    if (btnEmitir) btnEmitir.style.display = 'none';
+    if (btnVer)    { btnVer.style.display = 'flex'; }
+
+    afipFacturaExistente = data.factura || {};
+    afipSaleId = saleId;
+
+  } catch(e) {
+    if (estadoEl) estadoEl.innerHTML =
+      `<span class="fact-badge-pend"><i class="bi bi-exclamation-circle"></i> Error al emitir: ${e.message}</span>`;
+  }
+}
 
 function selTipo(tipo) {
   afipTipoSel = tipo;

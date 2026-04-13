@@ -13,14 +13,38 @@ function initCajaSchema() {
   try { run(`ALTER TABLE caja ADD COLUMN sucursal_id INTEGER NOT NULL DEFAULT 1`); } catch(e) {}
   try { run(`ALTER TABLE caja ADD COLUMN monto_inicial REAL DEFAULT 0`); } catch(e) {}
   try { run(`ALTER TABLE caja ADD COLUMN monto_final REAL DEFAULT 0`); } catch(e) {}
+
+  // ── Tabla de movimientos manuales (ingresos/retiros) ──────────
+  run(`CREATE TABLE IF NOT EXISTS caja_movimientos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    caja_id     INTEGER NOT NULL,
+    tipo        TEXT    NOT NULL CHECK(tipo IN ('ingreso','retiro')),
+    monto       REAL    NOT NULL DEFAULT 0,
+    descripcion TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (caja_id) REFERENCES caja(id)
+  )`);
 }
 
-// mismo formato que ventas: YYYY-MM-DD HH:MM:SS en hora Argentina
+// ── Hora Argentina — funciona en VPS con cualquier timezone ──
+// Si el servidor tiene TZ=America/Argentina/Buenos_Aires configurado,
+// usamos eso. Si no, forzamos UTC-3 manualmente.
 function nowArgentina() {
-  const now = new Date();
-  const offset = -3 * 60;
-  const local = new Date(now.getTime() + offset * 60 * 1000);
-  return local.toISOString().replace('T', ' ').substring(0, 19);
+  try {
+    // Intenta con Intl — funciona si el VPS tiene la zona configurada
+    const str = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).format(new Date()).replace('T', ' ');
+    return str.substring(0, 19);
+  } catch(e) {
+    // Fallback manual UTC-3
+    const now = new Date();
+    const local = new Date(now.getTime() + (-3 * 60 * 60 * 1000));
+    return local.toISOString().replace('T', ' ').substring(0, 19);
+  }
 }
 
 // parse local sin forzar UTC

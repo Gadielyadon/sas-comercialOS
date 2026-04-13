@@ -1,13 +1,15 @@
 <%- include('../partials/head', { title: 'Ajustes' }) %>
 
 <style>
-  .main-content { min-height: 100vh; display: flex; flex-direction: column; padding-top: var(--header-height); background: var(--bg-body); }
-  .page-body { flex: 1; padding: 28px 32px; max-width: 860px; width: 100%; margin: 0 auto; }
+  .main-content { min-height: 100vh; display: flex; flex-direction: column; padding-top: var(--header-height); background: var(--bg-surface-2); }
+  .page-body { flex: 1; padding: 24px 28px; width: 100%; max-width: 1400px; }
+  .aj-sections-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 1024px) { .aj-sections-grid { grid-template-columns: 1fr; } }
 
-  .aj-section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
-  .aj-section-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-body); }
+  .aj-section { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+  .aj-section-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-surface-2); }
   .aj-section-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; flex-shrink: 0; }
-  .aj-section-icon.blue   { background: linear-gradient(135deg, var(--color-action), #0099b8); }
+  .aj-section-icon.blue   { background: linear-gradient(135deg, var(--color-primary), #0099b8); }
   .aj-section-icon.purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
   .aj-section-icon.green  { background: linear-gradient(135deg, #10b981, #059669); }
   .aj-section-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
@@ -21,42 +23,42 @@
   .aj-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); margin-bottom: 6px; }
   .aj-field input, .aj-field textarea, .aj-field select {
     width: 100%; padding: 10px 13px; border-radius: var(--radius-sm);
-    border: 1.5px solid var(--border-color); background: var(--bg-body);
+    border: 1.5px solid var(--border-color); background: var(--bg-surface-2);
     color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px;
     outline: none; transition: border-color .15s, box-shadow .15s;
   }
   .aj-field input:focus, .aj-field textarea:focus, .aj-field select:focus {
-    border-color: var(--color-action); box-shadow: 0 0 0 3px rgba(0,180,216,.1);
+    border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27,79,216,.12);
   }
   .aj-field textarea { resize: vertical; min-height: 64px; }
   .aj-field .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-  .logo-zone { border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 24px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg-body); position: relative; }
-  .logo-zone:hover, .logo-zone.drag-over { border-color: var(--color-action); background: rgba(0,180,216,.04); }
-  .logo-zone.has-logo { border-style: solid; border-color: rgba(0,180,216,.3); background: rgba(0,180,216,.03); }
+  .logo-zone { border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 24px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg-surface-2); position: relative; }
+  .logo-zone:hover, .logo-zone.drag-over { border-color: var(--color-primary); background: rgba(27,79,216,.04); }
+  .logo-zone.has-logo { border-style: solid; border-color: rgba(27,79,216,.3); background: rgba(0,180,216,.03); }
   .logo-preview { max-height: 80px; max-width: 100%; object-fit: contain; margin-bottom: 10px; display: none; border-radius: 6px; }
   .logo-preview.visible { display: inline-block; }
   .logo-zone-icon { font-size: 32px; color: var(--text-secondary); opacity: .4; margin-bottom: 8px; }
   .logo-zone-text { font-size: 13px; color: var(--text-secondary); }
   .logo-zone-sub  { font-size: 11px; color: var(--text-secondary); opacity: .6; margin-top: 3px; }
   .logo-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
-  .btn-logo-change { font-size: 12px; font-weight: 600; color: var(--color-action); background: rgba(0,180,216,.1); border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: background .15s; }
-  .btn-logo-change:hover { background: rgba(0,180,216,.18); }
+  .btn-logo-change { font-size: 12px; font-weight: 600; color: var(--color-primary); background: rgba(27,79,216,.10); border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: background .15s; }
+  .btn-logo-change:hover { background: rgba(27,79,216,.18); }
   .btn-logo-remove { font-size: 12px; font-weight: 600; color: #ef4444; background: rgba(239,68,68,.08); border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: background .15s; }
   .btn-logo-remove:hover { background: rgba(239,68,68,.16); }
   #logoFileInput { display: none; }
 
   .formato-options { display: flex; gap: 10px; }
-  .formato-card { flex: 1; border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 12px; cursor: pointer; transition: all .18s; text-align: center; background: var(--bg-body); position: relative; }
+  .formato-card { flex: 1; border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 12px; cursor: pointer; transition: all .18s; text-align: center; background: var(--bg-surface-2); position: relative; }
   .formato-card:hover { border-color: rgba(0,180,216,.4); }
-  .formato-card.selected { border-color: var(--color-action); background: rgba(0,180,216,.05); }
-  .formato-card.selected::after { content: ''; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-action); }
+  .formato-card.selected { border-color: var(--color-primary); background: rgba(27,79,216,.05); }
+  .formato-card.selected::after { content: ''; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); }
   .formato-card input { display: none; }
   .formato-icon { font-size: 28px; margin-bottom: 6px; }
   .formato-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
   .formato-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
 
-  .ticket-preview-wrap { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; }
+  .ticket-preview-wrap { background: var(--bg-surface-2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; }
   .ticket-preview-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
   .ticket-paper { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.5; color: #111; background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 12px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); max-width: 260px; margin: 0 auto; }
   .ticket-paper .t-center { text-align: center; }
@@ -66,13 +68,13 @@
   .ticket-paper .t-row { display: flex; justify-content: space-between; }
 
   .aj-actions { display: flex; gap: 10px; padding: 0 0 28px; }
-  .btn-guardar { padding: 12px 28px; border-radius: var(--radius-md); border: none; background: linear-gradient(135deg,var(--color-action),#0099b8); color: #fff; font-family: var(--font-body); font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .18s; box-shadow: 0 4px 14px rgba(0,180,216,.3); }
+  .btn-guardar { padding: 12px 28px; border-radius: var(--radius-md); border: none; background: linear-gradient(135deg,var(--color-primary),#0099b8); color: #fff; font-family: var(--font-body); font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .18s; box-shadow: 0 4px 14px rgba(27,79,216,.3); }
   .btn-guardar:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,180,216,.4); }
   .btn-guardar:active { transform: translateY(0); }
   .btn-test-ticket { padding: 12px 20px; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); background: transparent; color: var(--text-secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .15s; }
-  .btn-test-ticket:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.05); }
+  .btn-test-ticket:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.05); }
 
-  .aj-toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-left: 3px solid #10b981; border-radius: var(--radius-sm); padding: 12px 18px; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--text-primary); box-shadow: var(--shadow-lg); z-index: 999; transform: translateY(80px); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
+  .aj-toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-surface); border: 1px solid var(--border-color); border-left: 3px solid #10b981; border-radius: var(--radius-sm); padding: 12px 18px; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--text-primary); box-shadow: var(--shadow-lg); z-index: 999; transform: translateY(80px); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
   .aj-toast.show { transform: translateY(0); opacity: 1; }
   .aj-toast i { font-size: 16px; color: #10b981; }
 
@@ -80,8 +82,8 @@
 
   /* Métodos de pago */
   .pm-list { display: flex; flex-direction: column; gap: 8px; }
-  .pm-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: all .15s; }
-  .pm-row:hover { border-color: rgba(0,180,216,.3); box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .pm-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg-surface-2); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: all .15s; }
+  .pm-row:hover { border-color: rgba(27,79,216,.3); box-shadow: 0 2px 8px rgba(0,0,0,.05); }
   .pm-row-drag { cursor: grab; color: var(--text-secondary); font-size: 16px; flex-shrink: 0; }
   .pm-row-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
   .pm-row-info { flex: 1; min-width: 0; }
@@ -91,32 +93,32 @@
   .pm-toggle input { opacity: 0; width: 0; height: 0; }
   .pm-toggle-slider { position: absolute; inset: 0; background: var(--border-color); border-radius: 24px; cursor: pointer; transition: .2s; }
   .pm-toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
-  .pm-toggle input:checked + .pm-toggle-slider { background: var(--color-action); }
+  .pm-toggle input:checked + .pm-toggle-slider { background: var(--color-primary); }
   .pm-toggle input:checked + .pm-toggle-slider::before { transform: translateX(20px); }
   .pm-row-actions { display: flex; gap: 5px; flex-shrink: 0; }
   .pm-btn-edit, .pm-btn-del { width: 30px; height: 30px; border-radius: 7px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all .12s; }
   .pm-btn-edit { color: var(--text-secondary); }
-  .pm-btn-edit:hover { background: rgba(0,180,216,.1); color: var(--color-action); }
+  .pm-btn-edit:hover { background: rgba(27,79,216,.10); color: var(--color-primary); }
   .pm-btn-del  { color: var(--text-secondary); }
   .pm-btn-del:hover  { background: rgba(239,68,68,.1); color: #ef4444; }
   .btn-add-pm { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border: 2px dashed var(--border-color); border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; width: 100%; justify-content: center; margin-top: 6px; }
-  .btn-add-pm:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.04); }
+  .btn-add-pm:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.04); }
   .pm-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 400; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; backdrop-filter: blur(3px); }
   .pm-modal-overlay.open { opacity: 1; pointer-events: all; }
-  .pm-modal { background: var(--bg-card); border-radius: 16px; padding: 28px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: scale(.93); transition: transform .22s; border: 1px solid var(--border-color); box-shadow: 0 16px 50px rgba(0,0,0,.15); }
+  .pm-modal { background: var(--bg-surface); border-radius: 16px; padding: 28px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: scale(.93); transition: transform .22s; border: 1px solid var(--border-color); box-shadow: 0 16px 50px rgba(0,0,0,.15); }
   .pm-modal-overlay.open .pm-modal { transform: scale(1); }
   .pm-form-row { display: flex; flex-direction: column; gap: 5px; }
   .pm-form-row label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
-  .pm-form-row input, .pm-form-row select { padding: 9px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color .15s; }
-  .pm-form-row input:focus, .pm-form-row select:focus { border-color: var(--color-action); }
+  .pm-form-row input, .pm-form-row select { padding: 9px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-primary); font-family: var(--font-body); font-size: 13.5px; outline: none; transition: border-color .15s; }
+  .pm-form-row input:focus, .pm-form-row select:focus { border-color: var(--color-primary); }
   .icon-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 4px; max-height: 180px; overflow-y: auto; padding: 2px; }
   .icon-opt { width: 36px; height: 36px; border: 1.5px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-secondary); cursor: pointer; }
-  .icon-opt:hover { border-color: var(--color-action); color: var(--color-action); background: rgba(0,180,216,.07); }
-  .icon-opt.selected { border-color: var(--color-action); background: rgba(0,180,216,.12); color: var(--color-action); }
+  .icon-opt:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(0,180,216,.07); }
+  .icon-opt.selected { border-color: var(--color-primary); background: rgba(0,180,216,.12); color: var(--color-primary); }
   .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all .12px; }
   .color-dot.selected { border-color: var(--text-primary); transform: scale(1.1); }
-  .pm-comisiones-section { background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+  .pm-comisiones-section { background: var(--bg-surface-2); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
   .pm-comisiones-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); padding: 10px 14px 8px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; }
   .pm-comision-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border-color); }
   .pm-comision-row:last-child { border-bottom: none; }
@@ -125,11 +127,39 @@
   .pm-comision-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .pm-comision-desc  { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
   .pm-comision-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-  .pm-comision-input-wrap input { width: 72px; padding: 7px 8px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: right; outline: none; transition: border-color .15s; }
-  .pm-comision-input-wrap input:focus { border-color: var(--color-action); }
+  .pm-comision-input-wrap input { width: 72px; padding: 7px 8px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: right; outline: none; transition: border-color .15s; }
+  .pm-comision-input-wrap input:focus { border-color: var(--color-primary); }
   .pm-comision-input-wrap span { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
   .pm-comision-preview { font-size: 11px; color: var(--text-secondary); padding: 8px 14px; background: rgba(99,102,241,.04); border-top: 1px solid var(--border-color); display: none; }
   .pm-comision-preview.visible { display: block; }
+
+  /* ══ MODAL USUARIO — FIX SCROLL ══ */
+  #modalUsuario .sale-modal {
+    max-height: 92vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+  }
+  #modalUsuario .sale-modal::-webkit-scrollbar { width: 5px; }
+  #modalUsuario .sale-modal::-webkit-scrollbar-track { background: transparent; }
+  #modalUsuario .sale-modal::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+  /* Permisos grid — 5 columnas para ocupar menos altura */
+  #permisosGrid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 6px !important;
+  }
+  #permisosGrid label {
+    padding: 8px 4px !important;
+    font-size: 10px !important;
+    gap: 4px !important;
+  }
+  #permisosGrid label i {
+    font-size: 16px !important;
+  }
 </style>
 
 <div class="app-wrapper">
@@ -137,6 +167,11 @@
   <div class="main-content">
     <%- include('../partials/header', { module: 'Ajustes', user }) %>
     <div class="page-body">
+
+      <div class="aj-sections-grid">
+
+        <!-- ══ COLUMNA IZQUIERDA ══ -->
+        <div>
 
       <!-- ══ DATOS DE LA EMPRESA ══ -->
       <div class="aj-section">
@@ -237,31 +272,24 @@
           <div style="margin-bottom:18px;">
             <div class="aj-field" style="margin-bottom:0;"><label>Formato de impresión</label></div>
             <div class="formato-options" style="margin-top:8px;">
-
-              <!-- 58mm — DEFAULT para Gadnic IT1050 -->
               <label class="formato-card" id="fmt58card" onclick="selFormatoCard(this,'58mm')">
                 <input type="radio" name="aj_formato" value="58mm" id="aj_fmt58">
                 <div class="formato-icon">🧾</div>
                 <div class="formato-name">Térmica 58mm</div>
                 <div class="formato-desc">Gadnic IT1050, comandera chica</div>
               </label>
-
-              <!-- 80mm -->
               <label class="formato-card" id="fmt80card" onclick="selFormatoCard(this,'80mm')">
                 <input type="radio" name="aj_formato" value="80mm" id="aj_fmt80">
                 <div class="formato-icon">🧾</div>
                 <div class="formato-name">Térmica 80mm</div>
                 <div class="formato-desc">Impresora de tickets, rollos</div>
               </label>
-
-              <!-- A4 -->
               <label class="formato-card" id="fmtA4card" onclick="selFormatoCard(this,'A4')">
                 <input type="radio" name="aj_formato" value="A4" id="aj_fmtA4">
                 <div class="formato-icon">📄</div>
                 <div class="formato-name">Normal A4</div>
                 <div class="formato-desc">Impresora de escritorio</div>
               </label>
-
             </div>
           </div>
           <div class="aj-field" style="margin-bottom:18px;">
@@ -300,6 +328,11 @@
         </div>
       </div>
 
+        </div><!-- /col izquierda -->
+
+        <!-- ══ COLUMNA DERECHA ══ -->
+        <div>
+
       <!-- ══ USUARIOS ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
@@ -308,7 +341,7 @@
             <div class="aj-section-title">Usuarios del sistema</div>
             <div class="aj-section-desc">Gestioná quién puede acceder y con qué permisos.</div>
           </div>
-          <button onclick="abrirModalUsuario()" style="margin-left:auto;display:flex;align-items:center;gap:7px;padding:8px 14px;background:var(--color-action);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,180,216,.3);">
+          <button onclick="abrirModalUsuario()" style="margin-left:auto;display:flex;align-items:center;gap:7px;padding:8px 14px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(27,79,216,.3);">
             <i class="bi bi-person-plus-fill"></i> Nuevo usuario
           </button>
         </div>
@@ -372,7 +405,7 @@
                 style="opacity:0;width:0;height:0;position:absolute;"
                 onchange="toggleFacturacionHabilitada(this)">
               <label for="facturacion_habilitada" id="facturacion_habilitada_track"
-                style="position:absolute;inset:0;border-radius:20px;background:<%= String(config.facturacion_habilitada || '0') === '1' ? 'var(--color-action)' : 'var(--border-color)' %>;cursor:pointer;transition:background .2s;">
+                style="position:absolute;inset:0;border-radius:20px;background:<%= String(config.facturacion_habilitada || '0') === '1' ? 'var(--color-primary)' : 'var(--border-color)' %>;cursor:pointer;transition:background .2s;">
                 <span id="facturacion_habilitada_thumb"
                   style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.2);display:block;transform:<%= String(config.facturacion_habilitada || '0') === '1' ? 'translateX(24px)' : 'translateX(0)' %>;"></span>
               </label>
@@ -402,7 +435,12 @@
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>Condición IVA del emisor</label>
-                <input type="text" id="empresa_cond_iva" placeholder="Responsable Inscripto" value="<%= config.empresa_cond_iva || 'Responsable Inscripto' %>"/>
+                <select id="empresa_cond_iva">
+                  <option value="Monotributista"      <%= (config.empresa_cond_iva||'').includes('Mono') ? 'selected' : '' %>>Monotributista</option>
+                  <option value="Responsable Inscripto" <%= (config.empresa_cond_iva||'').includes('Responsable') || !config.empresa_cond_iva ? 'selected' : '' %>>Responsable Inscripto</option>
+                  <option value="Exento"              <%= (config.empresa_cond_iva||'').includes('Exento') ? 'selected' : '' %>>Exento</option>
+                  <option value="No Responsable"      <%= (config.empresa_cond_iva||'').includes('No Responsable') ? 'selected' : '' %>>No Responsable</option>
+                </select>
               </div>
               <div class="aj-field">
                 <label>Ambiente AFIP</label>
@@ -416,7 +454,7 @@
               <i class="bi bi-info-circle" style="color:#6d28d9;font-size:18px;flex-shrink:0;"></i>
               <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">
                 Los certificados deben estar en la carpeta indicada dentro del proyecto.
-                Generá el CSR con <code style="background:var(--bg-body);padding:1px 5px;border-radius:4px;font-size:11px;">openssl req -new -newkey rsa:2048 -keyout private.key -out cert.csr</code>
+                Generá el CSR con <code style="background:var(--bg-surface-2);padding:1px 5px;border-radius:4px;font-size:11px;">openssl req -new -newkey rsa:2048 -keyout private.key -out cert.csr</code>
                 y luego cargalo en el portal de ARCA.
               </div>
             </div>
@@ -426,6 +464,49 @@
               </button>
               <span id="afipTestResult" style="margin-left:12px;font-size:13px;font-weight:600;"></span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ EMAIL / GMAIL ══ -->
+      <div class="aj-section">
+        <div class="aj-section-header">
+          <div class="aj-section-icon" style="background:linear-gradient(135deg,#1B4FD8,#1540b8);">
+            <i class="bi bi-envelope-fill"></i>
+          </div>
+          <div>
+            <div class="aj-section-title">Envío de comprobantes por email</div>
+            <div class="aj-section-desc">Configurá Gmail para enviar tickets y facturas a tus clientes.</div>
+          </div>
+        </div>
+        <div class="aj-section-body">
+          <div class="aj-grid aj-grid-2">
+            <div class="aj-field">
+              <label>Cuenta Gmail</label>
+              <input type="email" id="email_gmail" placeholder="tucuenta@gmail.com" value="<%= config.email_gmail || '' %>"/>
+              <div class="field-hint">La cuenta de Gmail desde la que se envían los emails.</div>
+            </div>
+            <div class="aj-field">
+              <label>Contraseña de aplicación</label>
+              <input type="password" id="email_app_pass" placeholder="xxxx xxxx xxxx xxxx" value="<%= config.email_app_pass || '' %>"/>
+              <div class="field-hint">Generala en Google → Seguridad → Contraseñas de aplicación.</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:14px 16px;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.15);border-radius:var(--radius-md);display:flex;gap:12px;align-items:flex-start;">
+            <i class="bi bi-info-circle-fill" style="color:var(--color-primary);font-size:16px;flex-shrink:0;margin-top:1px;"></i>
+            <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;">
+              <strong style="color:var(--text-primary);">¿Cómo generar la contraseña de aplicación?</strong><br>
+              1. Ir a <strong>myaccount.google.com</strong> → Seguridad<br>
+              2. Activar <strong>Verificación en 2 pasos</strong> (si no está activa)<br>
+              3. Buscar <strong>Contraseñas de aplicación</strong> → Crear una nueva<br>
+              4. Copiar las 16 letras que te da Google y pegarlas acá
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button onclick="probarEmail()" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:var(--radius-sm);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;">
+              <i class="bi bi-send"></i> Enviar email de prueba
+            </button>
+            <span id="emailTestResult" style="font-size:13px;font-weight:600;"></span>
           </div>
         </div>
       </div>
@@ -444,7 +525,7 @@
         <div class="aj-section-body">
           <div class="aj-grid aj-grid-2" style="align-items:start;">
             <div style="display:flex;flex-direction:column;gap:14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
                 <div>
                   <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);">Activar soporte de balanza</div>
                   <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">Se mostrará el chip ⚖️ en el punto de venta</div>
@@ -468,7 +549,7 @@
                 <div class="field-hint">Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.</div>
               </div>
             </div>
-            <div style="background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
+            <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
               <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
               <div style="font-size:12.5px;color:var(--text-primary);line-height:1.7;">
                 La balanza imprime etiquetas con un <strong>código EAN-13</strong>. Al escanearlo en ventas, el sistema detecta automáticamente el PLU y el precio/peso.<br><br>
@@ -504,16 +585,19 @@
               <div style="font-size:12px;color:var(--text-secondary);">Elegí entre modo claro u oscuro para todo el sistema</div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button id="btnTemaClaro" onclick="setTema('light')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
+              <button id="btnTemaClaro" onclick="setTema('light')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
                 <i class="bi bi-sun"></i> Claro
               </button>
-              <button id="btnTemaOscuro" onclick="setTema('dark')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
+              <button id="btnTemaOscuro" onclick="setTema('dark')" style="display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;">
                 <i class="bi bi-moon-stars"></i> Oscuro
               </button>
             </div>
           </div>
         </div>
       </div>
+
+        </div><!-- /col derecha -->
+      </div><!-- /aj-sections-grid -->
 
       <!-- Botones finales -->
       <div class="aj-actions">
@@ -533,32 +617,33 @@
 
 <!-- ══ MODAL USUARIO ══ -->
 <div class="sale-overlay" id="modalUsuario" onclick="if(event.target.id==='modalUsuario')cerrarModalUsuario()">
-  <div class="sale-modal" style="max-width:480px;text-align:left;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div class="sale-modal" style="max-width:500px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;"><i class="bi bi-person-badge"></i></div>
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0;"><i class="bi bi-person-badge"></i></div>
         <div>
           <div style="font-size:16px;font-weight:700;color:var(--text-primary);" id="uModalTitulo">Nuevo usuario</div>
           <div style="font-size:11px;color:var(--text-secondary);" id="uModalSub">Completá los datos</div>
         </div>
       </div>
-      <button onclick="cerrarModalUsuario()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModalUsuario()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;flex-shrink:0;"><i class="bi bi-x-lg"></i></button>
     </div>
+
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div id="u_username_wrap">
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Nombre de usuario</label>
-        <input type="text" id="u_username" placeholder="ej: cajero1" autocomplete="off" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+        <input type="text" id="u_username" placeholder="ej: cajero1" autocomplete="off" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Nombre visible</label>
-        <input type="text" id="u_nombre" placeholder="ej: Juan Pérez" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+        <input type="text" id="u_nombre" placeholder="ej: Juan Pérez" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Rol</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <label id="u_role_admin_lbl" onclick="setRol('admin')" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid var(--border-color);border-radius:10px;cursor:pointer;">
             <input type="radio" name="u_role" value="admin" id="u_role_admin" style="display:none">
-            <div style="width:34px;height:34px;border-radius:8px;background:rgba(0,180,216,.1);display:flex;align-items:center;justify-content:center;color:var(--color-action);font-size:16px;flex-shrink:0;"><i class="bi bi-shield-check"></i></div>
+            <div style="width:34px;height:34px;border-radius:8px;background:rgba(27,79,216,.10);display:flex;align-items:center;justify-content:center;color:var(--color-primary);font-size:16px;flex-shrink:0;"><i class="bi bi-shield-check"></i></div>
             <div><div style="font-size:13px;font-weight:700;">Admin</div><div style="font-size:11px;color:var(--text-secondary);">Acceso completo</div></div>
           </label>
           <label id="u_role_empleado_lbl" onclick="setRol('empleado')" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid var(--border-color);border-radius:10px;cursor:pointer;">
@@ -568,18 +653,61 @@
           </label>
         </div>
       </div>
+
+      <!-- ── PERMISOS — solo visible cuando rol = empleado ── -->
+      <div id="u_permisos_wrap" style="display:none;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:8px;">Secciones visibles para este empleado</label>
+        <%
+        const _secciones = [
+          {key:'dashboard',    label:'Dashboard',   icon:'bi-speedometer2'},
+          {key:'ventas',       label:'Pto. Venta',  icon:'bi-cart-check'},
+          {key:'historial',    label:'Historial',   icon:'bi-clock-history'},
+          {key:'caja',         label:'Caja',        icon:'bi-cash-coin'},
+          {key:'clientes',     label:'Clientes',    icon:'bi-people'},
+          {key:'presupuestos', label:'Presupuestos',icon:'bi-file-earmark-text'},
+          {key:'inventario',   label:'Inventario',  icon:'bi-box-seam'},
+          {key:'stock',        label:'Stock',       icon:'bi-clipboard2-check'},
+          {key:'proveedores',  label:'Proveedores', icon:'bi-truck'},
+          {key:'gastos',       label:'Gastos',      icon:'bi-receipt'},
+        ];
+        %>
+        <div id="permisosGrid">
+          <% _secciones.forEach(s => { %>
+          <label id="perm_lbl_<%= s.key %>"
+            onclick="togglePerm('<%= s.key %>')"
+            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px solid var(--border-color);border-radius:9px;cursor:pointer;transition:all .18s;font-size:10px;font-weight:600;color:var(--text-secondary);text-align:center;user-select:none;">
+            <input type="checkbox" id="perm_<%= s.key %>" value="<%= s.key %>" style="display:none;">
+            <i class="bi <%= s.icon %>" style="font-size:16px;"></i>
+            <%= s.label %>
+          </label>
+          <% }) %>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button type="button" onclick="setTodosPermisos(true)"
+            style="flex:1;padding:6px;border:1px solid var(--border-color);border-radius:6px;background:transparent;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:var(--font-body);">
+            ✓ Seleccionar todos
+          </button>
+          <button type="button" onclick="setTodosPermisos(false)"
+            style="flex:1;padding:6px;border:1px solid var(--border-color);border-radius:6px;background:transparent;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:var(--font-body);">
+            ✕ Quitar todos
+          </button>
+        </div>
+      </div>
+
       <div id="u_pass_wrap">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;" id="u_pass_label">Contraseña</label>
+        <label id="u_pass_label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Contraseña</label>
         <div style="position:relative;">
-          <input type="password" id="u_password" placeholder="Mínimo 4 caracteres" style="width:100%;padding:9px 36px 9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-action)'" onblur="this.style.borderColor='var(--border-color)'">
+          <input type="password" id="u_password" placeholder="Mínimo 4 caracteres" style="width:100%;padding:9px 36px 9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
           <button type="button" onclick="toggleUPass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:15px;"><i class="bi bi-eye" id="uPassEye"></i></button>
         </div>
         <small id="u_pass_hint" style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:none;">Dejá vacío para no cambiar la contraseña</small>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+
+    <!-- Botones — siempre visibles al final del scroll -->
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-shrink:0;">
       <button onclick="cerrarModalUsuario()" style="padding:9px 18px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:none;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
-      <button onclick="guardarUsuario()" style="padding:9px 20px;border:none;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--color-action),#0099b8);color:#fff;font-size:13px;font-weight:700;cursor:pointer;"><span id="uBtnLabel">Crear usuario</span></button>
+      <button onclick="guardarUsuario()" style="padding:9px 20px;border:none;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--color-primary),#0099b8);color:#fff;font-size:13px;font-weight:700;cursor:pointer;"><span id="uBtnLabel">Crear usuario</span></button>
     </div>
   </div>
 </div>
@@ -662,7 +790,7 @@ function toggleFacturacionHabilitada(chk) {
   const track = document.getElementById('facturacion_habilitada_track');
   const thumb = document.getElementById('facturacion_habilitada_thumb');
   const wrap  = document.getElementById('afipConfigWrap');
-  if (track) track.style.background = chk.checked ? 'var(--color-action)' : 'var(--border-color)';
+  if (track) track.style.background = chk.checked ? 'var(--color-primary)' : 'var(--border-color)';
   if (thumb) thumb.style.transform  = chk.checked ? 'translateX(24px)' : 'translateX(0)';
   if (wrap)  wrap.style.display     = chk.checked ? 'block' : 'none';
   const el = document.getElementById('afipTestResult');
@@ -686,7 +814,6 @@ async function cargarConfig() {
   document.getElementById('aj_inicio_actividades').value = _config.empresa_inicio_actividades || '';
   document.getElementById('aj_iibb').value               = _config.empresa_iibb               || '';
 
-  // ── Formato ticket: 58mm / 80mm / A4 ──
   const formato = _config.ticket_formato || '58mm';
   document.getElementById('aj_fmt58').checked = formato === '58mm';
   document.getElementById('aj_fmt80').checked = formato === '80mm';
@@ -720,7 +847,7 @@ function selFormatoCard(label, value) {
 
 function handleLogoFile(file) {
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { alert('Máximo 2MB.'); return; }
+  if (file.size > 2 * 1024 * 1024) { showToast('La imagen no puede superar 2MB', false); return; }
   const reader = new FileReader();
   reader.onload = e => { _logoBase64 = e.target.result; mostrarLogoPreview(_logoBase64); actualizarPreview(); };
   reader.readAsDataURL(file);
@@ -792,6 +919,8 @@ async function guardarAjustes() {
     afip_key_path:                (document.getElementById('afip_key_path')?.value    || 'certs/private.key').trim(),
     afip_env:                     document.getElementById('afip_env')?.value || 'homologacion',
     empresa_cond_iva:             (document.getElementById('empresa_cond_iva')?.value || 'Responsable Inscripto').trim(),
+    email_gmail:                  (document.getElementById('email_gmail')?.value      || '').trim(),
+    email_app_pass:               (document.getElementById('email_app_pass')?.value   || '').trim(),
   };
 
   if (_logoBase64 !== null) body.empresa_logo = _logoBase64;
@@ -823,9 +952,24 @@ async function testAfipConexion() {
   } catch(e) { el.textContent = '❌ Error: ' + e.message; el.style.color = '#ef4444'; }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  IMPRESIÓN DE TICKET DE PRUEBA — 58mm / 80mm / A4
-// ══════════════════════════════════════════════════════════════
+async function probarEmail() {
+  const result = document.getElementById('emailTestResult');
+  const email  = document.getElementById('email_gmail')?.value?.trim();
+  if (!email) { result.textContent = '⚠️ Completá el Gmail primero'; result.style.color='#f59e0b'; return; }
+  result.textContent = '⏳ Enviando email de prueba...'; result.style.color = 'var(--text-secondary)';
+  try {
+    await guardarAjustes();
+    const r = await fetch('/api/email/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email_destino: email })
+    });
+    const d = await r.json();
+    if (d.ok) { result.textContent = '✅ Email enviado a ' + email; result.style.color='#10b981'; }
+    else      { result.textContent = '❌ ' + (d.error||'Error'); result.style.color='#ef4444'; }
+  } catch(e) { result.textContent = '❌ ' + e.message; result.style.color='#ef4444'; }
+}
+
 function imprimirTicketTest() {
   const cfg = {
     empresa_nombre:    document.getElementById('aj_nombre').value    || 'Mi Comercio',
@@ -858,8 +1002,6 @@ function imprimirTicketTest() {
     : '';
 
   const fecha = new Date().toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
-
-  // Función local de formato moneda
   const fmtM = n => '$' + Number(n).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 
   const html = `<!DOCTYPE html>
@@ -869,22 +1011,9 @@ function imprimirTicketTest() {
   <title>Ticket de prueba</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    @page {
-      size: ${paperWidth} auto;
-      margin: ${pageMargin};
-    }
-    @media print {
-      html, body { width: ${paperWidth}; }
-    }
-    body {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: ${fontSize};
-      padding: ${bodyPadding};
-      color: #000;
-      background: #fff;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+    @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
+    @media print { html, body { width: ${paperWidth}; } }
+    body { font-family: 'Courier New', Courier, monospace; font-size: ${fontSize}; padding: ${bodyPadding}; color: #000; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .ticket  { width: ${contentWidth}; max-width: 100%; margin: 0 auto; }
     .c       { text-align: center; }
     .b       { font-weight: 700; }
@@ -903,65 +1032,40 @@ function imprimirTicketTest() {
 </head>
 <body>
   <div class="ticket">
-
     ${logoHTML}
-
     <div class="c">
       <div class="b" style="font-size:${titleSize};">${cfg.empresa_nombre}</div>
       ${cfg.empresa_direccion ? `<div class="sm">${cfg.empresa_direccion}</div>` : ''}
       ${cfg.empresa_telefono  ? `<div class="sm">Tel: ${cfg.empresa_telefono}</div>` : ''}
       ${cfg.empresa_email     ? `<div class="sm">${cfg.empresa_email}</div>` : ''}
     </div>
-
     <hr class="sep">
-
     <div>Ticket N°: <span class="b">PRUEBA</span></div>
     <div>Fecha: ${fecha}</div>
     <div>Cliente: Consumidor Final</div>
     <div>Método: Efectivo</div>
-
     <hr class="sep">
-
     <table>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Cant</th>
-          <th>Sub</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Producto</th><th>Cant</th><th>Sub</th></tr></thead>
       <tbody>
-        <tr>
-          <td>Queso cremoso<br><span class="sm">${fmtM(45000)} c/u</span></td>
-          <td>1</td>
-          <td>${fmtM(45000)}</td>
-        </tr>
-        <tr>
-          <td>Pan integral<br><span class="sm">${fmtM(3500)} c/u</span></td>
-          <td>2</td>
-          <td>${fmtM(7000)}</td>
-        </tr>
+        <tr><td>Queso cremoso<br><span class="sm">${fmtM(45000)} c/u</span></td><td>1</td><td>${fmtM(45000)}</td></tr>
+        <tr><td>Pan integral<br><span class="sm">${fmtM(3500)} c/u</span></td><td>2</td><td>${fmtM(7000)}</td></tr>
       </tbody>
     </table>
-
     <hr class="sep">
-
     <div class="tot"><span>Subtotal:</span><span>${fmtM(52000)}</span></div>
     <div class="tot main"><span>TOTAL:</span><span>${fmtM(52000)}</span></div>
     <div class="tot"><span>Recibido:</span><span>${fmtM(60000)}</span></div>
     <div class="tot"><span>Vuelto:</span><span>${fmtM(8000)}</span></div>
-
     <hr class="sep">
-
     <div class="c sm">${cfg.ticket_footer}</div>
     <div class="c sm" style="margin-top:3px;opacity:.6;">— Ticket de PRUEBA — ${cfg.ticket_formato}</div>
-
   </div>
 </body>
 </html>`;
 
   const win = window.open('', '_blank', `width=${winWidth},height=800,left=0,top=0,toolbar=0,menubar=0,scrollbars=1`);
-  if (!win) { alert('Permití ventanas emergentes para imprimir el ticket de prueba'); return; }
+  if (!win) { showToast('Permití ventanas emergentes para imprimir', false); return; }
   win.document.open();
   win.document.write(html);
   win.document.close();
@@ -995,23 +1099,72 @@ async function cargarUsuarios() {
     <tr>
       <td class="sale-id">${u.username}</td>
       <td><strong>${u.nombre || '—'}</strong></td>
-      <td>${u.role === 'admin' ? `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(0,180,216,.1);color:var(--color-action);">Admin</span>` : `<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(100,116,139,.08);color:#64748b;">Empleado</span>`}</td>
-      <td>${u.activo ? `<span class="badge-status badge-pagado">Activo</span>` : `<span class="badge-status badge-anulado">Inactivo</span>`}</td>
+      <td>${u.role === 'admin' ? '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(27,79,216,.10);color:var(--color-primary);">Admin</span>' : '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(100,116,139,.08);color:#64748b;">Empleado</span>'}</td>
+      <td>${u.activo ? '<span class="badge-status badge-pagado">Activo</span>' : '<span class="badge-status badge-anulado">Inactivo</span>'}</td>
       <td><div style="display:flex;gap:6px;">
-        <button onclick="abrirEditarUsuario(${JSON.stringify(u).replace(/"/g,'&quot;')})" style="padding:4px 10px;border:1px solid rgba(0,180,216,.3);border-radius:6px;background:rgba(0,180,216,.06);color:var(--color-action);font-size:12px;cursor:pointer;"><i class="bi bi-pencil"></i></button>
+        <button onclick="abrirEditarUsuario(${JSON.stringify(u).replace(/"/g,'&quot;')})" style="padding:4px 10px;border:1px solid rgba(27,79,216,.3);border-radius:6px;background:rgba(0,180,216,.06);color:var(--color-primary);font-size:12px;cursor:pointer;"><i class="bi bi-pencil"></i></button>
         <button onclick="toggleActivoUsuario(${u.id},${u.activo})" style="padding:4px 10px;border:1px solid var(--border-color);border-radius:6px;background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;"><i class="bi bi-${u.activo?'pause-circle':'play-circle'}"></i></button>
         <button onclick="eliminarUsuario(${u.id},'${u.username}')" style="padding:4px 10px;border:1px solid rgba(239,68,68,.25);border-radius:6px;background:rgba(239,68,68,.05);color:#ef4444;font-size:12px;cursor:pointer;"><i class="bi bi-trash3"></i></button>
       </div></td>
     </tr>`).join('');
 }
 
+const SECCIONES_KEYS = ['dashboard','ventas','historial','caja','clientes','presupuestos','inventario','stock','proveedores','gastos'];
+
+function togglePerm(key) {
+  const chk = document.getElementById('perm_' + key);
+  if (!chk) return;
+  chk.checked = !chk.checked;
+  aplicarEstiloPerm(key, chk.checked);
+}
+
+function aplicarEstiloPerm(key, activo) {
+  const lbl = document.getElementById('perm_lbl_' + key);
+  if (!lbl) return;
+  if (activo) {
+    lbl.style.borderColor  = 'var(--color-primary)';
+    lbl.style.background   = 'var(--color-primary)';
+    lbl.style.color        = '#fff';
+    lbl.style.boxShadow    = '0 2px 8px rgba(27,79,216,.35)';
+    lbl.style.transform    = 'translateY(-1px)';
+  } else {
+    lbl.style.borderColor  = 'var(--border-color)';
+    lbl.style.background   = '';
+    lbl.style.color        = 'var(--text-secondary)';
+    lbl.style.boxShadow    = 'none';
+    lbl.style.transform    = 'none';
+  }
+}
+
+function setPermisosActivos(lista) {
+  SECCIONES_KEYS.forEach(k => {
+    const chk = document.getElementById('perm_' + k);
+    if (chk) { chk.checked = lista.includes(k); aplicarEstiloPerm(k, chk.checked); }
+  });
+}
+
+function setTodosPermisos(val) {
+  SECCIONES_KEYS.forEach(k => {
+    const chk = document.getElementById('perm_' + k);
+    if (chk) { chk.checked = val; aplicarEstiloPerm(k, val); }
+  });
+}
+
+function getPermisosSeleccionados() {
+  return SECCIONES_KEYS.filter(k => {
+    const chk = document.getElementById('perm_' + k);
+    return chk && chk.checked;
+  });
+}
+
 function setRol(rol) {
   document.getElementById('u_role_admin').checked    = rol === 'admin';
   document.getElementById('u_role_empleado').checked = rol === 'empleado';
-  document.getElementById('u_role_admin_lbl').style.borderColor    = rol === 'admin'    ? 'var(--color-action)' : 'var(--border-color)';
-  document.getElementById('u_role_admin_lbl').style.background     = rol === 'admin'    ? 'rgba(0,180,216,.05)' : '';
+  document.getElementById('u_role_admin_lbl').style.borderColor    = rol === 'admin'    ? 'var(--color-primary)' : 'var(--border-color)';
+  document.getElementById('u_role_admin_lbl').style.background     = rol === 'admin'    ? 'rgba(27,79,216,.05)' : '';
   document.getElementById('u_role_empleado_lbl').style.borderColor = rol === 'empleado' ? '#64748b' : 'var(--border-color)';
   document.getElementById('u_role_empleado_lbl').style.background  = rol === 'empleado' ? 'rgba(100,116,139,.05)' : '';
+  document.getElementById('u_permisos_wrap').style.display = rol === 'empleado' ? '' : 'none';
 }
 
 function toggleUPass() {
@@ -1032,6 +1185,7 @@ function abrirModalUsuario() {
   document.getElementById('u_pass_hint').style.display     = 'none';
   document.getElementById('u_pass_label').textContent      = 'Contraseña';
   setRol('empleado');
+  setPermisosActivos(['dashboard','ventas','historial','caja']);
   document.getElementById('modalUsuario').classList.add('open');
   setTimeout(() => document.getElementById('u_username').focus(), 80);
 }
@@ -1048,6 +1202,11 @@ function abrirEditarUsuario(u) {
   document.getElementById('u_pass_hint').style.display     = 'block';
   document.getElementById('u_pass_label').textContent      = 'Nueva contraseña (opcional)';
   setRol(u.role);
+  if (u.role === 'empleado') {
+    let perms = ['ventas','historial','caja'];
+    try { if (u.permisos) perms = JSON.parse(u.permisos); } catch(e) {}
+    setPermisosActivos(perms);
+  }
   document.getElementById('modalUsuario').classList.add('open');
   setTimeout(() => document.getElementById('u_nombre').focus(), 80);
 }
@@ -1058,19 +1217,21 @@ async function guardarUsuario() {
   const nombre   = document.getElementById('u_nombre').value.trim();
   const role     = document.querySelector('input[name="u_role"]:checked')?.value || 'empleado';
   const password = document.getElementById('u_password').value;
+  const permisos = role === 'empleado' ? getPermisosSeleccionados() : null;
+
   if (_uEditId) {
-    const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre,role}) });
-    if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
+    const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre, role, permisos}) });
+    if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
     if (password) {
       const rp = await fetch(`/api/users/${_uEditId}/password`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password}) });
-      if (!rp.ok) { const e = await rp.json(); alert(e.error||'Error'); return; }
+      if (!rp.ok) { const e = await rp.json(); showToast(e.error||'Error', false); return; }
     }
   } else {
     const username = document.getElementById('u_username').value.trim();
-    if (!username) { alert('El nombre de usuario es obligatorio'); return; }
-    if (!password || password.length < 4) { alert('La contraseña debe tener al menos 4 caracteres'); return; }
-    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,nombre:nombre||username,role,password}) });
-    if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
+    if (!username) { showToast('El nombre de usuario es obligatorio', false); return; }
+    if (!password || password.length < 4) { showToast('La contraseña debe tener al menos 4 caracteres', false); return; }
+    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, nombre:nombre||username, role, password, permisos}) });
+    if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
   }
   cerrarModalUsuario();
   cargarUsuarios();
@@ -1078,14 +1239,14 @@ async function guardarUsuario() {
 
 async function toggleActivoUsuario(id, activo) {
   const r = await fetch(`/api/users/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({activo:activo?0:1}) });
-  if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
+  if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
   cargarUsuarios();
 }
 
 async function eliminarUsuario(id, username) {
   if (!confirm(`¿Eliminar el usuario "${username}"?`)) return;
   const r = await fetch(`/api/users/${id}`, { method:'DELETE' });
-  if (!r.ok) { const e = await r.json(); alert(e.error||'Error'); return; }
+  if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
   cargarUsuarios();
 }
 
@@ -1093,7 +1254,7 @@ async function eliminarUsuario(id, username) {
 const PM_ICONS  = ['bi-cash-stack','bi-credit-card','bi-credit-card-2-front','bi-phone','bi-qr-code','bi-clock-history','bi-wallet2','bi-bank','bi-paypal','bi-phone-fill','bi-currency-dollar','bi-coin','bi-bag-check','bi-bag','bi-cart-check','bi-tag','bi-stars','bi-gift','bi-receipt','bi-building'];
 const PM_COLORS = [{key:'cyan',hex:'#06b6d4'},{key:'blue',hex:'#3b82f6'},{key:'green',hex:'#10b981'},{key:'orange',hex:'#f97316'},{key:'purple',hex:'#8b5cf6'},{key:'red',hex:'#ef4444'},{key:'yellow',hex:'#f59e0b'},{key:'pink',hex:'#ec4899'}];
 const COLOR_HEX  = {cyan:'rgba(0,180,216,.12)',blue:'rgba(59,130,246,.12)',green:'rgba(16,185,129,.12)',orange:'rgba(249,115,22,.12)',purple:'rgba(139,92,246,.12)',red:'rgba(239,68,68,.12)',yellow:'rgba(245,158,11,.12)',pink:'rgba(236,72,153,.12)'};
-const COLOR_TEXT = {cyan:'var(--color-action)',blue:'#3b82f6',green:'#10b981',orange:'#f97316',purple:'#8b5cf6',red:'#ef4444',yellow:'#d97706',pink:'#ec4899'};
+const COLOR_TEXT = {cyan:'var(--color-primary)',blue:'#3b82f6',green:'#10b981',orange:'#f97316',purple:'#8b5cf6',red:'#ef4444',yellow:'#d97706',pink:'#ec4899'};
 
 async function cargarPM_Ajustes() {
   try { const r = await fetch('/api/payment-methods?all=1'); renderPmList(await r.json()); }
@@ -1174,7 +1335,7 @@ async function editarPM(id) { const r = await fetch(`/api/payment-methods/${id}`
 async function guardarPM() {
   const id     = document.getElementById('pmEditId').value;
   const nombre = document.getElementById('pm_nombre').value.trim();
-  if (!nombre) { alert('El nombre es obligatorio'); return; }
+  if (!nombre) { showToast('El nombre es obligatorio', false); return; }
   const body = JSON.stringify({
     nombre, tipo: document.getElementById('pm_tipo').value,
     icono: document.getElementById('pm_icono').value, color: document.getElementById('pm_color').value,
@@ -1184,7 +1345,7 @@ async function guardarPM() {
   const r = await fetch(id ? `/api/payment-methods/${id}` : '/api/payment-methods', {
     method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body
   });
-  if (!r.ok) { alert('Error al guardar'); return; }
+  if (!r.ok) { showToast('Error al guardar', false); return; }
   cerrarModalPM(); cargarPM_Ajustes();
 }
 
@@ -1204,8 +1365,8 @@ function actualizarBtnsTema(tema) {
   const btnClaro  = document.getElementById('btnTemaClaro');
   const btnOscuro = document.getElementById('btnTemaOscuro');
   if (!btnClaro || !btnOscuro) return;
-  const activeStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--color-action);background:rgba(0,180,216,.1);color:var(--color-action);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;';
-  const normalStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;';
+  const activeStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.10);color:var(--color-primary);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;';
+  const normalStyle = 'display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;';
   btnClaro.style.cssText  = tema === 'light' ? activeStyle : normalStyle;
   btnOscuro.style.cssText = tema === 'dark'  ? activeStyle : normalStyle;
 }

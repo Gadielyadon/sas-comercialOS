@@ -19,10 +19,18 @@ function initGastosSchema() {
     fecha_pago   TEXT,
     created_at   TEXT NOT NULL DEFAULT (datetime('now','localtime'))
   )`);
-  // Migraciones para DBs existentes
   try { run(`ALTER TABLE gastos ADD COLUMN metodo_pago TEXT`); } catch(e) {}
   try { run(`ALTER TABLE gastos ADD COLUMN pagado INTEGER NOT NULL DEFAULT 0`); } catch(e) {}
   try { run(`ALTER TABLE gastos ADD COLUMN fecha_pago TEXT`); } catch(e) {}
+
+  // ── Fondo de caja chica — monto disponible para gastar por período ──
+  run(`CREATE TABLE IF NOT EXISTS fondos_caja (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha      TEXT NOT NULL UNIQUE,
+    monto      REAL NOT NULL DEFAULT 0,
+    descripcion TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  )`);
 }
 
 function list({ desde, hasta, categoria } = {}) {
@@ -109,4 +117,47 @@ function remove(id) { run(`DELETE FROM gastos WHERE id=?`, [Number(id)]); return
 
 function getCategorias() { return CATEGORIAS_DEFAULT; }
 
-module.exports = { initGastosSchema, list, getResumen, create, update, remove, getCategorias };
+// ── Fondo de caja chica ───────────────────────────────────────
+function getFondo(fecha) {
+  const f = fecha || new Date().toISOString().split('T')[0];
+  return get(`SELECT * FROM fondos_caja WHERE fecha = ?`, [f]) || null;
+}
+
+function setFondo({ fecha, monto, descripcion }) {
+  const f = fecha || new Date().toISOString().split('T')[0];
+  const existing = get(`SELECT id FROM fondos_caja WHERE fecha = ?`, [f]);
+  if (existing) {
+    run(`UPDATE fondos_caja SET monto=?, descripcion=? WHERE fecha=?`,
+        [Number(monto), descripcion || null, f]);
+  } else {
+    run(`INSERT INTO fondos_caja (fecha, monto, descripcion) VALUES (?,?,?)`,
+        [f, Number(monto), descripcion || null]);
+  }
+  return get(`SELECT * FROM fondos_caja WHERE fecha = ?`, [f]);
+}
+
+function getGastadoPagado({ desde, hasta } = {}) {
+  let where = `WHERE pagado = 1`;
+  const params = [];
+  if (desde) { where += ' AND fecha >= ?'; params.push(desde); }
+  if (hasta) { where += ' AND fecha <= ?'; params.push(hasta); }
+  const r = get(`SELECT COALESCE(SUM(monto),0) as total FROM gastos ${where}`, params);
+  return r?.total || 0;
+}
+
+function getResumenCompleto({ desde, hasta } = {}) {
+  const fondo     = getFondo(desde || new Date().toISOString().split('T')[0]);
+  const gastado   = getGastadoPagado({ desde, hasta });
+  const { total, porCategoria } = getResumen({ desde, hasta });
+  return {
+    fondo,
+    montoFondo:   fondo ? fondo.monto : 0,
+    gastadoPagado: gastado,
+    restante:     fondo ? Math.max(fondo.monto - gastado, 0) : null,
+    porcentajeUsado: fondo && fondo.monto > 0 ? Math.min(Math.round((gastado / fondo.monto) * 100), 100) : null,
+    total,
+    porCategoria,
+  };
+}
+
+module.exports = { initGastosSchema, list, getResumen, getResumenCompleto, create, update, remove, getCategorias, getFondo, setFondo, getGastadoPagado };

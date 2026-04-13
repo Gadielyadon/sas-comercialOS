@@ -6,7 +6,7 @@ exports.create = async (req, res) => {
     const {
       payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct,
-      cliente_id, items, es_cuenta_corriente
+      cliente_id, items, es_cuenta_corriente, monto_mixto2
     } = req.body;
 
     if (!payment_method)
@@ -35,6 +35,7 @@ exports.create = async (req, res) => {
       recargo_pct:          Number(recargo_pct)    || 0,
       cliente_id:           cliente_id ? Number(cliente_id) : 1,
       es_cuenta_corriente:  es_cuenta_corriente ? 1 : 0,
+      monto_mixto2:         monto_mixto2 != null ? Number(monto_mixto2) : null,
       sucursal_id,
       items
     });

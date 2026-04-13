@@ -2,13 +2,14 @@
 const { get, all, run } = require('../db');
 
 function initClientesSchema() {
-  // Solo agrega columnas que pueden faltar en bases existentes
-  // No toca lo que ya existe
   ['documento TEXT', 'saldo REAL NOT NULL DEFAULT 0'].forEach(col => {
     try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
   });
+  // Nuevas columnas opcionales
+  ['telefono TEXT', 'email TEXT', 'direccion TEXT', 'limite_credito REAL DEFAULT NULL'].forEach(col => {
+    try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
+  });
 
-  // Tabla movimientos (se crea solo si no existe)
   run(`CREATE TABLE IF NOT EXISTS clientes_movimientos (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     cliente_id  INTEGER NOT NULL,
@@ -42,10 +43,11 @@ function findById(id) {
   return get(`SELECT * FROM clientes WHERE id = ?`, [Number(id)]);
 }
 
-function create({ nombre, documento }) {
+function create({ nombre, documento, telefono, email, direccion, limite_credito }) {
   const r = run(
-    `INSERT INTO clientes (nombre, documento) VALUES (?, ?)`,
-    [String(nombre), documento || null]
+    `INSERT INTO clientes (nombre, documento, telefono, email, direccion, limite_credito) VALUES (?, ?, ?, ?, ?, ?)`,
+    [String(nombre), documento || null, telefono || null, email || null, direccion || null,
+     limite_credito != null && limite_credito !== '' ? Number(limite_credito) : null]
   );
   return findById(r.lastInsertRowid);
 }
@@ -53,9 +55,59 @@ function create({ nombre, documento }) {
 function update(id, fields) {
   const c = findById(id);
   if (!c) return null;
-  run(`UPDATE clientes SET nombre=?, documento=? WHERE id=?`,
-    [fields.nombre ?? c.nombre, fields.documento ?? c.documento, Number(id)]);
+  run(`UPDATE clientes SET nombre=?, documento=?, telefono=?, email=?, direccion=?, limite_credito=? WHERE id=?`,
+    [
+      fields.nombre     ?? c.nombre,
+      fields.documento  ?? c.documento,
+      fields.telefono   !== undefined ? (fields.telefono  || null) : c.telefono,
+      fields.email      !== undefined ? (fields.email     || null) : c.email,
+      fields.direccion  !== undefined ? (fields.direccion || null) : c.direccion,
+      fields.limite_credito !== undefined
+        ? (fields.limite_credito === '' || fields.limite_credito === null ? null : Number(fields.limite_credito))
+        : c.limite_credito,
+      Number(id)
+    ]);
   return findById(id);
+}
+
+// Verifica si una venta supera el límite de crédito
+// Retorna { ok: true } o { ok: false, saldo, limite, disponible }
+function checkLimite(clienteId, montoVenta) {
+  const c = findById(clienteId);
+  if (!c || c.limite_credito == null) return { ok: true };
+  const saldoActual   = c.saldo || 0;
+  const disponible    = c.limite_credito - saldoActual;
+  if (montoVenta > disponible) {
+    return { ok: false, saldo: saldoActual, limite: c.limite_credito, disponible };
+  }
+  return { ok: true };
+}
+
+// Importación masiva — recibe array de objetos normalizados
+// Retorna { creados, actualizados, errores }
+function importMasivo(rows) {
+  let creados = 0, actualizados = 0, errores = 0;
+  for (const r of rows) {
+    try {
+      if (!r.nombre) { errores++; continue; }
+      // Buscar duplicado por documento o nombre exacto
+      let existente = null;
+      if (r.documento) {
+        existente = get(`SELECT * FROM clientes WHERE documento = ?`, [String(r.documento)]);
+      }
+      if (!existente) {
+        existente = get(`SELECT * FROM clientes WHERE LOWER(nombre) = LOWER(?)`, [String(r.nombre)]);
+      }
+      if (existente) {
+        update(existente.id, r);
+        actualizados++;
+      } else {
+        create(r);
+        creados++;
+      }
+    } catch(e) { errores++; }
+  }
+  return { creados, actualizados, errores };
 }
 
 function remove(id) {
@@ -100,5 +152,6 @@ function registrarPago(clienteId, monto, descripcion = 'Pago') {
 module.exports = {
   initClientesSchema, list, search, findById,
   create, update, remove,
-  getMovimientos, registrarCargo, registrarPago
+  getMovimientos, registrarCargo, registrarPago,
+  checkLimite, importMasivo,
 };

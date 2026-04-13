@@ -4,8 +4,25 @@ const router  = express.Router();
 
 const productsService = require('../services/products.service');
 const cajaService     = require('../services/caja.service');
-const { get, all }    = require('../db');
+const { get, all, db } = require('../db');
 const reportesCtrl    = require('../controllers/reportes.controller');
+
+// requirePermiso — si auth.middleware falla, usar passthrough
+let requirePermiso = (_sec) => (_req, _res, next) => next();
+try {
+  const authMw = require('../middlewares/auth.middleware');
+  if (typeof authMw.requirePermiso === 'function') {
+    requirePermiso = authMw.requirePermiso;
+  }
+} catch(e) { console.warn('[main.routes] auth.middleware no disponible:', e.message); }
+
+// ── Prepared statements del dashboard — se preparan una vez ──
+const stmtVentasHoy  = db.prepare(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=?`);
+const stmtVentasAyer = db.prepare(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=?`);
+const stmtStockBajo  = db.prepare(`SELECT COUNT(*) as count FROM products WHERE stock <= 5`);
+const stmtVentasMes  = db.prepare(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at) >= ?`);
+const stmtGastosMes  = db.prepare(`SELECT COALESCE(SUM(monto),0) as total FROM gastos WHERE DATE(fecha) >= ?`);
+const stmtDeudaProv  = db.prepare(`SELECT COALESCE(SUM(saldo),0) as total FROM proveedores WHERE saldo > 0`);
 
 function getSucursalesService() {
   try { return require('../services/sucursales.service'); } catch(e) { return null; }
@@ -66,18 +83,82 @@ function getTopProductos(sucursal_id) {
 function getStats(sucursal_id) {
   try {
     const hoy   = new Date().toISOString().split('T')[0];
+    const ayer  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    const v  = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [hoy]);
+    const v     = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [hoy]);
+    const vAyer = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [ayer]);
     const ticket = v.count > 0 ? v.total / v.count : 0;
-    const sb = get(`SELECT COUNT(*) as count FROM products WHERE stock <= 5 ${sucursal_id ? `AND sucursal_id=${Number(sucursal_id)}` : ''}`);
-    const fmt = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+    const sb    = get(`SELECT COUNT(*) as count FROM products WHERE stock <= 5 ${sucursal_id ? `AND sucursal_id=${Number(sucursal_id)}` : ''}`);
+    const fmt   = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+
+    // Comparación hoy vs ayer
+    const diff     = v.total - vAyer.total;
+    const diffPct  = vAyer.total > 0 ? Math.round((diff / vAyer.total) * 100) : null;
+    const trendVta = diffPct !== null
+      ? (diffPct >= 0 ? `▲ ${diffPct}% vs ayer` : `▼ ${Math.abs(diffPct)}% vs ayer`)
+      : `${v.count} transacciones`;
+
     return [
-      { label: 'Ventas hoy',      value: fmt(v.total), trend: `${v.count} transacciones`,                         icon: 'bi-cash-coin',          color: '#00c2e0' },
-      { label: 'Ticket promedio', value: fmt(ticket),  trend: 'promedio por venta',                                icon: 'bi-receipt',            color: '#6366f1' },
-      { label: 'Transacciones',   value: v.count,      trend: 'ventas del día',                                    icon: 'bi-bag-check',          color: 'success' },
-      { label: 'Stock bajo',      value: sb.count,     trend: sb.count > 0 ? 'productos críticos' : 'sin alertas', icon: 'bi-exclamation-triangle', color: sb.count > 0 ? 'alerta' : 'success' },
+      { label: 'Vendido hoy',     value: fmt(v.total), trend: trendVta,                                            icon: 'bi-cash-coin',           },
+      { label: 'Ticket promedio', value: fmt(ticket),  trend: 'promedio por venta hoy',                            icon: 'bi-receipt',             },
+      { label: 'Ventas del día',  value: v.count,      trend: `${vAyer.count} ayer`,                               icon: 'bi-bag-check',           },
+      { label: 'Stock crítico',   value: sb.count,     trend: sb.count > 0 ? 'productos con poco stock' : '✓ Todo ok', icon: 'bi-exclamation-triangle' },
     ];
   } catch(e) { return []; }
+}
+
+// Métricas extra para el dashboard
+function getMetricasExtra(sucursal_id) {
+  try {
+    const where     = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+    const inicioMes = new Date(); inicioMes.setDate(1);
+    const desdeStr  = inicioMes.toISOString().split('T')[0];
+
+    // Ticket promedio del mes
+    const mes = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at) >= ? ${where}`, [desdeStr]);
+    const ticketMes = mes.count > 0 ? Math.round(mes.total / mes.count) : 0;
+
+    // Esta semana vs semana anterior
+    const estaSemana = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE created_at >= datetime('now','-6 days') ${where}`);
+    const semAnt     = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE created_at >= datetime('now','-13 days') AND created_at < datetime('now','-6 days') ${where}`);
+    const diffSem    = semAnt.total > 0 ? Math.round(((estaSemana.total - semAnt.total) / semAnt.total) * 100) : null;
+
+    // Hora pico (la hora con más ventas en los últimos 30 días)
+    const horaPico = get(`
+      SELECT CAST(strftime('%H', created_at) AS INTEGER) as hora, COUNT(*) as cant
+      FROM sales
+      WHERE created_at >= datetime('now','-30 days') ${where}
+      GROUP BY hora ORDER BY cant DESC LIMIT 1
+    `);
+
+    // Mejor día de la semana (últimos 30 días)
+    const diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const mejorDia   = get(`
+      SELECT CAST(strftime('%w', created_at) AS INTEGER) as dia, COALESCE(SUM(total),0) as total
+      FROM sales
+      WHERE created_at >= datetime('now','-30 days') ${where}
+      GROUP BY dia ORDER BY total DESC LIMIT 1
+    `);
+
+    // Ventas anuladas del mes
+    let anuladas = { count: 0, total: 0 };
+    try {
+      anuladas = get(`SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total FROM sales WHERE status='anulada' AND DATE(created_at) >= ? ${where}`, [desdeStr]) || anuladas;
+    } catch(_) {}
+
+    return {
+      ticketMes,
+      ventasMes:    { total: mes.total, count: mes.count },
+      semanaActual: Math.round(estaSemana.total),
+      semanaAnt:    Math.round(semAnt.total),
+      diffSemPct:   diffSem,
+      horaPico:     horaPico ? `${String(horaPico.hora).padStart(2,'0')}:00 hs` : null,
+      mejorDia:     mejorDia ? diasSemana[mejorDia.dia] : null,
+      anuladas,
+    };
+  } catch(e) {
+    return { ticketMes: 0, ventasMes: { total: 0, count: 0 }, semanaActual: 0, semanaAnt: 0, diffSemPct: null, horaPico: null, mejorDia: null, anuladas: { count: 0, total: 0 } };
+  }
 }
 
 function getConfigValue(key, def = '') {
@@ -126,7 +207,7 @@ function getStockCritico() {
 router.get('/', (req, res) => res.redirect('/dashboard'));
 
 // ── Dashboard ─────────────────────────────────────────────────
-router.get('/dashboard', (req, res) => {
+router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
   const user        = req.session?.user || { name: 'Admin', role: 'admin' };
   const sucursal_id = res.locals?.sucursal_filtro ?? null;
 
@@ -147,6 +228,7 @@ router.get('/dashboard', (req, res) => {
     graficoSemana:  JSON.stringify(getVentasSemana(sucursal_id)),
     graficoMetodos: JSON.stringify(getVentasPorMetodo(sucursal_id)),
     graficoTopProd: JSON.stringify(getTopProductos(sucursal_id)),
+    metricasExtra:  getMetricasExtra(sucursal_id),
     sucursal:       res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
     modulo_sucursales: false,
     recentSales:    [],
@@ -157,8 +239,17 @@ router.get('/dashboard', (req, res) => {
   });
 });
 
-// ── Inventario ────────────────────────────────────────────────
-router.get('/inventario', (req, res) => {
+// ── Historial de ventas / devoluciones ───────────────────────
+router.get('/historial', requirePermiso('historial'), (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  res.render('pages/historial', {
+    title:  'Historial de Ventas',
+    module: 'Historial',
+    active: 'historial',
+    user,
+  });
+});
+router.get('/inventario', requirePermiso('inventario'), (req, res) => {
   const user        = req.session?.user || { name: 'Admin' };
   const sucursal_id = res.locals?.sucursal_filtro ?? null;
   let products = [];
@@ -172,7 +263,7 @@ router.get('/inventario', (req, res) => {
 });
 
 // ── Ventas ────────────────────────────────────────────────────
-router.get('/ventas', (req, res) => {
+router.get('/ventas', requirePermiso('ventas'), (req, res) => {
   let config = {};
   try { config = require('../services/config.service').getAll(); } catch(e) {}
 
@@ -187,7 +278,7 @@ router.get('/ventas', (req, res) => {
 });
 
 // ── Clientes ─────────────────────────────────────────────────
-router.get('/clientes', (req, res) => {
+router.get('/clientes', requirePermiso('clientes'), (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
   let clientes = [];
   try {
@@ -257,6 +348,35 @@ router.get('/reportes/caja', reportesCtrl.caja);
 router.get('/reportes',      (req, res) => res.redirect('/reportes/caja'));
 
 // ── Logout ────────────────────────────────────────────────────
+// ── Cambiar sucursal activa ────────────────────────────────────
+router.post('/api/cambiar-sucursal', (req, res) => {
+  try {
+    const sucSvc = getSucursalesService();
+    if (!sucSvc) return res.status(404).json({ error: 'Módulo no disponible' });
+
+    const sucursal_id = Number(req.body.sucursal_id);
+    if (!sucursal_id) return res.status(400).json({ error: 'sucursal_id requerido' });
+
+    const suc = sucSvc.findById(sucursal_id);
+    if (!suc || !suc.activa) return res.status(404).json({ error: 'Sucursal no encontrada' });
+
+    // Solo admins pueden cambiar a cualquier sucursal
+    // Empleados solo pueden ver su sucursal asignada
+    const user = req.session?.user;
+    if (user?.role !== 'admin' && user?.sucursal_id !== sucursal_id) {
+      return res.status(403).json({ error: 'Sin permiso para cambiar de sucursal' });
+    }
+
+    // Guardar en sesión
+    req.session.sucursal_activa = sucursal_id;
+    req.session.save(() => {
+      res.json({ ok: true, sucursal: suc });
+    });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/logout',  (req, res) => { req.session?.destroy(() => res.redirect('/login')); });
 router.post('/logout', (req, res) => { req.session?.destroy(() => res.redirect('/login')); });
 
@@ -275,7 +395,7 @@ router.get('/dashboard/reportes/metodos', (req, res) => {
 });
 
 // ── Stock ─────────────────────────────────────────────────────
-router.get('/stock', (req, res) => {
+router.get('/stock', requirePermiso('stock'), (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
   if (user.role !== 'admin') return res.redirect('/dashboard');
 
@@ -285,10 +405,10 @@ router.get('/stock', (req, res) => {
 
   let products = [];
   try {
-    products = all(`SELECT id, sku, name, category, stock, pesable, hay FROM products ORDER BY category, name`);
+    products = all(`SELECT id, sku, name, category, stock, pesable, hay, COALESCE(venta_sin_stock,0) as venta_sin_stock FROM products ORDER BY category, name`);
   } catch(e) {
     // Fallback sin columna hay
-    try { products = all(`SELECT id, sku, name, category, stock, pesable, 1 as hay FROM products ORDER BY category, name`); } catch(e2) {}
+    try { products = all(`SELECT id, sku, name, category, stock, pesable, 1 as hay, COALESCE(venta_sin_stock,0) as venta_sin_stock FROM products ORDER BY category, name`); } catch(e2) {}
   }
 
   res.render('pages/stock', {

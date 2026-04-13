@@ -143,12 +143,24 @@ function xmlTagValue(xml, tagName) {
   return match ? match[1].trim() : '';
 }
 
+// Timeout para calls AFIP — evita que bloquee si no hay internet
+const AFIP_TIMEOUT_MS = 15000; // 15 segundos
+
+function withAfipTimeout(promise, ms = AFIP_TIMEOUT_MS) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('AFIP no responde — verificá tu conexión a internet (timeout 15s)')), ms)
+    ),
+  ]);
+}
+
 async function withTemporaryInsecureTls(fn) {
   const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
   try {
-    return await fn();
+    return await withAfipTimeout(fn());
   } finally {
     if (previous === undefined) {
       delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;

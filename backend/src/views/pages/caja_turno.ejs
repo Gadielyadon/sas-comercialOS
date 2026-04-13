@@ -8,9 +8,25 @@
   <div class="page-body" style="padding:24px;">
 
     <!-- ── TÍTULO ── -->
-    <div style="margin-bottom:24px;">
-      <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 4px;">Caja</h2>
-      <p style="font-size:13px;color:var(--text-secondary);margin:0;">Panel de caja y reportes de turnos</p>
+    <div class="page-header" style="margin-bottom:24px;">
+      <div class="page-header-title">
+        <h2>Caja</h2>
+        <p>Panel de caja y reportes de turnos</p>
+      </div>
+    </div>
+
+    <!-- ── BANNER INFORMATIVO ── -->
+    <div style="background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.15);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <i class="bi bi-info-circle" style="color:var(--color-primary);font-size:15px;flex-shrink:0;"></i>
+        <span style="font-size:12.5px;color:var(--text-secondary);">
+          Esta pantalla muestra el <strong style="color:var(--text-primary);">efectivo del turno actual</strong> para cuadrar la caja.
+          Para ver el historial completo de ventas con filtros y anulaciones →
+        </span>
+      </div>
+      <a href="/historial" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">
+        <i class="bi bi-clock-history"></i> Ver Historial
+      </a>
     </div>
 
     <!-- ── BANNER CAJA ABIERTA / CERRADA ── -->
@@ -37,7 +53,7 @@
     <!-- ── STATS DEL TURNO ── -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
       <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-icon" style="background:rgba(27,79,216,.1);color:var(--color-primary);"><i class="bi bi-cash-coin"></i></div>
         <div class="stat-value">$<%= totalTurno.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
         <div class="stat-label">Total del turno</div>
       </div>
@@ -78,23 +94,33 @@
     <div class="section-card" style="margin-bottom:24px;">
       <div class="section-title" style="justify-content:space-between;">
         <span><i class="bi bi-arrow-left-right"></i> Movimientos manuales</span>
-        <button onclick="document.getElementById('modalMovimiento').classList.add('active')"
-          style="padding:6px 14px;border-radius:8px;background:var(--color-action,#6366f1);color:#fff;font-size:12px;font-weight:700;border:none;cursor:pointer;">
+        <button onclick="abrirModalMovimiento()"
+          style="padding:6px 14px;border-radius:8px;background:var(--color-primary);color:#fff;font-size:12px;font-weight:700;border:none;cursor:pointer;">
           + Agregar
         </button>
       </div>
+      <div id="listaMovimientos">
       <% if (movimientos.length === 0) { %>
-        <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Sin movimientos en este turno</div>
+        <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;" id="movVacio">Sin movimientos en este turno</div>
       <% } else { %>
         <% movimientos.forEach(m => { %>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border-color);">
-            <span style="font-size:13.5px;color:var(--text-primary);"><%= m.descripcion || m.tipo %></span>
+          <div class="mov-row">
+            <div>
+              <span style="font-size:13.5px;color:var(--text-primary);font-weight:600;"><%= m.descripcion || (m.tipo === 'ingreso' ? 'Ingreso' : 'Retiro') %></span>
+              <span style="font-size:11px;color:var(--text-muted);margin-left:8px;"><%= m.tipo === 'ingreso' ? '▲ Ingreso' : '▼ Retiro' %></span>
+              <% if (m.created_at) { %>
+                <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">
+                  <%= new Date(m.created_at.includes('T') ? m.created_at : m.created_at.replace(' ','T')).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) %>
+                </span>
+              <% } %>
+            </div>
             <strong style="color:<%= m.tipo==='ingreso' ? '#10b981' : '#ef4444' %>;">
               <%= m.tipo==='ingreso' ? '+' : '−' %>$<%= m.monto.toLocaleString('es-AR',{minimumFractionDigits:2}) %>
             </strong>
           </div>
         <% }) %>
       <% } %>
+      </div>
     </div>
 
     <% } else { %>
@@ -122,13 +148,13 @@
       <% } else { %>
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="background:var(--bg-body);border-bottom:1.5px solid var(--border-color);">
+          <thead class="caja-thead">
+            <tr>
               <th class="th">ID</th>
               <th class="th">Cajero</th>
               <th class="th">Apertura</th>
-              <th class="th">Cierre</th>
-              <th class="th" style="text-align:right;">Inicial</th>
+              <th class="th caja-col-cierre">Cierre</th>
+              <th class="th caja-col-inicial" style="text-align:right;">Inicial</th>
               <th class="th" style="text-align:right;">Ventas</th>
               <th class="th" style="text-align:center;">Estado</th>
               <th class="th"></th>
@@ -140,9 +166,9 @@
               <td class="td" style="color:var(--text-muted);font-size:12px;">#<%= c.id %></td>
               <td class="td"><strong><%= c.user_open || '—' %></strong></td>
               <td class="td"><%= new Date(c.opened_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) %></td>
-              <td class="td"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '—' %></td>
-              <td class="td" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
-              <td class="td" style="text-align:right;font-weight:700;color:#6366f1;">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td caja-col-cierre"><%= c.closed_at ? new Date(c.closed_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '—' %></td>
+              <td class="td caja-col-inicial" style="text-align:right;">$<%= (c.monto_inicial||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+              <td class="td" style="text-align:right;font-weight:700;color:var(--color-primary);">$<%= (c.total_sales||0).toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
               <td class="td" style="text-align:center;">
                 <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
                   background:<%= c.status==='abierta' ? 'rgba(16,185,129,.1)' : 'rgba(107,114,128,.1)' %>;
@@ -208,30 +234,47 @@
 <div class="modal-overlay" id="modalMovimiento" onclick="if(event.target===this)this.classList.remove('active')">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-header">
-      <span class="modal-title"><i class="bi bi-arrow-left-right"></i> Agregar movimiento</span>
+      <span class="modal-title"><i class="bi bi-arrow-left-right"></i> Registrar movimiento</span>
       <button class="modal-close" onclick="document.getElementById('modalMovimiento').classList.remove('active')">✕</button>
     </div>
     <div class="modal-body" style="padding:24px;">
-      <form method="POST" action="/caja/movimiento" style="display:flex;flex-direction:column;gap:14px;">
-        <div class="field">
-          <label>Tipo</label>
-          <select name="tipo" style="width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:14px;">
-            <option value="ingreso">Ingreso</option>
-            <option value="retiro">Retiro</option>
-          </select>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <!-- Tipo — botones grandes -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button id="btnTipoIngreso" onclick="selTipoMov('ingreso')"
+            style="padding:14px;border-radius:10px;border:2px solid rgba(16,185,129,.4);background:rgba(16,185,129,.08);color:#059669;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s;">
+            <i class="bi bi-arrow-down-circle-fill" style="font-size:22px;"></i>
+            Ingreso
+          </button>
+          <button id="btnTipoRetiro" onclick="selTipoMov('retiro')"
+            style="padding:14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s;">
+            <i class="bi bi-arrow-up-circle-fill" style="font-size:22px;"></i>
+            Retiro
+          </button>
+        </div>
+        <!-- Montos rápidos -->
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <% [500,1000,2000,5000,10000].forEach(v => { %>
+          <button onclick="document.getElementById('mov_monto').value='<%= v %>'"
+            style="flex:1;min-width:55px;padding:6px 4px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-body);color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;">
+            $<%= v.toLocaleString('es-AR') %>
+          </button>
+          <% }) %>
         </div>
         <div class="field">
           <label>Monto</label>
-          <div class="field-prefix"><span>$</span><input type="number" name="monto" min="0" step="0.01" required></div>
+          <div class="field-prefix"><span>$</span><input type="number" id="mov_monto" min="0" step="0.01" placeholder="0,00" required></div>
         </div>
         <div class="field">
-          <label>Descripción</label>
-          <input type="text" name="descripcion" placeholder="Motivo del movimiento">
+          <label>Descripción <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>
+          <input type="text" id="mov_descripcion" placeholder="Ej: Pago proveedor, vuelto caja...">
         </div>
-        <button type="submit" style="padding:12px;border:none;border-radius:var(--radius-md);background:var(--color-action,#6366f1);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
-          Confirmar
+        <button id="btnConfirmarMov" onclick="confirmarMovimiento()"
+          style="padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);">
+          <i class="bi bi-check-circle-fill"></i> Confirmar
         </button>
-      </form>
+        <div id="movError" style="display:none;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -251,6 +294,83 @@
 
 <%- include('../partials/scripts') %>
 <script>
+/* ── Movimientos ── */
+let _tipoMov = 'ingreso';
+
+function abrirModalMovimiento() {
+  _tipoMov = 'ingreso';
+  selTipoMov('ingreso');
+  document.getElementById('mov_monto').value = '';
+  document.getElementById('mov_descripcion').value = '';
+  document.getElementById('movError').style.display = 'none';
+  document.getElementById('modalMovimiento').classList.add('active');
+  setTimeout(() => document.getElementById('mov_monto').focus(), 100);
+}
+
+function selTipoMov(tipo) {
+  _tipoMov = tipo;
+  const btnI = document.getElementById('btnTipoIngreso');
+  const btnR = document.getElementById('btnTipoRetiro');
+  if (tipo === 'ingreso') {
+    btnI.style.cssText = 'padding:14px;border-radius:10px;border:2px solid rgba(16,185,129,.6);background:rgba(16,185,129,.12);color:#059669;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;';
+    btnR.style.cssText = 'padding:14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;';
+  } else {
+    btnR.style.cssText = 'padding:14px;border-radius:10px;border:2px solid rgba(239,68,68,.5);background:rgba(239,68,68,.08);color:#dc2626;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;';
+    btnI.style.cssText = 'padding:14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;';
+  }
+}
+
+async function confirmarMovimiento() {
+  const monto = parseFloat(document.getElementById('mov_monto').value) || 0;
+  const desc  = document.getElementById('mov_descripcion').value.trim();
+  const errEl = document.getElementById('movError');
+  const btn   = document.getElementById('btnConfirmarMov');
+
+  if (monto <= 0) { errEl.textContent = 'Ingresá un monto mayor a 0'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;margin-right:6px;"></span> Guardando…';
+  errEl.style.display = 'none';
+
+  try {
+    const r = await fetch('/caja/movimiento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: _tipoMov, monto, descripcion: desc })
+    });
+    const data = await r.json();
+
+    if (data.ok) {
+      const lista = document.getElementById('listaMovimientos');
+      const vacio = document.getElementById('movVacio');
+      if (vacio) vacio.remove();
+      const now   = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+      const color = _tipoMov === 'ingreso' ? '#10b981' : '#ef4444';
+      const signo = _tipoMov === 'ingreso' ? '+' : '−';
+      const label = _tipoMov === 'ingreso' ? '▲ Ingreso' : '▼ Retiro';
+      const row   = document.createElement('div');
+      row.className = 'mov-row';
+      row.innerHTML = `
+        <div>
+          <span style="font-size:13.5px;color:var(--text-primary);font-weight:600;">${desc || (_tipoMov==='ingreso'?'Ingreso':'Retiro')}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${label}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${now}</span>
+        </div>
+        <strong style="color:${color};">${signo}$${monto.toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>`;
+      lista.appendChild(row);
+      document.getElementById('modalMovimiento').classList.remove('active');
+    } else {
+      errEl.textContent = data.error || 'Error al guardar';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Error de conexión';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Confirmar';
+}
+
 async function abrirCaja() {
   const btn = document.getElementById('btnAbrir');
   const errDiv = document.getElementById('errorMsg');
@@ -297,7 +417,7 @@ async function verDetalle(cajaId) {
     let html = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
         <div class="det-row"><span>Inicial</span><strong>${fmt(d.caja.monto_inicial)}</strong></div>
-        <div class="det-row"><span>Total ventas</span><strong style="color:#6366f1;">${fmt(d.totalVentas)}</strong></div>
+        <div class="det-row"><span>Total ventas</span><strong style="color:var(--color-primary);">${fmt(d.totalVentas)}</strong></div>
         <div class="det-row"><span>Efectivo ventas</span><strong style="color:#10b981;">${fmt(d.totalEfectivo)}</strong></div>
         <div class="det-row"><span>Esperado</span><strong style="color:#3b82f6;">${fmt(d.efectivoEsperado)}</strong></div>
         ${d.caja.monto_final ? `<div class="det-row"><span>Contado</span><strong>${fmt(d.caja.monto_final)}</strong></div>
@@ -332,28 +452,148 @@ async function verDetalle(cajaId) {
 </script>
 
 <style>
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin  { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-.stat-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px; }
+
+/* ── MOV ROW ── */
+.mov-row {
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 20px;border-bottom:1px solid var(--border-color);
+  transition:background .1s;
+}
+.mov-row:last-child { border-bottom:none; }
+.mov-row:hover { background:var(--bg-body); }
+
+/* ── STAT CARDS ── */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s, box-shadow .15s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .stat-icon { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px; }
-.stat-value { font-size:18px;font-weight:800;color:var(--text-primary); }
-.stat-label { font-size:11.5px;color:var(--text-secondary);font-weight:600; }
-.section-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;overflow:hidden;margin-bottom:0; }
-.section-title { padding:14px 20px;font-size:13px;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px; }
-.th { padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);white-space:nowrap; }
-.td { padding:11px 14px;font-size:13.5px;color:var(--text-primary);border-bottom:1px solid var(--border-color); }
-.tr-row:hover td { background:var(--bg-hover); }
-.det-row { padding:8px 12px;border-radius:8px;background:var(--bg-body);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:13px; }
-.det-row span { color:var(--text-secondary); }
+.stat-value { font-size:20px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px; }
+.stat-label { font-size:11.5px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px; }
+
+/* ── SECTION CARDS ── */
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 0;
+  box-shadow: var(--shadow-sm);
+}
+.section-title {
+  padding: 14px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── TABLA — header azul + hover ── */
+.caja-thead tr {
+  background: var(--color-primary);
+}
+.th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #fff;
+  white-space: nowrap;
+  border-bottom: none;
+}
+.th:first-child { border-radius: 8px 0 0 8px; }
+.th:last-child  { border-radius: 0 8px 8px 0; }
+
+.td {
+  padding: 11px 14px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  transition: background .12s;
+}
+.tr-row:last-child .td { border-bottom: none; }
+.tr-row:hover .td { background: var(--bg-hover); cursor: default; }
+
+/* ── DETALLE MODAL ── */
+.det-row {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.det-row span { color: var(--text-secondary); }
+
+/* ── FORMULARIOS ── */
 .field { display:flex;flex-direction:column;gap:6px; }
 .field label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary); }
-.field input, .field select { padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none; }
-.field input:focus { border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12); }
+.field input, .field select {
+  padding:11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(27,79,216,.12);
+}
 .field-prefix { position:relative; }
 .field-prefix span { position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:700;color:var(--text-secondary);pointer-events:none; }
 .field-prefix input { padding-left:30px; }
-.btn-abrir { width:100%;padding:14px;border:none;border-radius:var(--radius-md);background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 6px 18px rgba(16,185,129,.35); }
-.btn-abrir:hover { transform:translateY(-1px); }
+
+/* ── BOTÓN ABRIR CAJA ── */
+.btn-abrir {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg,#10b981,#059669);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: all .15s;
+  box-shadow: 0 6px 18px rgba(16,185,129,.35);
+  font-family: var(--font-body);
+}
+.btn-abrir:hover:not(:disabled) { transform:translateY(-1px); box-shadow: 0 10px 24px rgba(16,185,129,.40); }
 .btn-abrir:disabled { opacity:.6;cursor:not-allowed;transform:none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .stat-value { font-size: 17px; }
+  .section-title { flex-wrap: wrap; gap: 8px; }
+  .th, .td { padding: 9px 10px; font-size: 12px; }
+}
+@media (max-width: 520px) {
+  /* Ocultar columnas no críticas en mobile */
+  .caja-col-cierre, .caja-col-inicial { display: none; }
+}
 </style>
 </div><!-- /app-wrapper -->

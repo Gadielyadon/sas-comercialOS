@@ -1,15 +1,21 @@
 const { get, all, run, db } = require('../db');
 
 // ─────────────────────────────────────────────────────────────
-// Devuelve datetime en hora Argentina para guardar en SQLite
-// Formato: 'YYYY-MM-DD HH:MM:SS'
-// Argentina = UTC-3 fijo (sin horario de verano desde 1999)
+// Hora Argentina — robusta para VPS con cualquier timezone configurada
 // ─────────────────────────────────────────────────────────────
 function nowArgentina() {
-  const now = new Date();
-  const offset = -3 * 60; // UTC-3 en minutos
-  const local = new Date(now.getTime() + offset * 60 * 1000);
-  return local.toISOString().replace('T', ' ').substring(0, 19);
+  try {
+    const str = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).format(new Date()).replace('T', ' ');
+    return str.substring(0, 19);
+  } catch(e) {
+    const local = new Date(Date.now() + (-3 * 60 * 60 * 1000));
+    return local.toISOString().replace('T', ' ').substring(0, 19);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -22,6 +28,11 @@ function initSalesSchema() {
     `ALTER TABLE sales ADD COLUMN recargo_pct    REAL    DEFAULT 0`,
     `ALTER TABLE sales ADD COLUMN cliente_id     INTEGER DEFAULT 1`,
     `ALTER TABLE sales ADD COLUMN sucursal_id    INTEGER DEFAULT 1`,
+    `ALTER TABLE sales ADD COLUMN status         TEXT    DEFAULT 'completada'`,
+    `ALTER TABLE sales ADD COLUMN anulacion_motivo TEXT`,
+    `ALTER TABLE sales ADD COLUMN anulada_at     TEXT`,
+    `ALTER TABLE sales ADD COLUMN anulada_by     TEXT`,
+    `ALTER TABLE sales ADD COLUMN monto_mixto2   REAL    DEFAULT NULL`,
   ];
 
   const saleItemsCols = [
@@ -85,9 +96,10 @@ function getProductForSale(sku, sucursal_id = 1) {
   if (HAS_PRODUCTS_SUCURSAL) {
     let prod = get(
       `SELECT sku, name, price, stock,
-              COALESCE(iva, 0)     AS iva,
-              COALESCE(ieps, 0)    AS ieps,
-              COALESCE(pesable, 0) AS pesable,
+              COALESCE(iva, 0)             AS iva,
+              COALESCE(ieps, 0)            AS ieps,
+              COALESCE(pesable, 0)         AS pesable,
+              COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
               sucursal_id
        FROM products
        WHERE sku = ? AND sucursal_id = ?`,
@@ -98,9 +110,10 @@ function getProductForSale(sku, sucursal_id = 1) {
 
     prod = get(
       `SELECT sku, name, price, stock,
-              COALESCE(iva, 0)     AS iva,
-              COALESCE(ieps, 0)    AS ieps,
-              COALESCE(pesable, 0) AS pesable,
+              COALESCE(iva, 0)             AS iva,
+              COALESCE(ieps, 0)            AS ieps,
+              COALESCE(pesable, 0)         AS pesable,
+              COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
               sucursal_id
        FROM products
        WHERE sku = ?
@@ -114,9 +127,10 @@ function getProductForSale(sku, sucursal_id = 1) {
 
   return get(
     `SELECT sku, name, price, stock,
-            COALESCE(iva, 0)     AS iva,
-            COALESCE(ieps, 0)    AS ieps,
-            COALESCE(pesable, 0) AS pesable
+            COALESCE(iva, 0)             AS iva,
+            COALESCE(ieps, 0)            AS ieps,
+            COALESCE(pesable, 0)         AS pesable,
+            COALESCE(venta_sin_stock, 0) AS venta_sin_stock
      FROM products
      WHERE sku = ?`,
     [String(sku)]
@@ -128,6 +142,47 @@ function getProductForSale(sku, sucursal_id = 1) {
 // Congela snapshot fiscal en sale_items:
 // name, price, qty, subtotal, iva, ieps, pesable
 // ─────────────────────────────────────────────────────────────
+
+// Prepared statements a nivel de módulo — se preparan una sola vez al arrancar
+// _stmtsReady = false fuerza que se re-preparen si el schema cambia
+let _stmtsReady = false;
+let insertSaleStmt, insertSaleItemStmt, updateStockBySucursalStmt,
+    updateStockStmt, getSaleStmt, getSaleItemsStmt,
+    getClienteStmt, insertCuentaCorrienteStmt, updateClienteSaldoStmt;
+
+function _ensureStmts() {
+  if (_stmtsReady) return;
+  insertSaleStmt = db.prepare(`
+    INSERT INTO sales (
+      total, payment_method, cash_received, change_amount,
+      discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
+      monto_mixto2, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertSaleItemStmt = db.prepare(`
+    INSERT INTO sale_items (
+      sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  updateStockBySucursalStmt = db.prepare(`
+    UPDATE products SET stock = stock - ? WHERE sku = ? AND sucursal_id = ?
+  `);
+  updateStockStmt = db.prepare(`
+    UPDATE products SET stock = stock - ? WHERE sku = ?
+  `);
+  getSaleStmt = db.prepare(`SELECT * FROM sales WHERE id = ?`);
+  getSaleItemsStmt = db.prepare(`SELECT * FROM sale_items WHERE sale_id = ?`);
+  getClienteStmt = db.prepare(`SELECT id, saldo FROM clientes WHERE id = ?`);
+  insertCuentaCorrienteStmt = db.prepare(`
+    INSERT INTO cuenta_corriente (cliente_id, tipo, monto, descripcion, sale_id)
+    VALUES (?, 'cargo', ?, ?, ?)
+  `);
+  updateClienteSaldoStmt = db.prepare(`
+    UPDATE clientes SET saldo = saldo + ? WHERE id = ?
+  `);
+  _stmtsReady = true;
+}
+
 function createSale({
   total,
   payment_method,
@@ -139,6 +194,7 @@ function createSale({
   cliente_id,
   es_cuenta_corriente,
   sucursal_id,
+  monto_mixto2,
   items,
 }) {
   if (!Array.isArray(items) || !items.length) {
@@ -147,43 +203,7 @@ function createSale({
 
   const suc = sucursal_id ? Number(sucursal_id) : 1;
 
-  const insertSaleStmt = db.prepare(`
-    INSERT INTO sales (
-      total, payment_method, cash_received, change_amount,
-      discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
-      created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertSaleItemStmt = db.prepare(`
-    INSERT INTO sale_items (
-      sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const updateStockBySucursalStmt = db.prepare(`
-    UPDATE products
-    SET stock = stock - ?
-    WHERE sku = ? AND sucursal_id = ?
-  `);
-
-  const updateStockStmt = db.prepare(`
-    UPDATE products
-    SET stock = stock - ?
-    WHERE sku = ?
-  `);
-
-  const getSaleStmt = db.prepare(`SELECT * FROM sales WHERE id = ?`);
-  const getSaleItemsStmt = db.prepare(`SELECT * FROM sale_items WHERE sale_id = ?`);
-  const getClienteStmt = db.prepare(`SELECT id, saldo FROM clientes WHERE id = ?`);
-  const insertCuentaCorrienteStmt = db.prepare(`
-    INSERT INTO cuenta_corriente
-      (cliente_id, tipo, monto, descripcion, sale_id)
-    VALUES (?, 'cargo', ?, ?, ?)
-  `);
-  const updateClienteSaldoStmt = db.prepare(`
-    UPDATE clientes SET saldo = saldo + ? WHERE id = ?
-  `);
+  _ensureStmts();
 
   const tx = db.transaction(() => {
     const productCache = new Map();
@@ -205,6 +225,7 @@ function createSale({
         ? 1
         : Number(cliente_id),
       suc,
+      monto_mixto2 !== undefined && monto_mixto2 !== null ? toNumber(monto_mixto2) : null,
       createdAt
     );
 
@@ -255,7 +276,7 @@ function createSale({
         throw new Error(`Producto no existe: ${sku}`);
       }
 
-      if (toNumber(prod.stock, 0) < qty) {
+      if (toNumber(prod.stock, 0) < qty && !prod.venta_sin_stock) {
         throw new Error(`Stock insuficiente para ${prod.name || sku}. Disponible: ${prod.stock}`);
       }
 
@@ -401,9 +422,50 @@ function listToday(sucursal_id = null) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ANULAR VENTA — devuelve stock, marca status='anulada'
+// ─────────────────────────────────────────────────────────────
+function anularVenta({ sale_id, motivo, usuario }) {
+  const sale = get(`SELECT * FROM sales WHERE id = ?`, [Number(sale_id)]);
+  if (!sale) throw new Error(`Venta #${sale_id} no encontrada`);
+  if (sale.status === 'anulada') throw new Error(`La venta #${sale_id} ya está anulada`);
+
+  const items = all(`SELECT * FROM sale_items WHERE sale_id = ?`, [Number(sale_id)]);
+
+  const tx = db.transaction(() => {
+    // Marcar como anulada
+    run(
+      `UPDATE sales SET status = 'anulada', anulacion_motivo = ?, anulada_at = ?, anulada_by = ? WHERE id = ?`,
+      [motivo || 'Sin motivo', nowArgentina(), usuario || 'sistema', Number(sale_id)]
+    );
+
+    // Devolver stock
+    for (const item of items) {
+      if (!item.sku) continue;
+      try {
+        if (sale.sucursal_id) {
+          const affected = run(
+            `UPDATE products SET stock = stock + ? WHERE sku = ? AND sucursal_id = ?`,
+            [Number(item.qty), item.sku, Number(sale.sucursal_id)]
+          );
+          if (!affected?.changes) {
+            run(`UPDATE products SET stock = stock + ? WHERE sku = ?`, [Number(item.qty), item.sku]);
+          }
+        } else {
+          run(`UPDATE products SET stock = stock + ? WHERE sku = ?`, [Number(item.qty), item.sku]);
+        }
+      } catch (_) {}
+    }
+  });
+
+  tx();
+  return { ok: true, sale_id: Number(sale_id) };
+}
+
 module.exports = {
   initSalesSchema,
   createSale,
   listRecent,
   listToday,
+  anularVenta,
 };

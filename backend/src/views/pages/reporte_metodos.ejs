@@ -84,12 +84,15 @@
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .no-print { display: none !important; }
-    .main-content { margin-left: 0 !important; padding-top: 0 !important; }
-    .page-body { padding: 0 !important; max-width: 100% !important; }
+    .sidebar { display: none !important; }
+    .app-header { display: none !important; }
+    .main-content { margin-left: 0 !important; padding-top: 0 !important; width: 100% !important; }
+    .page-body { padding: 8px !important; max-width: 100% !important; }
     .print-header { display: block !important; }
     body { background: #fff !important; }
     .metodo-card, .section-card, .resumen-total { box-shadow: none !important; border: 1px solid #ddd !important; }
     .section-card { page-break-inside: avoid; }
+    #resultDiv { display: block !important; }
   }
   .print-header { display: none; padding-bottom: 16px; border-bottom: 2px solid #e5e7eb; margin-bottom: 20px; }
   .print-header h1 { font-size: 20px; font-weight: 800; color: #111; margin: 0 0 4px; }
@@ -122,6 +125,10 @@
         </button>
         <button class="btn-pdf no-print" onclick="imprimir()">
           <i class="bi bi-file-pdf"></i> Exportar PDF
+        </button>
+        <button class="btn-pdf no-print" onclick="exportarXlsx()"
+          style="border-color:rgba(16,185,129,.4);color:#059669;background:rgba(16,185,129,.06);">
+          <i class="bi bi-file-earmark-excel"></i> Exportar Excel
         </button>
         <div class="filtros-hint no-print">
           <i class="bi bi-info-circle"></i>
@@ -234,24 +241,7 @@ async function buscar() {
       + '<td class="td-r" style="color:#10b981">' + fmt(totalNeto) + '</td>'
       + '</tr></tbody></table></div>';
 
-    // Detalle ventas
-    if (data.ventas && data.ventas.length) {
-      html += '<div class="section-card"><div class="section-head"><div class="section-title"><i class="bi bi-list-ul" style="color:#6366f1;margin-right:6px"></i>Ventas del período (' + data.ventas.length + ')</div></div>'
-        + '<table class="dt"><thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Método</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-      data.ventas.forEach(function(v) {
-        const d    = new Date(v.created_at.replace(' ','T') + 'Z');
-        const idx  = metodos.findIndex(function(m){ return m.metodo === v.payment_method; });
-        const color= COLS[idx >= 0 ? idx % COLS.length : 0];
-        html += '<tr>'
-          + '<td style="color:var(--text-muted);font-family:var(--font-mono,monospace)">#' + v.id + '</td>'
-          + '<td>' + d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) + '</td>'
-          + '<td style="color:var(--text-secondary)">' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}) + '</td>'
-          + '<td><span class="badge" style="background:' + color + '22;color:' + color + '">' + (v.payment_method||'—') + '</span></td>'
-          + '<td class="td-r">' + fmt(v.total) + '</td>'
-          + '</tr>';
-      });
-      html += '</tbody></table></div>';
-    }
+    // Ventas individuales — eliminadas del reporte (usar Historial para eso)
 
     div.innerHTML = html;
 
@@ -264,5 +254,12 @@ function imprimir() {
   document.getElementById('printHeader').style.display = 'block';
   window.print();
   setTimeout(function(){ document.getElementById('printHeader').style.display = 'none'; }, 1000);
+}
+
+function exportarXlsx() {
+  const desde = document.getElementById('fDesde').value;
+  const hasta  = document.getElementById('fHasta').value;
+  if (!desde || !hasta) { alert('Seleccioná un período primero y hacé click en Buscar'); return; }
+  window.location.href = '/api/reporte/metodos.xlsx?' + new URLSearchParams({ desde, hasta });
 }
 </script>

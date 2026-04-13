@@ -85,11 +85,6 @@ exports.getBySku = (req, res) => {
 exports.update = (req, res) => {
   try {
     const sku = String(req.params.sku);
-    const exists = productsService.findBySku(sku);
-
-    if (!exists) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
 
     const {
       name,
@@ -106,8 +101,10 @@ exports.update = (req, res) => {
       price_promo,
       sucursal_id,
       imagen,
-      price_mayorista, // ← AGREGADO
-      qty_mayorista,   // ← AGREGADO
+      price_mayorista,
+      qty_mayorista,
+      venta_sin_stock,
+      price_tarjeta,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -119,6 +116,7 @@ exports.update = (req, res) => {
       iva: iva !== undefined ? Number(iva) : undefined,
       ieps: ieps !== undefined ? Number(ieps) : undefined,
       pesable: pesable !== undefined ? (pesable ? 1 : 0) : undefined,
+      venta_sin_stock: venta_sin_stock !== undefined ? (venta_sin_stock ? 1 : 0) : undefined,
       descripcion: descripcion !== undefined ? (descripcion || null) : undefined,
       price_cost:
         price_cost !== undefined
@@ -135,16 +133,21 @@ exports.update = (req, res) => {
           : undefined,
       sucursal_id: sucursal_id !== undefined ? Number(sucursal_id) : undefined,
       imagen: imagen !== undefined ? imagen : undefined,
-      price_mayorista: // ← AGREGADO
+      price_mayorista:
         price_mayorista !== undefined
           ? (price_mayorista === null || price_mayorista === '' ? null : Number(price_mayorista))
           : undefined,
-      qty_mayorista:   // ← AGREGADO
+      qty_mayorista:
         qty_mayorista !== undefined
           ? (qty_mayorista === null || qty_mayorista === '' ? null : Number(qty_mayorista))
           : undefined,
+      price_tarjeta:
+        price_tarjeta !== undefined
+          ? (price_tarjeta === null || price_tarjeta === '' ? null : Number(price_tarjeta))
+          : undefined,
     });
 
+    if (!updated) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(updated);
   } catch (err) {
     console.error('products.controller.update =>', err);
@@ -191,5 +194,44 @@ exports.exportCsv = (req, res) => {
   } catch (err) {
     console.error('products.controller.exportCsv =>', err);
     res.status(500).json({ error: 'Error al exportar CSV' });
+  }
+};
+
+exports.exportXlsx = (req, res) => {
+  try {
+    const XLSX = require('xlsx');
+    const data  = productsService.exportXlsxData();
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Ancho de columnas
+    ws['!cols'] = [
+      { wch: 18 }, // SKU
+      { wch: 35 }, // Nombre
+      { wch: 16 }, // Precio Minorista
+      { wch: 16 }, // Precio Mayorista
+      { wch: 14 }, // Precio Tarjeta
+      { wch: 14 }, // Precio Costo
+      { wch: 20 }, // Cantidad Min. Mayorista
+      { wch: 8  }, // Stock
+      { wch: 18 }, // Categoria
+      { wch: 6  }, // IVA
+      { wch: 6  }, // IEPS
+      { wch: 8  }, // Pesable
+      { wch: 30 }, // Descripcion
+      { wch: 8  }, // En Promo
+      { wch: 14 }, // Precio Promo
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="productos.xlsx"');
+    res.send(buf);
+  } catch (err) {
+    console.error('products.controller.exportXlsx =>', err);
+    res.status(500).json({ error: 'Error al exportar XLSX' });
   }
 };
