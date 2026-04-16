@@ -9,16 +9,15 @@ const schemaPath = path.join(__dirname, 'schema.sql');
 const db = new Database(dbPath);
 
 // ── Optimizaciones SQLite para producción ─────────────────────
-// WAL: escrituras no bloquean lecturas — enorme mejora en concurrencia
-db.pragma('journal_mode = WAL');
-// Sync solo en checkpoints, no en cada write — más rápido sin perder durabilidad
-db.pragma('synchronous = NORMAL');
-// Cache de 16MB en memoria — evita leer del disco para queries frecuentes
-db.pragma('cache_size = -16000');
+// DELETE mode: más seguro en VPS — evita corrupción si el servidor
+// se reinicia abruptamente (WAL deja archivos -wal/-shm huérfanos)
+db.pragma('journal_mode = DELETE');
+// Sync FULL: garantiza que cada write quede en disco antes de continuar
+db.pragma('synchronous = FULL');
+// Cache de 8MB en memoria
+db.pragma('cache_size = -8000');
 // Temp tables en memoria
 db.pragma('temp_store = MEMORY');
-// mmap: acceso al archivo por memoria mapeada — más rápido en lecturas grandes
-db.pragma('mmap_size = 134217728'); // 128MB
 // Claves foráneas activas
 db.pragma('foreign_keys = ON');
 
@@ -26,10 +25,7 @@ db.pragma('foreign_keys = ON');
 const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 db.exec(schemaSql);
 
-// ── Helpers — re-usan el prepare internamente pero no lo exponen ──
-// Para consultas frecuentes es mejor usar db.prepare() directamente
-// en el service y guardar el statement. Estos helpers son para
-// consultas de una sola vez.
+// ── Helpers ────────────────────────────────────────────────────
 function all(sql, params = []) {
   return db.prepare(sql).all(params);
 }

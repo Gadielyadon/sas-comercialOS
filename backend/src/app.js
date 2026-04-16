@@ -1,7 +1,11 @@
 // src/app.js
+require('dotenv').config();   // ← carga .env automáticamente
 const express = require('express');
 const path    = require('path');
 const app     = express();
+
+// ── Trust proxy — necesario para cookies seguras detrás de Nginx ──
+app.set('trust proxy', 1);
 
 // ── Compresión gzip — reduce respuestas hasta 6x ──────────────
 try {
