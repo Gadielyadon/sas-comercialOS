@@ -300,7 +300,6 @@ router.get('/stock', requirePermiso('stock'), (req, res) => {
 // ── Stock qty/hay (solo admin) ────────────────────────────────
 router.post('/stock/qty', (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
-  if (user.role !== 'admin') return res.json({ ok: false, error: 'Sin permiso' });
   const { id, stock } = req.body;
   if (!id || stock == null || isNaN(parseInt(stock))) return res.json({ ok: false });
   try {
@@ -312,7 +311,6 @@ router.post('/stock/qty', (req, res) => {
 
 router.post('/stock/hay', (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
-  if (user.role !== 'admin') return res.json({ ok: false, error: 'Sin permiso' });
   const { id, hay } = req.body;
   if (!id || hay == null) return res.json({ ok: false });
   try {
