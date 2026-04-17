@@ -55,7 +55,7 @@ req.session.user = {
   name: user.nombre || user.username,
   sucursal_id
 };
-  const returnTo = req.session.returnTo || '/dashboard';
+  const returnTo = req.session.returnTo || (req.session.user?.role !== 'admin' ? '/ventas' : '/dashboard');
   delete req.session.returnTo;
   res.redirect(returnTo);
 });
