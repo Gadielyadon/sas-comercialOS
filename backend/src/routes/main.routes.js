@@ -451,7 +451,7 @@ router.post('/stock/hay', (req, res) => {
 // GET: PDF de faltantes
 router.get('/stock/pdf-faltantes', (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
-  if (user.role !== 'admin') return res.redirect('/dashboard');
+  // permisos manejados por requirePermiso
 
   const { run: dbRun } = require('../db');
   try { dbRun(`ALTER TABLE products ADD COLUMN hay INTEGER NOT NULL DEFAULT 1`); } catch(e) {}
