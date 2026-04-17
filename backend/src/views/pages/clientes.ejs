@@ -1,5 +1,12 @@
 <%- include('../partials/head', { title: 'Clientes' }) %>
 <style>
+.cat-cliente-pill {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(27,79,216,.08); color: var(--color-primary);
+  white-space: nowrap;
+}
 .filtro-chip {
   padding: 5px 12px;
   border-radius: 6px;
@@ -53,6 +60,11 @@
           <button class="filtro-chip"    data-filtro="al-dia"   onclick="setFiltro(this)"><i class="bi bi-check-circle" style="color:#10b981;margin-right:4px;"></i>Al día</button>
         </div>
 
+        <!-- Filtro categoría -->
+        <select id="categoriaSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+          <option value="">Todas las categorías</option>
+        </select>
+
         <!-- Ordenar -->
         <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
           <option value="nombre">Ordenar: A → Z</option>
@@ -101,6 +113,13 @@
                     <% } %>
                   </td>
                   <td style="color:var(--text-secondary);font-family:var(--font-mono)"><%= c.documento || '—' %></td>
+                  <td>
+                    <% if (c.categoria) { %>
+                      <span class="cat-cliente-pill" data-cat="<%= c.categoria %>"><%= c.categoria %></span>
+                    <% } else { %>
+                      <span style="color:var(--text-muted);font-size:12px;">—</span>
+                    <% } %>
+                  </td>
                   <td>
                     <% if (c.saldo > 0) { %>
                       <span class="badge-status badge-anulado">Debe $<%= Number(c.saldo).toFixed(2) %></span>
@@ -213,6 +232,29 @@
           style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
+      <!-- Categoría -->
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">
+          Categoría <span style="font-weight:400;color:var(--text-muted);font-size:10px;">(opcional)</span>
+        </label>
+        <div style="display:flex;gap:6px;">
+          <select id="c_categoria" class="form-input" style="flex:1;cursor:pointer;">
+            <option value="">Sin categoría</option>
+          </select>
+          <button type="button" onclick="abrirNuevaCat()" title="Nueva categoría"
+            style="width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--color-primary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-plus"></i>
+          </button>
+        </div>
+        <div id="nuevaCatWrap" style="display:none;margin-top:6px;display:none;gap:6px;">
+          <input type="text" id="nuevaCatInput" class="form-input" placeholder="Nombre de la categoría" style="flex:1;">
+          <button type="button" onclick="guardarNuevaCat()"
+            style="padding:0 14px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            Agregar
+          </button>
+        </div>
+      </div>
+
       <!-- Límite de crédito -->
       <div style="background:rgba(27,79,216,.04);border:1.5px solid rgba(27,79,216,.15);border-radius:var(--radius-md);padding:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -542,6 +584,8 @@ function abrirNuevo() {
   document.getElementById('c_limite_check').checked = false;
   toggleLimiteCredito(document.getElementById('c_limite_check'));
   document.getElementById('c_limite_credito').value = '';
+  const _catSel = document.getElementById('c_categoria');
+  if (_catSel) _catSel.value = '';
   document.getElementById('modalCliente').classList.add('open');
   setTimeout(() => document.getElementById('c_nombre').focus(), 80);
 }
@@ -559,6 +603,8 @@ function abrirEditar(c) {
   document.getElementById('c_limite_check').checked = tieneLimit;
   toggleLimiteCredito(document.getElementById('c_limite_check'));
   if (tieneLimit) document.getElementById('c_limite_credito').value = c.limite_credito;
+  const _catSelE = document.getElementById('c_categoria');
+  if (_catSelE && c.categoria) _catSelE.value = c.categoria;
   document.getElementById('modalCliente').classList.add('open');
   setTimeout(() => document.getElementById('c_nombre').focus(), 80);
 }
@@ -574,10 +620,11 @@ async function guardarCliente() {
   const tieneLimit = document.getElementById('c_limite_check').checked;
   const limite_credito = tieneLimit ? (parseFloat(document.getElementById('c_limite_credito').value) || null) : null;
   if (!nombre) { alert('El nombre es obligatorio'); return; }
+  const categoria = document.getElementById('c_categoria')?.value || null;
   const url    = _editClienteId ? `/api/clientes/${_editClienteId}` : '/api/clientes';
   const method = _editClienteId ? 'PUT' : 'POST';
   const r = await fetch(url, { method, headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ nombre, documento, telefono, email, direccion, limite_credito }) });
+    body: JSON.stringify({ nombre, documento, telefono, email, direccion, limite_credito, categoria: categoria || null }) });
   if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
   location.reload();
 }
@@ -822,22 +869,26 @@ function filtrar() {
   _filtrarTimer = setTimeout(_filtrarNow, 80);
 }
 function _filtrarNow() {
-  const q      = (document.getElementById('q')?.value || '').toLowerCase();
-  const orden  = document.getElementById('ordenSelect')?.value || 'nombre';
-  const rows   = [...document.querySelectorAll('#tablaClientes tbody tr')];
+  const q        = (document.getElementById('q')?.value || '').toLowerCase();
+  const orden    = document.getElementById('ordenSelect')?.value || 'nombre';
+  const catFiltro = document.getElementById('categoriaSelect')?.value || '';
+  const rows     = [...document.querySelectorAll('#tablaClientes tbody tr')];
 
   rows.forEach(tr => {
-    const nombre = tr.querySelector('td:nth-child(2)')?.innerText.toLowerCase() || '';
-    const doc    = tr.querySelector('td:nth-child(3)')?.innerText.toLowerCase() || '';
-    const saldoTxt = tr.querySelector('td:nth-child(4)')?.innerText || '';
-    const debe   = saldoTxt.toLowerCase().includes('debe');
-    const alDia  = saldoTxt.toLowerCase().includes('al día') || saldoTxt.trim() === '—';
+    const nombre   = tr.querySelector('td:nth-child(2)')?.innerText.toLowerCase() || '';
+    const doc      = tr.querySelector('td:nth-child(3)')?.innerText.toLowerCase() || '';
+    // Categoría está en columna 4, saldo en columna 5
+    const catTxt   = tr.querySelector('td:nth-child(4)')?.innerText.trim() || '';
+    const saldoTxt = tr.querySelector('td:nth-child(5)')?.innerText || '';
+    const debe     = saldoTxt.toLowerCase().includes('debe');
+    const alDia    = saldoTxt.toLowerCase().includes('al día') || saldoTxt.trim() === '—';
 
-    const matchQ = !q || nombre.includes(q) || doc.includes(q);
-    const matchF = _filtroActivo === 'todos' ||
-                   (_filtroActivo === 'deudores' && debe) ||
-                   (_filtroActivo === 'al-dia' && alDia);
-    tr.style.display = (matchQ && matchF) ? '' : 'none';
+    const matchQ   = !q || nombre.includes(q) || doc.includes(q);
+    const matchF   = _filtroActivo === 'todos' ||
+                     (_filtroActivo === 'deudores' && debe) ||
+                     (_filtroActivo === 'al-dia' && alDia);
+    const matchCat = !catFiltro || catTxt === catFiltro;
+    tr.style.display = (matchQ && matchF && matchCat) ? '' : 'none';
   });
 
   // Ordenar
@@ -849,7 +900,7 @@ function _filtrarNow() {
              b.querySelector('td:nth-child(2)')?.innerText || '');
     }
     const getSaldo = tr => {
-      const t = tr.querySelector('td:nth-child(4)')?.innerText || '';
+      const t = tr.querySelector('td:nth-child(5)')?.innerText || '';
       const m = t.match(/[\d.,]+/);
       const v = m ? parseFloat(m[0].replace(/\./g,'').replace(',','.')) : 0;
       return t.toLowerCase().includes('debe') ? v : -v;
@@ -962,6 +1013,69 @@ document.addEventListener('keydown', e => {
     cerrarModal(); cerrarModalPago(); cerrarModalMovimientos(); cerrarModalCargo();
   }
 });
+
+/* ════════════════════════════════════
+   CATEGORÍAS DE CLIENTES
+════════════════════════════════════ */
+const _CATS_KEY = 'axsoft_clientes_cats';
+
+function _getCats() {
+  try { return JSON.parse(localStorage.getItem(_CATS_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function _saveCats(cats) {
+  localStorage.setItem(_CATS_KEY, JSON.stringify([...new Set(cats.filter(Boolean))]));
+}
+
+function _renderCatSelects() {
+  const cats = _getCats();
+  const selModal  = document.getElementById('c_categoria');
+  const selFiltro = document.getElementById('categoriaSelect');
+  if (selModal) {
+    const cur = selModal.value;
+    selModal.innerHTML = '<option value="">Sin categoría</option>' +
+      cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    if (cur) selModal.value = cur;
+  }
+  if (selFiltro) {
+    const cur = selFiltro.value;
+    selFiltro.innerHTML = '<option value="">Todas las categorías</option>' +
+      cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    if (cur) selFiltro.value = cur;
+  }
+}
+
+function abrirNuevaCat() {
+  const wrap = document.getElementById('nuevaCatWrap');
+  if (wrap) {
+    wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
+    if (wrap.style.display === 'flex') setTimeout(() => document.getElementById('nuevaCatInput')?.focus(), 80);
+  }
+}
+
+function guardarNuevaCat() {
+  const input = document.getElementById('nuevaCatInput');
+  const val   = input?.value.trim();
+  if (!val) return;
+  const cats = _getCats();
+  if (!cats.includes(val)) { cats.push(val); _saveCats(cats); }
+  _renderCatSelects();
+  const sel = document.getElementById('c_categoria');
+  if (sel) sel.value = val;
+  if (input) input.value = '';
+  const wrap = document.getElementById('nuevaCatWrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+// También cargar categorías que ya existen en los clientes actuales
+(function() {
+  const clientes = <%- JSON.stringify(clientes || []) %>;
+  const existentes = [...new Set(clientes.map(c => c.categoria).filter(Boolean))];
+  const guardadas  = _getCats();
+  const merged     = [...new Set([...guardadas, ...existentes])].sort();
+  _saveCats(merged);
+  _renderCatSelects();
+})();
 
 // Resumen rápido al cargar
 (function() {

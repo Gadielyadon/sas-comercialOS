@@ -309,4 +309,21 @@ window.axNotif=(function(){
 
   return {toggle,close,marcarLeidas};
 })();
+
+/* ── Botón hamburguesa fijo en mobile ── */
+(function(){
+  const btn = document.createElement('button');
+  btn.id = 'axHamburger';
+  btn.title = 'Menú';
+  btn.innerHTML = '<i class="bi bi-list"></i>';
+  btn.onclick = () => window.openSidebar();
+  document.body.appendChild(btn);
+  // Ocultar cuando el sidebar está abierto
+  const sb = document.getElementById('sidebar');
+  const observer = new MutationObserver(() => {
+    btn.style.opacity = sb && sb.classList.contains('open') ? '0' : '1';
+    btn.style.pointerEvents = sb && sb.classList.contains('open') ? 'none' : '';
+  });
+  if (sb) observer.observe(sb, { attributes: true, attributeFilter: ['class'] });
+})();
 </script>

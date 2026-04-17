@@ -6,7 +6,7 @@ function initClientesSchema() {
     try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
   });
   // Nuevas columnas opcionales
-  ['telefono TEXT', 'email TEXT', 'direccion TEXT', 'limite_credito REAL DEFAULT NULL'].forEach(col => {
+  ['telefono TEXT', 'email TEXT', 'direccion TEXT', 'limite_credito REAL DEFAULT NULL', 'categoria TEXT DEFAULT NULL'].forEach(col => {
     try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
   });
 
@@ -43,11 +43,12 @@ function findById(id) {
   return get(`SELECT * FROM clientes WHERE id = ?`, [Number(id)]);
 }
 
-function create({ nombre, documento, telefono, email, direccion, limite_credito }) {
+function create({ nombre, documento, telefono, email, direccion, limite_credito, categoria }) {
   const r = run(
-    `INSERT INTO clientes (nombre, documento, telefono, email, direccion, limite_credito) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO clientes (nombre, documento, telefono, email, direccion, limite_credito, categoria) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [String(nombre), documento || null, telefono || null, email || null, direccion || null,
-     limite_credito != null && limite_credito !== '' ? Number(limite_credito) : null]
+     limite_credito != null && limite_credito !== '' ? Number(limite_credito) : null,
+     categoria || null]
   );
   return findById(r.lastInsertRowid);
 }
@@ -55,7 +56,7 @@ function create({ nombre, documento, telefono, email, direccion, limite_credito 
 function update(id, fields) {
   const c = findById(id);
   if (!c) return null;
-  run(`UPDATE clientes SET nombre=?, documento=?, telefono=?, email=?, direccion=?, limite_credito=? WHERE id=?`,
+  run(`UPDATE clientes SET nombre=?, documento=?, telefono=?, email=?, direccion=?, limite_credito=?, categoria=? WHERE id=?`,
     [
       fields.nombre     ?? c.nombre,
       fields.documento  ?? c.documento,
@@ -65,6 +66,7 @@ function update(id, fields) {
       fields.limite_credito !== undefined
         ? (fields.limite_credito === '' || fields.limite_credito === null ? null : Number(fields.limite_credito))
         : c.limite_credito,
+      fields.categoria !== undefined ? (fields.categoria || null) : (c.categoria || null),
       Number(id)
     ]);
   return findById(id);

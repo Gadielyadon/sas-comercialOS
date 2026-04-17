@@ -371,6 +371,24 @@ function catIcon(cat) {
           placeholder="Ej: Efectivo, 50% tarjeta 50% transferencia…">
       </div>
 
+      <!-- Toggle: Descontar del fondo del día -->
+      <% if (fondo && fondo.monto > 0) { %>
+      <div class="pago-toggle-wrap" id="fondoToggleWrap" style="background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.3);">
+        <div class="pago-toggle-info">
+          <span class="pago-toggle-label" style="color:#059669;">
+            <i class="bi bi-wallet2" style="margin-right:4px;"></i>Descontar del fondo del día
+          </span>
+          <span class="pago-toggle-sub">
+            Disponible: $<%= (fondo.monto - gastadoPagado).toLocaleString('es-AR',{minimumFractionDigits:0}) %>
+          </span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="g_descontar_fondo" onchange="onToggleDescontarFondo(this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <% } %>
+
       <!-- Toggle Pagado / Pendiente -->
       <div class="pago-toggle-wrap" id="pagoToggleWrap">
         <div class="pago-toggle-info">
@@ -516,11 +534,28 @@ _gastosData[<%= g.id %>] = {
 <% }) %>
 
 // ── Toggle pagado ─────────────────────────────────────────────
+// ── Toggle "Descontar del fondo" ──────────────────────────────
+function onToggleDescontarFondo(cb) {
+  const pagadoCb = document.getElementById('g_pagado');
+  if (cb.checked) {
+    // Si activa "descontar del fondo", automáticamente marcar como pagado hoy
+    if (pagadoCb) {
+      pagadoCb.checked = true;
+      onTogglePagado(pagadoCb);
+    }
+  }
+}
+
 function onTogglePagado(cb) {
   const wrap  = document.getElementById('fechaPagoWrap');
   const label = document.getElementById('pagoToggleLabel');
   const sub   = document.getElementById('pagoToggleSub');
   const wrapBox = document.getElementById('pagoToggleWrap');
+  // Si desmarca pagado, también desmarcar fondo
+  if (!cb.checked) {
+    const fondoCb = document.getElementById('g_descontar_fondo');
+    if (fondoCb) fondoCb.checked = false;
+  }
   if (cb.checked) {
     wrap.style.display = 'block';
     label.textContent  = 'Pagado ✓';
@@ -528,7 +563,6 @@ function onTogglePagado(cb) {
     sub.textContent    = 'Gasto abonado';
     wrapBox.style.borderColor = 'rgba(16,185,129,.4)';
     wrapBox.style.background  = 'rgba(16,185,129,.05)';
-    // Si no tiene fecha de pago, poner hoy
     const fp = document.getElementById('g_fecha_pago');
     if (!fp.value) fp.value = new Date().toISOString().split('T')[0];
   } else {
@@ -554,6 +588,8 @@ function abrirNuevo() {
   document.getElementById('g_categoria').value   = 'Otros';
   document.getElementById('g_pagado').checked    = false;
   document.getElementById('g_fecha_pago').value  = '';
+  const _fdCb = document.getElementById('g_descontar_fondo');
+  if (_fdCb) _fdCb.checked = false;
   onTogglePagado(document.getElementById('g_pagado'));
   document.getElementById('modalGasto').classList.add('open');
   setTimeout(() => document.getElementById('g_monto').focus(), 80);
@@ -588,17 +624,25 @@ async function guardar() {
   if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
   if (!descripcion)         { alert('La descripción es obligatoria'); return; }
 
+  const _fondoCb = document.getElementById('g_descontar_fondo');
+  const _descontarFondo = _fondoCb && _fondoCb.checked;
+
+  // Si marcó "descontar del fondo", forzar pagado=1 con fecha de hoy
+  const _pagado = _descontarFondo ? 1 : (document.getElementById('g_pagado').checked ? 1 : 0);
+  const _fechaPago = _pagado
+    ? (document.getElementById('g_fecha_pago').value || new Date().toISOString().split('T')[0])
+    : null;
+
   const body = {
     monto,
     descripcion,
-    categoria:   document.getElementById('g_categoria').value,
-    fecha:       document.getElementById('g_fecha').value,
-    comprobante: document.getElementById('g_comprobante').value.trim() || null,
-    metodo_pago: document.getElementById('g_metodo_pago').value.trim() || null,
-    pagado:      document.getElementById('g_pagado').checked ? 1 : 0,
-    fecha_pago:  document.getElementById('g_pagado').checked
-                   ? (document.getElementById('g_fecha_pago').value || null)
-                   : null,
+    categoria:        document.getElementById('g_categoria').value,
+    fecha:            document.getElementById('g_fecha').value,
+    comprobante:      document.getElementById('g_comprobante').value.trim() || null,
+    metodo_pago:      document.getElementById('g_metodo_pago').value.trim() || null,
+    pagado:           _pagado,
+    fecha_pago:       _fechaPago,
+    descontar_fondo:  _descontarFondo ? 1 : 0,
   };
 
   const url    = _editGastoId ? `/gastos/api/${_editGastoId}` : '/gastos/api';
@@ -695,4 +739,4 @@ function exportarPDF() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
-</script>
+</script> 
