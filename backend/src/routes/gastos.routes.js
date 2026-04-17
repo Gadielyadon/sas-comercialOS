@@ -2,9 +2,9 @@
 const express = require('express');
 const router  = express.Router();
 const svc     = require('../services/gastos.service');
-const { requireAuth, requireAdmin } = require('../middlewares/auth.middleware');
+const { requireAuth, requirePermiso } = require('../middlewares/auth.middleware');
 
-router.use(requireAuth, requireAdmin);
+router.use(requireAuth, requirePermiso('gastos'));
 
 router.get('/', (req, res) => {
   const { desde, hasta, categoria } = req.query;

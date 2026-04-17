@@ -1,5 +1,4 @@
 // src/middlewares/auth.middleware.js
-
 // Mapa de ruta → clave de permiso
 const RUTA_PERMISO = {
   '/ventas':       'ventas',
@@ -12,11 +11,6 @@ const RUTA_PERMISO = {
   '/proveedores':  'proveedores',
   '/gastos':       'gastos',
 };
-
-// Import lazy para evitar problemas de orden de carga
-function getParsePermisos() {
-  try { return require('../services/auth.service').parsePermisos; } catch(e) { return null; }
-}
 
 /* ── Requiere estar logueado ── */
 function requireAuth(req, res, next) {
@@ -49,11 +43,25 @@ function requirePermiso(seccion) {
     if (!user) return res.redirect('/login');
     if (user.role === 'admin') return next();
 
-    const parsePermisos = getParsePermisos();
-    const permisos = parsePermisos ? parsePermisos(user) : null;
-    if (!permisos || permisos.includes(seccion)) return next();
+    // Usar permisosArray (ya parseado al hacer login) o parsear permisos
+    let permisos = [];
+    if (Array.isArray(user.permisosArray)) {
+      permisos = user.permisosArray;
+    } else if (Array.isArray(user.permisos)) {
+      permisos = user.permisos;
+    } else if (typeof user.permisos === 'string') {
+      try { permisos = JSON.parse(user.permisos); } catch(e) { permisos = []; }
+    }
 
-    return res.redirect('/dashboard?sin_permiso=1');
+    // Sin permisos definidos → acceso libre (empleado nuevo)
+    if (permisos.length === 0 || permisos.includes(seccion)) return next();
+
+    if (req.originalUrl.startsWith('/api/')) {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    return res.status(403).render('pages/403', {
+      title: 'Acceso denegado', user, active: '', module: 'Error'
+    });
   };
 }
 
@@ -61,21 +69,26 @@ function requirePermiso(seccion) {
 function injectUser(req, res, next) {
   const user = req.session?.user || null;
   res.locals.currentUser = user;
-
   if (user) {
-    const parsePermisos = getParsePermisos();
-    const permisos = parsePermisos ? parsePermisos(user) : null;
+    // Usar permisosArray si existe
+    let permisos = null;
+    if (Array.isArray(user.permisosArray)) {
+      permisos = user.permisosArray;
+    } else if (typeof user.permisos === 'string') {
+      try { permisos = JSON.parse(user.permisos); } catch(e) { permisos = null; }
+    } else if (Array.isArray(user.permisos)) {
+      permisos = user.permisos;
+    }
     res.locals.permisosEmpleado = permisos;
-
     res.locals.tienePermiso = (sec) => {
       if (user.role === 'admin') return true;
+      if (!permisos || permisos.length === 0) return true;
       return Array.isArray(permisos) && permisos.includes(sec);
     };
   } else {
     res.locals.permisosEmpleado = null;
     res.locals.tienePermiso = () => false;
   }
-
   next();
 }
 
