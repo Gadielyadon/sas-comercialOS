@@ -4,7 +4,7 @@ const router  = express.Router();
 
 const productsService = require('../services/products.service');
 const cajaService     = require('../services/caja.service');
-const { get, all, db } = require('../db');
+const { get, all, run, db } = require('../db');
 const reportesCtrl    = require('../controllers/reportes.controller');
 
 // requirePermiso — si auth.middleware falla, usar passthrough
@@ -185,6 +185,101 @@ router.get('/ventas', requirePermiso('ventas'), (req, res) => {
     empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'), config,
   });
 });
+
+// ══════════════════════════════════════════════════════════════
+// DEPARTAMENTOS DEL POS (precio manual) — compartidos entre PCs
+// Init schema + CRUD inline, sin archivos extra
+// ══════════════════════════════════════════════════════════════
+(function initDeptosSchema() {
+  try {
+    run(`CREATE TABLE IF NOT EXISTS departamentos (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre     TEXT NOT NULL,
+      icono      TEXT DEFAULT '🏷️',
+      color      TEXT DEFAULT '#3b82f6',
+      orden      INTEGER NOT NULL DEFAULT 0,
+      activo     INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )`);
+
+    // Seed solo si la tabla está vacía (primera instalación)
+    const row = get(`SELECT COUNT(*) as n FROM departamentos`);
+    if (!row || row.n === 0) {
+      const defaults = [
+        ['Mantenimiento', '🔧', '#3b82f6', 1],
+        ['Mano de obra',  '👷', '#10b981', 2],
+        ['Materiales',    '🪵', '#f59e0b', 3],
+        ['Traslado',      '🚚', '#8b5cf6', 4],
+        ['Servicio',      '⚙️', '#ef4444', 5],
+      ];
+      for (const [nombre, icono, color, orden] of defaults) {
+        run(`INSERT INTO departamentos (nombre, icono, color, orden) VALUES (?,?,?,?)`,
+            [nombre, icono, color, orden]);
+      }
+    }
+    console.log('✅  Departamentos schema OK');
+  } catch(e) { console.log('⚠️   Error en departamentos schema:', e.message); }
+})();
+
+// GET /departamentos/api — lista todos los activos
+router.get('/departamentos/api', (req, res) => {
+  try {
+    const rows = all(`SELECT id, nombre, icono, color, orden, activo
+                      FROM departamentos WHERE activo = 1
+                      ORDER BY orden ASC, id ASC`);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /departamentos/api — crear
+router.post('/departamentos/api', (req, res) => {
+  try {
+    const nombre = String(req.body?.nombre || '').trim();
+    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    const icono = req.body?.icono || '🏷️';
+    const color = req.body?.color || '#3b82f6';
+    const maxRow = get(`SELECT COALESCE(MAX(orden), 0) as m FROM departamentos`);
+    const orden = (maxRow?.m || 0) + 1;
+    const r = run(`INSERT INTO departamentos (nombre, icono, color, orden)
+                   VALUES (?, ?, ?, ?)`, [nombre, icono, color, orden]);
+    const d = get(`SELECT * FROM departamentos WHERE id = ?`, [r.lastInsertRowid]);
+    res.status(201).json(d);
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// PUT /departamentos/api/:id — modificar
+router.put('/departamentos/api/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const d = get(`SELECT * FROM departamentos WHERE id = ?`, [id]);
+    if (!d) return res.status(404).json({ error: 'No encontrado' });
+    const b = req.body || {};
+    run(`UPDATE departamentos SET
+           nombre = ?, icono = ?, color = ?, orden = ?, activo = ?,
+           updated_at = datetime('now','localtime')
+         WHERE id = ?`,
+        [
+          b.nombre !== undefined ? String(b.nombre).trim() : d.nombre,
+          b.icono  !== undefined ? b.icono  : d.icono,
+          b.color  !== undefined ? b.color  : d.color,
+          b.orden  !== undefined ? Number(b.orden) : d.orden,
+          b.activo !== undefined ? (b.activo ? 1 : 0) : d.activo,
+          id,
+        ]);
+    res.json(get(`SELECT * FROM departamentos WHERE id = ?`, [id]));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// DELETE /departamentos/api/:id — eliminar
+router.delete('/departamentos/api/:id', (req, res) => {
+  try {
+    const r = run(`DELETE FROM departamentos WHERE id = ?`, [Number(req.params.id)]);
+    r.changes > 0 ? res.json({ ok: true }) : res.status(404).json({ error: 'No encontrado' });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+// ══════════════════════════════════════════════════════════════
+
 
 // ── Clientes ─────────────────────────────────────────────────
 router.get('/clientes', requirePermiso('clientes'), (req, res) => {

@@ -144,13 +144,13 @@
                 </div>
                 <div class="pedido-actions no-print">
                   <% if (p.estado === 'pendiente') { %>
-                    <button class="btn-accion success" onclick="marcarListo(<%= p.id %>)" title="Marcar como listo"><i class="bi bi-check-lg"></i></button>
+                    <button class="btn-accion success btn-marcar-listo" data-id="<%= p.id %>" title="Marcar como listo"><i class="bi bi-check-lg"></i></button>
                   <% } %>
                   <% if (p.estado === 'listo') { %>
-                    <button class="btn-accion success" onclick="marcarEntregado(<%= p.id %>)" title="Marcar como entregado" style="border-color:rgba(99,102,241,.4);color:#6366f1;background:rgba(99,102,241,.06);"><i class="bi bi-bag-check"></i></button>
+                    <button class="btn-accion success btn-marcar-entregado" data-id="<%= p.id %>" title="Marcar como entregado" style="border-color:rgba(99,102,241,.4);color:#6366f1;background:rgba(99,102,241,.06);"><i class="bi bi-bag-check"></i></button>
                   <% } %>
-                  <button class="btn-accion" onclick="editarItem(<%= JSON.stringify(p).replace(/\"/g,'&quot;') %>)" title="Editar"><i class="bi bi-pencil"></i></button>
-                  <button class="btn-accion danger" onclick="eliminarItem(<%= p.id %>)" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                  <button class="btn-accion btn-editar" data-item='<%= JSON.stringify(p) %>' title="Editar"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-accion danger btn-eliminar" data-id="<%= p.id %>" title="Eliminar"><i class="bi bi-trash3"></i></button>
                 </div>
               </div>
             <% }) %>
@@ -198,10 +198,10 @@
                 </div>
                 <div class="pedido-actions no-print">
                   <% if (p.estado === 'pendiente') { %>
-                    <button class="btn-accion success" onclick="marcarListo(<%= p.id %>)" title="Marcar como conseguido"><i class="bi bi-check-lg"></i></button>
+                    <button class="btn-accion success btn-marcar-listo" data-id="<%= p.id %>" title="Marcar como conseguido"><i class="bi bi-check-lg"></i></button>
                   <% } %>
-                  <button class="btn-accion" onclick="editarItem(<%= JSON.stringify(p).replace(/\"/g,'&quot;') %>)" title="Editar"><i class="bi bi-pencil"></i></button>
-                  <button class="btn-accion danger" onclick="eliminarItem(<%= p.id %>)" title="Eliminar"><i class="bi bi-trash3"></i></button>
+                  <button class="btn-accion btn-editar" data-item='<%= JSON.stringify(p) %>' title="Editar"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-accion danger btn-eliminar" data-id="<%= p.id %>" title="Eliminar"><i class="bi bi-trash3"></i></button>
                 </div>
               </div>
             <% }) %>
@@ -392,10 +392,44 @@ async function eliminarItem(id) {
   location.reload();
 }
 
+// Wire-up de botones usando delegación + data attributes (sin inline onclick con JSON)
+document.addEventListener('click', (e) => {
+  const btnEditar = e.target.closest('.btn-editar');
+  if (btnEditar) {
+    try {
+      const item = JSON.parse(btnEditar.dataset.item);
+      editarItem(item);
+    } catch (err) {
+      console.error('Error parseando item:', err);
+      alert('Error al abrir el editor');
+    }
+    return;
+  }
+
+  const btnEliminar = e.target.closest('.btn-eliminar');
+  if (btnEliminar) {
+    eliminarItem(Number(btnEliminar.dataset.id));
+    return;
+  }
+
+  const btnListo = e.target.closest('.btn-marcar-listo');
+  if (btnListo) {
+    marcarListo(Number(btnListo.dataset.id));
+    return;
+  }
+
+  const btnEntregado = e.target.closest('.btn-marcar-entregado');
+  if (btnEntregado) {
+    marcarEntregado(Number(btnEntregado.dataset.id));
+    return;
+  }
+});
+
 // Badge en sidebar
 (async function() {
   try {
     const r = await fetch('/pedidos/api/badge');
+    if (!r.ok) return;
     const d = await r.json();
     const badge = document.getElementById('pedidosBadge');
     if (badge && (d.urgentes + d.recordatorios) > 0) {
@@ -407,4 +441,3 @@ async function eliminarItem(id) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
 </script>
-
