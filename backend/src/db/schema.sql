@@ -277,3 +277,30 @@ CREATE INDEX IF NOT EXISTS idx_cuenta_corriente_cliente ON cuenta_corriente(clie
 CREATE INDEX IF NOT EXISTS idx_config_key          ON config(key);
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha        ON gastos(fecha);
 CREATE INDEX IF NOT EXISTS idx_pedidos_estado      ON pedidos(estado);
+-- ── Categorías de gastos (configurables por cliente) ──────────
+CREATE TABLE IF NOT EXISTS categorias_gasto (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre      TEXT NOT NULL,
+  icono       TEXT NOT NULL DEFAULT 'bi-tag',
+  color       TEXT NOT NULL DEFAULT '#6b7280',
+  sucursal_id INTEGER DEFAULT 1,
+  activa      INTEGER NOT NULL DEFAULT 1,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+-- ── Gastos recurrentes / plantillas ───────────────────────────
+CREATE TABLE IF NOT EXISTS gastos_recurrentes (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  categoria_id    INTEGER,
+  categoria_nombre TEXT NOT NULL DEFAULT 'Otros',
+  descripcion     TEXT NOT NULL,
+  monto_estimado  REAL NOT NULL DEFAULT 0,
+  dia_vencimiento INTEGER NOT NULL DEFAULT 1,
+  activo          INTEGER NOT NULL DEFAULT 1,
+  sucursal_id     INTEGER DEFAULT 1,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+  FOREIGN KEY (categoria_id) REFERENCES categorias_gasto(id) ON DELETE SET NULL
+);
+
+-- Columna que vincula un gasto puntual con su plantilla recurrente
+-- (ALTER TABLE seguro porque usa IF NOT EXISTS via el service al init)
