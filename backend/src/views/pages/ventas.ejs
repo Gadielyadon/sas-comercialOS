@@ -2820,161 +2820,255 @@ function imprimirTicket(){
   };
 
   const fechaTxt = lastSaleData.fecha.toLocaleString('es-AR',{
-    day:'2-digit',month:'2-digit',year:'numeric',
-    hour:'2-digit',minute:'2-digit'
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
   });
 
-  const formato = String(cfg.formato || '58mm').toLowerCase();
-const es58 = formato === '58mm';
-const es80 = formato === '80mm';
-const fmtA4 = formato === 'a4';
+  const formato    = String(cfg.formato || '80mm').toLowerCase();
+  const es58       = formato === '58mm';
+  const es80       = formato === '80mm';
+  const fmtA4      = formato === 'a4';
+  const paperWidth = es58 ? '58mm' : es80 ? '80mm' : '210mm';
+  const winWidth   = es58 ? 245    : es80 ? 345    : 900;
 
-const paperWidth   = es58 ? '58mm' : es80 ? '80mm' : '210mm';
-const contentWidth = es58 ? '52mm' : es80 ? '74mm' : '180mm';
-const winWidth     = es58 ? 240    : es80 ? 340    : 900;
-const fontSize     = fmtA4 ? '13px' : es58 ? '10px' : '11px';
-const titleSize    = fmtA4 ? '24px' : es58 ? '13px' : '18px';
-const pageMargin   = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
-const bodyPadding  = fmtA4 ? '12px' : es58 ? '3px 2px' : '4px 3px';
+  /* ── tamaños tipográficos adaptados al papel ── */
+  const fsBase    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsSmall   = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
+  const fsMeta    = fmtA4 ? '12px' : es58 ? '10px' : '11px';
+  const fsTitle   = fmtA4 ? '22px' : es58 ? '14px' : '17px';
+  const fsItem    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsTot     = fmtA4 ? '13px' : es58 ? '12px' : '13px';
+  const fsTotMain = fmtA4 ? '20px' : es58 ? '16px' : '18px';
+  const fsVuelto  = fmtA4 ? '22px' : es58 ? '17px' : '20px';
+  const fsRecibo  = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
+  const pageMargin = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
 
-const itemsHtml = lastSaleData.items.map(it => {
-  let badge = '';
-  if (it.isMayorista) badge = ' <span style="font-size:9px;font-weight:800;">[MAYOR]</span>';
-  else if (it.isPromo) badge = ' <span style="font-size:9px;font-weight:800;">[PROMO]</span>';
+  /* ── número de recibo ── */
+  const reciboNum = lastSaleData.reciboNum || lastSaleData.recibo || lastSaleData.orden_id || '';
+  const reciboTxt = reciboNum ? String(reciboNum).padStart(8,'0') : '';
 
-  let precioExtra = '';
-  if (it.isMayorista && it.price_base && it.price_base !== it.price) {
-    precioExtra = `<br><span style="font-size:9px;text-decoration:line-through;color:#999;">${fmt(it.price_base)}</span> → ${fmt(it.price)} c/u`;
-  } else if (it.isPromo && it.price_base && it.price_base !== it.price) {
-    precioExtra = `<br><span style="font-size:9px;text-decoration:line-through;color:#999;">${fmt(it.price_base)}</span> → ${fmt(it.price)} c/u`;
-  } else {
-    precioExtra = `<br><span style="font-size:9px;color:#666;">${fmt(it.price)} c/u</span>`;
-  }
+  /* ── items ── */
+  const itemsHtml = lastSaleData.items.map(it => {
+    /* badge PROMO o MAYOR */
+    let badgeHtml = '';
+    if (it.isMayorista) {
+      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">MAYORISTA</span>`;
+    } else if (it.isPromo) {
+      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">PROMO</span>`;
+    }
 
-  return `
-    <tr>
-      <td style="padding:4px 0;">${escapeHtml(it.name)}${badge}${precioExtra}</td>
-      <td style="padding:4px 0;text-align:center;">${it.qty}</td>
-      <td style="padding:4px 0;text-align:right;font-weight:700;">${fmt(it.subtotal)}</td>
-    </tr>
-  `;
-}).join('');
+    /* precio: tachado + nuevo si hay descuento */
+    let precioLinea = '';
+    if ((it.isMayorista || it.isPromo) && it.price_base && it.price_base !== it.price) {
+      precioLinea = `<span style="font-size:${fsSmall};font-weight:700;text-decoration:line-through;">${fmt(it.price_base)}</span>`
+                  + `<span style="font-size:${fsSmall};font-weight:900;"> → ${fmt(it.price)} c/u</span>`;
+    } else {
+      precioLinea = `<span style="font-size:${fsSmall};font-weight:700;">${fmt(it.price)} c/u</span>`;
+    }
 
+    return `
+      <tr>
+        <td style="padding:6px 0 4px;line-height:1.4;border-bottom:1px dotted #bbb;">
+          <span style="font-size:${fsItem};font-weight:900;text-transform:uppercase;">${escapeHtml(it.name)}</span>${badgeHtml}<br>
+          ${precioLinea}
+        </td>
+        <td style="padding:6px 0 4px;text-align:center;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${it.qty}</td>
+        <td style="padding:6px 0 4px;text-align:right;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${fmt(it.subtotal)}</td>
+      </tr>`;
+  }).join('');
+
+  /* ── logo ── */
   const logoHtml = cfg.logo
-    ? `<div class="center" style="margin-bottom:6px;"><img src="${escapeHtml(cfg.logo)}" style="max-width:100%;max-height:60px;object-fit:contain;"></div>`
+    ? `<div style="text-align:center;margin-bottom:8px;"><img src="${escapeHtml(cfg.logo)}" style="max-width:100%;max-height:70px;object-fit:contain;"></div>`
     : '';
 
-  const html = `
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <title>Ticket</title>
-      <style>
-        * { box-sizing: border-box; }
-@page {
-  size: ${paperWidth} auto;
-  margin: ${pageMargin};
-}
-@media print {
-  html, body { width: ${paperWidth}; }
-}
-body {
-  font-family: 'Courier New', Courier, monospace;
-  margin: 0;
-  padding: ${es80 ? '4px 3px' : '12px'};
-  background: #fff;
-  color: #000;
-  font-size: ${fontSize};
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-.ticket {
-  width: ${es80 ? '74mm' : '180mm'};
-  max-width: 100%;
-  margin: 0 auto;
-}
-        .center { text-align: center; }
-        .title { font-size: ${titleSize}; font-weight: 700; margin-bottom: 2px; }
-        .sub { font-size: ${es80 ? '11px' : '12px'}; margin-bottom: 10px; }
-        .line { border-top: 1px dashed #000; margin: 10px 0; }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: ${es80 ? '10px' : '12px'};
-        }
-        th, td { vertical-align: top; }
-        .tot {
-          display: flex;
-          justify-content: space-between;
-          font-size: ${es80 ? '12px' : '13px'};
-          margin: 4px 0;
-        }
-        .tot.main {
-          font-weight: 700;
-          font-size: ${es80 ? '14px' : '16px'};
-        }
-        .small { font-size: ${es80 ? '10px' : '11px'}; }
-      </style>
-    </head>
-    <body>
-      <div class="ticket">
-        ${logoHtml}
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
+    @media print { html, body { width: ${paperWidth}; } }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #fff;
+      color: #000;
+      font-size: ${fsBase};
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .ticket {
+      width: 100%;
+      max-width: ${fmtA4 ? '200mm' : paperWidth};
+      margin: 0 auto;
+      padding: ${fmtA4 ? '10px 14px' : '6px 4px'};
+    }
+    .center { text-align: center; }
+    .right  { text-align: right; }
+    .bold   { font-weight: 700; }
+    .line-solid  { border-top: 2px solid #000; margin: 7px 0; }
+    .line-dashed { border-top: 1px dashed #000; margin: 6px 0; }
+    .line-double { border-top: 3px double #000; margin: 7px 0; }
+    .nombre-negocio {
+      font-size: ${fsTitle};
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: ${fsMeta};
+      margin: 2px 0;
+    }
+    .recibo-box {
+      text-align: center;
+      font-size: ${fsMeta};
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin: 4px 0 2px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      font-size: ${fsSmall};
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #000;
+      padding: 3px 0;
+    }
+    th:first-child  { text-align: left; }
+    th:nth-child(2) { text-align: center; width: 28px; }
+    th:last-child   { text-align: right; }
+    td:nth-child(2) { width: 28px; }
+    .tot-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: ${fsTot};
+      padding: 2px 0;
+    }
+    .tot-main {
+      font-size: ${fsTotMain};
+      font-weight: 900;
+      padding: 4px 0;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      margin: 4px 0;
+    }
+    .vuelto-box {
+      text-align: center;
+      font-size: ${fsVuelto};
+      font-weight: 900;
+      border: 2px solid #000;
+      padding: 6px 4px 4px;
+      margin: 6px 0 4px;
+      letter-spacing: 0.5px;
+    }
+    .footer-txt {
+      text-align: center;
+      font-size: ${fsMeta};
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
+    .offline-badge {
+      text-align:center;
+      font-size:${fsSmall};
+      font-weight:900;
+      border:2px solid #000;
+      padding:2px 6px;
+      letter-spacing:2px;
+      margin:4px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="ticket">
 
-        <div class="center">
-          <div class="title">${escapeHtml(cfg.nombre || 'Mi Comercio')}</div>
-          ${cfg.direccion ? `<div class="small">${escapeHtml(cfg.direccion)}</div>` : ''}
-          ${cfg.telefono ? `<div class="small">${escapeHtml(cfg.telefono)}</div>` : ''}
-        </div>
+  ${logoHtml}
 
-        <div class="line"></div>
+  <!-- NOMBRE DEL NEGOCIO -->
+  <div class="center">
+    <div class="nombre-negocio">${escapeHtml(cfg.nombre || 'Mi Comercio')}</div>
+    ${cfg.direccion ? `<div style="font-size:${fsMeta};">${escapeHtml(cfg.direccion)}</div>` : ''}
+    ${cfg.telefono  ? `<div style="font-size:${fsMeta};">Tel: ${escapeHtml(cfg.telefono)}</div>` : ''}
+  </div>
 
-        <div>Fecha: ${escapeHtml(fechaTxt)}</div>
-        <div>Cliente: ${escapeHtml(lastSaleData.cliente)}</div>
-        <div>Método: ${escapeHtml(lastSaleData.metodo)}</div>
-        ${lastSaleData.offline ? `<div>Estado: OFFLINE</div>` : ''}
+  <div class="line-solid"></div>
 
-        <div class="line"></div>
+  <!-- N° RECIBO + FECHA -->
+  ${reciboTxt ? `<div class="recibo-box">N° RECIBO: ${escapeHtml(reciboTxt)}</div>` : ''}
+  <div class="meta-row">
+    <span>${fechaTxt}</span>
+  </div>
+  <div class="meta-row">
+    <span>Cliente:</span><span class="bold">${escapeHtml(lastSaleData.cliente)}</span>
+  </div>
+  <div class="meta-row">
+    <span>Pago:</span><span class="bold">${escapeHtml(lastSaleData.metodo)}</span>
+  </div>
+  ${lastSaleData.offline ? `<div class="offline-badge">⚠ MODO OFFLINE</div>` : ''}
 
-        <table>
-          <thead>
-            <tr>
-              <th style="text-align:left;">Producto</th>
-              <th style="text-align:center;">Cant</th>
-              <th style="text-align:right;">Sub</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
+  <div class="line-dashed"></div>
 
-        <div class="line"></div>
+  <!-- PRODUCTOS -->
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th style="text-align:center;">Cant</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsHtml}
+    </tbody>
+  </table>
 
-        <div class="tot"><span>Subtotal:</span><span>${fmt(lastSaleData.subtotal)}</span></div>
-        ${lastSaleData.descuento > 0 ? `<div class="tot"><span>Descuento:</span><span>-${fmt(lastSaleData.descuento)}</span></div>` : ''}
-        <div class="tot main"><span>TOTAL:</span><span>${fmt(lastSaleData.total)}</span></div>
-        ${lastSaleData.recibido !== null ? `<div class="tot"><span>Recibido:</span><span>${fmt(lastSaleData.recibido)}</span></div>` : ''}
-        ${lastSaleData.vuelto > 0 ? `<div class="tot"><span>Vuelto:</span><span>${fmt(lastSaleData.vuelto)}</span></div>` : ''}
+  <div class="line-solid"></div>
 
-        <div class="line"></div>
-        <div class="center small">${escapeHtml(cfg.footer || '¡Gracias por su compra!')}</div>
-      </div>
-    </body>
-    </html>
-  `;
-const w = window.open('', '_blank', `width=${winWidth},height=800,left=0,top=0`);
+  <!-- TOTALES -->
+  ${lastSaleData.subtotal !== lastSaleData.total || lastSaleData.descuento > 0
+    ? `<div class="tot-row"><span>Subtotal</span><span>${fmt(lastSaleData.subtotal)}</span></div>` : ''}
+  ${lastSaleData.descuento > 0
+    ? `<div class="tot-row"><span>Descuento</span><span>- ${fmt(lastSaleData.descuento)}</span></div>` : ''}
 
+  <div class="tot-row tot-main">
+    <span>TOTAL</span>
+    <span>${fmt(lastSaleData.total)}</span>
+  </div>
+
+  ${lastSaleData.recibido !== null
+    ? `<div class="tot-row"><span>Recibido</span><span>${fmt(lastSaleData.recibido)}</span></div>` : ''}
+
+  ${lastSaleData.vuelto > 0
+    ? `<div class="vuelto-box">VUELTO: ${fmt(lastSaleData.vuelto)}</div>` : ''}
+
+  <div class="line-dashed"></div>
+
+  <!-- FOOTER -->
+  <div class="footer-txt">${escapeHtml(cfg.footer || '¡Gracias por su compra!')}</div>
+
+</div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank', `width=${winWidth},height=900,left=0,top=0`);
   if(!w){
     showToast('Permití ventanas emergentes para imprimir','warn');
     return;
   }
-
   w.document.open();
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 250);
+  setTimeout(() => w.print(), 300);
 }
 
 function nuevaVenta(){
@@ -2988,31 +3082,23 @@ function nuevaVenta(){
 
 let _deptoActual = null;
 
-/* ── Departamentos: ahora vienen de la BD (compartidos entre todas las PCs)
-   _deptosCache mantiene una copia local para que _getDeptos() siga siendo
-   sincrónico — así las hotkeys F1-F10 y el render no cambian. */
-let _deptosCache = [];
-let _deptosCargado = false;
-
 function _getDeptos() {
-  // Sincrónico: devuelve el caché. _loadDeptos() lo mantiene actualizado.
-  return _deptosCache;
-}
-
-async function _loadDeptos() {
   try {
-    const r = await fetch('/departamentos/api');
-    if (!r.ok) throw new Error('fetch deptos status ' + r.status);
-    const data = await r.json();
-    _deptosCache = Array.isArray(data) ? data : [];
-    _deptosCargado = true;
-    return _deptosCache;
-  } catch(e) {
-    console.warn('No se pudieron cargar departamentos:', e.message);
-    _deptosCache = [];
-    _deptosCargado = true;
-    return _deptosCache;
-  }
+    const saved = localStorage.getItem('pos_deptos');
+    if (saved !== null) return JSON.parse(saved);
+    const defaults = [
+      { id:'d1', nombre:'Mantenimiento', icono:'🔧', color:'#3b82f6' },
+      { id:'d2', nombre:'Mano de obra',  icono:'👷', color:'#10b981' },
+      { id:'d3', nombre:'Materiales',    icono:'🪵', color:'#f59e0b' },
+      { id:'d4', nombre:'Traslado',      icono:'🚚', color:'#8b5cf6' },
+      { id:'d5', nombre:'Servicio',      icono:'⚙️', color:'#ef4444' },
+    ];
+    localStorage.setItem('pos_deptos', JSON.stringify(defaults));
+    return defaults;
+  } catch(e){ return []; }
+}
+function _saveDeptos(arr) {
+  localStorage.setItem('pos_deptos', JSON.stringify(arr));
 }
 
 function toggleDeptosChip(btn) {
@@ -3022,8 +3108,7 @@ function toggleDeptosChip(btn) {
   if (isOpen) {
     bar.style.display  = 'block';
     if(scroll) scroll.style.display = 'none';
-    // Refrescar desde BD al abrir (así ve cambios hechos en otras PCs)
-    _loadDeptos().then(() => renderDeptosGrid());
+    renderDeptosGrid();
   } else {
     bar.style.display  = 'none';
     if(scroll) scroll.style.display = '';
@@ -3114,10 +3199,9 @@ function agregarDepto() {
   showToast(`${_deptoActual.icono} ${_deptoActual.nombre} — ${fmt(price)} × ${qty}`, 'success');
 }
 
-async function abrirGestorDeptos() {
+function abrirGestorDeptos() {
   const overlay = document.getElementById('deptosMgrOverlay');
   if (!overlay) return;
-  await _loadDeptos();      // refresca desde BD al abrir (ve cambios de otras PCs)
   renderDeptosMgrList();
   overlay.classList.add('open');
 }
@@ -3144,49 +3228,27 @@ function renderDeptosMgrList() {
     </div>`).join('');
 }
 
-async function agregarNuevoDepto() {
+function agregarNuevoDepto() {
   const nombreInp = document.getElementById('newDeptoName');
   const iconoInp  = document.getElementById('newDeptoIcon');
   if (!nombreInp) return;
   const nombre = nombreInp.value.trim();
   if (!nombre) return;
   const icono  = iconoInp?.value.trim() || '🏷️';
-
-  try {
-    const r = await fetch('/departamentos/api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, icono })
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({ error: 'Error al crear' }));
-      showToast(err.error || 'Error al crear departamento', 'warn');
-      return;
-    }
-    nombreInp.value = '';
-    if (iconoInp) iconoInp.value = '';
-    await _loadDeptos();
-    renderDeptosMgrList();
-    renderDeptosGrid();
-    showToast(`Departamento "${nombre}" creado`, 'success');
-  } catch(e) {
-    showToast('Error de conexión al crear departamento', 'warn');
-  }
+  const deptos = _getDeptos();
+  deptos.push({ id: Date.now().toString(), nombre, icono });
+  _saveDeptos(deptos);
+  nombreInp.value = '';
+  if (iconoInp) iconoInp.value = '';
+  renderDeptosMgrList();
+  showToast(`Departamento "${nombre}" creado`, 'success');
 }
 
-async function eliminarDepto(id) {
-  try {
-    const r = await fetch(`/departamentos/api/${id}`, { method: 'DELETE' });
-    if (!r.ok) {
-      showToast('Error al eliminar', 'warn');
-      return;
-    }
-    await _loadDeptos();
-    renderDeptosMgrList();
-    renderDeptosGrid();
-  } catch(e) {
-    showToast('Error de conexión', 'warn');
-  }
+function eliminarDepto(id) {
+  const deptos = _getDeptos().filter(d => d.id !== id);
+  _saveDeptos(deptos);
+  renderDeptosMgrList();
+  renderDeptosGrid();
 }
 
 
@@ -3544,11 +3606,7 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-window.addEventListener('load',()=>{
-  document.getElementById('barcodeInput').focus();
-  // Precargar departamentos desde BD para tener el caché listo (hotkeys F1-F10)
-  _loadDeptos();
-});
+window.addEventListener('load',()=>document.getElementById('barcodeInput').focus());
 
 /* ══════════════════════════════════════════════
    NAVEGACIÓN CON FLECHAS EN EL FOOTER DEL POS
