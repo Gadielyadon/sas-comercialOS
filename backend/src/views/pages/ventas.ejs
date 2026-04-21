@@ -3044,11 +3044,6 @@ function imprimirTicket(){
     <span>${fmt(lastSaleData.total)}</span>
   </div>
 
-  ${lastSaleData.recibido !== null
-    ? `<div class="tot-row"><span>Recibido</span><span>${fmt(lastSaleData.recibido)}</span></div>` : ''}
-
-  ${lastSaleData.vuelto > 0
-    ? `<div class="vuelto-box">VUELTO: ${fmt(lastSaleData.vuelto)}</div>` : ''}
 
   <div class="line-dashed"></div>
 
