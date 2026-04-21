@@ -1783,8 +1783,9 @@ function tryDecodeBalanza(code) {
   const primerDigito = parseInt(code.charAt(0), 10);
   if (primerDigito !== BALANZA_CFG.prefijo) return null;
 
- const plu   = parseInt(code.slice(1, 6), 10);  // PLU=4 ✅
-const valor = parseInt(code.slice(6, 12), 10); // 001617 ✅
+const plu   = parseInt(code.slice(1, 7), 10);
+const valor = parseInt(code.slice(7, 12), 10);
+console.log('código:', code, 'plu:', plu, 'sku:', String(plu).padStart(5,'0').slice(-5), 'valor:', valor);
 
 
 // dígito 13 (índice 12) = dígito de control, no lo usamos
@@ -1793,7 +1794,7 @@ const valor = parseInt(code.slice(6, 12), 10); // 001617 ✅
   if (isNaN(plu) || isNaN(valor)) return null;
 
   return {
-    sku   : String(plu),                                           // PLU como string
+    sku   : String(plu).padStart(5, '0').slice(-5),               // PLU 5 dígitos (recorta si viene de 6)
     precio: BALANZA_CFG.modo === 'precio' ? valor : null,
     peso  : BALANZA_CFG.modo === 'peso'   ? valor / 1000 : null,
   };
@@ -3043,7 +3044,6 @@ function imprimirTicket(){
     <span>TOTAL</span>
     <span>${fmt(lastSaleData.total)}</span>
   </div>
-
 
   <div class="line-dashed"></div>
 
