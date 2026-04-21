@@ -51,9 +51,35 @@ function initPresupuestosSchema() {
   )`);
 
   // Migraciones seguras — no rompen si la columna ya existe
+  // presupuesto_items
   try { run(`ALTER TABLE presupuesto_items ADD COLUMN pct_iva REAL DEFAULT NULL`); } catch (e) {}
   try { run(`ALTER TABLE presupuesto_items ADD COLUMN descuento_item_pct REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN tipo TEXT DEFAULT 'producto'`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN sku TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN nombre TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN descripcion TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN cantidad REAL DEFAULT 1`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN precio_unitario REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN subtotal REAL DEFAULT 0`); } catch (e) {}
+  // presupuestos
   try { run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago_obs TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_nombre TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_cuit TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_email TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_tel TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_telefono TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_direccion TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago TEXT DEFAULT 'Contado'`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN validez_dias INTEGER`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN notas TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN subtotal REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN descuento_pct REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN descuento_monto REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN total_iva REAL DEFAULT 0`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN estado TEXT DEFAULT 'Borrador'`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN sucursal_id INTEGER DEFAULT 1`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN user_id INTEGER`); } catch (e) {}
+  // products
   try { run(`ALTER TABLE products ADD COLUMN precio_presupuesto REAL DEFAULT NULL`); } catch (e) {}
 }
 
@@ -106,7 +132,6 @@ function findById(id) {
 }
 
 function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0) {
-  // Subtotal ya con descuentos por ítem aplicados
   const subtotal = items.reduce((s, i) => {
     const base = Number(i.cantidad || 0) * Number(i.precio_unitario || 0);
     const desc = Number(i.descuento_item_pct || 0);
@@ -351,7 +376,6 @@ function deleteCatalogo(id) {
   return { ok: true };
 }
 
-// Productos del sistema con precio_presupuesto
 function getProductosConPrecioB(sucursal_id = null) {
   return all(`
     SELECT id,
