@@ -548,6 +548,14 @@
                 <input type="number" id="balanza_prefijo" value="2" min="2" max="29" step="1" style="width:80px;" placeholder="2">
                 <div class="field-hint">Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.</div>
               </div>
+              <div class="aj-field">
+                <label>Dígitos del PLU</label>
+                <select id="balanza_digitos_plu" style="width:120px;">
+                  <option value="5">5 dígitos (ej: 00027)</option>
+                  <option value="6">6 dígitos (ej: 000027)</option>
+                </select>
+                <div class="field-hint">Depende del modelo de balanza. La mayoría usa <strong>5 dígitos</strong>.</div>
+              </div>
             </div>
             <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
               <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
@@ -831,6 +839,8 @@ async function cargarConfig() {
   if (balModo) balModo.value = _config.balanza_modo || 'precio';
   const balPref = document.getElementById('balanza_prefijo');
   if (balPref) balPref.value = _config.balanza_prefijo || '2';
+  const balDigitos = document.getElementById('balanza_digitos_plu');
+  if (balDigitos) balDigitos.value = _config.balanza_digitos_plu || '5';
 
   if (_config.empresa_logo) mostrarLogoPreview(_config.empresa_logo);
   actualizarPreview();
@@ -913,6 +923,7 @@ async function guardarAjustes() {
     balanza_habilitada:           document.getElementById('balanza_habilitada')?.checked ? '1' : '0',
     balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
     balanza_prefijo:              document.getElementById('balanza_prefijo')?.value || '2',
+    balanza_digitos_plu:          document.getElementById('balanza_digitos_plu')?.value || '5',
     afip_cuit:                    (document.getElementById('afip_cuit')?.value        || '').trim(),
     afip_punto_venta:             (document.getElementById('afip_punto_venta')?.value || '1').trim(),
     afip_cert_path:               (document.getElementById('afip_cert_path')?.value   || 'certs/cert.crt').trim(),

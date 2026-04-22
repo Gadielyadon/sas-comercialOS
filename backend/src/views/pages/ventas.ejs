@@ -799,10 +799,10 @@
   .cart-card{ background:var(--bg-card);border:1px solid var(--border-color);border-radius:7px;padding:5px 8px;display:flex;flex-direction:row;align-items:center;gap:5px;position:relative;transition:background .1s; }
   .cart-card:hover{ background:var(--bg-hover); }
   .cart-card-top{ flex:1;min-width:0;display:flex;align-items:center; }
-  .cart-card-name{ font-size:12px;font-weight:600;color:var(--text-primary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px; }
+  .cart-card-name{ font-size:20px;font-weight:600;color:var(--text-primary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px; }
   .cart-card-unit{ display:none; }
   .cart-card-bottom{ display:flex;align-items:center;gap:5px;flex-shrink:0; }
-  .cart-card-price{ font-size:12.5px;font-weight:800;color:var(--color-primary);letter-spacing:-.3px;min-width:65px;text-align:right; }
+  .cart-card-price{ font-size:18px;font-weight:800;color:var(--color-primary);letter-spacing:-.3px;min-width:65px;text-align:right; }
   .qty-ctrl{ display:inline-flex;align-items:center;border:1px solid var(--border-color);border-radius:5px;overflow:hidden;background:var(--bg-body); }
   .qty-btn{ width:19px;height:19px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:11px;cursor:pointer;font-weight:700; }
   .qty-btn:hover{ background:rgba(27,79,216,.1);color:var(--color-primary); }
@@ -1300,8 +1300,8 @@
               <button class="comp-btn active" id="compVenta" onclick="setComprobante('venta')">
                 <i class="bi bi-receipt"></i> Venta
               </button>
-              <button class="comp-btn" id="compFactura" onclick="setComprobante('factura')">
-                <i class="bi bi-file-earmark-ruled"></i> Factura
+              <button class="comp-btn" id="compFactura" onclick="setComprobante('presupuesto')">
+                <i class="bi bi-file-earmark-text"></i> Presupuesto
               </button>
             </div>
           </div>
@@ -1760,6 +1760,7 @@ const BALANZA_CFG = {
                || String(<%- JSON.stringify(config && config.balanza_habilitada  ? config.balanza_habilitada  : '0') %>) === '1',
   prefijo    : parseInt('<%- (config && config.balanza_prefijo)  ? config.balanza_prefijo  : 2 %>', 10) || 2,
   modo       : '<%- (config && config.balanza_modo) ? config.balanza_modo : "precio" %>',
+  digitos_plu: parseInt('<%- (config && config.balanza_digitos_plu) ? config.balanza_digitos_plu : 5 %>', 10) || 5,
 };
 
 /**
@@ -1783,9 +1784,9 @@ function tryDecodeBalanza(code) {
   const primerDigito = parseInt(code.charAt(0), 10);
   if (primerDigito !== BALANZA_CFG.prefijo) return null;
 
-const plu   = parseInt(code.slice(1, 7), 10);
-const valor = parseInt(code.slice(7, 12), 10);
-console.log('código:', code, 'plu:', plu, 'sku:', String(plu).padStart(5,'0').slice(-5), 'valor:', valor);
+ const d     = BALANZA_CFG.digitos_plu || 5;
+ const plu   = parseInt(code.slice(1, 1 + d), 10);       // PLU dinámico
+const valor = parseInt(code.slice(7, 12), 10);             // peso/precio siempre en pos 7-11
 
 
 // dígito 13 (índice 12) = dígito de control, no lo usamos
@@ -1794,7 +1795,7 @@ console.log('código:', code, 'plu:', plu, 'sku:', String(plu).padStart(5,'0').s
   if (isNaN(plu) || isNaN(valor)) return null;
 
   return {
-    sku   : String(plu).padStart(5, '0').slice(-5),               // PLU 5 dígitos (recorta si viene de 6)
+    sku   : String(plu).padStart(d, '0').slice(-5),               // PLU normalizado a 5 dígitos para buscar en sistema
     precio: BALANZA_CFG.modo === 'precio' ? valor : null,
     peso  : BALANZA_CFG.modo === 'peso'   ? valor / 1000 : null,
   };
@@ -2224,7 +2225,16 @@ let _tipoComprobante = 'venta';
 function setComprobante(tipo) {
   _tipoComprobante = tipo;
   document.getElementById('compVenta').classList.toggle('active', tipo === 'venta');
-  document.getElementById('compFactura').classList.toggle('active', tipo === 'factura');
+  document.getElementById('compFactura').classList.toggle('active', tipo === 'presupuesto');
+  // Cambiar texto del botón confirmar
+  const btnConfirm = document.getElementById('btnConfirm');
+  if (tipo === 'presupuesto') {
+    btnConfirm.innerHTML = '<i class="bi bi-file-earmark-text"></i> Generar Presupuesto';
+    btnConfirm.onclick = () => generarPresupuestoDesdeCarrito();
+  } else {
+    btnConfirm.innerHTML = '<i class="bi bi-cash-coin"></i> Finalizar Venta <span class="kbd-hint">F4</span>';
+    btnConfirm.onclick = () => openCobroModal();
+  }
   updateTotals();
 }
 
@@ -2310,6 +2320,94 @@ function movePmFocusVertical(deltaRows){
   focusPmButton(next);
 }
 
+/* ══════════════════════════════════════════════════════
+   GENERAR PRESUPUESTO DESDE PUNTO DE VENTA
+══════════════════════════════════════════════════════ */
+async function generarPresupuestoDesdeCarrito() {
+  if (!cart.length) { showToast('Carrito vacío', 'warn'); return; }
+
+  const clienteEl = document.getElementById('clienteInput');
+  const clienteNombre = clienteEl ? clienteEl.value.trim() : '';
+
+  const items = cart.map(i => ({
+    tipo: 'producto',
+    sku: i.sku || null,
+    nombre: i.name,
+    cantidad: i.qty,
+    precio_unitario: i.price,
+    descuento_item_pct: 0,
+    pct_iva: null
+  }));
+
+  const discType = document.getElementById('btnPct')?.classList.contains('on') ? 'pct' : 'fixed';
+  const discVal  = parseFloat(document.getElementById('discInput')?.value || 0);
+
+  const body = {
+    cliente_nombre: clienteNombre || 'Sin nombre',
+    condicion_pago: 'Contado',
+    descuento_pct:   discType === 'pct'   ? discVal : 0,
+    descuento_monto: discType === 'fixed' ? discVal : 0,
+    items
+  };
+
+  try {
+    showToast('Generando presupuesto...', 'info');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/presupuestos/crear';
+    form.target = '_blank';
+
+    const addField = (name, value) => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = name; inp.value = value ?? '';
+      form.appendChild(inp);
+    };
+
+    addField('cliente_nombre', body.cliente_nombre);
+    addField('condicion_pago', body.condicion_pago);
+    addField('descuento_pct', body.descuento_pct);
+    addField('descuento_monto', body.descuento_monto);
+    // Mandar items como JSON string — el route lo parsea con items_json
+    addField('items_json', JSON.stringify(body.items));
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    showToast('✅ Presupuesto generado — abriendo...', 'success');
+    setTimeout(() => { clearCart(); setComprobante('venta'); }, 600);
+
+  } catch(e) {
+    console.error(e);
+    showToast('Error al generar presupuesto', 'error');
+  }
+}
+
+function mostrarModalPresupuestoOk(pres) {
+  // Crear modal simple
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <div style="font-size:48px;margin-bottom:12px;">📋</div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px;">¡Presupuesto generado!</div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">${pres.numero} · ${pres.cliente_nombre}</div>
+      <div style="font-size:28px;font-weight:900;color:var(--color-action);margin-bottom:24px;">${fmt(pres.total)}</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="window.open('/presupuestos/ver/${pres.id}','_blank')" 
+          style="padding:12px;border-radius:8px;background:var(--color-primary);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;">
+          <i class="bi bi-eye"></i> Ver e imprimir presupuesto
+        </button>
+        <button onclick="this.closest('[style]').remove();clearCart();setComprobante('venta');"
+          style="padding:12px;border-radius:8px;background:var(--bg-surface-2);color:var(--text-primary);border:1px solid var(--border-color);font-size:14px;font-weight:600;cursor:pointer;">
+          Nueva venta
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
 async function openCobroModal(){
   if(!cart.length)return;
 
@@ -2383,39 +2481,64 @@ function toggleMixto(){
   }
 }
 
+function _getRecargoMixto2() {
+  // Obtener el recargo del segundo método en pago mixto
+  const sel = document.getElementById('mixtoMetodo2');
+  if (!sel) return recargoVal;
+  const nombreM2 = sel.value;
+  const metodo2 = payMethods.find(m => m.nombre === nombreM2);
+  // Si el método principal tiene recargo, usarlo; si no, usar el del segundo método
+  if (recargoVal > 0) return recargoVal;
+  return metodo2 ? (metodo2.recargo_cliente_pct || 0) : 0;
+}
+
 function calcMixto(){
-  const {total}=getBaseTotal(),conRecargo=total*(1+recargoVal/100);
+  const {total}=getBaseTotal();
   const m1=parseFloat(document.getElementById('mixtoMonto1').value)||0;
-  const resto=conRecargo-m1;
+  const rcMixto = _getRecargoMixto2();
+  // El recargo se aplica solo al monto que paga con el segundo medio
+  const saldoSinRecargo = total - m1;
+  const m2ConRecargo = saldoSinRecargo > 0 ? parseFloat((saldoSinRecargo * (1 + rcMixto/100)).toFixed(2)) : 0;
   const restoEl=document.getElementById('mixtoResto');
   const m2Input=document.getElementById('mixtoMonto2');
-  m2Input.value=resto>0?resto.toFixed(2):'0.00';
+  m2Input.value=m2ConRecargo>0?m2ConRecargo.toFixed(2):'0.00';
   m2Input.disabled=false;
   m2Input.style.opacity='1';
-  if(resto<-0.01){
-    restoEl.textContent=`Exceso: ${fmt(Math.abs(resto))}`;
+  if(saldoSinRecargo<-0.01){
+    restoEl.textContent=`Exceso: ${fmt(Math.abs(saldoSinRecargo))}`;
     restoEl.className='mixto-resto negativo';
-  } else if(Math.abs(resto)<0.01){
+  } else if(Math.abs(saldoSinRecargo)<0.01){
     restoEl.textContent='✓ Total cubierto';
     restoEl.className='mixto-resto';
   } else {
-    restoEl.textContent=`Resta: ${fmt(resto)}`;
+    const recargoAplicado = m2ConRecargo - saldoSinRecargo;
+    restoEl.textContent=`${fmt(saldoSinRecargo)}${rcMixto>0?' + recargo '+fmt(recargoAplicado)+' = '+fmt(m2ConRecargo):''}`;
     restoEl.className='mixto-resto';
   }
 }
 
 function updateCobroTotals(){
-  const{total,disc}=getBaseTotal(),conRecargo=total*(1+recargoVal/100);
-  document.getElementById('cobroTotalAmt').textContent=fmt(conRecargo);
+  const{total,disc}=getBaseTotal();
+  let totalMostrar, infoText = [];
+  if(disc>0) infoText.push(`Descuento: -${fmt(disc)}`);
+  if(mixtoActivo){
+    const rcM = typeof _getRecargoMixto2 === 'function' ? _getRecargoMixto2() : recargoVal;
+    const m1=parseFloat(document.getElementById('mixtoMonto1')?.value)||0;
+    const saldoTarjeta=Math.max(0,total-m1);
+    const recargoSoloTarjeta=saldoTarjeta*rcM/100;
+    totalMostrar=m1+(saldoTarjeta*(1+rcM/100));
+    if(rcM>0&&saldoTarjeta>0) infoText.push(`Recargo ${rcM}% sobre 2° medio: +${fmt(recargoSoloTarjeta)}`);
+  } else {
+    totalMostrar=total*(1+recargoVal/100);
+    if(recargoVal>0) infoText.push(`Recargo ${recargoVal}%: +${fmt(total*recargoVal/100)}`);
+  }
+  document.getElementById('cobroTotalAmt').textContent=fmt(totalMostrar);
   const di=document.getElementById('cobroDiscInfo');
-  if(disc>0||recargoVal>0){
+  if(infoText.length>0){
     di.style.display='block';
-    const p=[];
-    if(disc>0)p.push(`Descuento: -${fmt(disc)}`);
-    if(recargoVal>0)p.push(`Recargo ${recargoVal}%: +${fmt(total*recargoVal/100)}`);
-    di.textContent=p.join(' · ');
+    di.textContent=infoText.join(' · ');
   }else di.style.display='none';
-  document.getElementById('btnCobrarTxt').textContent=`Cobrar ${fmt(conRecargo)}`;
+  document.getElementById('btnCobrarTxt').textContent=`Cobrar ${fmt(totalMostrar)}`;
   calcVuelto();
 }
 function setRecargo(pct,btn){
@@ -2622,7 +2745,16 @@ async function confirmSale() {
   }
 
   const { total } = getBaseTotal();
-  const conRecargo = total * (1 + recargoVal / 100);
+  // En pago mixto con recargo: el recargo aplica solo sobre el monto de tarjeta
+  let conRecargo;
+  if(mixtoActivo){
+    const rcM = typeof _getRecargoMixto2 === 'function' ? _getRecargoMixto2() : recargoVal;
+    const m1 = parseFloat(document.getElementById('mixtoMonto1')?.value) || 0;
+    const saldoTarjeta = Math.max(0, total - m1);
+    conRecargo = m1 + saldoTarjeta * (1 + rcM / 100);
+  } else {
+    conRecargo = total * (1 + recargoVal / 100);
+  }
   const isEfectivo = payMethod.toLowerCase() === 'efectivo';
   const received = parseFloat(document.getElementById('cashReceived').value) || 0;
 
@@ -3069,6 +3201,7 @@ function imprimirTicket(){
 function nuevaVenta(){
   document.getElementById('exitoOverlay').classList.remove('open');
   clearCart();
+  setComprobante('venta');
 }
 
 /* ══════════════════════════════════════════════════════
