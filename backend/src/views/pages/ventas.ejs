@@ -260,10 +260,12 @@
     width:100%;padding:10px 11px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-body);
     color:var(--text-primary);font-family:var(--font-body);font-size:14px;outline:none;box-sizing:border-box;
   }
-  .mixto-method input { font-family:var(--font-mono);font-weight:700; }
+  .mixto-method input { font-family:var(--font-mono);font-weight:800;font-size:22px;padding:12px 14px;letter-spacing:0.5px; }
   .mixto-method input:focus,
   .mixto-method select:focus { border-color:var(--color-action); }
-  .mixto-resto { font-size:14px;font-weight:700;color:#10b981;text-align:left;padding:2px 0 0; }
+  .mixto-method select { font-size:15px;font-weight:700;padding:12px 11px; }
+  .mixto-method label { font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:6px; }
+  .mixto-resto { font-size:15px;font-weight:700;color:#10b981;text-align:left;padding:4px 0 0; }
   .mixto-resto.negativo { color:#ef4444; }
 
   .cart-footer { flex-shrink:0;border-top:1px solid var(--border-color);background:var(--bg-body);padding:8px 12px;display:flex;flex-direction:column;gap:6px; }
@@ -1461,7 +1463,7 @@
           <div class="mixto-row" id="mixtoRow">
             <div class="mixto-method">
               <label id="mixtoLabel1">Monto en <span id="mixtoMetodo1Nombre">Efectivo</span></label>
-              <input type="number" id="mixtoMonto1" placeholder="0,00" min="0" step="0.01" oninput="calcMixto()">
+              <input type="text" id="mixtoMonto1" placeholder="0" min="0" inputmode="numeric" oninput="fmtMixtoInput(this);calcMixto()">
             </div>
             <div class="mixto-method">
               <label id="mixtoLabel2">Segundo medio</label>
@@ -1469,7 +1471,7 @@
             </div>
             <div class="mixto-method" style="min-width:100%;">
               <label>Monto restante</label>
-              <input type="number" id="mixtoMonto2" placeholder="0,00" min="0" step="0.01" disabled style="opacity:.65">
+              <input type="text" id="mixtoMonto2" placeholder="0" disabled style="opacity:.85;font-family:var(--font-mono);font-size:22px;font-weight:800;padding:12px 14px;">
             </div>
             <div class="mixto-resto" id="mixtoResto" style="width:100%"></div>
           </div>
@@ -2492,16 +2494,36 @@ function _getRecargoMixto2() {
   return metodo2 ? (metodo2.recargo_cliente_pct || 0) : 0;
 }
 
+function fmtMixtoInput(inp){
+  let raw = inp.value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  if(!raw){ inp.value=''; return; }
+  inp.value = Number(raw).toLocaleString('es-AR');
+  inp._rawVal = raw;
+}
+function getMixtoVal(inp){
+  if(!inp) return 0;
+  // Si tiene _rawVal (fue formateado por fmtMixtoInput) → usar directo
+  if(inp._rawVal !== undefined) return parseFloat(inp._rawVal)||0;
+  // Si el valor tiene punto decimal (ej: "2400.00" de toFixed) → parsear directo
+  const v = inp.value || '';
+  if(/^[0-9]+\.[0-9]+$/.test(v)) return parseFloat(v)||0;
+  // Si tiene puntos de miles (ej: "2.400") → remover puntos
+  const raw = v.replace(/\./g,'').replace(/,/g,'.').replace(/[^0-9.]/g,'');
+  return parseFloat(raw)||0;
+}
+
 function calcMixto(){
   const {total}=getBaseTotal();
-  const m1=parseFloat(document.getElementById('mixtoMonto1').value)||0;
+  const m1=getMixtoVal(document.getElementById('mixtoMonto1'));
   const rcMixto = _getRecargoMixto2();
   // El recargo se aplica solo al monto que paga con el segundo medio
   const saldoSinRecargo = total - m1;
   const m2ConRecargo = saldoSinRecargo > 0 ? parseFloat((saldoSinRecargo * (1 + rcMixto/100)).toFixed(2)) : 0;
   const restoEl=document.getElementById('mixtoResto');
   const m2Input=document.getElementById('mixtoMonto2');
-  m2Input.value=m2ConRecargo>0?m2ConRecargo.toFixed(2):'0.00';
+  // Guardar valor numérico exacto en _rawVal para que getMixtoVal lo lea bien
+  m2Input._rawVal = m2ConRecargo > 0 ? String(m2ConRecargo) : '0';
+  m2Input.value = m2ConRecargo > 0 ? Number(m2ConRecargo.toFixed(0)).toLocaleString('es-AR') : '0';
   m2Input.disabled=false;
   m2Input.style.opacity='1';
   if(saldoSinRecargo<-0.01){
@@ -2515,6 +2537,7 @@ function calcMixto(){
     restoEl.textContent=`${fmt(saldoSinRecargo)}${rcMixto>0?' + recargo '+fmt(recargoAplicado)+' = '+fmt(m2ConRecargo):''}`;
     restoEl.className='mixto-resto';
   }
+  updateCobroTotals();
 }
 
 function updateCobroTotals(){
@@ -2523,7 +2546,7 @@ function updateCobroTotals(){
   if(disc>0) infoText.push(`Descuento: -${fmt(disc)}`);
   if(mixtoActivo){
     const rcM = typeof _getRecargoMixto2 === 'function' ? _getRecargoMixto2() : recargoVal;
-    const m1=parseFloat(document.getElementById('mixtoMonto1')?.value)||0;
+    const m1=getMixtoVal(document.getElementById('mixtoMonto1'));
     const saldoTarjeta=Math.max(0,total-m1);
     const recargoSoloTarjeta=saldoTarjeta*rcM/100;
     totalMostrar=m1+(saldoTarjeta*(1+rcM/100));
@@ -2749,7 +2772,7 @@ async function confirmSale() {
   let conRecargo;
   if(mixtoActivo){
     const rcM = typeof _getRecargoMixto2 === 'function' ? _getRecargoMixto2() : recargoVal;
-    const m1 = parseFloat(document.getElementById('mixtoMonto1')?.value) || 0;
+    const m1 = getMixtoVal(document.getElementById('mixtoMonto1'));
     const saldoTarjeta = Math.max(0, total - m1);
     conRecargo = m1 + saldoTarjeta * (1 + rcM / 100);
   } else {
@@ -2765,8 +2788,8 @@ async function confirmSale() {
   }
 
   if (mixtoActivo) {
-    const m1 = parseFloat(document.getElementById('mixtoMonto1').value) || 0;
-    const m2 = parseFloat(document.getElementById('mixtoMonto2').value) || 0;
+    const m1 = getMixtoVal(document.getElementById('mixtoMonto1'));
+    const m2 = getMixtoVal(document.getElementById('mixtoMonto2'));
 
     if (m1 <= 0) {
       showToast('Ingresá el monto del primer método', 'warn');
@@ -2793,8 +2816,8 @@ async function confirmSale() {
   let montoMixto2 = null;
 
   if (mixtoActivo) {
-    const m1  = parseFloat(document.getElementById('mixtoMonto1').value) || 0;
-    const m2  = parseFloat(document.getElementById('mixtoMonto2').value) || 0;
+    const m1  = getMixtoVal(document.getElementById('mixtoMonto1'));
+    const m2  = getMixtoVal(document.getElementById('mixtoMonto2'));
     const m2v = document.getElementById('mixtoMetodo2').value;
 
     paymentMethod = `${payMethod} + ${m2v}`;

@@ -604,7 +604,7 @@ router.get('/historial.xlsx', (req, res) => {
     // ══════════════════════════════════════════════
     // HOJA 1 — Detalle completo por ítem
     // ══════════════════════════════════════════════
-    const h1 = [['Venta N°','Fecha','Hora','Método de pago','Cliente','Estado',
+    const h1 = [['Venta N°','Fecha','Hora','Método de pago','1° Método','Monto 1°','2° Método','Monto 2°','Cliente','Estado',
       'SKU','Producto','Categoría','Lista de precios',
       'Precio unitario','Precio costo','Margen %','Cantidad','Subtotal','Total venta']];
 
@@ -626,7 +626,12 @@ router.get('/historial.xlsx', (req, res) => {
       `, [v.id]);
 
       if (!items.length) {
-        h1.push([v.id, fecha, hora, v.payment_method, cliente, v.status,
+        const esMixtoXls = v.payment_method && v.payment_method.includes(' + ');
+        const mXls = esMixtoXls ? v.payment_method.split(' + ') : [v.payment_method, ''];
+        h1.push([v.id, fecha, hora, v.payment_method,
+          mXls[0]||'', esMixtoXls ? peso(v.cash_received||0) : '',
+          mXls[1]||'', esMixtoXls ? peso(v.monto_mixto2||0) : '',
+          cliente, v.status,
           '—','—','—','—', 0,0,0,0,0, peso(v.total)]);
         return;
       }
@@ -643,11 +648,17 @@ router.get('/historial.xlsx', (req, res) => {
         if (it.p_mayorista && Math.abs(pv - fmt(it.p_mayorista)) < 0.01) lista = 'Mayorista';
         else if (it.p_tarjeta && Math.abs(pv - fmt(it.p_tarjeta)) < 0.01) lista = 'Tarjeta';
 
+        const _esMxIt = v.payment_method && v.payment_method.includes(' + ');
+        const _mxIt = _esMxIt ? v.payment_method.split(' + ') : [v.payment_method,''];
         h1.push([
           idx === 0 ? v.id        : '',
           idx === 0 ? fecha       : '',
           idx === 0 ? hora        : '',
           idx === 0 ? v.payment_method : '',
+          idx === 0 ? (_mxIt[0]||'') : '',
+          idx === 0 ? (_esMxIt ? peso(v.cash_received||0) : '') : '',
+          idx === 0 ? (_mxIt[1]||'') : '',
+          idx === 0 ? (_esMxIt ? peso(v.monto_mixto2||0) : '') : '',
           idx === 0 ? cliente     : '',
           idx === 0 ? v.status    : '',
           it.sku    || '—',
@@ -666,7 +677,7 @@ router.get('/historial.xlsx', (req, res) => {
 
     const ws1 = XLSX.utils.aoa_to_sheet(h1);
     ws1['!cols'] = [
-      {wch:9},{wch:12},{wch:7},{wch:18},{wch:20},{wch:12},
+      {wch:9},{wch:12},{wch:7},{wch:22},{wch:16},{wch:12},{wch:16},{wch:12},{wch:20},{wch:12},
       {wch:16},{wch:32},{wch:18},{wch:14},
       {wch:14},{wch:13},{wch:10},{wch:10},{wch:12},{wch:13}
     ];
