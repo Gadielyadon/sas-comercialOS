@@ -443,6 +443,33 @@ function togglePesable(cb) {
 function toggleVentaSinStock(cb) {
   document.getElementById('m_vss_track').style.background = cb.checked ? '#f59e0b' : 'var(--border-color)';
   document.getElementById('m_vss_thumb').style.transform  = cb.checked ? 'translateX(20px)' : 'translateX(0)';
+  // Mostrar selector Hay/No hay solo cuando está activado y no es pesable
+  const esPesable = document.getElementById('m_pesable').checked;
+  const haySelector = document.getElementById('m_hay_selector');
+  if (haySelector) haySelector.style.display = (cb.checked && !esPesable) ? 'block' : 'none';
+}
+function setHayModal(val) {
+  // Guardar valor en variable global (los botones pueden no estar en el DOM todavía)
+  window._hayModalVal = val;
+  // Guardar también en hidden input si existe
+  let inp = document.getElementById('m_hay_val');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'hidden'; inp.id = 'm_hay_val';
+    document.body.appendChild(inp);
+  }
+  inp.value = val;
+  // Actualizar visual solo si los botones existen
+  const btnSi = document.getElementById('m_hay_btn_si');
+  const btnNo = document.getElementById('m_hay_btn_no');
+  if (!btnSi || !btnNo) return;
+  if (val == 1) {
+    btnSi.style.background = 'rgba(16,185,129,.2)'; btnSi.style.borderColor = '#10b981'; btnSi.style.color = '#059669';
+    btnNo.style.background = 'transparent'; btnNo.style.borderColor = 'var(--border-color)'; btnNo.style.color = 'var(--text-secondary)';
+  } else {
+    btnNo.style.background = 'rgba(239,68,68,.1)'; btnNo.style.borderColor = '#ef4444'; btnNo.style.color = '#ef4444';
+    btnSi.style.background = 'transparent'; btnSi.style.borderColor = 'var(--border-color)'; btnSi.style.color = 'var(--text-secondary)';
+  }
 }
 function toggleMayorista(cb) {
   const fields = document.getElementById('mayoristaFields');
@@ -535,6 +562,7 @@ function abrirModal(prefillSku = '') {
   togglePesable(document.getElementById('m_pesable'));
   document.getElementById('m_venta_sin_stock').checked = false;
   toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
+  setTimeout(() => setHayModal(window._hayModalVal != null ? window._hayModalVal : 1), 0);
   document.getElementById('m_preview').style.display = 'none';
   document.getElementById('m_mayorista_check').checked = false;
   toggleMayorista(document.getElementById('m_mayorista_check'));
@@ -576,6 +604,10 @@ function abrirEditar(p) {
   togglePesable(document.getElementById('m_pesable'));
   document.getElementById('m_venta_sin_stock').checked = Boolean(p.venta_sin_stock);
   toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
+  // Cargar hay
+  const hayActual = (p.hay == null || p.hay == 1) ? 1 : 0;
+  window._hayModalVal = hayActual;
+  setTimeout(() => setHayModal(hayActual), 0);
   const tieneMayorista = !!(p.price_mayorista && p.qty_mayorista);
   document.getElementById('m_mayorista_check').checked = tieneMayorista;
   toggleMayorista(document.getElementById('m_mayorista_check'));
@@ -620,13 +652,13 @@ async function guardarProducto() {
   try {
     let saved;
     if (_editSku) {
-      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta }) });
+      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error editando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       const idx = _allProducts.findIndex(p => p.sku === _editSku);
       if (idx !== -1) _allProducts[idx] = saved; else _allProducts.push(saved);
     } else {
-      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta }) });
+      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error creando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       _allProducts.push(saved);

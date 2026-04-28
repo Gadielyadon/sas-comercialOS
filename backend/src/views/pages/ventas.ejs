@@ -2016,10 +2016,13 @@ function renderGrid(products){
       : tienePrecioEspecial
         ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size:8px;">${lista.label}</span>`
         : '';
-    const stock=Number(p.stock??0),sinStock=stock<=0 && !p.venta_sin_stock;
+    const stock=Number(p.stock??0);
+    const esLibre = p.pesable || p.venta_sin_stock;
+    const hayDisponible = (p.hay == null || p.hay == 1);
+    const sinStock = esLibre ? !hayDisponible : stock<=0;
     const inCart=cart.find(i=>i.sku===p.sku);
-    const stockCls=stock<=0?'zero':stock<=5?'low':'ok';
-    const stockTxt=stock<=0?'0':String(stock);
+    const stockCls = esLibre ? (hayDisponible?'ok':'zero') : (stock<=0?'zero':stock<=5?'low':'ok');
+    const stockTxt = esLibre ? (hayDisponible?'Hay':'No hay') : (stock<=0?'0':String(stock));
     const skuSafe=p.sku.replace(/'/g,"\\'");
     const nameSafe=p.name.replace(/"/g,'&quot;');
     const imgSafe=p.imagen?p.imagen.replace(/"/g,'&quot;'):'';
@@ -2502,13 +2505,7 @@ function fmtMixtoInput(inp){
 }
 function getMixtoVal(inp){
   if(!inp) return 0;
-  // Si tiene _rawVal (fue formateado por fmtMixtoInput) → usar directo
-  if(inp._rawVal !== undefined) return parseFloat(inp._rawVal)||0;
-  // Si el valor tiene punto decimal (ej: "2400.00" de toFixed) → parsear directo
-  const v = inp.value || '';
-  if(/^[0-9]+\.[0-9]+$/.test(v)) return parseFloat(v)||0;
-  // Si tiene puntos de miles (ej: "2.400") → remover puntos
-  const raw = v.replace(/\./g,'').replace(/,/g,'.').replace(/[^0-9.]/g,'');
+  const raw = (inp._rawVal || inp.value.replace(/\./g,'').replace(/,/g,'.')).replace(/[^0-9.]/g,'');
   return parseFloat(raw)||0;
 }
 
@@ -2521,9 +2518,7 @@ function calcMixto(){
   const m2ConRecargo = saldoSinRecargo > 0 ? parseFloat((saldoSinRecargo * (1 + rcMixto/100)).toFixed(2)) : 0;
   const restoEl=document.getElementById('mixtoResto');
   const m2Input=document.getElementById('mixtoMonto2');
-  // Guardar valor numérico exacto en _rawVal para que getMixtoVal lo lea bien
-  m2Input._rawVal = m2ConRecargo > 0 ? String(m2ConRecargo) : '0';
-  m2Input.value = m2ConRecargo > 0 ? Number(m2ConRecargo.toFixed(0)).toLocaleString('es-AR') : '0';
+  m2Input.value=m2ConRecargo>0?m2ConRecargo.toFixed(2):'0.00';
   m2Input.disabled=false;
   m2Input.style.opacity='1';
   if(saldoSinRecargo<-0.01){

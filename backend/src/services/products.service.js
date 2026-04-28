@@ -119,7 +119,7 @@ function create({
   price_cost = null, margen = null,
   price_promo = null, en_promo = 0,
   imagen = null, price_mayorista = null,
-  qty_mayorista = null, venta_sin_stock = 0,
+  qty_mayorista = null, venta_sin_stock = 0, hay = 1,
   price_tarjeta = null,
 }) {
   const suc = Number(sucursal_id || 1);
@@ -128,8 +128,8 @@ function create({
       sku, name, price, category, stock,
       iva, ieps, pesable, descripcion, sucursal_id,
       price_cost, margen, price_promo, en_promo, imagen,
-      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, hay
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       String(sku), String(name), toNumber(price),
       category || null, toNumber(stock),
@@ -140,6 +140,7 @@ function create({
       imagen || null,
       toNullableNumber(price_mayorista), toNullableNumber(qty_mayorista),
       toBoolInt(venta_sin_stock, 0), toNullableNumber(price_tarjeta),
+      hay !== undefined ? toBoolInt(hay, 1) : 1,
     ]
   );
   // Una sola findBySku al final — sin verificación previa
@@ -165,7 +166,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       price_promo = ?, en_promo = ?,
       sucursal_id = ?, imagen = ?,
       price_mayorista = ?, qty_mayorista = ?, venta_sin_stock = ?,
-      price_tarjeta = ?
+      price_tarjeta = ?, hay = ?
     WHERE sku = ? AND sucursal_id = ?`,
     [
       newSku,
@@ -187,6 +188,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       fields.qty_mayorista   !== undefined ? toNullableNumber(fields.qty_mayorista)   : p.qty_mayorista,
       fields.venta_sin_stock !== undefined ? toBoolInt(fields.venta_sin_stock, 0)     : toBoolInt(p.venta_sin_stock, 0),
       fields.price_tarjeta   !== undefined ? toNullableNumber(fields.price_tarjeta)   : p.price_tarjeta,
+      fields.hay             !== undefined ? toBoolInt(fields.hay, 1)                 : (p.hay != null ? toBoolInt(p.hay, 1) : 1),
       String(sku),
       p.sucursal_id || 1,
     ]
