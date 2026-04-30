@@ -1192,6 +1192,7 @@
       <!-- IZQUIERDA -->
       <div class="pos-left">
         <div class="pos-topbar">
+          
           <div class="scan-zone" id="scanZone">
             <span class="scan-dot" id="scanDot"></span>
             <i class="bi bi-upc-scan scan-icon"></i>
@@ -1203,6 +1204,13 @@
             <div class="sc-chip chip-deptos" id="chipDeptos" onclick="toggleDeptosChip(this)" title="F5 — Departamentos">
               <kbd>F5</kbd> Departamentos
             </div>
+            <% if (typeof sucursal !== 'undefined' && sucursal && sucursal.nombre && sucursal.nombre !== 'Casa Central') { %>
+            <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+              color:var(--color-primary);background:rgba(27,79,216,.08);border:1.5px solid rgba(27,79,216,.25);
+              border-radius:8px;padding:5px 10px;white-space:nowrap;flex-shrink:0;">
+              <i class="bi bi-shop"></i> <%- sucursal.nombre %>
+            </div>
+            <% } %>
             <!-- Selector lista de precio — desplegable simple -->
             <div style="position:relative;flex-shrink:0;" id="listaWrap">
               <button id="btnLista" onclick="toggleDropLista()" title="F6 — Lista de precio"
@@ -1561,6 +1569,15 @@
           <i class="bi bi-check-circle-fill"></i>
           <span id="btnCobrarTxt">Cobrar $0,00</span>
         </button>
+
+        <% if (config && String(config.mp_habilitado) === '1') { %>
+        <button class="btn-cobrar" id="btnMPPoint" onclick="cobrarConMPPoint()"
+          style="background:linear-gradient(135deg,#009ee3,#007eb5);margin-top:8px;font-size:16px;box-shadow:0 6px 18px rgba(0,158,227,.3);">
+          <i class="bi bi-phone"></i>
+          <span>Cobrar con Point</span>
+        </button>
+        <% } %>
+
         <div class="cobro-help">Flechas para moverte entre medios de pago · Enter para seleccionar · F10 para cobrar</div>
       </div>
 
@@ -1757,6 +1774,14 @@ let pmFocusIdx = 0;
 // ⚖️  SOPORTE BALANZA EAN-13
 // Lee la configuración inyectada por EJS desde /api/config
 // ══════════════════════════════════════════════════════════
+// Sucursal activa inyectada por el servidor
+const SUCURSAL_ID     = <%- sucursal_id || 1 %>;
+const SUCURSAL_NOMBRE = '<%- (sucursal && sucursal.nombre) ? sucursal.nombre.replace(/'/g, "\'") : "Casa Central" %>';
+
+const MP_CFG = {
+  habilitado: String('<%- (config && config.mp_habilitado) ? config.mp_habilitado : "0" %>') === '1',
+};
+
 const BALANZA_CFG = {
   habilitada : <%- String(config && config.balanza_habilitada  ? config.balanza_habilitada  : '0') %> === 1
                || String(<%- JSON.stringify(config && config.balanza_habilitada  ? config.balanza_habilitada  : '0') %>) === '1',
@@ -1819,7 +1844,7 @@ async function loadCatalog(){
       + '</div>';
   }
   try {
-    const r = await fetch('/api/products');
+    const r = await fetch(`/api/products?sucursal_id=${SUCURSAL_ID}`);
     allProducts = r.ok ? await r.json() : [];
   } catch(e) {
     allProducts = [];
@@ -2831,6 +2856,7 @@ async function confirmSale() {
     recargo_pct: recargoVal,
     cliente_id: clienteId || null,
     es_cuenta_corriente: isCuentaCorriente ? 1 : 0,
+    sucursal_id: SUCURSAL_ID,
     items: cart.map(i => ({
       sku: i.sku,
       name: i.name,
@@ -4170,5 +4196,163 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter')      { e.preventDefault(); numpadOk(); }
   }
 }, true);
+</script>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL MERCADO PAGO POINT                                  -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<style>
+  .mp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  .mp-overlay.open{display:flex;}
+  .mp-modal{background:var(--bg-card);border-radius:22px;width:min(380px,94vw);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:modalIn .2s ease;}
+  .mp-header{background:linear-gradient(135deg,#009ee3,#007eb5);padding:20px 22px 18px;display:flex;align-items:center;gap:14px;}
+  .mp-header-icon{width:48px;height:48px;background:rgba(255,255,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex-shrink:0;}
+  .mp-header-txt h3{font-size:17px;font-weight:800;color:#fff;margin:0 0 3px;}
+  .mp-header-txt p{font-size:12px;color:rgba(255,255,255,.85);margin:0;}
+  .mp-body{padding:22px;}
+  .mp-amount{text-align:center;margin-bottom:20px;}
+  .mp-amount-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:6px;}
+  .mp-amount-val{font-size:42px;font-weight:900;font-family:var(--font-mono);color:var(--text-primary);letter-spacing:-2px;}
+  .mp-status-box{background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:14px;padding:20px;text-align:center;margin-bottom:18px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+  .mp-status-icon{font-size:36px;}
+  .mp-status-txt{font-size:14px;font-weight:700;color:var(--text-primary);}
+  .mp-status-sub{font-size:12px;color:var(--text-secondary);}
+  .mp-spinner{width:36px;height:36px;border:3px solid rgba(0,158,227,.2);border-top-color:#009ee3;border-radius:50%;animation:spin .8s linear infinite;}
+  .mp-btn-cancel{width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .mp-btn-cancel:hover{border-color:#ef4444;color:#ef4444;}
+</style>
+
+<div class="mp-overlay" id="mpOverlay">
+  <div class="mp-modal">
+    <div class="mp-header">
+      <div class="mp-header-icon"><i class="bi bi-phone"></i></div>
+      <div class="mp-header-txt">
+        <h3>Mercado Pago Point</h3>
+        <p>Presentá el dispositivo al cliente</p>
+      </div>
+    </div>
+    <div class="mp-body">
+      <div class="mp-amount">
+        <div class="mp-amount-lbl">Total a cobrar</div>
+        <div class="mp-amount-val" id="mpModalAmt">$0,00</div>
+      </div>
+      <div class="mp-status-box" id="mpStatusBox">
+        <div class="mp-spinner"></div>
+        <div class="mp-status-txt" id="mpStatusTxt">Enviando al Point…</div>
+        <div class="mp-status-sub" id="mpStatusSub">El monto aparecerá en el dispositivo automáticamente</div>
+      </div>
+      <button class="mp-btn-cancel" id="mpBtnCancel" onclick="cancelarMPPoint()">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════════
+// MERCADO PAGO POINT — POS
+// ══════════════════════════════════════════════════════════
+let _mpIntentId  = null;
+let _mpPolling   = null;
+let _mpCancelled = false;
+
+async function cobrarConMPPoint() {
+  if (!cart.length) return;
+  const { total } = getBaseTotal();
+  const conRecargo = total * (1 + recargoVal / 100);
+
+  _mpCancelled = false;
+  _mpIntentId  = null;
+  document.getElementById('mpModalAmt').textContent = fmt(conRecargo);
+  _mpSetStatus('spinner', 'Enviando al Point…', 'El monto aparecerá en el dispositivo automáticamente');
+  const cancelBtn = document.getElementById('mpBtnCancel');
+  if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.textContent = ''; cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar'; }
+  document.getElementById('mpOverlay').classList.add('open');
+
+  try {
+    const r = await fetch('/api/mp/cobrar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        monto:              conRecargo,
+        descripcion:        'Venta ' + cart.map(i=>i.name).join(', ').slice(0,60),
+        external_reference: 'axsoft-' + Date.now()
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error al crear intent');
+
+    _mpIntentId = d.intent_id;
+    _mpSetStatus('spinner', 'Esperando pago…', 'El cliente debe presentar su tarjeta en el Point');
+    _mpStartPolling();
+  } catch(e) {
+    _mpSetStatus('error', 'Error al conectar', e.message);
+    if (cancelBtn) cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
+  }
+}
+
+function _mpSetStatus(type, txt, sub) {
+  const box = document.getElementById('mpStatusBox');
+  const icons = { ok:'✅', error:'❌', rejected:'🚫' };
+  if (type === 'spinner') {
+    box.innerHTML = `<div class="mp-spinner"></div><div class="mp-status-txt">${txt}</div><div class="mp-status-sub">${sub||''}</div>`;
+  } else {
+    box.innerHTML = `<div class="mp-status-icon">${icons[type]||''}</div><div class="mp-status-txt">${txt}</div><div class="mp-status-sub">${sub||''}</div>`;
+  }
+}
+
+function _mpStartPolling() {
+  if (_mpPolling) clearInterval(_mpPolling);
+  let attempts = 0;
+  _mpPolling = setInterval(async () => {
+    if (_mpCancelled || !_mpIntentId) { clearInterval(_mpPolling); return; }
+    if (++attempts > 90) {
+      clearInterval(_mpPolling);
+      _mpSetStatus('error', 'Tiempo agotado', 'El pago no se completó en 3 minutos');
+      const btn = document.getElementById('mpBtnCancel');
+      if (btn) btn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
+      return;
+    }
+    try {
+      const r = await fetch(`/api/mp/estado/${_mpIntentId}`);
+      const d = await r.json();
+      if (d.state === 'FINISHED' && d.status === 'approved') {
+        clearInterval(_mpPolling);
+        _mpSetStatus('ok', '¡Pago aprobado!', `Payment ID: ${d.payment_id||'-'}`);
+        const btn = document.getElementById('mpBtnCancel');
+        if (btn) btn.style.display = 'none';
+        // Registrar venta como MP
+        payMethod = 'Mercado Pago';
+        setTimeout(() => {
+          document.getElementById('mpOverlay').classList.remove('open');
+          confirmSale();
+        }, 1500);
+      } else if (d.state === 'FINISHED' || d.state === 'CANCELED' || d.state === 'ERROR') {
+        clearInterval(_mpPolling);
+        const tipo = d.status !== 'approved' ? 'rejected' : 'error';
+        _mpSetStatus(tipo, d.state === 'CANCELED' ? 'Pago cancelado' : `Pago ${d.status||'fallido'}`, '');
+        const btn = document.getElementById('mpBtnCancel');
+        if (btn) btn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
+      }
+    } catch(e) { /* error de red, seguir intentando */ }
+  }, 2000);
+}
+
+async function cancelarMPPoint() {
+  _mpCancelled = true;
+  if (_mpPolling) clearInterval(_mpPolling);
+  if (_mpIntentId) {
+    try { await fetch(`/api/mp/cancelar/${_mpIntentId}`, { method: 'DELETE' }); } catch(e) {}
+    _mpIntentId = null;
+  }
+  document.getElementById('mpOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('mpOverlay')?.classList.contains('open')) {
+    cancelarMPPoint();
+  }
+});
 </script>
 

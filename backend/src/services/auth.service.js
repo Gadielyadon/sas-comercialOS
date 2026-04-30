@@ -27,8 +27,9 @@ function initUsersTable() {
     )
   `);
 
-  // Migración: agregar columna permisos si no existe
-  try { run(`ALTER TABLE users ADD COLUMN permisos TEXT DEFAULT NULL`); } catch(e) {}
+  // Migraciones
+  try { run(`ALTER TABLE users ADD COLUMN permisos    TEXT    DEFAULT NULL`); } catch(e) {}
+  try { run(`ALTER TABLE users ADD COLUMN sucursal_id INTEGER DEFAULT 1`);   } catch(e) {}
 
   // Insertar admin inicial solo si no existe ningún usuario
   const existe = get('SELECT id FROM users LIMIT 1');
@@ -69,44 +70,47 @@ function login(username, password) {
 
 /* ── CRUD usuarios ── */
 function listUsers() {
-  return all('SELECT id, username, nombre, role, activo, permisos, created_at FROM users ORDER BY id');
+  return all('SELECT id, username, nombre, role, activo, permisos, sucursal_id, created_at FROM users ORDER BY id');
 }
 
 function findById(id) {
-  return get('SELECT id, username, nombre, role, activo, permisos FROM users WHERE id = ?', [id]);
+  return get('SELECT id, username, nombre, role, activo, permisos, sucursal_id FROM users WHERE id = ?', [id]);
 }
 
-function createUser({ username, password, nombre, role, permisos }) {
+function createUser({ username, password, nombre, role, permisos, sucursal_id }) {
   const existing = get('SELECT id FROM users WHERE username = ?', [username.trim().toLowerCase()]);
   if (existing) throw new Error('El nombre de usuario ya existe');
   const hash = bcrypt.hashSync(password, SALT_ROUNDS);
-  // permisos solo aplica a empleados
   const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
     ? JSON.stringify(permisos)
     : null;
+  const sucId = sucursal_id ? Number(sucursal_id) : 1;
   const r = run(
-    'INSERT INTO users (username, password, nombre, role, permisos) VALUES (?, ?, ?, ?, ?)',
-    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON]
+    'INSERT INTO users (username, password, nombre, role, permisos, sucursal_id) VALUES (?, ?, ?, ?, ?, ?)',
+    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON, sucId]
   );
   return findById(r.lastInsertRowid);
 }
 
-function updateUser(id, { nombre, role, activo, permisos }) {
+function updateUser(id, { nombre, role, activo, permisos, sucursal_id }) {
   const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
     ? JSON.stringify(permisos)
     : (role === 'admin' ? null : undefined);
 
+  const sucId = sucursal_id !== undefined ? Number(sucursal_id) : null;
   run(
     `UPDATE users SET
-      nombre  = COALESCE(?, nombre),
-      role    = COALESCE(?, role),
-      activo  = COALESCE(?, activo),
+      nombre       = COALESCE(?, nombre),
+      role         = COALESCE(?, role),
+      activo       = COALESCE(?, activo),
+      sucursal_id  = COALESCE(?, sucursal_id),
       permisos = CASE WHEN ? IS NOT NULL THEN ? ELSE permisos END
     WHERE id = ?`,
     [
       nombre ?? null,
       role ?? null,
       activo ?? null,
+      sucId,
       permisosJSON !== undefined ? permisosJSON : null,
       permisosJSON !== undefined ? permisosJSON : null,
       id

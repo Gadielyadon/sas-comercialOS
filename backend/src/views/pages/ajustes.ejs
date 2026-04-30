@@ -575,6 +575,104 @@
         </div>
       </div>
 
+      <!-- ══ MERCADO PAGO POINT ══ -->
+      <div class="aj-section">
+        <div class="aj-section-header">
+          <div class="aj-section-icon" style="background:linear-gradient(135deg,#009ee3,#007eb5);">
+            <i class="bi bi-phone"></i>
+          </div>
+          <div>
+            <div class="aj-section-title">Mercado Pago Point</div>
+            <div class="aj-section-desc">Integración con el dispositivo Point para cobrar automáticamente desde el POS.</div>
+          </div>
+        </div>
+        <div class="aj-section-body">
+
+          <!-- Estado: bloqueado hasta ingresar PIN -->
+          <div id="mpLocked" style="text-align:center;padding:10px 0 6px;">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
+              <i class="bi bi-lock-fill" style="color:#009ee3;margin-right:6px;"></i>
+              Esta sección requiere autorización para configurar.
+            </div>
+            <button onclick="abrirPinMP()" type="button"
+              style="padding:10px 22px;border-radius:10px;border:1.5px solid rgba(0,158,227,.4);background:rgba(0,158,227,.07);color:#007eb5;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:8px;transition:all .15s;"
+              onmouseover="this.style.background='rgba(0,158,227,.14)'" onmouseout="this.style.background='rgba(0,158,227,.07)'">
+              <i class="bi bi-key"></i> Ingresar PIN para configurar
+            </button>
+          </div>
+
+          <!-- Configuración — se muestra al desbloquear -->
+          <div id="mpUnlocked" style="display:none;">
+            <div class="aj-grid aj-grid-2" style="align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:14px;">
+
+                <!-- Toggle habilitar -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
+                  <div>
+                    <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);">Activar MP Point en el POS</div>
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">Aparecerá el botón "Cobrar con Point" en el cobro</div>
+                  </div>
+                  <label class="pm-toggle" style="flex-shrink:0;">
+                    <input type="checkbox" id="mp_habilitado">
+                    <span class="pm-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Token -->
+                <div class="aj-field">
+                  <label>Access Token de Mercado Pago</label>
+                  <input type="password" id="mp_access_token" placeholder="TEST-... o APP_USR-..."
+                    style="font-family:var(--font-mono);font-size:12px;">
+                  <div class="field-hint">Lo encontrás en <strong>developers.mercadopago.com</strong> → Tu app → Credenciales.</div>
+                </div>
+
+                <!-- Device ID -->
+                <div class="aj-field">
+                  <label>Device ID del Point</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="mp_device_id" placeholder="PAX_A910__SMARTPOS..."
+                      style="font-family:var(--font-mono);font-size:12px;flex:1;">
+                    <button onclick="buscarDevicesMP()" type="button"
+                      style="padding:9px 14px;border-radius:8px;border:1.5px solid rgba(0,158,227,.4);background:rgba(0,158,227,.07);color:#007eb5;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);flex-shrink:0;">
+                      <i class="bi bi-search"></i> Buscar
+                    </button>
+                  </div>
+                  <div id="mpDevicesList" style="margin-top:8px;"></div>
+                  <div class="field-hint">ID único de tu dispositivo Point. Usá "Buscar" luego de guardar el token.</div>
+                </div>
+
+                <!-- PIN de configuración -->
+                <div class="aj-field">
+                  <label>PIN de configuración <span style="font-size:10px;color:var(--text-muted);">(el que usás para desbloquear esta sección)</span></label>
+                  <input type="password" id="mp_config_pin" placeholder="••••••••"
+                    style="width:160px;">
+                  <div class="field-hint">Dejalo vacío para mantener el PIN actual.</div>
+                </div>
+
+              </div>
+
+              <!-- Info lateral -->
+              <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
+                <div style="font-size:12.5px;color:var(--text-primary);line-height:1.7;">
+                  Al cobrar con <strong>MP Point</strong>, el sistema envía el monto directamente al dispositivo.<br><br>
+                  <span style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;"><span style="color:#009ee3;font-weight:800;flex-shrink:0;">1.</span> El cajero toca "Cobrar con Point"</span>
+                  <span style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;"><span style="color:#009ee3;font-weight:800;flex-shrink:0;">2.</span> El monto aparece en el Point automáticamente</span>
+                  <span style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;"><span style="color:#009ee3;font-weight:800;flex-shrink:0;">3.</span> El cliente pasa su tarjeta</span>
+                  <span style="display:flex;align-items:flex-start;gap:8px;"><span style="color:#009ee3;font-weight:800;flex-shrink:0;">4.</span> La venta se registra sola al aprobarse</span>
+                  <br>
+                  <div style="background:rgba(0,158,227,.07);border:1px solid rgba(0,158,227,.2);border-radius:8px;padding:10px 12px;font-size:11.5px;color:#007eb5;margin-top:4px;">
+                    <i class="bi bi-info-circle" style="margin-right:5px;"></i>
+                    Compatible con <strong>Point Smart, Point Plus y Point Pro 2</strong>. No funciona con el lector mini azul.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- ══ APARIENCIA ══ -->
       <div class="aj-section">
         <div class="aj-section-header">
@@ -660,6 +758,19 @@
             <div><div style="font-size:13px;font-weight:700;">Empleado</div><div style="font-size:11px;color:var(--text-secondary);">Ventas y caja</div></div>
           </label>
         </div>
+      </div>
+
+      <!-- ── SUCURSAL ── -->
+      <div id="u_sucursal_wrap">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:6px;">
+          <i class="bi bi-shop" style="margin-right:4px;"></i>Sucursal
+        </label>
+        <select id="u_sucursal_id"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;font-family:var(--font-body);"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+          <option value="">Cargando...</option>
+        </select>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">El empleado solo verá los productos y ventas de esta sucursal.</div>
       </div>
 
       <!-- ── PERMISOS — solo visible cuando rol = empleado ── -->
@@ -833,6 +944,14 @@ async function cargarConfig() {
   const factChk = document.getElementById('facturacion_habilitada');
   if (factChk) factChk.checked = String(_config.facturacion_habilitada || '0') === '1';
 
+  // ── Mercado Pago Point ──
+  const mpChk = document.getElementById('mp_habilitado');
+  if (mpChk) mpChk.checked = String(_config.mp_habilitado || '0') === '1';
+  const mpToken = document.getElementById('mp_access_token');
+  if (mpToken) mpToken.value = _config.mp_access_token || '';
+  const mpDevice = document.getElementById('mp_device_id');
+  if (mpDevice) mpDevice.value = _config.mp_device_id || '';
+
   const balChk = document.getElementById('balanza_habilitada');
   if (balChk) balChk.checked = String(_config.balanza_habilitada || '0') === '1';
   const balModo = document.getElementById('balanza_modo');
@@ -920,6 +1039,10 @@ async function guardarAjustes() {
     ticket_footer:                document.getElementById('aj_footer').value.trim(),
     ticket_formato:               document.querySelector('input[name="aj_formato"]:checked')?.value || '58mm',
     facturacion_habilitada:       document.getElementById('facturacion_habilitada')?.checked ? '1' : '0',
+    mp_habilitado:    document.getElementById('mp_habilitado')?.checked ? '1' : '0',
+    mp_access_token:  document.getElementById('mp_access_token')?.value?.trim() || '',
+    mp_device_id:     document.getElementById('mp_device_id')?.value?.trim() || '',
+    mp_config_pin:    document.getElementById('mp_config_pin')?.value?.trim() || _config.mp_config_pin || '',
     balanza_habilitada:           document.getElementById('balanza_habilitada')?.checked ? '1' : '0',
     balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
     balanza_prefijo:              document.getElementById('balanza_prefijo')?.value || '2',
@@ -1101,16 +1224,19 @@ function showToast(msg, success=true) {
 let _uEditId = null;
 
 async function cargarUsuarios() {
+  // Precargar sucursales para la tabla
+  if (!_sucursalesCache.length) { try { const sr = await fetch('/api/sucursales'); _sucursalesCache = sr.ok ? await sr.json() : [{id:1,nombre:'Casa Central'}]; } catch(e) { _sucursalesCache = [{id:1,nombre:'Casa Central'}]; } }
   const res = await fetch('/api/users');
   if (!res.ok) return;
   const users = await res.json();
   const tbody = document.getElementById('usersTbody');
-  if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">Sin usuarios</td></tr>'; return; }
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">Sin usuarios</td></tr>'; return; }
   tbody.innerHTML = users.map(u => `
     <tr>
       <td class="sale-id">${u.username}</td>
       <td><strong>${u.nombre || '—'}</strong></td>
       <td>${u.role === 'admin' ? '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(27,79,216,.10);color:var(--color-primary);">Admin</span>' : '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;background:rgba(100,116,139,.08);color:#64748b;">Empleado</span>'}</td>
+      <td><span style="font-size:12px;color:var(--text-secondary);">${_getSucNombre(u.sucursal_id||1)}</span></td>
       <td>${u.activo ? '<span class="badge-status badge-pagado">Activo</span>' : '<span class="badge-status badge-anulado">Inactivo</span>'}</td>
       <td><div style="display:flex;gap:6px;">
         <button onclick="abrirEditarUsuario(${JSON.stringify(u).replace(/"/g,'&quot;')})" style="padding:4px 10px;border:1px solid rgba(27,79,216,.3);border-radius:6px;background:rgba(0,180,216,.06);color:var(--color-primary);font-size:12px;cursor:pointer;"><i class="bi bi-pencil"></i></button>
@@ -1184,7 +1310,7 @@ function toggleUPass() {
   document.getElementById('uPassEye').className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
 }
 
-function abrirModalUsuario() {
+async function abrirModalUsuario() {
   _uEditId = null;
   document.getElementById('uModalTitulo').textContent = 'Nuevo usuario';
   document.getElementById('uModalSub').textContent    = 'Completá los datos';
@@ -1198,10 +1324,11 @@ function abrirModalUsuario() {
   setRol('empleado');
   setPermisosActivos(['dashboard','ventas','historial','caja']);
   document.getElementById('modalUsuario').classList.add('open');
+  await cargarSucursalesEnSelect(1);
   setTimeout(() => document.getElementById('u_username').focus(), 80);
 }
 
-function abrirEditarUsuario(u) {
+async function abrirEditarUsuario(u) {
   _uEditId = u.id;
   document.getElementById('uModalTitulo').textContent = 'Editar usuario';
   document.getElementById('uModalSub').textContent    = '@' + u.username;
@@ -1219,6 +1346,7 @@ function abrirEditarUsuario(u) {
     setPermisosActivos(perms);
   }
   document.getElementById('modalUsuario').classList.add('open');
+  await cargarSucursalesEnSelect(u.sucursal_id || 1);
   setTimeout(() => document.getElementById('u_nombre').focus(), 80);
 }
 
@@ -1231,7 +1359,7 @@ async function guardarUsuario() {
   const permisos = role === 'empleado' ? getPermisosSeleccionados() : null;
 
   if (_uEditId) {
-    const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre, role, permisos}) });
+    const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre, role, permisos, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)}) });
     if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
     if (password) {
       const rp = await fetch(`/api/users/${_uEditId}/password`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password}) });
@@ -1241,7 +1369,7 @@ async function guardarUsuario() {
     const username = document.getElementById('u_username').value.trim();
     if (!username) { showToast('El nombre de usuario es obligatorio', false); return; }
     if (!password || password.length < 4) { showToast('La contraseña debe tener al menos 4 caracteres', false); return; }
-    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, nombre:nombre||username, role, password, permisos}) });
+    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, nombre:nombre||username, role, password, permisos, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)}) });
     if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
   }
   cerrarModalUsuario();
@@ -1385,5 +1513,160 @@ function actualizarBtnsTema(tema) {
 document.addEventListener('DOMContentLoaded', () => {
   const temaActual = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
   actualizarBtnsTema(temaActual);
+});
+
+// ── Sucursales en modal de usuario ──────────────────────────
+let _sucursalesCache = [];
+
+function _getSucNombre(id) {
+  const s = _sucursalesCache.find(s => s.id === Number(id));
+  return s ? s.nombre : (Number(id) === 1 ? 'Casa Central' : `Suc. ${id}`);
+}
+
+async function cargarSucursalesEnSelect(sucursalActual = 1) {
+  const sel = document.getElementById('u_sucursal_id');
+  if (!sel) return;
+
+  // Siempre recargar desde la API para tener datos frescos
+  try {
+    const r = await fetch('/api/sucursales');
+    if (r.ok) {
+      _sucursalesCache = await r.json();
+    } else {
+      _sucursalesCache = [{ id:1, nombre:'Casa Central', activa:1 }];
+    }
+  } catch(e) {
+    _sucursalesCache = [{ id:1, nombre:'Casa Central', activa:1 }];
+  }
+
+  const activas = _sucursalesCache.filter(s => s.activa !== 0);
+  sel.innerHTML = activas
+    .map(s => `<option value="${s.id}" ${Number(s.id) === Number(sucursalActual) ? 'selected' : ''}>${s.nombre}</option>`)
+    .join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MERCADO PAGO POINT — ajustes
+// ══════════════════════════════════════════════════════════
+
+// Modal PIN
+function abrirPinMP() {
+  // Crear overlay de PIN si no existe
+  let ov = document.getElementById('mpPinOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'mpPinOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+    ov.innerHTML = `
+      <div style="background:var(--bg-card);border-radius:18px;padding:28px;width:320px;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:modalIn .18s ease;">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="width:52px;height:52px;background:rgba(0,158,227,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#009ee3;margin:0 auto 12px;">
+            <i class="bi bi-key-fill"></i>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-primary);">PIN de configuración</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Ingresá el PIN para acceder a la configuración de Mercado Pago Point.</div>
+        </div>
+        <input type="password" id="mpPinInput" placeholder="••••••••"
+          style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:18px;font-weight:700;text-align:center;letter-spacing:4px;outline:none;font-family:var(--font-mono);box-sizing:border-box;margin-bottom:10px;"
+          onkeydown="if(event.key==='Enter')verificarPinMP()">
+        <div id="mpPinError" style="font-size:12px;color:#ef4444;text-align:center;min-height:18px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="cerrarPinMP()" type="button"
+            style="flex:1;padding:10px;border-radius:9px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            Cancelar
+          </button>
+          <button onclick="verificarPinMP()" type="button"
+            style="flex:1;padding:10px;border-radius:9px;border:none;background:#009ee3;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-unlock"></i> Desbloquear
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('mpPinInput')?.focus(), 80);
+}
+
+function cerrarPinMP() {
+  const ov = document.getElementById('mpPinOverlay');
+  if (ov) ov.style.display = 'none';
+}
+
+async function verificarPinMP() {
+  const pin = document.getElementById('mpPinInput')?.value || '';
+  const errEl = document.getElementById('mpPinError');
+  if (!pin) { if(errEl) errEl.textContent = 'Ingresá el PIN'; return; }
+
+  try {
+    const r = await fetch('/api/mp/verificar-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      cerrarPinMP();
+      document.getElementById('mpLocked').style.display   = 'none';
+      document.getElementById('mpUnlocked').style.display = 'block';
+      document.getElementById('mpPinInput').value = '';
+    } else {
+      if(errEl) errEl.textContent = '❌ PIN incorrecto';
+      document.getElementById('mpPinInput').value = '';
+      document.getElementById('mpPinInput').focus();
+    }
+  } catch(e) {
+    if(errEl) errEl.textContent = 'Error de conexión';
+  }
+}
+
+// Buscar dispositivos MP
+async function buscarDevicesMP() {
+  const listEl = document.getElementById('mpDevicesList');
+  if (!listEl) return;
+  listEl.innerHTML = '<span style="font-size:12px;color:var(--text-secondary);"><i class="bi bi-arrow-repeat" style="animation:spin .8s linear infinite;display:inline-block;margin-right:4px;"></i>Buscando dispositivos...</span>';
+
+  try {
+    // Guardar token primero
+    const token = document.getElementById('mp_access_token')?.value?.trim();
+    if (!token) { listEl.innerHTML = '<span style="font-size:12px;color:#f59e0b;">⚠ Guardá el Access Token primero.</span>'; return; }
+    await fetch('/api/config', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ mp_access_token: token }) });
+
+    const r = await fetch('/api/mp/devices');
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+
+    if (!d.devices?.length) {
+      listEl.innerHTML = '<span style="font-size:12px;color:#f59e0b;">No se encontraron dispositivos. Verificá que el Point esté encendido.</span>';
+      return;
+    }
+    listEl.innerHTML = d.devices.map(dev => `
+      <div onclick="seleccionarDevice('${dev.id}')"
+        style="padding:8px 12px;border-radius:8px;border:1.5px solid rgba(0,158,227,.25);background:rgba(0,158,227,.04);cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:space-between;transition:all .15s;"
+        onmouseover="this.style.borderColor='#009ee3';this.style.background='rgba(0,158,227,.1)'"
+        onmouseout="this.style.borderColor='rgba(0,158,227,.25)';this.style.background='rgba(0,158,227,.04)'">
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);">${dev.id}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">${dev.operating_mode||''} · ${dev.status||''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:#009ee3;">Seleccionar →</span>
+      </div>`).join('');
+  } catch(e) {
+    listEl.innerHTML = `<span style="font-size:12px;color:#ef4444;">Error: ${e.message}</span>`;
+  }
+}
+
+function seleccionarDevice(id) {
+  const inp = document.getElementById('mp_device_id');
+  if (inp) inp.value = id;
+  document.getElementById('mpDevicesList').innerHTML =
+    `<span style="font-size:12px;color:#10b981;">✓ Seleccionado: <strong>${id}</strong></span>`;
+}
+
+// Cerrar PIN con Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const ov = document.getElementById('mpPinOverlay');
+    if (ov && ov.style.display !== 'none') { cerrarPinMP(); e.stopPropagation(); }
+  }
 });
 </script>

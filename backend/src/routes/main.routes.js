@@ -165,13 +165,19 @@ router.get('/historial', requirePermiso('historial'), (req, res) => {
 // ── Inventario ────────────────────────────────────────────────
 router.get('/inventario', requirePermiso('inventario'), (req, res) => {
   const user        = req.session?.user || { name: 'Admin' };
-  const sucursal_id = res.locals?.sucursal_filtro ?? null;
+  // sucursal_id: la sucursal activa del usuario (siempre un número)
+  // sucursal_filtro: null si el admin ve todo, número si eligió una sucursal
+  // Para inventario usamos siempre la sucursal activa (sucursal_id)
+  const sucursal_id = res.locals.sucursal_id || 1;
   let products = [];
   try       { products = productsService.list(sucursal_id); }
   catch(e)  { products = productsService.list(); }
   res.render('pages/inventario', {
     title: 'Inventario', user, active: 'inventario', module: 'Inventario',
-    empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'), products
+    empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'), products,
+    sucursal_id,
+    sucursal:     res.locals.sucursal        || { id: 1, nombre: 'Casa Central' },
+    sucursales:   res.locals.sucursales_lista || [],
   });
 });
 
@@ -183,6 +189,8 @@ router.get('/ventas', requirePermiso('ventas'), (req, res) => {
     title: 'Ventas', user: req.session?.user || { name: 'Admin' },
     active: 'ventas', module: 'Punto de Venta',
     empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'), config,
+    sucursal_id: res.locals.sucursal_id || 1,
+    sucursal:    res.locals.sucursal    || { id: 1, nombre: 'Casa Central' },
   });
 });
 

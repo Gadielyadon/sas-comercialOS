@@ -2,11 +2,17 @@ const productsService = require('../services/products.service');
 
 exports.list = (req, res) => {
   try {
-    const { q, limit } = req.query;
+    const { q, limit, sucursal_id: sucIdQuery } = req.query;
+    // Prioridad: query param > middleware
+    // Si viene sucursal_id en la query → usar esa (POS manda la activa)
+    // Si no → usar la del middleware (filtra para empleados, null para admin global)
+    const sucursal_id = sucIdQuery
+      ? Number(sucIdQuery)
+      : (res.locals.sucursal_filtro ?? null);
     if (q) {
-      return res.json(productsService.search(q, limit ? parseInt(limit, 10) : 8));
+      return res.json(productsService.search(q, limit ? parseInt(limit, 10) : 8, sucursal_id));
     }
-    res.json(productsService.list());
+    res.json(productsService.list(sucursal_id));
   } catch (err) {
     console.error('products.controller.list =>', err);
     res.status(500).json({ error: 'Error al listar productos' });

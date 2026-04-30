@@ -27,6 +27,12 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'payment_method es obligatorio' });
     }
 
+    // Usar sucursal del middleware como fuente de verdad
+    // Si el frontend manda sucursal_id la usamos, sino la del usuario logueado
+    const sucursalFinal = sucursal_id
+      ? Number(sucursal_id)
+      : (res.locals.sucursal_id || 1);
+
     const result = salesService.createSale({
       total,
       payment_method,
@@ -36,8 +42,8 @@ router.post('/', (req, res) => {
       discount_fixed,
       recargo_pct,
       cliente_id,
-      sucursal_id,
-      es_cuenta_corriente,   // ← AGREGADO
+      sucursal_id: sucursalFinal,
+      es_cuenta_corriente,
       items,
     });
 

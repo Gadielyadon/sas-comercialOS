@@ -249,6 +249,12 @@ try {
 try {
   const afipRoutes = require('./routes/afip.routes');
   app.use('/afip', afipRoutes);
+
+// ── Mercado Pago Point ──────────────────────────────────────
+try {
+  const mpRoutes = require('./routes/mp.routes');
+  app.use('/api/mp', mpRoutes);
+} catch(e) { console.warn('[MP]', e.message); }
   console.log('✅  AFIP routes OK');
 } catch(e) { console.log('⚠️   afip.routes error:', e.message); }
 
