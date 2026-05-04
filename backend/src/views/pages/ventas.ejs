@@ -1610,6 +1610,27 @@
       <kbd style="margin-left:auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;color:var(--text-secondary);">F5</kbd>
     </button>
 
+    <!-- Modal copia de ticket -->
+    <div id="modalCopiaTicket" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+      <div style="background:var(--bg-surface);border-radius:14px;padding:28px 28px 22px;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(99,102,241,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+          <i class="bi bi-printer" style="font-size:22px;color:#6366f1;"></i>
+        </div>
+        <div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Imprimir copia?</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">
+          El ticket del cliente ya se envio a imprimir.<br>Queres imprimir tambien la copia local?
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="imprimirCopiaTicket()" style="flex:1;padding:11px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;">
+            <i class="bi bi-files"></i> Si, imprimir copia
+          </button>
+          <button onclick="cerrarModalCopia()" style="flex:1;padding:11px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            No, gracias
+          </button>
+        </div>
+      </div>
+    </div>
+
     <button
       onclick="abrirPdfFacturaExistente()"
       id="btnVerFacturaAfip"
@@ -3235,6 +3256,168 @@ function imprimirTicket(){
     showToast('Permití ventanas emergentes para imprimir','warn');
     return;
   }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  // Despues de imprimir ticket del cliente, mostrar modal para copia
+  setTimeout(() => {
+    w.print();
+    // Esperar un momento y mostrar el modal de copia
+    setTimeout(() => mostrarModalCopia(), 800);
+  }, 300);
+}
+
+function mostrarModalCopia() {
+  const modal = document.getElementById('modalCopiaTicket');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function cerrarModalCopia() {
+  const modal = document.getElementById('modalCopiaTicket');
+  if (modal) modal.style.display = 'none';
+}
+
+function imprimirCopiaTicket() {
+  cerrarModalCopia();
+  if (!lastSaleData) return;
+
+  const cfg = ticketConfig || {
+    formato: '80mm', footer: 'Gracias por su compra!',
+    nombre: 'Mi Comercio', direccion: '', telefono: '', logo: ''
+  };
+
+  const fechaTxt = lastSaleData.fecha.toLocaleString('es-AR', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+
+  const formato    = String(cfg.formato || '80mm').toLowerCase();
+  const es58       = formato === '58mm';
+  const es80       = formato === '80mm';
+  const fmtA4      = formato === 'a4';
+  const paperWidth = es58 ? '58mm' : es80 ? '80mm' : '210mm';
+  const winWidth   = es58 ? 245    : es80 ? 345    : 900;
+
+  const fsBase    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsSmall   = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
+  const fsMeta    = fmtA4 ? '12px' : es58 ? '10px' : '11px';
+  const fsTitle   = fmtA4 ? '22px' : es58 ? '14px' : '17px';
+  const fsItem    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsTot     = fmtA4 ? '13px' : es58 ? '12px' : '13px';
+  const fsTotMain = fmtA4 ? '20px' : es58 ? '16px' : '18px';
+  const pageMargin = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
+
+  const reciboNum = lastSaleData.reciboNum || lastSaleData.recibo || lastSaleData.orden_id || '';
+  const reciboTxt = reciboNum ? String(reciboNum).padStart(8,'0') : '';
+
+  const itemsHtml = lastSaleData.items.map(it => `
+    <tr>
+      <td style="padding:6px 0 4px;line-height:1.4;border-bottom:1px dotted #bbb;">
+        <span style="font-size:${fsItem};font-weight:900;text-transform:uppercase;">${escapeHtml(it.name)}</span><br>
+        <span style="font-size:${fsSmall};font-weight:700;">${fmt(it.price)} c/u</span>
+      </td>
+      <td style="padding:6px 0 4px;text-align:center;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${it.qty}</td>
+      <td style="padding:6px 0 4px;text-align:right;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${fmt(it.subtotal)}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Copia - Ticket</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
+    @media print { html, body { width: ${paperWidth}; } }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #fff; color: #000;
+      font-size: ${fsBase};
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .ticket { width:100%; max-width:${fmtA4 ? '200mm' : paperWidth}; margin:0 auto; padding:${fmtA4 ? '10px 14px' : '6px 4px'}; }
+    .center { text-align:center; }
+    .bold { font-weight:700; }
+    .line-solid  { border-top:2px solid #000; margin:7px 0; }
+    .line-dashed { border-top:1px dashed #000; margin:6px 0; }
+    .copia-badge {
+      text-align:center;
+      border:2px dashed #000;
+      padding:4px 8px;
+      font-size:${fsMeta};
+      font-weight:900;
+      letter-spacing:3px;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .nombre-negocio { font-size:${fsTitle};font-weight:900;letter-spacing:0.5px;text-transform:uppercase;line-height:1.2;margin-bottom:3px; }
+    .meta-row { display:flex;justify-content:space-between;font-size:${fsMeta};margin:2px 0; }
+    .recibo-box { text-align:center;font-size:${fsMeta};font-weight:700;letter-spacing:1px;margin:4px 0 2px; }
+    table { width:100%;border-collapse:collapse; }
+    th { font-size:${fsSmall};font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #000;padding:3px 0; }
+    th:first-child { text-align:left; } th:nth-child(2) { text-align:center;width:28px; } th:last-child { text-align:right; }
+    td:nth-child(2) { width:28px; }
+    .tot-row { display:flex;justify-content:space-between;align-items:baseline;font-size:${fsTot};padding:2px 0; }
+    .tot-main { font-size:${fsTotMain};font-weight:900;padding:4px 0;border-top:2px solid #000;border-bottom:2px solid #000;margin:4px 0; }
+    .footer-txt { text-align:center;font-size:${fsMeta};font-weight:700;letter-spacing:1px;margin-top:8px;text-transform:uppercase; }
+  </style>
+</head>
+<body>
+<div class="ticket">
+
+  <!-- BADGE COPIA -->
+  <div class="copia-badge">*** COPIA LOCAL ***</div>
+
+  <!-- NOMBRE -->
+  <div class="center">
+    <div class="nombre-negocio">${escapeHtml(cfg.nombre || 'Mi Comercio')}</div>
+    ${cfg.direccion ? `<div style="font-size:${fsMeta};">${escapeHtml(cfg.direccion)}</div>` : ''}
+    ${cfg.telefono  ? `<div style="font-size:${fsMeta};">Tel: ${escapeHtml(cfg.telefono)}</div>` : ''}
+  </div>
+
+  <div class="line-solid"></div>
+
+  ${reciboTxt ? `<div class="recibo-box">N deg RECIBO: ${escapeHtml(reciboTxt)}</div>` : ''}
+  <div class="meta-row"><span>${fechaTxt}</span></div>
+  <div class="meta-row"><span>Cliente:</span><span class="bold">${escapeHtml(lastSaleData.cliente)}</span></div>
+  <div class="meta-row"><span>Pago:</span><span class="bold">${escapeHtml(lastSaleData.metodo)}</span></div>
+
+  <div class="line-dashed"></div>
+
+  <!-- PRODUCTOS -->
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th style="text-align:center;">Cant</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>${itemsHtml}</tbody>
+  </table>
+
+  <div class="line-solid"></div>
+
+  ${lastSaleData.descuento > 0 ? `<div class="tot-row"><span>Subtotal</span><span>${fmt(lastSaleData.subtotal)}</span></div><div class="tot-row"><span>Descuento</span><span>- ${fmt(lastSaleData.descuento)}</span></div>` : ''}
+
+  <div class="tot-row tot-main">
+    <span>TOTAL</span>
+    <span>${fmt(lastSaleData.total)}</span>
+  </div>
+
+  <div class="line-dashed"></div>
+  <div class="footer-txt">USO INTERNO</div>
+
+</div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank', `width=${winWidth},height=900,left=0,top=0`);
+  if (!w) { showToast('Permiti ventanas emergentes para imprimir', 'warn'); return; }
   w.document.open();
   w.document.write(html);
   w.document.close();

@@ -857,9 +857,16 @@ async function guardarFondo() {
 }
 
 function abrirResumen() {
-  const desde = document.getElementById('filtroDesde')?.value || new Date().toISOString().split('T')[0];
-  const hasta  = document.getElementById('filtroHasta')?.value  || desde;
-  window.open(`/gastos/resumen?desde=${desde}&hasta=${hasta}`, '_blank');
+  // Si no hay filtro de fecha, usar el mes actual completo (no solo hoy)
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+  const ultimoDia = hoy.toISOString().split('T')[0];
+  const desde = document.getElementById('filtroDesde')?.value || primerDia;
+  const hasta  = document.getElementById('filtroHasta')?.value  || ultimoDia;
+  const cat    = document.getElementById('filtroCategoria')?.value || '';
+  const params = new URLSearchParams({ desde, hasta });
+  if (cat) params.set('categoria', cat);
+  window.open(`/gastos/resumen?${params.toString()}`, '_blank');
 }
 
 // ── Toggles modal gasto ───────────────────────────────────────
@@ -975,24 +982,9 @@ function exportarExcel() {
   window.location.href = '/api/gastos.xlsx?' + p.toString();
 }
 function exportarPDF() {
-  const rows  = [...document.querySelectorAll('#tablaGastos tbody tr')];
-  const total = rows.reduce((a, r) => {
-    const txt = r.querySelector('td:nth-child(7)')?.innerText.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.') || '0';
-    return a + parseFloat(txt);
-  }, 0);
-  const filas = rows.map(r => {
-    const t = r.querySelectorAll('td');
-    return `<tr><td>${t[0]?.innerText}</td><td>${t[1]?.innerText.trim()}</td><td><strong>${t[2]?.innerText.trim()}</strong></td><td>${t[3]?.innerText.trim()}</td><td>${t[4]?.innerText.trim()}</td><td style="text-align:right;color:#dc2626;font-weight:700;">${t[6]?.innerText.trim()}</td></tr>`;
-  }).join('');
-  const win = window.open('', '_blank', 'width=860,height=600');
-  win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos — AxSoft</title>
-  <style>body{font-family:Arial,sans-serif;font-size:13px;margin:28px}h2{font-size:18px;margin-bottom:2px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}.total{margin-top:14px;text-align:right;font-size:16px;font-weight:800;color:#dc2626}@media print{body{margin:0}}</style>
-  </head><body><h2>Gastos — AxSoft</h2>
-  <p style="color:#666;font-size:12px;">Impreso: ${new Date().toLocaleString('es-AR')} · ${rows.length} registros</p>
-  <table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Forma de pago</th><th>Estado</th><th style="text-align:right">Monto</th></tr></thead>
-  <tbody>${filas}</tbody></table>
-  <div class="total">Total: $${total.toLocaleString('es-AR',{minimumFractionDigits:2})}</div></body></html>`);
-  win.document.close(); win.onload = () => win.print();
+  // El botón PDF redirige al resumen completo (con filtros activos)
+  // que tiene subtotales, distribución por categoría y gastos fijos pendientes
+  abrirResumen();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1145,6 +1137,9 @@ function renderRecurrentes() {
     const icono     = r.cat_icono || 'bi-tag';
     const esPagado  = !!r.pagado;
     const esGenerado= !!r.generado;
+    const montoMostrar = Number(r.gasto_monto || r.monto_estimado);
+    const montoEst     = Number(r.monto_estimado);
+    const difiere = esPagado && r.gasto_monto && Math.abs(montoMostrar - montoEst) > 0.01;
 
     // Badge de estado
     let badgeHtml;
@@ -1153,9 +1148,9 @@ function renderRecurrentes() {
         ✓ Pagado${r.fecha_pago ? ' · ' + r.fecha_pago.split('-').reverse().join('/') : ''}
       </span>`;
     } else if (esGenerado) {
-      badgeHtml = `<span style="background:rgba(245,158,11,.12);color:#d97706;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;">⏳ Pendiente</span>`;
+      badgeHtml = `<span style="background:rgba(245,158,11,.12);color:#d97706;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;">⏳ Pendiente de pago</span>`;
     } else {
-      badgeHtml = `<span style="background:rgba(107,114,128,.1);color:#6b7280;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;">Sin generar</span>`;
+      badgeHtml = `<span style="background:rgba(107,114,128,.1);color:#6b7280;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;">Sin generar para ${meses[_recMes]}</span>`;
     }
 
     return `
@@ -1179,12 +1174,13 @@ function renderRecurrentes() {
 
         <!-- Monto -->
         <div style="font-family:var(--font-mono);font-size:15px;font-weight:800;color:${esPagado ? '#059669' : '#6366f1'};flex-shrink:0;text-align:right;">
-          $${Number(r.gasto_monto || r.monto_estimado).toLocaleString('es-AR',{minimumFractionDigits:0})}
+          $${montoMostrar.toLocaleString('es-AR',{minimumFractionDigits:0})}
+          ${difiere ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;">est. $${montoEst.toLocaleString('es-AR',{minimumFractionDigits:0})}</div>` : ''}
         </div>
 
         <!-- Toggle pagado -->
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <label class="toggle-switch" title="${esPagado ? 'Marcar como pendiente' : 'Marcar como pagado'}">
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;" title="${esPagado ? 'Marcar como pendiente' : 'Marcar como pagado'}">
+          <label class="toggle-switch">
             <input type="checkbox" ${esPagado ? 'checked' : ''} onchange="togglePagoRecurrente(${r.id}, this.checked)">
             <span class="toggle-slider"></span>
           </label>
@@ -1201,26 +1197,46 @@ function renderRecurrentes() {
 }
 
 async function togglePagoRecurrente(recId, pagado) {
-  const card = document.getElementById(`rec-card-${recId}`);
+  // Si se marca como pagado, preguntar si el monto real difiere del estimado
+  let montoReal = undefined;
+  if (pagado) {
+    const rec = _recurrentes.find(x => x.id === recId);
+    const montoEst = rec ? Number(rec.monto_estimado) : 0;
+    const input = prompt(
+      `¿Cuánto se pagó realmente por "${rec?.descripcion}"?\n(Monto estimado: $${montoEst.toLocaleString('es-AR')})\n\nDejá vacío para usar el monto estimado.`
+    );
+    if (input === null) {
+      // El usuario canceló el prompt — revertir el toggle visualmente
+      await cargarEstadoMes();
+      return;
+    }
+    const parsed = parseFloat(input.replace(/\./g,'').replace(',','.'));
+    if (!isNaN(parsed) && parsed > 0 && parsed !== montoEst) {
+      montoReal = parsed;
+    }
+  }
+
   try {
+    const body = { mes: _recMes, anio: _recAnio, pagado };
+    if (montoReal !== undefined) body.monto_real = montoReal;
     const r = await fetch(`/gastos/api/recurrentes/${recId}/pagar`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mes: _recMes, anio: _recAnio, pagado })
+      body: JSON.stringify(body)
     });
     const data = await r.json();
-    if (!data.ok) { alert(data.error || 'Error al guardar'); return; }
+    if (!data.ok) { alert(data.error || 'Error al guardar'); await cargarEstadoMes(); return; }
     // Actualizar estado local
     const idx = _recurrentes.findIndex(x => x.id === recId);
     if (idx !== -1) {
       _recurrentes[idx].pagado     = pagado;
-      _recurrentes[idx].fecha_pago = data.gasto.fecha_pago;
+      _recurrentes[idx].fecha_pago = data.gasto?.fecha_pago;
       _recurrentes[idx].generado   = true;
-      _recurrentes[idx].gasto_id   = data.gasto.id;
-      _recurrentes[idx].gasto_monto= data.gasto.monto;
+      _recurrentes[idx].gasto_id   = data.gasto?.id;
+      _recurrentes[idx].gasto_monto= data.gasto?.monto;
     }
     renderRecurrentes();
     renderResumenMes(_recurrentes);
-  } catch(e) { alert('Error de conexión'); console.error(e); }
+  } catch(e) { alert('Error de conexión'); console.error(e); await cargarEstadoMes(); }
 }
 
 function limpiarFormRec() {
