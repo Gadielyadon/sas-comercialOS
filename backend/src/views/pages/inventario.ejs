@@ -872,7 +872,8 @@ function impNormHeader(h) {
     enpromosion:'en_promo', enpromo:'en_promo', promo:'en_promo',
     preciopromo:'price_promo', promoprecio:'price_promo', preciopromotion:'price_promo',
     descripcion:'descripcion', description:'descripcion', detalle:'descripcion',
-    pesable:'pesable'
+    pesable:'pesable',
+    vendersincontroldestock:'venta_sin_stock', vendersinstock:'venta_sin_stock', sinstock:'venta_sin_stock', ventasinstock:'venta_sin_stock', venta_sin_stock:'venta_sin_stock'
   };
   return map[s] || s;
 }
@@ -910,6 +911,7 @@ async function impProcesarArchivo(file) {
           price_promo:    parseFloat(mapped.price_promo)||0,
           descripcion:    String(mapped.descripcion||'').trim(),
           pesable:        String(mapped.pesable||'').toUpperCase()==='SI'?1:0,
+          venta_sin_stock:String(mapped.venta_sin_stock||'').toUpperCase()==='SI'?1:0,
           _action:'new', _status:'new', _error:''
         };
       });
@@ -967,6 +969,7 @@ async function ejecutarImportacion() {
       sku:r.sku, name:r.name, price:r.price, category:r.category,
       stock:r.stock, iva:r.iva, ieps:r.ieps,
       pesable:r.pesable||0,
+      venta_sin_stock:r.venta_sin_stock||0,
       price_mayorista:r.price_mayorista||null,
       qty_mayorista:r.qty_mayorista||null,
       price_tarjeta:r.price_tarjeta||null,
@@ -985,6 +988,7 @@ async function ejecutarImportacion() {
       name:r.name, price:r.price, category:r.category,
       stock:r.stock, iva:r.iva, ieps:r.ieps,
       pesable:r.pesable||0,
+      venta_sin_stock:r.venta_sin_stock||0,
       price_mayorista:r.price_mayorista||null,
       qty_mayorista:r.qty_mayorista||null,
       price_tarjeta:r.price_tarjeta||null,

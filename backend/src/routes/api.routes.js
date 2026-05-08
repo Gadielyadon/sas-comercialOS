@@ -167,35 +167,43 @@ function ensurePMTable(db) {
 
 router.get('/payment-methods', (req, res) => {
   try {
-    const { all, db } = require('../db');
+    const { all, run, db } = require('../db');
     ensurePMTable(db);
+
+    // Limpiar filas con nombre vacío o nulo que rompen el NOT NULL
+    db.prepare(`DELETE FROM payment_methods WHERE nombre IS NULL OR TRIM(nombre) = ''`).run();
+
+    const defaults = [
+      { nombre:'Efectivo',     tipo:'efectivo', icono:'bi-cash-stack',          color:'green'  },
+      { nombre:'Débito',       tipo:'otro',     icono:'bi-credit-card',          color:'blue'   },
+      { nombre:'Crédito',      tipo:'otro',     icono:'bi-credit-card-2-front',  color:'purple' },
+      { nombre:'Transferencia',tipo:'otro',     icono:'bi-phone',                color:'cyan'   },
+      { nombre:'MercadoPago',  tipo:'otro',     icono:'bi-qr-code',              color:'blue'   },
+      { nombre:'Fiado',        tipo:'fiado',    icono:'bi-clock-history',        color:'orange' },
+    ];
+
+    // Si quedó vacía luego de limpiar, insertar defaults
+    const count = db.prepare(`SELECT COUNT(*) as n FROM payment_methods`).get();
+    if (count.n === 0) {
+      const ins = db.prepare(`INSERT INTO payment_methods (nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct) VALUES (?,?,?,?,1,0,0)`);
+      defaults.forEach(d => ins.run(d.nombre, d.tipo, d.icono, d.color));
+    }
+
     const showAll = req.query.all === '1';
     const rows = showAll
       ? all(`SELECT * FROM payment_methods ORDER BY id ASC`)
       : all(`SELECT * FROM payment_methods WHERE activo = 1 ORDER BY id ASC`);
 
-    // Normalizar: si nombre está vacío, usar el campo 'name' legacy
     const normalized = rows.map(r => ({
       ...r,
-      nombre: r.nombre || r.name || 'Pago',
+      nombre: r.nombre || 'Pago',
       icono:  r.icono  || 'bi-cash',
       tipo:   r.tipo   || 'otro',
       recargo_cliente_pct:  r.recargo_cliente_pct  || 0,
       comision_interna_pct: r.comision_interna_pct || 0,
     }));
 
-    if (normalized.length) return res.json(normalized);
-
-    // Fallback si la tabla está vacía: insertar defaults
-    const defaults = [
-      { nombre:'Efectivo',     tipo:'efectivo', icono:'bi-cash-stack',          color:'green' },
-      { nombre:'Débito',       tipo:'otro',     icono:'bi-credit-card',          color:'blue'  },
-      { nombre:'Crédito',      tipo:'otro',     icono:'bi-credit-card-2-front',  color:'purple'},
-      { nombre:'Transferencia',tipo:'otro',     icono:'bi-phone',                color:'cyan'  },
-    ];
-    const ins = db.prepare(`INSERT INTO payment_methods (nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct) VALUES (?,?,?,?,1,0,0)`);
-    defaults.forEach(d => ins.run(d.nombre, d.tipo, d.icono, d.color));
-    res.json(all(`SELECT * FROM payment_methods ORDER BY id ASC`));
+    res.json(normalized);
   } catch(e) {
     console.error('[GET /payment-methods]', e.message);
     res.status(500).json({ error: e.message });
