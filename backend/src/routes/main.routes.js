@@ -104,11 +104,20 @@ function getConfigValue(key, def = '') {
 
 function getGastosMes() {
   try {
-    const desde = new Date(); desde.setDate(1);
+    const hoy   = new Date();
+    const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     const desdeStr = desde.toISOString().split('T')[0];
+    const hastaStr = hoy.toISOString().split('T')[0];
     const { get: dbGet, all: dbAll } = require('../db');
-    const total = dbGet(`SELECT COALESCE(SUM(monto),0) as total FROM gastos WHERE fecha >= ?`, [desdeStr])?.total || 0;
-    const porCat = dbAll(`SELECT categoria, SUM(monto) as total FROM gastos WHERE fecha >= ? GROUP BY categoria ORDER BY total DESC LIMIT 5`, [desdeStr]);
+    // Solo gastos PAGADOS del mes → refleja plata real salida, no compromisos
+    const total  = dbGet(
+      `SELECT COALESCE(SUM(monto),0) as total FROM gastos WHERE pagado = 1 AND COALESCE(fecha_pago, fecha) >= ? AND COALESCE(fecha_pago, fecha) <= ?`,
+      [desdeStr, hastaStr]
+    )?.total || 0;
+    const porCat = dbAll(
+      `SELECT categoria, SUM(monto) as total FROM gastos WHERE pagado = 1 AND COALESCE(fecha_pago, fecha) >= ? AND COALESCE(fecha_pago, fecha) <= ? GROUP BY categoria ORDER BY total DESC LIMIT 5`,
+      [desdeStr, hastaStr]
+    );
     return { total, porCat };
   } catch(e) { return { total: 0, porCat: [] }; }
 }

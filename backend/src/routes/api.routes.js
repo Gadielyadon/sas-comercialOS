@@ -30,6 +30,51 @@ router.get('/health', (req, res) => res.json({ ok: true, time: new Date().toISOS
 // ── Products ──────────────────────────────────────────────────
 router.get('/products',              productsCtrl.list);
 router.post('/products',             productsCtrl.create);
+// GET /api/products/next-sku — devuelve el próximo SKU corto automático
+router.get('/products/next-sku', (req, res) => {
+  try {
+    const { get: dbGet } = require('../db');
+    const suc = req.session?.user?.sucursal_id || null;
+    const sucFilt = suc ? `AND sucursal_id = ${Number(suc)}` : '';
+
+    // Solo considerar SKUs cortos (máx 6 dígitos) — ignorar códigos de barras
+    const row = dbGet(
+      `SELECT sku FROM products
+       WHERE sku GLOB '[0-9]*'
+       AND length(sku) <= 6
+       ${sucFilt}
+       ORDER BY CAST(sku AS INTEGER) DESC LIMIT 1`
+    );
+
+    let nextSku;
+    if (row && row.sku) {
+      const num  = parseInt(row.sku, 10);
+      const next = num + 1;
+      // Formato: siempre 4 dígitos mínimo, sube si hace falta
+      nextSku = String(next).padStart(Math.max(4, row.sku.length), '0');
+    } else {
+      nextSku = '0001'; // primer producto del sistema
+    }
+
+    res.json({ sku: nextSku });
+  } catch(e) { res.status(500).json({ error: e.message, sku: '0001' }); }
+});
+
+// GET /api/products/categories — lista de categorías únicas del sistema
+router.get('/products/categories', (req, res) => {
+  try {
+    const { all: dbAll } = require('../db');
+    const suc = req.session?.user?.sucursal_id || null;
+    const sucFilt = suc ? `AND sucursal_id = ${Number(suc)}` : '';
+    const rows = dbAll(
+      `SELECT DISTINCT category FROM products
+       WHERE category IS NOT NULL AND trim(category) != '' ${sucFilt}
+       ORDER BY category ASC`
+    );
+    res.json(rows.map(r => r.category));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/products/:sku',         productsCtrl.getBySku);
 router.put('/products/:sku',         productsCtrl.update);
 router.patch('/products/:sku/stock', productsCtrl.adjustStock);
@@ -167,43 +212,35 @@ function ensurePMTable(db) {
 
 router.get('/payment-methods', (req, res) => {
   try {
-    const { all, run, db } = require('../db');
+    const { all, db } = require('../db');
     ensurePMTable(db);
-
-    // Limpiar filas con nombre vacío o nulo que rompen el NOT NULL
-    db.prepare(`DELETE FROM payment_methods WHERE nombre IS NULL OR TRIM(nombre) = ''`).run();
-
-    const defaults = [
-      { nombre:'Efectivo',     tipo:'efectivo', icono:'bi-cash-stack',          color:'green'  },
-      { nombre:'Débito',       tipo:'otro',     icono:'bi-credit-card',          color:'blue'   },
-      { nombre:'Crédito',      tipo:'otro',     icono:'bi-credit-card-2-front',  color:'purple' },
-      { nombre:'Transferencia',tipo:'otro',     icono:'bi-phone',                color:'cyan'   },
-      { nombre:'MercadoPago',  tipo:'otro',     icono:'bi-qr-code',              color:'blue'   },
-      { nombre:'Fiado',        tipo:'fiado',    icono:'bi-clock-history',        color:'orange' },
-    ];
-
-    // Si quedó vacía luego de limpiar, insertar defaults
-    const count = db.prepare(`SELECT COUNT(*) as n FROM payment_methods`).get();
-    if (count.n === 0) {
-      const ins = db.prepare(`INSERT INTO payment_methods (nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct) VALUES (?,?,?,?,1,0,0)`);
-      defaults.forEach(d => ins.run(d.nombre, d.tipo, d.icono, d.color));
-    }
-
     const showAll = req.query.all === '1';
     const rows = showAll
       ? all(`SELECT * FROM payment_methods ORDER BY id ASC`)
       : all(`SELECT * FROM payment_methods WHERE activo = 1 ORDER BY id ASC`);
 
+    // Normalizar: si nombre está vacío, usar el campo 'name' legacy
     const normalized = rows.map(r => ({
       ...r,
-      nombre: r.nombre || 'Pago',
+      nombre: r.nombre || r.name || 'Pago',
       icono:  r.icono  || 'bi-cash',
       tipo:   r.tipo   || 'otro',
       recargo_cliente_pct:  r.recargo_cliente_pct  || 0,
       comision_interna_pct: r.comision_interna_pct || 0,
     }));
 
-    res.json(normalized);
+    if (normalized.length) return res.json(normalized);
+
+    // Fallback si la tabla está vacía: insertar defaults
+    const defaults = [
+      { nombre:'Efectivo',     tipo:'efectivo', icono:'bi-cash-stack',          color:'green' },
+      { nombre:'Débito',       tipo:'otro',     icono:'bi-credit-card',          color:'blue'  },
+      { nombre:'Crédito',      tipo:'otro',     icono:'bi-credit-card-2-front',  color:'purple'},
+      { nombre:'Transferencia',tipo:'otro',     icono:'bi-phone',                color:'cyan'  },
+    ];
+    const ins = db.prepare(`INSERT INTO payment_methods (nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct) VALUES (?,?,?,?,1,0,0)`);
+    defaults.forEach(d => ins.run(d.nombre, d.tipo, d.icono, d.color));
+    res.json(all(`SELECT * FROM payment_methods ORDER BY id ASC`));
   } catch(e) {
     console.error('[GET /payment-methods]', e.message);
     res.status(500).json({ error: e.message });
@@ -895,6 +932,22 @@ router.get('/notificaciones', (req, res) => {
           detalle: `Total: $${Number(fiados[0].total).toLocaleString('es-AR',{minimumFractionDigits:2})}`,
           link: '/historial',
           id: 'fiados_pendientes',
+        });
+      }
+    } catch(e) {}
+
+    // ── Deuda con proveedores ──
+    try {
+      const deudaProv = dbGet(`SELECT COALESCE(SUM(saldo),0) as total, COUNT(*) as n FROM proveedores WHERE saldo > 0`);
+      if (deudaProv && deudaProv.total > 0) {
+        notifs.push({
+          tipo: 'deuda_proveedor',
+          icono: 'bi-truck',
+          color: '#ef4444',
+          titulo: `Deuda con ${deudaProv.n} proveedor${deudaProv.n > 1 ? 'es' : ''}`,
+          detalle: `Total: $${Number(deudaProv.total).toLocaleString('es-AR',{minimumFractionDigits:2})}`,
+          link: '/proveedores',
+          id: 'deuda_proveedores',
         });
       }
     } catch(e) {}

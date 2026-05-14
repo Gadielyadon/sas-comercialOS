@@ -8,3 +8,37 @@
   to   { transform:translateY(0);    opacity:1; }
 }
 </style>
+
+<script>
+// ── Formato de números global ──────────────────────────────────
+// Disponible en todas las páginas como window.fmtNum y window.fmtPesos
+window.fmtNum = function(n, decimales = 2) {
+  return Number(n || 0).toLocaleString('es-AR', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  });
+};
+window.fmtPesos = function(n, decimales = 2) {
+  return '$' + window.fmtNum(n, decimales);
+};
+
+// Auto-formato en inputs de precio: muestra separadores al salir del campo
+// Usá class="fmt-precio" en cualquier input de precio del sistema
+document.addEventListener('focusout', function(e) {
+  const inp = e.target;
+  if (!inp.classList.contains('fmt-precio')) return;
+  const val = parseFloat(inp.value.replace(/\./g, '').replace(',', '.'));
+  if (!isNaN(val)) {
+    inp.dataset.rawValue = val; // guardar valor crudo para cálculos
+    inp.value = window.fmtNum(val, 2);
+  }
+});
+document.addEventListener('focusin', function(e) {
+  const inp = e.target;
+  if (!inp.classList.contains('fmt-precio')) return;
+  // Al entrar: mostrar número sin formato para edición
+  const raw = parseFloat(inp.dataset.rawValue || inp.value.replace(/\./g, '').replace(',', '.'));
+  if (!isNaN(raw)) inp.value = raw % 1 === 0 ? raw : raw.toFixed(2);
+  inp.select();
+});
+</script>

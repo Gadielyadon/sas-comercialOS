@@ -636,9 +636,18 @@
                       style="padding:9px 14px;border-radius:8px;border:1.5px solid rgba(0,158,227,.4);background:rgba(0,158,227,.07);color:#007eb5;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);flex-shrink:0;">
                       <i class="bi bi-search"></i> Buscar
                     </button>
+                    <button onclick="activarModoPDV()" type="button"
+                      style="padding:9px 14px;border-radius:8px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);flex-shrink:0;">
+                      <i class="bi bi-wifi"></i> Activar PDV
+                    </button>
+                    <button onclick="activarModoStandalone()" type="button"
+                      style="padding:9px 14px;border-radius:8px;border:1.5px solid rgba(245,158,11,.4);background:rgba(245,158,11,.07);color:#d97706;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);flex-shrink:0;">
+                      <i class="bi bi-wifi-off"></i> Cobro manual
+                    </button>
                   </div>
                   <div id="mpDevicesList" style="margin-top:8px;"></div>
-                  <div class="field-hint">ID único de tu dispositivo Point. Usá "Buscar" luego de guardar el token.</div>
+                  <div id="mpPDVStatus" style="margin-top:6px;"></div>
+                  <div class="field-hint">ID único de tu dispositivo Point. Usá "Buscar" y luego "Activar PDV" para modo integrado.</div>
                 </div>
 
                 <!-- PIN de configuración -->
@@ -1659,7 +1668,48 @@ function seleccionarDevice(id) {
   const inp = document.getElementById('mp_device_id');
   if (inp) inp.value = id;
   document.getElementById('mpDevicesList').innerHTML =
-    `<span style="font-size:12px;color:#10b981;">✓ Seleccionado: <strong>${id}</strong></span>`;
+    `<span style="font-size:12px;color:#10b981;">✓ Seleccionado: <strong>${id}</strong> — ahora hacé clic en <strong>Activar PDV</strong>.</span>`;
+}
+
+async function activarModoStandalone() {
+  const statusEl = document.getElementById('mpPDVStatus');
+  const deviceId = document.getElementById('mp_device_id')?.value?.trim();
+  if (!deviceId) { statusEl.innerHTML = '<span style="font-size:12px;color:#f59e0b;">⚠ Primero seleccioná el dispositivo.</span>'; return; }
+  statusEl.innerHTML = '<span style="font-size:12px;color:var(--text-secondary);">Cambiando a modo manual…</span>';
+  try {
+    const r = await fetch('/api/mp/activar-pdv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: deviceId, modo: 'STANDALONE' }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+    statusEl.innerHTML = `<span style="font-size:12px;color:#d97706;font-weight:700;">📵 Modo manual activado. El posnet ahora funciona de forma independiente. <strong>Reiniciá el posnet.</strong> Para volver a integrado presioná "Activar PDV".</span>`;
+  } catch(e) {
+    statusEl.innerHTML = `<span style="font-size:12px;color:#ef4444;">❌ ${e.message}</span>`;
+  }
+}
+
+async function activarModoPDV() {
+  const statusEl = document.getElementById('mpPDVStatus');
+  const deviceId = document.getElementById('mp_device_id')?.value?.trim();
+  if (!deviceId) {
+    statusEl.innerHTML = '<span style="font-size:12px;color:#f59e0b;">⚠ Primero buscá y seleccioná el dispositivo.</span>';
+    return;
+  }
+  statusEl.innerHTML = '<span style="font-size:12px;color:var(--text-secondary);"><i class="bi bi-arrow-repeat" style="animation:spin .8s linear infinite;display:inline-block;margin-right:4px;"></i>Activando modo PDV…</span>';
+  try {
+    const r = await fetch('/api/mp/activar-pdv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: deviceId }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error al activar');
+    statusEl.innerHTML = `<span style="font-size:12px;color:#10b981;font-weight:700;">✅ Modo PDV activado correctamente. <strong>Reiniciá el posnet</strong> para que tome efecto.</span>`;
+  } catch(e) {
+    statusEl.innerHTML = `<span style="font-size:12px;color:#ef4444;">❌ ${e.message}</span>`;
+  }
 }
 
 // Cerrar PIN con Escape

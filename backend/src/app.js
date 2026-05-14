@@ -98,6 +98,7 @@ try {
 try {
   const provSvc = require('./services/proveedores.service');
   provSvc.initProveedoresSchema();
+  if (provSvc.initRecepcionSchema) provSvc.initRecepcionSchema();
   console.log('✅  Proveedores schema OK');
 } catch(e) { console.log('⚠️   proveedores.service no encontrado:', e.message); }
 

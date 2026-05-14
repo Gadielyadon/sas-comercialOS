@@ -118,8 +118,9 @@
     </a>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('proveedores')) { %>
-    <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>">
+    <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>" style="position:relative;">
       <i class="bi bi-truck"></i><span class="nav-text">Proveedores</span>
+      <span id="proveedoresBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
     </a>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('gastos')) { %>
@@ -241,6 +242,13 @@ window.axNotif=(function(){
         badge.textContent=n>9?'9+':n;
         badge.style.display=n>0?'flex':'none';
         badge.style.cssText+=';align-items:center;justify-content:center;';
+      }
+      // Badge de deuda en proveedores
+      const provBadge = document.getElementById('proveedoresBadge');
+      if (provBadge) {
+        const tieneDeuda = data.some(x => x.tipo === 'deuda_proveedor');
+        provBadge.style.display = tieneDeuda ? 'inline-block' : 'none';
+        provBadge.textContent = '!';
       }
       const lista=document.getElementById('notifList');
       if(!lista) return;

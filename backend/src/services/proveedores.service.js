@@ -94,8 +94,120 @@ function registrarPago(proveedorId, monto, descripcion = 'Pago') {
   return findById(proveedorId);
 }
 
+// ── Recepción de mercadería ───────────────────────────────────
+function initRecepcionSchema() {
+  const { run: dbRun } = require('../db');
+  try {
+    dbRun(`CREATE TABLE IF NOT EXISTS recepciones_mercaderia (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      proveedor_id INTEGER NOT NULL,
+      nro_factura  TEXT,
+      descripcion  TEXT,
+      total        REAL NOT NULL DEFAULT 0,
+      sucursal_id  INTEGER DEFAULT 1,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (proveedor_id) REFERENCES proveedores(id)
+    )`);
+    dbRun(`CREATE TABLE IF NOT EXISTS recepcion_items (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      recepcion_id     INTEGER NOT NULL,
+      sku              TEXT NOT NULL,
+      nombre           TEXT NOT NULL,
+      cantidad         REAL NOT NULL DEFAULT 1,
+      precio_costo     REAL NOT NULL DEFAULT 0,
+      actualizar_costo INTEGER NOT NULL DEFAULT 0,
+      subtotal         REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (recepcion_id) REFERENCES recepciones_mercaderia(id) ON DELETE CASCADE
+    )`);
+  } catch(e) {}
+}
+
+function getRecepciones(proveedorId) {
+  return all(
+    `SELECT r.*, COUNT(i.id) as cant_items
+     FROM recepciones_mercaderia r
+     LEFT JOIN recepcion_items i ON i.recepcion_id = r.id
+     WHERE r.proveedor_id = ?
+     GROUP BY r.id ORDER BY r.created_at DESC`,
+    [Number(proveedorId)]
+  );
+}
+
+function recibirMercaderia({ proveedor_id, nro_factura, descripcion, items, sucursal_id }) {
+  const prodSvc = require('./products.service');
+  if (!items || !items.length) throw new Error('Ingresá al menos un producto');
+
+  const total = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo)), 0);
+
+  const res = run(
+    `INSERT INTO recepciones_mercaderia (proveedor_id, nro_factura, descripcion, total, sucursal_id)
+     VALUES (?,?,?,?,?)`,
+    [Number(proveedor_id), nro_factura || null, descripcion || null, total, sucursal_id || 1]
+  );
+  const recepcionId = res.lastInsertRowid;
+
+  for (const item of items) {
+    const cant  = Number(item.cantidad)     || 0;
+    const costo = Number(item.precio_costo) || 0;
+    const sub   = cant * costo;
+    const actC  = item.actualizar_costo ? 1 : 0;
+
+    run(
+      `INSERT INTO recepcion_items (recepcion_id, sku, nombre, cantidad, precio_costo, actualizar_costo, subtotal)
+       VALUES (?,?,?,?,?,?,?)`,
+      [recepcionId, String(item.sku), String(item.nombre), cant, costo, actC, sub]
+    );
+
+    // Sumar stock
+    prodSvc.adjustStock(item.sku, cant, sucursal_id || null);
+
+    // Actualizar precio de costo si el usuario lo marcó
+    if (actC && costo > 0) {
+      prodSvc.updateBySku(item.sku, { price_cost: costo }, sucursal_id || null);
+    }
+  }
+
+  // Registrar como factura en la cuenta corriente
+  const desc = descripcion || (nro_factura ? `Factura ${nro_factura}` : 'Recepción de mercadería');
+  registrarFactura(proveedor_id, total, desc, nro_factura || null);
+
+  return { recepcion_id: recepcionId, total, items_procesados: items.length };
+}
+
+// ── Métricas globales de proveedores ─────────────────────────
+function getMetricas() {
+  const provs = list();
+  const movs  = all(`SELECT pm.*, p.nombre as prov_nombre
+    FROM proveedores_movimientos pm
+    JOIN proveedores p ON p.id = pm.proveedor_id
+    ORDER BY pm.created_at DESC`);
+
+  const totalDeuda     = provs.reduce((s,p) => s + Math.max(Number(p.saldo)||0, 0), 0);
+  const conDeuda       = provs.filter(p => Number(p.saldo) > 0);
+  const totalFacturado = movs.filter(m=>m.tipo==='factura').reduce((s,m)=>s+Number(m.monto),0);
+  const totalPagado    = movs.filter(m=>m.tipo==='pago').   reduce((s,m)=>s+Number(m.monto),0);
+
+  const hace30 = new Date(); hace30.setDate(hace30.getDate()-30);
+  const h30str = hace30.toISOString().replace('T',' ').slice(0,10);
+  const movsRec    = movs.filter(m => (m.created_at||'') >= h30str);
+  const facturado30= movsRec.filter(m=>m.tipo==='factura').reduce((s,m)=>s+Number(m.monto),0);
+  const pagado30   = movsRec.filter(m=>m.tipo==='pago').   reduce((s,m)=>s+Number(m.monto),0);
+
+  return {
+    totalProveedores: provs.length,
+    conDeuda:         conDeuda.length,
+    alDia:            provs.length - conDeuda.length,
+    totalDeuda, totalFacturado, totalPagado,
+    facturado30, pagado30,
+    movimientos: movs.slice(0,20),
+  };
+}
+
 module.exports = {
-  initProveedoresSchema, list, findById, search,
+  initProveedoresSchema, initRecepcionSchema,
+  list, findById, search,
   create, update, remove, getMovimientos,
-  registrarFactura, registrarPago
+  registrarFactura, registrarPago,
+  recibirMercaderia, getRecepciones,
+  getMetricas,
 };

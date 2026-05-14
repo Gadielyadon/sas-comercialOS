@@ -4477,7 +4477,7 @@ async function cobrarConMPPoint() {
 
 function _mpSetStatus(type, txt, sub) {
   const box = document.getElementById('mpStatusBox');
-  const icons = { ok:'✅', error:'❌', rejected:'🚫' };
+  const icons = { ok:'✅', error:'❌', rejected:'🚫', warn:'⚠️' };
   if (type === 'spinner') {
     box.innerHTML = `<div class="mp-spinner"></div><div class="mp-status-txt">${txt}</div><div class="mp-status-sub">${sub||''}</div>`;
   } else {
@@ -4488,11 +4488,12 @@ function _mpSetStatus(type, txt, sub) {
 function _mpStartPolling() {
   if (_mpPolling) clearInterval(_mpPolling);
   let attempts = 0;
+  let finishedAttempts = 0; // intentos extra tras FINISHED sin approved
   _mpPolling = setInterval(async () => {
     if (_mpCancelled || !_mpIntentId) { clearInterval(_mpPolling); return; }
-    if (++attempts > 90) {
+    if (++attempts > 120) { // 4 minutos máximo
       clearInterval(_mpPolling);
-      _mpSetStatus('error', 'Tiempo agotado', 'El pago no se completó en 3 minutos');
+      _mpSetStatus('error', 'Tiempo agotado', 'Si el posnet cobró, la venta se registró en Mercado Pago aunque no figure aquí. Verificá tu cuenta de MP.');
       const btn = document.getElementById('mpBtnCancel');
       if (btn) btn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
       return;
@@ -4500,24 +4501,45 @@ function _mpStartPolling() {
     try {
       const r = await fetch(`/api/mp/estado/${_mpIntentId}`);
       const d = await r.json();
+
       if (d.state === 'FINISHED' && d.status === 'approved') {
+        // Pago confirmado — registrar venta
         clearInterval(_mpPolling);
         _mpSetStatus('ok', '¡Pago aprobado!', `Payment ID: ${d.payment_id||'-'}`);
         const btn = document.getElementById('mpBtnCancel');
         if (btn) btn.style.display = 'none';
-        // Registrar venta como MP
         payMethod = 'Mercado Pago';
         setTimeout(() => {
           document.getElementById('mpOverlay').classList.remove('open');
           confirmSale();
         }, 1500);
-      } else if (d.state === 'FINISHED' || d.state === 'CANCELED' || d.state === 'ERROR') {
+
+      } else if (d.state === 'FINISHED' && d.status !== 'approved') {
+        // FINISHED pero status no llegó todavía — dar hasta 10 intentos más (20 seg)
+        finishedAttempts++;
+        if (finishedAttempts <= 10) {
+          _mpSetStatus('spinner', 'Verificando pago…', 'El posnet procesó el pago, confirmando con Mercado Pago…');
+          return; // seguir el intervalo
+        }
+        // Después de 20 seg extra sin approved — puede que sí cobró
         clearInterval(_mpPolling);
-        const tipo = d.status !== 'approved' ? 'rejected' : 'error';
-        _mpSetStatus(tipo, d.state === 'CANCELED' ? 'Pago cancelado' : `Pago ${d.status||'fallido'}`, '');
+        _mpSetStatus('warn', 'Verificá el pago en MP', `El posnet procesó el cobro pero la confirmación demoró. Revisá tu cuenta de Mercado Pago antes de registrar la venta.`);
+        const btn2 = document.getElementById('mpBtnCancel');
+        if (btn2) btn2.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
+
+      } else if (d.state === 'CANCELED') {
+        clearInterval(_mpPolling);
+        _mpSetStatus('error', 'Pago cancelado', 'El cobro fue cancelado en el posnet.');
+        const btn = document.getElementById('mpBtnCancel');
+        if (btn) btn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
+
+      } else if (d.state === 'ERROR') {
+        clearInterval(_mpPolling);
+        _mpSetStatus('error', 'Error en el pago', 'Hubo un error. Si el posnet cobró, verificá tu cuenta de MP.');
         const btn = document.getElementById('mpBtnCancel');
         if (btn) btn.innerHTML = '<i class="bi bi-x-circle"></i> Cerrar';
       }
+      // estados ON_TERMINAL, OPEN, etc → seguir esperando
     } catch(e) { /* error de red, seguir intentando */ }
   }, 2000);
 }
@@ -4538,4 +4560,5 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
+
 

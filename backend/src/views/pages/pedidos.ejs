@@ -1,431 +1,628 @@
 <%- include('../partials/head', { title }) %>
 
 <style>
-.tab-bar { display:flex;gap:6px;margin-bottom:18px; }
 .tab-btn { padding:8px 18px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;display:flex;align-items:center;gap:6px; }
 .tab-btn.active { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
-.tab-btn.tab-faltante.active { background:#f59e0b;border-color:#f59e0b;color:#fff; }
 
-.pedido-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:box-shadow .15s;position:relative; }
+.pedido-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px 16px;transition:box-shadow .15s;position:relative; }
 .pedido-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
 .pedido-card.urgente { border-left:4px solid #ef4444; }
-.pedido-card.listo   { opacity:.6; }
-.pedido-card.entregado { opacity:.5; }
 
 .prioridad-badge { font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px; }
 .prioridad-urgente { background:rgba(239,68,68,.12);color:#dc2626; }
 .prioridad-normal  { background:rgba(27,79,216,.1);color:var(--color-primary); }
 .prioridad-baja    { background:rgba(100,116,139,.1);color:var(--text-secondary); }
 
-.estado-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
-.estado-pendiente { background:rgba(245,158,11,.12);color:#d97706; }
-.estado-listo     { background:rgba(16,185,129,.12);color:#059669; }
-.estado-entregado { background:rgba(100,116,139,.1);color:var(--text-secondary); }
-.estado-cancelado { background:rgba(239,68,68,.08);color:#ef4444; }
+.estado-rec-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
+.rec-enviado   { background:rgba(99,102,241,.12);color:#6366f1; }
+.rec-parcial   { background:rgba(245,158,11,.12);color:#d97706; }
+.rec-recibido  { background:rgba(16,185,129,.12);color:#059669; }
 
-.pedido-titulo { font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:3px; }
-.pedido-meta   { font-size:12px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
-.pedido-meta i { font-size:11px; }
-.pedido-actions { display:flex;gap:5px;flex-shrink:0; }
 .btn-accion { width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .12s; }
 .btn-accion:hover { border-color:var(--color-primary);color:var(--color-primary);background:rgba(27,79,216,.06); }
 .btn-accion.danger:hover { border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.06); }
-.btn-accion.success { border-color:rgba(16,185,129,.4);color:#10b981;background:rgba(16,185,129,.06); }
+
+.form-lbl { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px; }
+.form-inp  { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
+.form-inp:focus { border-color:var(--color-primary); }
 
 .empty-pedidos { text-align:center;padding:48px 20px;color:var(--text-muted); }
 .empty-pedidos i { font-size:36px;display:block;margin-bottom:10px;opacity:.4; }
 
-.recordatorio-chip { background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#d97706;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px; }
-
 @media print {
   .no-print { display:none !important; }
-  .sidebar  { display:none !important; }
+  .sidebar { display:none !important; }
   .app-header { display:none !important; }
-  .main-content { margin-left:0 !important; padding-top:0 !important; }
-  .pedido-card { break-inside:avoid;border:1px solid #ccc !important;box-shadow:none !important; }
-  .tab-bar { display:none !important; }
-  body { background:#fff !important; }
+  .main-content { margin-left:0 !important; }
 }
 </style>
 
 <div class="app-wrapper">
   <%- include('../partials/sidebar', { active: 'pedidos', user }) %>
   <div class="main-content">
-    <%- include('../partials/header', { module: 'Pedidos y Faltantes', user }) %>
-
+    <%- include('../partials/header', { module: 'Pedidos', user }) %>
     <main class="page-body">
 
+      <!-- Header -->
       <div class="page-header no-print">
         <div class="page-header-title">
-          <h2>Pedidos y Faltantes</h2>
-          <p>Anotá pedidos de clientes y productos que te faltan comprar.</p>
+          <h2>Pedidos a proveedores</h2>
+          <p>Armá pedidos con productos del sistema y enviálos a tus proveedores.</p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;">
           <button onclick="window.print()" class="btn-action btn-action-outline">
             <i class="bi bi-printer"></i> Imprimir
           </button>
-          <button onclick="abrirModal('faltante')" class="btn-action btn-action-outline" style="color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06);">
-            <i class="bi bi-exclamation-circle"></i> + Faltante
-          </button>
-          <button onclick="abrirModal('pedido')" class="btn-action btn-action-primary">
-            <i class="bi bi-plus-lg"></i> + Pedido
+          <button onclick="abrirNuevoPedido()" class="btn-action btn-action-primary">
+            <i class="bi bi-plus-lg"></i> Nuevo pedido
           </button>
         </div>
       </div>
 
+      <!-- Recordatorio -->
       <% if (recordatorios > 0) { %>
       <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;" class="no-print">
         <i class="bi bi-bell-fill" style="color:#d97706;font-size:16px;"></i>
         <span style="font-size:13px;font-weight:600;color:#d97706;">
-          Tenés <strong><%= recordatorios %></strong> pedido<%= recordatorios > 1 ? 's' : '' %> con recordatorio para hoy o vencido<%= recordatorios > 1 ? 's' : '' %>.
+          Tenés <strong><%= recordatorios %></strong> pedido<%= recordatorios > 1 ? 's' : '' %> con recordatorio para hoy.
         </span>
       </div>
       <% } %>
 
-      <!-- Tabs -->
-      <div class="tab-bar no-print">
-        <button class="tab-btn active" id="tabPedidos" onclick="setTab('pedidos')">
-          <i class="bi bi-journal-check"></i> Pedidos
-          <% if (pedidos.filter(p => p.estado === 'pendiente').length > 0) { %>
-            <span style="background:var(--color-primary);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;">
-              <%= pedidos.filter(p => p.estado === 'pendiente').length %>
-            </span>
-          <% } %>
-        </button>
-        <button class="tab-btn tab-faltante" id="tabFaltantes" onclick="setTab('faltantes')">
-          <i class="bi bi-cart-x"></i> Faltantes / Compras
-          <% if (faltantes.filter(p => p.estado === 'pendiente').length > 0) { %>
-            <span style="background:#f59e0b;color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;">
-              <%= faltantes.filter(p => p.estado === 'pendiente').length %>
-            </span>
-          <% } %>
-        </button>
+      <!-- Lista de pedidos -->
+      <% if (!pedidos.length) { %>
+      <div class="empty-pedidos no-print">
+        <i class="bi bi-journal-x"></i>
+        <p>No hay pedidos. Tocá "Nuevo pedido" para crear uno.</p>
       </div>
+      <% } else { %>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <% pedidos.forEach(p => { %>
+        <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %>">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
 
-      <!-- Pedidos -->
-      <div id="seccionPedidos">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:10px;" class="no-print">
-          Pedidos de clientes
-        </div>
-        <h3 style="display:none;" class="print-only" style="margin-bottom:8px;">Pedidos de Clientes</h3>
-        <% if (pedidos.length === 0) { %>
-          <div class="empty-pedidos no-print">
-            <i class="bi bi-journal-x"></i>
-            <p>No hay pedidos registrados.<br>Tocá "+ Pedido" para agregar uno.</p>
-          </div>
-        <% } else { %>
-          <div style="display:flex;flex-direction:column;gap:8px;" id="listaPedidos">
-            <% pedidos.forEach(p => { %>
-              <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %> <%= p.estado %>" data-id="<%= p.id %>">
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;">
-                    <span class="prioridad-badge prioridad-<%= p.prioridad %>">
-                      <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
-                    </span>
-                    <span class="estado-badge estado-<%= p.estado %>"><%= p.estado.charAt(0).toUpperCase() + p.estado.slice(1) %></span>
-                  </div>
-                  <div class="pedido-titulo"><%= p.titulo %></div>
-                  <div class="pedido-meta">
-                    <% if (p.cliente) { %><span><i class="bi bi-person"></i> <%= p.cliente %></span><% } %>
-                    <% if (p.cantidad) { %><span><i class="bi bi-box"></i> <%= p.cantidad %></span><% } %>
-                    <% if (p.fecha_entrega) { %><span><i class="bi bi-calendar3"></i> Entrega: <%= p.fecha_entrega %></span><% } %>
-                    <% if (p.recordatorio) { %>
-                      <span class="recordatorio-chip"><i class="bi bi-bell"></i> Recordatorio: <%= p.recordatorio %></span>
-                    <% } %>
-                  </div>
-                  <% if (p.descripcion) { %>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:5px;font-style:italic;"><%= p.descripcion %></div>
-                  <% } %>
-                  <% if (p.notas) { %>
-                    <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;background:var(--bg-body);padding:5px 9px;border-radius:6px;border-left:3px solid var(--border-color);">
-                      📝 <%= p.notas %>
-                    </div>
-                  <% } %>
-                </div>
-                <div class="pedido-actions no-print">
-                  <% if (p.estado === 'pendiente') { %>
-                    <button class="btn-accion success btn-marcar-listo" data-id="<%= p.id %>" title="Marcar como listo"><i class="bi bi-check-lg"></i></button>
-                  <% } %>
-                  <% if (p.estado === 'listo') { %>
-                    <button class="btn-accion success btn-marcar-entregado" data-id="<%= p.id %>" title="Marcar como entregado" style="border-color:rgba(99,102,241,.4);color:#6366f1;background:rgba(99,102,241,.06);"><i class="bi bi-bag-check"></i></button>
-                  <% } %>
-                  <button class="btn-accion btn-editar" data-item='<%= JSON.stringify(p) %>' title="Editar"><i class="bi bi-pencil"></i></button>
-                  <button class="btn-accion danger btn-eliminar" data-id="<%= p.id %>" title="Eliminar"><i class="bi bi-trash3"></i></button>
-                </div>
+            <!-- Info -->
+            <div style="flex:1;min-width:200px;">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">
+                <span class="prioridad-badge prioridad-<%= p.prioridad %>">
+                  <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
+                </span>
+                <% if (p.estado_recepcion === 'enviado') { %>
+                  <span class="estado-rec-badge rec-enviado"><i class="bi bi-send"></i> Enviado</span>
+                <% } else if (p.estado_recepcion === 'recibido_parcial') { %>
+                  <span class="estado-rec-badge rec-parcial"><i class="bi bi-clock"></i> Recibido parcial</span>
+                <% } else if (p.estado_recepcion === 'recibido') { %>
+                  <span class="estado-rec-badge rec-recibido"><i class="bi bi-check-circle"></i> Recibido</span>
+                <% } %>
               </div>
-            <% }) %>
-          </div>
-        <% } %>
-      </div>
 
-      <!-- Faltantes -->
-      <div id="seccionFaltantes" style="display:none;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:10px;" class="no-print">
-          Lista de faltantes / compras
-        </div>
-        <% if (faltantes.length === 0) { %>
-          <div class="empty-pedidos no-print">
-            <i class="bi bi-cart-x"></i>
-            <p>No hay faltantes registrados.<br>Tocá "+ Faltante" para agregar uno.</p>
-          </div>
-        <% } else { %>
-          <div style="display:flex;flex-direction:column;gap:8px;" id="listaFaltantes">
-            <% faltantes.forEach(p => { %>
-              <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %> <%= p.estado %>" data-id="<%= p.id %>">
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;">
-                    <span class="prioridad-badge prioridad-<%= p.prioridad %>">
-                      <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
-                    </span>
-                    <span class="estado-badge estado-<%= p.estado %>"><%= p.estado.charAt(0).toUpperCase() + p.estado.slice(1) %></span>
-                  </div>
-                  <div class="pedido-titulo"><%= p.titulo %></div>
-                  <div class="pedido-meta">
-                    <% if (p.cantidad) { %><span><i class="bi bi-box"></i> <%= p.cantidad %></span><% } %>
-                    <% if (p.proveedor) { %><span><i class="bi bi-truck"></i> <%= p.proveedor %></span><% } %>
-                    <% if (p.recordatorio) { %>
-                      <span class="recordatorio-chip"><i class="bi bi-bell"></i> Recordatorio: <%= p.recordatorio %></span>
-                    <% } %>
-                  </div>
-                  <% if (p.descripcion) { %>
-                    <div style="font-size:12px;color:var(--text-secondary);margin-top:5px;font-style:italic;"><%= p.descripcion %></div>
-                  <% } %>
-                  <% if (p.notas) { %>
-                    <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;background:var(--bg-body);padding:5px 9px;border-radius:6px;border-left:3px solid var(--border-color);">
-                      📝 <%= p.notas %>
-                    </div>
-                  <% } %>
-                </div>
-                <div class="pedido-actions no-print">
-                  <% if (p.estado === 'pendiente') { %>
-                    <button class="btn-accion success btn-marcar-listo" data-id="<%= p.id %>" title="Marcar como conseguido"><i class="bi bi-check-lg"></i></button>
-                  <% } %>
-                  <button class="btn-accion btn-editar" data-item='<%= JSON.stringify(p) %>' title="Editar"><i class="bi bi-pencil"></i></button>
-                  <button class="btn-accion danger btn-eliminar" data-id="<%= p.id %>" title="Eliminar"><i class="bi bi-trash3"></i></button>
-                </div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">
+                <%= p.titulo %>
               </div>
-            <% }) %>
+
+              <div style="font-size:12px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+                <% if (p.proveedor) { %><span><i class="bi bi-truck"></i> <%= p.proveedor %></span><% } %>
+                <% if (p.items && p.items.length) { %><span><i class="bi bi-box"></i> <%= p.items.length %> producto<%= p.items.length !== 1 ? 's' : '' %></span><% } %>
+                <% if (p.fecha_entrega) { %><span><i class="bi bi-calendar3"></i> <%= p.fecha_entrega %></span><% } %>
+                <span style="color:var(--text-muted);"><i class="bi bi-clock-history"></i> <%= new Date(p.created_at).toLocaleDateString('es-AR') %></span>
+              </div>
+
+              <!-- Ítems del pedido -->
+              <% if (p.items && p.items.length) { %>
+              <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
+                      <th style="padding:6px 10px;text-align:left;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;">Producto</th>
+                      <th style="padding:6px 10px;text-align:center;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;width:70px;">Cant.</th>
+                      <th style="padding:6px 10px;text-align:right;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;width:100px;">P. Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% p.items.forEach(item => { %>
+                    <tr style="border-bottom:1px solid var(--border-color);">
+                      <td style="padding:7px 10px;color:var(--text-primary);">
+                        <%= item.nombre %>
+                        <% if (item.es_manual) { %>
+                          <span style="font-size:10px;background:rgba(245,158,11,.12);color:#d97706;padding:1px 5px;border-radius:4px;margin-left:4px;">Manual</span>
+                        <% } %>
+                        <% if (item.recibido) { %>
+                          <span style="font-size:10px;background:rgba(16,185,129,.12);color:#059669;padding:1px 5px;border-radius:4px;margin-left:4px;">✓ Recibido</span>
+                        <% } %>
+                      </td>
+                      <td style="padding:7px 10px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);"><%= item.cantidad %></td>
+                      <td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">
+                        <%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %>
+                      </td>
+                    </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+              <% } %>
+
+              <% if (p.notas) { %>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;background:var(--bg-body);padding:6px 10px;border-radius:6px;border-left:3px solid var(--border-color);">
+                📝 <%= p.notas %>
+              </div>
+              <% } %>
+            </div>
+
+            <!-- Acciones -->
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;" class="no-print">
+              <% if (!p.estado_recepcion || p.estado_recepcion === null) { %>
+              <button onclick="abrirEnviarProveedor(<%= p.id %>, '<%= (p.titulo||'').replace(/'/g,'') %>')"
+                style="padding:6px 12px;background:rgba(99,102,241,.1);color:#6366f1;border:1.5px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">
+                <i class="bi bi-send"></i> Enviar a proveedor
+              </button>
+              <% } else if (p.estado_recepcion === 'enviado' || p.estado_recepcion === 'recibido_parcial') { %>
+              <button onclick="abrirEnviarProveedor(<%= p.id %>, '<%= (p.titulo||'').replace(/'/g,'') %>')"
+                style="padding:6px 12px;background:rgba(99,102,241,.06);color:#6366f1;border:1.5px dashed rgba(99,102,241,.4);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);"
+                title="Actualizar proveedor del pedido">
+                <i class="bi bi-arrow-repeat"></i> Re-enviar
+              </button>
+              <% } %>
+              <div style="display:flex;gap:5px;">
+                <button class="btn-accion btn-editar-pedido" data-id="<%= p.id %>" title="<%= p.estado_recepcion ? 'Agregar ítems (los ya recibidos se conservan)' : 'Editar pedido' %>">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <% if (p.estado_recepcion !== 'recibido') { %>
+                <button class="btn-accion danger btn-eliminar-pedido" data-id="<%= p.id %>" title="Eliminar">
+                  <i class="bi bi-trash3"></i>
+                </button>
+                <% } %>
+              </div>
+            </div>
           </div>
-        <% } %>
+        </div>
+        <% }) %>
       </div>
+      <% } %>
 
     </main>
     <%- include('../partials/footer') %>
   </div>
 </div>
 
-<!-- ══ MODAL NUEVO / EDITAR ══ -->
+<!-- ══ MODAL: NUEVO / EDITAR PEDIDO ══ -->
 <div class="sale-overlay" id="modalPedido" onclick="if(event.target.id==='modalPedido')cerrarModal()">
-  <div class="sale-modal" style="max-width:500px;text-align:left;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div id="modalIcono" style="width:36px;height:36px;border-radius:10px;background:rgba(27,79,216,.12);display:flex;align-items:center;justify-content:center;color:var(--color-primary);font-size:16px;">
+  <div class="sale-modal" style="max-width:820px;text-align:left;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
           <i class="bi bi-journal-check"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalTitulo">Nuevo Pedido</div>
-          <div style="font-size:11px;color:var(--text-secondary);">Completá los datos</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-primary);" id="modalPedidoTitulo">Nuevo pedido</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Agregá productos y elegí el proveedor</div>
         </div>
       </div>
-      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <input type="hidden" id="m_id">
-    <input type="hidden" id="m_tipo" value="pedido">
 
-    <div style="display:flex;flex-direction:column;gap:11px;">
-
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
       <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">¿Qué es? *</label>
-        <input type="text" id="m_titulo" placeholder="Ej: 2kg de queso cremoso / Aceite girasol 1L"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:600;outline:none;transition:border .2s;"
-          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        <label class="form-lbl">Nombre del pedido *</label>
+        <input type="text" id="m_titulo" class="form-inp" placeholder="Ej: Pedido semanal panadería">
       </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div>
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Cantidad</label>
-          <input type="text" id="m_cantidad" placeholder="Ej: 2kg, 3 unidades"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Prioridad</label>
-          <select id="m_prioridad" style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;font-family:var(--font-body);">
-            <option value="normal">Normal</option>
-            <option value="urgente">🔴 Urgente</option>
-            <option value="baja">Baja</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="campoCliente">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Cliente</label>
-        <input type="text" id="m_cliente" placeholder="Nombre del cliente (opcional)"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
-      </div>
-
-      <div id="campoProveedor" style="display:none;">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Proveedor</label>
-        <input type="text" id="m_proveedor" placeholder="¿Dónde lo comprás? (opcional)"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div id="campoFechaEntrega">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Fecha de entrega</label>
-          <input type="date" id="m_fecha_entrega"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
-        </div>
-        <div>
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="bi bi-bell" style="color:#d97706;"></i> Recordatorio</label>
-          <input type="date" id="m_recordatorio"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
-            onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
-        </div>
-      </div>
-
       <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px;">Descripción / Notas</label>
-        <textarea id="m_descripcion" placeholder="Detalles adicionales..." rows="2"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:var(--font-body);"
-          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
+        <label class="form-lbl">Prioridad</label>
+        <select id="m_prioridad" class="form-inp" style="cursor:pointer;">
+          <option value="normal">Normal</option>
+          <option value="urgente">🔴 Urgente</option>
+          <option value="baja">Baja</option>
+        </select>
       </div>
-
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:18px;">
-      <button onclick="guardar()" class="btn-action btn-action-primary" style="flex:1;justify-content:center;padding:11px;">
-        <i class="bi bi-check-lg"></i> <span id="btnGuardarTxt">Guardar</span>
+    <!-- Buscador de productos — filtrado en cliente sin fetch por letra -->
+    <div style="margin-bottom:14px;">
+      <label class="form-lbl">Agregar producto del sistema <span style="font-weight:400;text-transform:none;font-size:10px;">(<span id="pedProdCount">0</span> disponibles)</span></label>
+      <div style="position:relative;">
+        <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:13px;pointer-events:none;z-index:1;"></i>
+        <input type="text" id="pedBuscador" class="form-inp"
+          placeholder="Buscá por nombre o SKU…"
+          autocomplete="off"
+          style="padding-left:32px;"
+          oninput="filtrarProductosPedido(this.value)"
+          onfocus="mostrarDropPedido()">
+        <div id="pedBuscadorDrop"
+          style="display:none;position:absolute;top:calc(100%+3px);left:0;right:0;
+                 background:var(--bg-card);border:1px solid var(--border-color);
+                 border-radius:var(--radius-md);box-shadow:0 8px 24px rgba(0,0,0,.15);
+                 z-index:200;max-height:240px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <!-- Agregar manual -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="height:1px;flex:1;background:var(--border-color);"></div>
+        <span style="font-size:11px;color:var(--text-secondary);font-weight:600;">O INGRESÁ UN PRODUCTO MANUAL</span>
+        <div style="height:1px;flex:1;background:var(--border-color);"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:end;">
+        <div>
+          <label class="form-lbl">Nombre del producto</label>
+          <input type="text" id="manualNombre" class="form-inp" placeholder="Ej: Harina 000 x 25kg">
+        </div>
+        <div>
+          <label class="form-lbl">Cant.</label>
+          <input type="number" id="manualCantidad" class="form-inp" min="0.001" step="0.001" value="1" style="width:70px;">
+        </div>
+        <div>
+          <label class="form-lbl">P. costo</label>
+          <input type="number" id="manualCosto" class="form-inp" min="0" step="0.01" placeholder="0" style="width:100px;">
+        </div>
+        <button onclick="agregarManual()"
+          style="padding:8px 14px;background:rgba(245,158,11,.1);color:#d97706;border:1.5px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;height:38px;">
+          + Agregar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de ítems -->
+    <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:var(--bg-surface-2);">
+            <th style="padding:8px 12px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Producto</th>
+            <th style="padding:8px 12px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:90px;">Cantidad</th>
+            <th style="padding:8px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Costo</th>
+            <th style="padding:8px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Venta</th>
+            <th style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="pedItemsTbody">
+          <tr id="pedItemsVacio">
+            <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;">
+              <i class="bi bi-box-seam" style="font-size:22px;display:block;margin-bottom:6px;opacity:.4;"></i>
+              Buscá o ingresá productos para el pedido
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notas -->
+    <div style="margin-bottom:16px;">
+      <label class="form-lbl">Notas <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+      <textarea id="m_notas" class="form-inp" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
+    </div>
+
+    <!-- Botones -->
+    <div style="display:flex;gap:8px;">
+      <button onclick="guardarPedido()"
+        style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        <i class="bi bi-check-lg"></i> Guardar pedido
       </button>
       <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+    </div>
+    <div id="pedError" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ENVIAR A PROVEEDOR ══ -->
+<div class="sale-overlay" id="modalEnviar" onclick="if(event.target.id==='modalEnviar')cerrarModalEnviar()">
+  <div class="sale-modal" style="max-width:400px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:800;color:var(--text-primary);">Enviar a proveedor</div>
+      <button onclick="cerrarModalEnviar()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <input type="hidden" id="enviarPedidoId">
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;" id="enviarPedidoNombre"></div>
+    <div>
+      <label class="form-lbl">Elegí el proveedor</label>
+      <select id="enviarProveedorId" class="form-inp" style="cursor:pointer;">
+        <option value="">— Seleccioná un proveedor —</option>
+        <% proveedores.forEach(p => { %>
+        <option value="<%= p.id %>"><%= p.nombre %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div id="enviarError" style="display:none;margin-top:8px;font-size:12px;color:#dc2626;"></div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button onclick="confirmarEnviar()"
+        style="flex:1;padding:11px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        <i class="bi bi-send-fill"></i> Enviar
+      </button>
+      <button onclick="cerrarModalEnviar()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
     </div>
   </div>
 </div>
 
+<%- include('../partials/scripts') %>
 <script>
-let _tabActual = 'pedidos';
+'use strict';
+// ── Estado global ──────────────────────────────────────────────
+let _pedItems    = [];   // ítems del pedido en edición
+let _editPedId   = null;
+let _todosProds  = [];   // cache de todos los productos, cargado una vez
+const fmtP = n => n > 0 ? '$' + Number(n).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—';
 
-function setTab(tab) {
-  _tabActual = tab;
-  document.getElementById('seccionPedidos').style.display   = tab === 'pedidos'   ? 'block' : 'none';
-  document.getElementById('seccionFaltantes').style.display = tab === 'faltantes' ? 'block' : 'none';
-  document.getElementById('tabPedidos').classList.toggle('active', tab === 'pedidos');
-  document.getElementById('tabFaltantes').classList.toggle('active', tab === 'faltantes');
-}
+// Cargar todos los productos una sola vez al montar la página
+(async function cargarTodosProductos() {
+  try {
+    const r = await fetch('/pedidos/api/productos/buscar?q=*&todos=1');
+    if (!r.ok) return;
+    _todosProds = await r.json();
+    const el = document.getElementById('pedProdCount');
+    if (el) el.textContent = _todosProds.length;
+  } catch(e) {}
+})();
 
-function abrirModal(tipo, item = null) {
-  document.getElementById('m_id').value           = item?.id || '';
-  document.getElementById('m_tipo').value         = tipo;
-  document.getElementById('m_titulo').value       = item?.titulo || '';
-  document.getElementById('m_cantidad').value     = item?.cantidad || '';
-  document.getElementById('m_prioridad').value    = item?.prioridad || 'normal';
-  document.getElementById('m_cliente').value      = item?.cliente || '';
-  document.getElementById('m_proveedor').value    = item?.proveedor || '';
-  document.getElementById('m_fecha_entrega').value= item?.fecha_entrega || '';
-  document.getElementById('m_recordatorio').value = item?.recordatorio || '';
-  document.getElementById('m_descripcion').value  = item?.descripcion || '';
-
-  const esPedido = tipo === 'pedido';
-  document.getElementById('campoCliente').style.display   = esPedido ? 'block' : 'none';
-  document.getElementById('campoProveedor').style.display = esPedido ? 'none' : 'block';
-  document.getElementById('campoFechaEntrega').style.display = esPedido ? 'block' : 'none';
-
-  document.getElementById('modalTitulo').textContent = item
-    ? (esPedido ? 'Editar Pedido' : 'Editar Faltante')
-    : (esPedido ? 'Nuevo Pedido' : 'Nuevo Faltante');
-  document.getElementById('btnGuardarTxt').textContent = item ? 'Guardar cambios' : 'Guardar';
-
-  const icono = document.getElementById('modalIcono');
-  icono.style.background = esPedido ? 'rgba(27,79,216,.12)' : 'rgba(245,158,11,.12)';
-  icono.style.color      = esPedido ? 'var(--color-primary)' : '#d97706';
-  icono.innerHTML        = esPedido ? '<i class="bi bi-journal-check"></i>' : '<i class="bi bi-cart-x"></i>';
-
+// ── Modal Nuevo/Editar pedido ──────────────────────────────────
+function abrirNuevoPedido() {
+  _editPedId = null;
+  _pedItems  = [];
+  document.getElementById('m_id').value        = '';
+  document.getElementById('m_titulo').value    = '';
+  document.getElementById('m_prioridad').value = 'normal';
+  document.getElementById('m_notas').value     = '';
+  document.getElementById('pedBuscador').value = '';
+  document.getElementById('pedBuscadorDrop').style.display = 'none';
+  document.getElementById('pedError').style.display = 'none';
+  document.getElementById('modalPedidoTitulo').textContent = 'Nuevo pedido';
+  renderPedItems();
   document.getElementById('modalPedido').classList.add('open');
   setTimeout(() => document.getElementById('m_titulo').focus(), 80);
 }
 
-function cerrarModal() { document.getElementById('modalPedido').classList.remove('open'); }
+function cerrarModal() {
+  document.getElementById('modalPedido').classList.remove('open');
+}
 
-function editarItem(p) { abrirModal(p.tipo, p); }
+// ── Buscador de productos — filtrado local sin fetch ──────────
+function renderDropPedido(lista) {
+  const drop = document.getElementById('pedBuscadorDrop');
+  if (!lista.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = lista.slice(0, 30).map(p => `
+    <div onclick='agregarProducto(${JSON.stringify(p).replace(/'/g,"&#39;")})'
+      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;transition:background .1s;"
+      onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">
+          SKU: ${p.sku} · Stock: <strong style="color:${p.stock > 0 ? 'var(--color-success)' : '#ef4444'};">${p.stock}</strong>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtP(p.price_cost)} <span style="font-size:9px;font-weight:400;opacity:.7;">costo</span></div>
+        <div style="font-size:11px;font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">${fmtP(p.price)} <span style="font-size:9px;font-weight:400;">venta</span></div>
+      </div>
+    </div>`).join('') + (lista.length > 30 ? `<div style="padding:8px 14px;text-align:center;font-size:11.5px;color:var(--text-secondary);">Mostrando 30 de ${lista.length} — escribí para filtrar</div>` : '');
+  drop.style.display = 'block';
+}
 
-async function guardar() {
+function mostrarDropPedido() {
+  // Al hacer focus: mostrar todos los productos si no hay texto
+  const q = document.getElementById('pedBuscador').value.trim();
+  filtrarProductosPedido(q);
+}
+
+function filtrarProductosPedido(q) {
+  if (!_todosProds.length) return; // aún cargando
+  const drop = document.getElementById('pedBuscadorDrop');
+  if (!q) {
+    renderDropPedido(_todosProds);
+    return;
+  }
+  const ql = q.toLowerCase();
+  const filtrados = _todosProds.filter(p =>
+    p.name.toLowerCase().includes(ql) ||
+    (p.sku && p.sku.toLowerCase().includes(ql))
+  );
+  if (!filtrados.length) {
+    drop.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">Sin resultados para "${q}"</div>`;
+    drop.style.display = 'block';
+    return;
+  }
+  renderDropPedido(filtrados);
+}
+
+function agregarProducto(prod) {
+  document.getElementById('pedBuscador').value = '';
+  document.getElementById('pedBuscadorDrop').style.display = 'none';
+  const existing = _pedItems.find(i => i.sku === prod.sku);
+  if (existing) { existing.cantidad++; }
+  else {
+    _pedItems.push({
+      sku:          prod.sku,
+      nombre:       prod.name,
+      cantidad:     1,
+      precio_costo: Number(prod.price_cost) || 0,
+      precio_venta: Number(prod.price)      || 0,
+      es_manual:    false,
+    });
+  }
+  renderPedItems();
+  document.getElementById('pedBuscador').focus();
+}
+
+function agregarManual() {
+  const nombre = document.getElementById('manualNombre').value.trim();
+  if (!nombre) { alert('Ingresá el nombre del producto'); return; }
+  const cantidad = parseFloat(document.getElementById('manualCantidad').value) || 1;
+  const costo    = parseFloat(document.getElementById('manualCosto').value)    || 0;
+  _pedItems.push({ sku: null, nombre, cantidad, precio_costo: costo, precio_venta: 0, es_manual: true });
+  document.getElementById('manualNombre').value   = '';
+  document.getElementById('manualCantidad').value = '1';
+  document.getElementById('manualCosto').value    = '';
+  renderPedItems();
+}
+
+function renderPedItems() {
+  const tbody = document.getElementById('pedItemsTbody');
+  if (!_pedItems.length) {
+    tbody.innerHTML = `
+      <tr id="pedItemsVacio">
+        <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;">
+          <i class="bi bi-box-seam" style="font-size:22px;display:block;margin-bottom:6px;opacity:.4;"></i>
+          Buscá o ingresá productos para el pedido
+        </td>
+      </tr>`;
+    return;
+  }
+  tbody.innerHTML = _pedItems.map((item, idx) => `
+    <tr style="border-bottom:1px solid var(--border-color);background:var(--bg-surface);">
+      <td style="padding:8px 12px;">
+        <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${item.nombre}</div>
+        <div style="font-size:10.5px;color:var(--text-secondary);">${item.sku ? 'SKU: ' + item.sku : '🖊 Manual'}</div>
+      </td>
+      <td style="padding:6px 8px;text-align:center;">
+        <input type="number" value="${item.cantidad}" min="0.001" step="0.001"
+          style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;outline:none;"
+          oninput="updatePedItem(${idx},'cantidad',this.value)"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </td>
+      <td style="padding:6px 8px;">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+          <span style="color:var(--text-secondary);font-size:11px;">$</span>
+          <input type="number" value="${item.precio_costo}" min="0" step="0.01"
+            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:right;outline:none;"
+            oninput="updatePedItem(${idx},'precio_costo',this.value)"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+      </td>
+      <td style="padding:6px 8px;">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+          <span style="color:var(--text-secondary);font-size:11px;">$</span>
+          <input type="number" value="${item.precio_venta || 0}" min="0" step="0.01"
+            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:right;outline:none;"
+            oninput="updatePedItem(${idx},'precio_venta',this.value)"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+      </td>
+      <td style="padding:4px 6px;text-align:center;">
+        <button onclick="quitarPedItem(${idx})"
+          style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;padding:4px;border-radius:6px;transition:.15s;"
+          onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+function updatePedItem(idx, campo, valor) {
+  if (campo === 'cantidad')     _pedItems[idx].cantidad     = parseFloat(valor) || 0;
+  if (campo === 'precio_costo') _pedItems[idx].precio_costo = parseFloat(valor) || 0;
+  if (campo === 'precio_venta') _pedItems[idx].precio_venta = parseFloat(valor) || 0;
+}
+
+function quitarPedItem(idx) {
+  _pedItems.splice(idx, 1);
+  renderPedItems();
+}
+
+// ── Guardar pedido ─────────────────────────────────────────────
+async function guardarPedido() {
+  const errEl  = document.getElementById('pedError');
+  errEl.style.display = 'none';
   const titulo = document.getElementById('m_titulo').value.trim();
-  if (!titulo) { alert('El campo "¿Qué es?" es obligatorio'); return; }
+  if (!titulo)         { errEl.textContent = 'El nombre del pedido es obligatorio'; errEl.style.display='block'; return; }
+  if (!_pedItems.length) { errEl.textContent = 'Agregá al menos un producto'; errEl.style.display='block'; return; }
 
-  const id   = document.getElementById('m_id').value;
+  const id = document.getElementById('m_id').value;
   const body = {
-    tipo:          document.getElementById('m_tipo').value,
     titulo,
-    cantidad:      document.getElementById('m_cantidad').value.trim() || null,
-    prioridad:     document.getElementById('m_prioridad').value,
-    cliente:       document.getElementById('m_cliente').value.trim() || null,
-    proveedor:     document.getElementById('m_proveedor').value.trim() || null,
-    fecha_entrega: document.getElementById('m_fecha_entrega').value || null,
-    recordatorio:  document.getElementById('m_recordatorio').value || null,
-    descripcion:   document.getElementById('m_descripcion').value.trim() || null,
+    prioridad: document.getElementById('m_prioridad').value,
+    notas:     document.getElementById('m_notas').value.trim() || null,
+    items:     _pedItems,
   };
 
-  const url    = id ? `/pedidos/api/${id}` : '/pedidos/api';
-  const method = id ? 'PUT' : 'POST';
-  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error'); return; }
-  location.reload();
+  try {
+    const url    = id ? `/pedidos/api/${id}` : '/pedidos/api';
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); errEl.textContent = e.error || 'Error'; errEl.style.display='block'; return; }
+    cerrarModal();
+    location.reload();
+  } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
 }
 
-async function marcarListo(id) {
-  await fetch(`/pedidos/api/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:'listo'}) });
-  location.reload();
+// ── Modal: enviar a proveedor ──────────────────────────────────
+function abrirEnviarProveedor(id, titulo) {
+  document.getElementById('enviarPedidoId').value = id;
+  document.getElementById('enviarPedidoNombre').textContent = `Pedido: "${titulo}"`;
+  document.getElementById('enviarProveedorId').value = '';
+  document.getElementById('enviarError').style.display = 'none';
+  document.getElementById('modalEnviar').classList.add('open');
+}
+function cerrarModalEnviar() { document.getElementById('modalEnviar').classList.remove('open'); }
+
+async function confirmarEnviar() {
+  const pedidoId    = document.getElementById('enviarPedidoId').value;
+  const proveedorId = document.getElementById('enviarProveedorId').value;
+  const errEl       = document.getElementById('enviarError');
+  errEl.style.display = 'none';
+  if (!proveedorId) { errEl.textContent = 'Elegí un proveedor'; errEl.style.display='block'; return; }
+  try {
+    const r = await fetch(`/pedidos/api/${pedidoId}/enviar`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ proveedor_id: Number(proveedorId) }),
+    });
+    if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); errEl.textContent = e.error || 'Error'; errEl.style.display='block'; return; }
+    cerrarModalEnviar();
+    location.reload();
+  } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
 }
 
-async function marcarEntregado(id) {
-  await fetch(`/pedidos/api/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({estado:'entregado'}) });
-  location.reload();
-}
+// ── Delegación de eventos ──────────────────────────────────────
+document.addEventListener('click', e => {
+  // Cerrar dropdown buscador
+  if (!e.target.closest('#pedBuscador') && !e.target.closest('#pedBuscadorDrop')) {
+    document.getElementById('pedBuscadorDrop').style.display = 'none';
+  }
 
-async function eliminarItem(id) {
-  if (!confirm('¿Eliminar este ítem?')) return;
-  await fetch(`/pedidos/api/${id}`, { method:'DELETE' });
-  location.reload();
-}
-
-// Wire-up de botones usando delegación + data attributes (sin inline onclick con JSON)
-document.addEventListener('click', (e) => {
-  const btnEditar = e.target.closest('.btn-editar');
+  const btnEditar = e.target.closest('.btn-editar-pedido');
   if (btnEditar) {
-    try {
-      const item = JSON.parse(btnEditar.dataset.item);
-      editarItem(item);
-    } catch (err) {
-      console.error('Error parseando item:', err);
-      alert('Error al abrir el editor');
-    }
+    const id = btnEditar.dataset.id;
+    fetch(`/pedidos/api/${id}/items`)
+      .then(r => r.json())
+      .then(items => {
+        fetch(`/pedidos/api/${id}`)
+          .then(r => r.json())
+          .then(p => abrirEditarPedido(p, items));
+      });
     return;
   }
 
-  const btnEliminar = e.target.closest('.btn-eliminar');
+  const btnEliminar = e.target.closest('.btn-eliminar-pedido');
   if (btnEliminar) {
-    eliminarItem(Number(btnEliminar.dataset.id));
-    return;
-  }
-
-  const btnListo = e.target.closest('.btn-marcar-listo');
-  if (btnListo) {
-    marcarListo(Number(btnListo.dataset.id));
-    return;
-  }
-
-  const btnEntregado = e.target.closest('.btn-marcar-entregado');
-  if (btnEntregado) {
-    marcarEntregado(Number(btnEntregado.dataset.id));
+    if (!confirm('¿Eliminar este pedido?')) return;
+    fetch(`/pedidos/api/${btnEliminar.dataset.id}`, {method:'DELETE'})
+      .then(() => location.reload());
     return;
   }
 });
 
-// Badge en sidebar
+function abrirEditarPedido(p, items) {
+  _editPedId = p.id;
+  _pedItems  = items.map(i => ({
+    sku:          i.sku,
+    nombre:       i.nombre,
+    cantidad:     i.cantidad,
+    precio_costo: i.precio_costo,
+    es_manual:    !!i.es_manual,
+  }));
+  document.getElementById('m_id').value        = p.id;
+  document.getElementById('m_titulo').value    = p.titulo;
+  document.getElementById('m_prioridad').value = p.prioridad;
+  document.getElementById('m_notas').value     = p.notas || '';
+  document.getElementById('pedBuscador').value = '';
+  document.getElementById('pedError').style.display = 'none';
+  document.getElementById('modalPedidoTitulo').textContent =
+    p.estado_recepcion ? 'Agregar al pedido (ítems recibidos conservados)' : 'Editar pedido';
+  renderPedItems();
+  document.getElementById('modalPedido').classList.add('open');
+}
+
+// ── Badge sidebar ──────────────────────────────────────────────
 (async function() {
   try {
     const r = await fetch('/pedidos/api/badge');
@@ -439,5 +636,10 @@ document.addEventListener('click', (e) => {
   } catch(e) {}
 })();
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarModal();
+    cerrarModalEnviar();
+  }
+});
 </script>
