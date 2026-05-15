@@ -12,7 +12,6 @@ router.get('/', (req, res) => {
   const mes   = Number(req.query.mes)  || (hoy.getMonth() + 1);
   const anio  = Number(req.query.anio) || hoy.getFullYear();
 
-  // Nombres de meses en español
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -20,7 +19,6 @@ router.get('/', (req, res) => {
   const resumen    = svc.getResumenMes(mes, anio);
   const categorias = svc.getCategorias();
 
-  // Navegación mes anterior / siguiente
   const mesPrev  = mes === 1  ? 12 : mes - 1;
   const anioPrev = mes === 1  ? anio - 1 : anio;
   const mesSig   = mes === 12 ? 1  : mes + 1;
@@ -57,7 +55,7 @@ router.post('/api/recurrentes/:id/pagar', (req, res) => {
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
-// ── API: estado del mes (para navegación sin reload) ──────────
+// ── API: estado del mes ───────────────────────────────────────
 router.get('/api/recurrentes/estado', (req, res) => {
   try {
     const hoy  = new Date();
@@ -95,7 +93,7 @@ router.delete('/api/categorias/:id', (req, res) => {
   svc.deleteCategoria(req.params.id); res.json({ ok: true });
 });
 
-// ── API: generar mes manualmente (cron / botón admin) ─────────
+// ── API: generar mes manualmente ─────────────────────────────
 router.post('/api/recurrentes/generar', (req, res) => {
   try {
     const { mes, anio } = req.body;
@@ -104,7 +102,7 @@ router.post('/api/recurrentes/generar', (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── Resumen imprimible detallado ──────────────────────────────
+// ── Resumen imprimible — mes fijo ─────────────────────────────
 router.get('/resumen', (req, res) => {
   try {
     const hoy   = new Date();
@@ -113,20 +111,18 @@ router.get('/resumen', (req, res) => {
     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-    // Obtener todos los gastos del mes con estado
-    const todos = svc.getRecurrentesConEstado(mes, anio);
-    const pagados   = todos.filter(g => g.pagado);
-    const pendientes= todos.filter(g => !g.pagado);
+    const todos      = svc.getRecurrentesConEstado(mes, anio);
+    const pagados    = todos.filter(g => g.pagado);
+    const pendientes = todos.filter(g => !g.pagado);
 
-    const fmt     = n  => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
-    const fmtDate = d  => d ? new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+    const fmt     = n => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+    const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
 
-    const totalMes      = todos.reduce((s,g)     => s + Number(g.gasto_monto||0), 0);
-    const totalPagado   = pagados.reduce((s,g)   => s + Number(g.gasto_monto||0), 0);
-    const totalPendiente= pendientes.reduce((s,g)=> s + Number(g.gasto_monto||0), 0);
+    const totalMes       = todos.reduce((s,g)      => s + Number(g.gasto_monto||0), 0);
+    const totalPagado    = pagados.reduce((s,g)    => s + Number(g.gasto_monto||0), 0);
+    const totalPendiente = pendientes.reduce((s,g) => s + Number(g.gasto_monto||0), 0);
     const pct = totalMes > 0 ? Math.round(totalPagado / totalMes * 100) : 0;
 
-    // Agrupar por categoría (pagados)
     const gruposPagados = {};
     for (const g of pagados) {
       const cat = g.categoria_nombre || 'Sin categoría';
@@ -134,7 +130,6 @@ router.get('/resumen', (req, res) => {
       gruposPagados[cat].push(g);
     }
 
-    // Agrupar por categoría (pendientes)
     const gruposPendientes = {};
     for (const g of pendientes) {
       const cat = g.categoria_nombre || 'Sin categoría';
@@ -142,7 +137,6 @@ router.get('/resumen', (req, res) => {
       gruposPendientes[cat].push(g);
     }
 
-    // Render filas pagados
     const filasPagados = Object.entries(gruposPagados).sort().map(([cat, items]) => {
       const subtotal = items.reduce((s,i) => s + Number(i.gasto_monto||0), 0);
       const rows = items.map(g => `
@@ -169,7 +163,6 @@ router.get('/resumen', (req, res) => {
         </tr>${rows}`;
     }).join('');
 
-    // Render filas pendientes
     const filasPendientes = Object.entries(gruposPendientes).sort().map(([cat, items]) => {
       const subtotal = items.reduce((s,i) => s + Number(i.gasto_monto||0), 0);
       const rows = items.map(g => `
@@ -196,7 +189,6 @@ router.get('/resumen', (req, res) => {
         </tr>${rows}`;
     }).join('');
 
-    // Distribución por categoría (barra visual para el resumen ejecutivo)
     const catMap = {};
     for (const g of todos) {
       const cat = g.categoria_nombre || 'Sin categoría';
@@ -242,36 +234,257 @@ router.get('/resumen', (req, res) => {
       hour:'2-digit', minute:'2-digit'
     });
 
-    const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Gastos ${MESES[mes-1]} ${anio} — AxSoft</title>
-<style>
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(buildResumenHtml({
+      titulo: `Gastos Fijos — ${MESES[mes-1]} ${anio}`,
+      subtitulo: `${todos.length} gasto${todos.length!==1?'s':''} fijo${todos.length!==1?'s':''} configurados · ${pagados.length} pagado${pagados.length!==1?'s':''} · ${pendientes.length} pendiente${pendientes.length!==1?'s':''}`,
+      totalMes, totalPagado, totalPendiente, pct,
+      cantTodos: todos.length, cantPagados: pagados.length, cantPendientes: pendientes.length,
+      filasPagados, filasPendientes, distCats,
+      catMap, fmt,
+      generadoEn,
+      barTitle: `Gastos Fijos — ${MESES[mes-1]} ${anio}`,
+      granTotalLabel: `TOTAL COMPROMETIDO — ${MESES[mes-1].toUpperCase()} ${anio}`,
+      granTotalSub: `Pagado: ${fmt(totalPagado)} (${pct}%) · Pendiente: ${fmt(totalPendiente)} · ${todos.length} gastos fijos`,
+      footerRight: `${MESES[mes-1]} ${anio} · ${todos.length} gastos fijos · Generado: ${generadoEn}`,
+    }));
+  } catch(e) { res.status(500).send('<pre>Error: ' + e.message + '\n' + e.stack + '</pre>'); }
+});
+
+// ── Resumen imprimible — búsqueda por período ─────────────────
+router.get('/resumen-busqueda', (req, res) => {
+  try {
+    const { desde, hasta, q } = req.query;
+    const { all: dbAll } = require('../db');
+
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (desde) { where += ' AND fecha >= ?'; params.push(desde); }
+    if (hasta) { where += ' AND fecha <= ?'; params.push(hasta); }
+    if (q && q.trim()) {
+      where += ' AND (descripcion LIKE ? OR categoria LIKE ?)';
+      params.push(`%${q.trim()}%`, `%${q.trim()}%`);
+    }
+
+    const gastos = dbAll(
+      `SELECT g.*, r.descripcion as rec_nombre, r.categoria_nombre as rec_cat
+       FROM gastos g
+       LEFT JOIN gastos_recurrentes r ON r.id = g.recurrente_id
+       ${where}
+       ORDER BY fecha DESC, id DESC
+       LIMIT 500`,
+      params
+    );
+
+    const fmt     = n => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+    const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+
+    const pagados    = gastos.filter(g => g.pagado);
+    const pendientes = gastos.filter(g => !g.pagado);
+
+    const totalMes       = gastos.reduce((s,g)     => s + Number(g.monto||0), 0);
+    const totalPagado    = pagados.reduce((s,g)    => s + Number(g.monto||0), 0);
+    const totalPendiente = pendientes.reduce((s,g) => s + Number(g.monto||0), 0);
+    const pct = totalMes > 0 ? Math.round(totalPagado / totalMes * 100) : 0;
+
+    // Agrupar pagados por categoría
+    const gruposPagados = {};
+    for (const g of pagados) {
+      const cat = g.categoria || g.rec_cat || 'Sin categoría';
+      if (!gruposPagados[cat]) gruposPagados[cat] = [];
+      gruposPagados[cat].push(g);
+    }
+
+    // Agrupar pendientes por categoría
+    const gruposPendientes = {};
+    for (const g of pendientes) {
+      const cat = g.categoria || g.rec_cat || 'Sin categoría';
+      if (!gruposPendientes[cat]) gruposPendientes[cat] = [];
+      gruposPendientes[cat].push(g);
+    }
+
+    // Filas pagados
+    const filasPagados = Object.entries(gruposPagados).sort().map(([cat, items]) => {
+      const subtotal = items.reduce((s,i) => s + Number(i.monto||0), 0);
+      const rows = items.map(g => `
+        <tr>
+          <td style="padding-left:24px;font-weight:600;color:#111;">${g.rec_nombre || g.descripcion || '—'}</td>
+          <td style="color:#6b7280;font-size:12px;">${cat}</td>
+          <td style="text-align:center;color:#6b7280;font-size:12px;">${fmtDate(g.fecha)}</td>
+          <td style="text-align:center;">
+            <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">✓ Pagado</span>
+          </td>
+          <td style="text-align:center;color:#374151;font-size:12px;">${fmtDate(g.fecha_pago)}</td>
+          <td style="text-align:center;color:#6b7280;font-size:12px;">${g.metodo_pago||'—'}</td>
+          <td style="text-align:right;font-weight:800;color:#059669;">${fmt(g.monto)}</td>
+        </tr>`).join('');
+      return `
+        <tr style="background:#f0fdf4;">
+          <td colspan="6" style="padding:9px 14px;font-weight:800;font-size:13px;color:#065f46;border-top:2px solid #bbf7d0;">
+            <i>▸ ${cat}</i>
+            <span style="font-weight:400;font-size:11px;color:#6b7280;margin-left:8px;">${items.length} gasto${items.length!==1?'s':''}</span>
+          </td>
+          <td style="text-align:right;padding:9px 14px;font-weight:900;color:#059669;border-top:2px solid #bbf7d0;">${fmt(subtotal)}</td>
+        </tr>${rows}`;
+    }).join('');
+
+    // Filas pendientes
+    const filasPendientes = Object.entries(gruposPendientes).sort().map(([cat, items]) => {
+      const subtotal = items.reduce((s,i) => s + Number(i.monto||0), 0);
+      const rows = items.map(g => `
+        <tr>
+          <td style="padding-left:24px;font-weight:600;color:#111;">${g.rec_nombre || g.descripcion || '—'}</td>
+          <td style="color:#6b7280;font-size:12px;">${cat}</td>
+          <td style="text-align:center;color:#6b7280;font-size:12px;">${fmtDate(g.fecha)}</td>
+          <td style="text-align:center;">
+            <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">⏳ Pendiente</span>
+          </td>
+          <td style="text-align:center;color:#9ca3af;font-size:12px;">—</td>
+          <td style="text-align:center;color:#6b7280;font-size:12px;">—</td>
+          <td style="text-align:right;font-weight:800;color:#dc2626;">${fmt(g.monto)}</td>
+        </tr>`).join('');
+      return `
+        <tr style="background:#fffbeb;">
+          <td colspan="6" style="padding:9px 14px;font-weight:800;font-size:13px;color:#92400e;border-top:2px solid #fde68a;">
+            <i>▸ ${cat}</i>
+            <span style="font-weight:400;font-size:11px;color:#6b7280;margin-left:8px;">${items.length} gasto${items.length!==1?'s':''}</span>
+          </td>
+          <td style="text-align:right;padding:9px 14px;font-weight:900;color:#dc2626;border-top:2px solid #fde68a;">${fmt(subtotal)}</td>
+        </tr>${rows}`;
+    }).join('');
+
+    // Distribución por categoría
+    const catMap = {};
+    for (const g of gastos) {
+      const cat = g.categoria || g.rec_cat || 'Sin categoría';
+      if (!catMap[cat]) catMap[cat] = { total:0, pagado:0, cant:0 };
+      catMap[cat].total  += Number(g.monto||0);
+      catMap[cat].pagado += g.pagado ? Number(g.monto||0) : 0;
+      catMap[cat].cant++;
+    }
+    const distCats = Object.entries(catMap).sort((a,b) => b[1].total - a[1].total).map(([cat, d]) => {
+      const pctCat = totalMes > 0 ? Math.round(d.total / totalMes * 100) : 0;
+      const pctPag = d.total > 0  ? Math.round(d.pagado / d.total * 100) : 0;
+      return `
+        <tr>
+          <td style="font-weight:600;">${cat}</td>
+          <td style="text-align:center;">${d.cant}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:${pctCat}%;background:#1B4FD8;border-radius:4px;"></div>
+              </div>
+              <span style="font-size:11px;color:#6b7280;width:30px;text-align:right;">${pctCat}%</span>
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:700;color:#dc2626;">${fmt(d.total)}</td>
+          <td style="text-align:center;">
+            <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;">
+              <span style="color:#059669;font-weight:700;">${fmt(d.pagado)}</span>
+              <span style="color:#9ca3af;">·</span>
+              <span style="color:#d97706;font-weight:700;">${fmt(d.total-d.pagado)} pend.</span>
+            </div>
+          </td>
+          <td style="text-align:center;">
+            <div style="height:6px;background:#fee2e2;border-radius:3px;overflow:hidden;width:60px;display:inline-block;">
+              <div style="height:100%;width:${pctPag}%;background:#10b981;border-radius:3px;"></div>
+            </div>
+            <span style="font-size:10px;color:#6b7280;margin-left:4px;">${pctPag}%</span>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const generadoEn = new Date().toLocaleString('es-AR', {
+      day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit'
+    });
+
+    // Construir título del período
+    const fmtD = d => d ? new Date(d+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+    let periodoTxt = '';
+    if (desde && hasta) periodoTxt = `${fmtD(desde)} al ${fmtD(hasta)}`;
+    else if (desde)      periodoTxt = `Desde ${fmtD(desde)}`;
+    else if (hasta)      periodoTxt = `Hasta ${fmtD(hasta)}`;
+    else                 periodoTxt = 'Todos los períodos';
+    if (q) periodoTxt += ` · Búsqueda: "${q}"`;
+
+    // Las tablas de búsqueda tienen 7 columnas (incluye "Fecha del gasto")
+    const filasPagadosBusq = filasPagados.replace(/colspan="6"/g, 'colspan="6"');
+
+    const html = buildResumenHtmlBusqueda({
+      titulo: `Gastos — ${periodoTxt}`,
+      subtitulo: `${gastos.length} gasto${gastos.length!==1?'s':''} encontrados · ${pagados.length} pagado${pagados.length!==1?'s':''} · ${pendientes.length} pendiente${pendientes.length!==1?'s':''}`,
+      totalMes, totalPagado, totalPendiente, pct,
+      cantTodos: gastos.length, cantPagados: pagados.length, cantPendientes: pendientes.length,
+      filasPagados, filasPendientes, distCats,
+      catMap, fmt,
+      generadoEn,
+      barTitle: `Gastos — ${periodoTxt}`,
+      granTotalLabel: `TOTAL DEL PERÍODO`,
+      granTotalSub: `Pagado: ${fmt(totalPagado)} (${pct}%) · Pendiente: ${fmt(totalPendiente)} · ${gastos.length} gastos`,
+      footerRight: `${periodoTxt} · ${gastos.length} gastos · Generado: ${generadoEn}`,
+    });
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch(e) { res.status(500).send('<pre>Error: ' + e.message + '\n' + e.stack + '</pre>'); }
+});
+
+// ── API: buscar gastos por rango de fechas ────────────────────
+router.get('/api/buscar', (req, res) => {
+  try {
+    const { desde, hasta, q } = req.query;
+    const { all: dbAll } = require('../db');
+
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (desde) { where += ' AND fecha >= ?'; params.push(desde); }
+    if (hasta) { where += ' AND fecha <= ?'; params.push(hasta); }
+    if (q && q.trim()) {
+      where += ' AND (descripcion LIKE ? OR categoria LIKE ?)';
+      params.push(`%${q.trim()}%`, `%${q.trim()}%`);
+    }
+
+    const gastos = dbAll(
+      `SELECT g.*, r.descripcion as rec_nombre, r.categoria_nombre as rec_cat
+       FROM gastos g
+       LEFT JOIN gastos_recurrentes r ON r.id = g.recurrente_id
+       ${where}
+       ORDER BY fecha DESC, id DESC
+       LIMIT 200`,
+      params
+    );
+
+    const total     = gastos.reduce((s, g) => s + Number(g.monto), 0);
+    const pagado    = gastos.filter(g => g.pagado).reduce((s, g) => s + Number(g.monto), 0);
+    const pendiente = total - pagado;
+
+    res.json({ gastos, total, pagado, pendiente, cantidad: gastos.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════
+// Helpers para generar el HTML de resumen (reutilizable)
+// ══════════════════════════════════════════════════════════════
+
+function getResumenCSS() {
+  return `
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Segoe UI',Arial,sans-serif; background:#f1f5f9; color:#111; font-size:13px; }
-
-  /* Barra de acción */
   .bar { position:sticky; top:0; z-index:10; background:#1B4FD8; color:#fff;
          padding:10px 40px; display:flex; align-items:center; justify-content:space-between; }
   .bar-title { font-size:14px; font-weight:700; }
   .bar button { padding:7px 18px; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
   .btn-p { background:#fff; color:#1B4FD8; }
   .btn-c { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); margin-left:6px; }
-
-  /* Página */
   .page { max-width:980px; margin:0 auto; background:#fff; padding:36px 44px; min-height:100vh; }
-
-  /* Header del doc */
   .doc-header { display:flex; justify-content:space-between; align-items:flex-start;
                 padding-bottom:20px; border-bottom:3px solid #1B4FD8; margin-bottom:28px; }
-  .doc-title { font-size:28px; font-weight:900; color:#1B4FD8; letter-spacing:-0.5px; }
+  .doc-title { font-size:26px; font-weight:900; color:#1B4FD8; letter-spacing:-0.5px; }
   .doc-sub   { font-size:12px; color:#6b7280; margin-top:4px; }
   .doc-right { text-align:right; }
   .doc-empresa { font-size:15px; font-weight:800; color:#111; }
   .doc-gen     { font-size:11px; color:#9ca3af; margin-top:3px; }
-
-  /* KPIs */
   .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
   .kpi { border-radius:10px; padding:16px 18px; }
   .kpi.tot { background:#eff6ff; border:1.5px solid #bfdbfe; }
@@ -285,96 +498,85 @@ router.get('/resumen', (req, res) => {
   .kpi.pen .kpi-v { color:#d97706; }
   .kpi.pct .kpi-v { color:#7c3aed; }
   .kpi-sub { font-size:11px; color:#6b7280; margin-top:4px; }
-
-  /* Barra progreso */
   .prog-wrap { margin-top:8px; }
   .prog-bg   { height:8px; background:#e9d5ff; border-radius:4px; overflow:hidden; }
   .prog-fill { height:100%; border-radius:4px; background:#7c3aed; }
-
-  /* Secciones */
   .section { margin-bottom:32px; }
   .section-title {
     display:flex; align-items:center; gap:10px;
     font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.6px;
     padding:10px 16px; border-radius:8px; margin-bottom:12px;
   }
-  .section-title.pagado   { background:#d1fae5; color:#065f46; border-left:4px solid #10b981; }
-  .section-title.pendiente{ background:#fef3c7; color:#92400e; border-left:4px solid #f59e0b; }
-  .section-title.resumen  { background:#eff6ff; color:#1e3a8a; border-left:4px solid #1B4FD8; }
-  .section-title .badge   { margin-left:auto; font-size:12px; font-weight:900; letter-spacing:0; text-transform:none; }
-
-  /* Tabla */
+  .section-title.pagado    { background:#d1fae5; color:#065f46; border-left:4px solid #10b981; }
+  .section-title.pendiente { background:#fef3c7; color:#92400e; border-left:4px solid #f59e0b; }
+  .section-title.resumen   { background:#eff6ff; color:#1e3a8a; border-left:4px solid #1B4FD8; }
+  .section-title .badge    { margin-left:auto; font-size:12px; font-weight:900; letter-spacing:0; text-transform:none; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:8px; }
   thead tr { background:#1B4FD8; color:#fff; }
   th { padding:9px 12px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }
   td { padding:8px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
   tr:last-child td { border-bottom:none; }
-
-  /* Gran total */
   .gran { display:flex; justify-content:space-between; align-items:center;
           background:#1B4FD8; color:#fff; border-radius:10px; padding:16px 22px; margin-top:12px; }
   .gran-l { font-size:13px; font-weight:700; }
   .gran-v { font-size:28px; font-weight:900; letter-spacing:-1px; }
-
-  /* Tabla dist por cat */
   .dist-table thead tr { background:#374151; }
-
-  /* Vacío */
   .empty { text-align:center; padding:24px; color:#9ca3af; font-size:13px; font-style:italic; }
-
-  /* Footer */
   .footer { margin-top:32px; padding-top:14px; border-top:1px solid #e5e7eb;
             display:flex; justify-content:space-between; color:#9ca3af; font-size:11px; }
-
   @media print {
     body { background:#fff; }
     .page { padding:20px 28px; }
     .bar { display:none !important; }
     .kpis { grid-template-columns:repeat(4,1fr); }
-  }
-</style>
+  }`;
+}
+
+function buildResumenHtml({ titulo, subtitulo, totalMes, totalPagado, totalPendiente, pct,
+  cantTodos, cantPagados, cantPendientes, filasPagados, filasPendientes, distCats,
+  catMap, fmt, generadoEn, barTitle, granTotalLabel, granTotalSub, footerRight }) {
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${titulo} — AxSoft</title>
+<style>${getResumenCSS()}</style>
 </head>
 <body>
-
-<!-- Barra de acción -->
 <div class="bar">
-  <span class="bar-title">📄 Gastos Fijos — ${MESES[mes-1]} ${anio}</span>
+  <span class="bar-title">📄 ${barTitle}</span>
   <div>
     <button class="btn-p" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
     <button class="btn-c" onclick="window.close()">✕ Cerrar</button>
   </div>
 </div>
-
 <div class="page">
-
-  <!-- Header del documento -->
   <div class="doc-header">
     <div>
-      <div class="doc-title">Gastos Fijos — ${MESES[mes-1]} ${anio}</div>
-      <div class="doc-sub">${todos.length} gasto${todos.length!==1?'s':''} fijo${todos.length!==1?'s':''} configurados · ${pagados.length} pagado${pagados.length!==1?'s':''} · ${pendientes.length} pendiente${pendientes.length!==1?'s':''}</div>
+      <div class="doc-title">${titulo}</div>
+      <div class="doc-sub">${subtitulo}</div>
     </div>
     <div class="doc-right">
       <div class="doc-empresa">AxSoft · Sistema de Gestión</div>
       <div class="doc-gen">Generado el ${generadoEn}</div>
     </div>
   </div>
-
-  <!-- KPIs -->
   <div class="kpis">
     <div class="kpi tot">
       <div class="kpi-l">Total comprometido</div>
       <div class="kpi-v">${fmt(totalMes)}</div>
-      <div class="kpi-sub">${todos.length} gasto${todos.length!==1?'s':''} fijos</div>
+      <div class="kpi-sub">${cantTodos} gasto${cantTodos!==1?'s':''} fijos</div>
     </div>
     <div class="kpi pag">
       <div class="kpi-l">Pagado</div>
       <div class="kpi-v">${fmt(totalPagado)}</div>
-      <div class="kpi-sub">${pagados.length} abonado${pagados.length!==1?'s':''}</div>
+      <div class="kpi-sub">${cantPagados} abonado${cantPagados!==1?'s':''}</div>
     </div>
     <div class="kpi pen">
       <div class="kpi-l">Pendiente</div>
       <div class="kpi-v">${fmt(totalPendiente)}</div>
-      <div class="kpi-sub">${pendientes.length} sin pagar</div>
+      <div class="kpi-sub">${cantPendientes} sin pagar</div>
     </div>
     <div class="kpi pct">
       <div class="kpi-l">Progreso del mes</div>
@@ -384,116 +586,194 @@ router.get('/resumen', (req, res) => {
       </div>
     </div>
   </div>
-
-  <!-- ── SECCIÓN 1: PAGADOS ──────────────────────────────────── -->
   <div class="section">
     <div class="section-title pagado">
       <span>✅ Pagados este mes</span>
       <span class="badge">${fmt(totalPagado)}</span>
     </div>
-    ${pagados.length ? `
+    ${cantPagados ? `
     <table>
-      <thead>
-        <tr>
-          <th>Gasto</th>
-          <th>Categoría</th>
-          <th style="text-align:center;">Estado</th>
-          <th style="text-align:center;">Fecha de pago</th>
-          <th style="text-align:center;">Forma de pago</th>
-          <th style="text-align:right;">Monto</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Gasto</th><th>Categoría</th><th style="text-align:center;">Estado</th>
+        <th style="text-align:center;">Fecha de pago</th><th style="text-align:center;">Forma de pago</th>
+        <th style="text-align:right;">Monto</th>
+      </tr></thead>
       <tbody>${filasPagados}</tbody>
-      <tfoot>
-        <tr style="background:#f0fdf4;">
-          <td colspan="5" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#065f46;">
-            Subtotal pagado:
-          </td>
-          <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#059669;">
-            ${fmt(totalPagado)}
-          </td>
-        </tr>
-      </tfoot>
-    </table>` : '<div class="empty">Sin pagos registrados este mes</div>'}
+      <tfoot><tr style="background:#f0fdf4;">
+        <td colspan="5" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#065f46;">Subtotal pagado:</td>
+        <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#059669;">${fmt(totalPagado)}</td>
+      </tr></tfoot>
+    </table>` : '<div class="empty">Sin pagos registrados</div>'}
   </div>
-
-  <!-- ── SECCIÓN 2: PENDIENTES ──────────────────────────────── -->
   <div class="section">
     <div class="section-title pendiente">
       <span>⏳ Pendientes de pago</span>
       <span class="badge">${fmt(totalPendiente)}</span>
     </div>
-    ${pendientes.length ? `
+    ${cantPendientes ? `
     <table>
-      <thead>
-        <tr>
-          <th>Gasto</th>
-          <th>Categoría</th>
-          <th style="text-align:center;">Estado</th>
-          <th style="text-align:center;">Fecha pago</th>
-          <th style="text-align:center;">Vencimiento</th>
-          <th style="text-align:right;">Monto</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Gasto</th><th>Categoría</th><th style="text-align:center;">Estado</th>
+        <th style="text-align:center;">Fecha pago</th><th style="text-align:center;">Vencimiento</th>
+        <th style="text-align:right;">Monto</th>
+      </tr></thead>
       <tbody>${filasPendientes}</tbody>
-      <tfoot>
-        <tr style="background:#fffbeb;">
-          <td colspan="5" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#92400e;">
-            Total pendiente:
-          </td>
-          <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#dc2626;">
-            ${fmt(totalPendiente)}
-          </td>
-        </tr>
-      </tfoot>
+      <tfoot><tr style="background:#fffbeb;">
+        <td colspan="5" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#92400e;">Total pendiente:</td>
+        <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#dc2626;">${fmt(totalPendiente)}</td>
+      </tr></tfoot>
     </table>` : '<div class="empty" style="background:#f0fdf4;border-radius:8px;color:#059669;font-weight:700;">🎉 Todo pagado este mes</div>'}
   </div>
-
-  <!-- ── SECCIÓN 3: RESUMEN EJECUTIVO ──────────────────────── -->
   <div class="section">
     <div class="section-title resumen">
       <span>📊 Distribución por categoría</span>
       <span class="badge">${Object.keys(catMap).length} categoría${Object.keys(catMap).length!==1?'s':''}</span>
     </div>
     <table class="dist-table">
-      <thead>
-        <tr>
-          <th>Categoría</th>
-          <th style="text-align:center;">Gastos</th>
-          <th>Participación</th>
-          <th style="text-align:right;">Total</th>
-          <th style="text-align:center;">Pagado · Pendiente</th>
-          <th style="text-align:center;">% Pagado</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th>Categoría</th><th style="text-align:center;">Gastos</th><th>Participación</th>
+        <th style="text-align:right;">Total</th><th style="text-align:center;">Pagado · Pendiente</th>
+        <th style="text-align:center;">% Pagado</th>
+      </tr></thead>
       <tbody>${distCats}</tbody>
     </table>
   </div>
-
-  <!-- Gran total -->
   <div class="gran">
     <div>
-      <div class="gran-l">TOTAL COMPROMETIDO — ${MESES[mes-1].toUpperCase()} ${anio}</div>
-      <div style="font-size:11px;opacity:.75;margin-top:3px;">
-        Pagado: ${fmt(totalPagado)} (${pct}%) · Pendiente: ${fmt(totalPendiente)} · ${todos.length} gastos fijos
-      </div>
+      <div class="gran-l">${granTotalLabel}</div>
+      <div style="font-size:11px;opacity:.75;margin-top:3px;">${granTotalSub}</div>
     </div>
     <div class="gran-v">${fmt(totalMes)}</div>
   </div>
-
-  <!-- Footer -->
   <div class="footer">
     <span>AxSoft · Sistema de Gestión</span>
-    <span>${MESES[mes-1]} ${anio} · ${todos.length} gastos fijos · Generado: ${generadoEn}</span>
+    <span>${footerRight}</span>
   </div>
-
 </div>
 </body>
 </html>`;
+}
 
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch(e) { res.status(500).send('<pre>Error: ' + e.message + '\n' + e.stack + '</pre>'); }
-});
+function buildResumenHtmlBusqueda({ titulo, subtitulo, totalMes, totalPagado, totalPendiente, pct,
+  cantTodos, cantPagados, cantPendientes, filasPagados, filasPendientes, distCats,
+  catMap, fmt, generadoEn, barTitle, granTotalLabel, granTotalSub, footerRight }) {
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${titulo} — AxSoft</title>
+<style>${getResumenCSS()}</style>
+</head>
+<body>
+<div class="bar">
+  <span class="bar-title">📄 ${barTitle}</span>
+  <div>
+    <button class="btn-p" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    <button class="btn-c" onclick="window.close()">✕ Cerrar</button>
+  </div>
+</div>
+<div class="page">
+  <div class="doc-header">
+    <div>
+      <div class="doc-title">${titulo}</div>
+      <div class="doc-sub">${subtitulo}</div>
+    </div>
+    <div class="doc-right">
+      <div class="doc-empresa">AxSoft · Sistema de Gestión</div>
+      <div class="doc-gen">Generado el ${generadoEn}</div>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi tot">
+      <div class="kpi-l">Total del período</div>
+      <div class="kpi-v">${fmt(totalMes)}</div>
+      <div class="kpi-sub">${cantTodos} gasto${cantTodos!==1?'s':''}</div>
+    </div>
+    <div class="kpi pag">
+      <div class="kpi-l">Pagado</div>
+      <div class="kpi-v">${fmt(totalPagado)}</div>
+      <div class="kpi-sub">${cantPagados} abonado${cantPagados!==1?'s':''}</div>
+    </div>
+    <div class="kpi pen">
+      <div class="kpi-l">Pendiente</div>
+      <div class="kpi-v">${fmt(totalPendiente)}</div>
+      <div class="kpi-sub">${cantPendientes} sin pagar</div>
+    </div>
+    <div class="kpi pct">
+      <div class="kpi-l">% Pagado</div>
+      <div class="kpi-v">${pct}%</div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'#10b981':'#7c3aed'};"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title pagado">
+      <span>✅ Pagados en el período</span>
+      <span class="badge">${fmt(totalPagado)}</span>
+    </div>
+    ${cantPagados ? `
+    <table>
+      <thead><tr>
+        <th>Gasto</th><th>Categoría</th><th style="text-align:center;">Fecha</th>
+        <th style="text-align:center;">Estado</th><th style="text-align:center;">F. Pago</th>
+        <th style="text-align:center;">Forma pago</th><th style="text-align:right;">Monto</th>
+      </tr></thead>
+      <tbody>${filasPagados}</tbody>
+      <tfoot><tr style="background:#f0fdf4;">
+        <td colspan="6" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#065f46;">Subtotal pagado:</td>
+        <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#059669;">${fmt(totalPagado)}</td>
+      </tr></tfoot>
+    </table>` : '<div class="empty">Sin pagos en este período</div>'}
+  </div>
+  <div class="section">
+    <div class="section-title pendiente">
+      <span>⏳ Pendientes en el período</span>
+      <span class="badge">${fmt(totalPendiente)}</span>
+    </div>
+    ${cantPendientes ? `
+    <table>
+      <thead><tr>
+        <th>Gasto</th><th>Categoría</th><th style="text-align:center;">Fecha</th>
+        <th style="text-align:center;">Estado</th><th style="text-align:center;">F. Pago</th>
+        <th style="text-align:center;">Forma pago</th><th style="text-align:right;">Monto</th>
+      </tr></thead>
+      <tbody>${filasPendientes}</tbody>
+      <tfoot><tr style="background:#fffbeb;">
+        <td colspan="6" style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#92400e;">Total pendiente:</td>
+        <td style="text-align:right;padding:10px 12px;font-size:16px;font-weight:900;color:#dc2626;">${fmt(totalPendiente)}</td>
+      </tr></tfoot>
+    </table>` : '<div class="empty" style="background:#f0fdf4;border-radius:8px;color:#059669;font-weight:700;">🎉 Todo pagado en este período</div>'}
+  </div>
+  <div class="section">
+    <div class="section-title resumen">
+      <span>📊 Distribución por categoría</span>
+      <span class="badge">${Object.keys(catMap).length} categoría${Object.keys(catMap).length!==1?'s':''}</span>
+    </div>
+    <table class="dist-table">
+      <thead><tr>
+        <th>Categoría</th><th style="text-align:center;">Gastos</th><th>Participación</th>
+        <th style="text-align:right;">Total</th><th style="text-align:center;">Pagado · Pendiente</th>
+        <th style="text-align:center;">% Pagado</th>
+      </tr></thead>
+      <tbody>${distCats}</tbody>
+    </table>
+  </div>
+  <div class="gran">
+    <div>
+      <div class="gran-l">${granTotalLabel}</div>
+      <div style="font-size:11px;opacity:.75;margin-top:3px;">${granTotalSub}</div>
+    </div>
+    <div class="gran-v">${fmt(totalMes)}</div>
+  </div>
+  <div class="footer">
+    <span>AxSoft · Sistema de Gestión</span>
+    <span>${footerRight}</span>
+  </div>
+</div>
+</body>
+</html>`;
+}
 
 module.exports = router;
