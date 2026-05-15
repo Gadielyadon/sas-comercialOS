@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <!-- ── KPIs mes actual ──────────────────────────────────────── -->
+      <!-- ── KPIs ─────────────────────────────────────────────────── -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px;">
         <div class="stat-card" style="border-top:3px solid var(--color-primary);">
           <div class="stat-label">Total del mes</div>
@@ -67,6 +67,7 @@
           <div class="stat-value" style="color:var(--color-alert);"><%= fmt(resumen.totalPendiente) %></div>
           <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;"><%= resumen.cantPendiente %> sin pagar</div>
         </div>
+        <!-- Barra de progreso -->
         <div class="stat-card" style="border-top:3px solid #6366f1;">
           <div class="stat-label">Progreso del mes</div>
           <% const pct = resumen.total > 0 ? Math.round(resumen.totalPagado / resumen.total * 100) : 0; %>
@@ -76,86 +77,6 @@
           </div>
         </div>
       </div>
-
-      <!-- ══════════════════════════════════════════════════════════ -->
-      <!-- ── Buscador de gastos por período (ARRIBA) ─────────────── -->
-      <!-- ══════════════════════════════════════════════════════════ -->
-      <div style="margin-bottom:28px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <div style="height:1px;flex:1;background:var(--border-color);"></div>
-          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
-            <i class="bi bi-search"></i> Buscar gastos por período
-          </span>
-          <div style="height:1px;flex:1;background:var(--border-color);"></div>
-        </div>
-
-        <!-- Filtros -->
-        <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:12px;padding:16px 20px;margin-bottom:14px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
-            <div>
-              <label class="form-lbl">Desde</label>
-              <input type="date" id="filtroDesde" class="form-input" style="cursor:pointer;">
-            </div>
-            <div>
-              <label class="form-lbl">Hasta</label>
-              <input type="date" id="filtroHasta" class="form-input" style="cursor:pointer;">
-            </div>
-            <div>
-              <label class="form-lbl">Buscar <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
-              <input type="text" id="filtroQ" class="form-input" placeholder="Descripción o categoría…"
-                onkeydown="if(event.key==='Enter')buscarGastos()">
-            </div>
-            <button onclick="buscarGastos()"
-              style="padding:9px 20px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;white-space:nowrap;height:38px;">
-              <i class="bi bi-search"></i> Buscar
-            </button>
-          </div>
-          <!-- Accesos rápidos -->
-          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-            <span style="font-size:11px;color:var(--text-secondary);font-weight:600;align-self:center;">Acceso rápido:</span>
-            <button onclick="setFiltroRapido('mes')"  class="filtro-rapido">Este mes</button>
-            <button onclick="setFiltroRapido('mes_ant')" class="filtro-rapido">Mes anterior</button>
-            <button onclick="setFiltroRapido('trim')" class="filtro-rapido">Últimos 3 meses</button>
-            <button onclick="setFiltroRapido('anio')" class="filtro-rapido">Este año</button>
-          </div>
-        </div>
-
-        <!-- KPIs resultado búsqueda -->
-        <div id="buscarKpis" style="display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;"></div>
-
-        <!-- Tabla resultado búsqueda -->
-        <div id="buscarResultado" style="display:none;border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
-            <span style="font-size:13px;font-weight:700;color:var(--text-primary);" id="buscarTitulo">Resultados</span>
-            <!-- Botón imprimir con el mismo diseño que gastos fijos -->
-            <button onclick="imprimirBusqueda()" style="padding:5px 14px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;color:#fff;font-family:var(--font-body);display:flex;align-items:center;gap:5px;">
-              <i class="bi bi-printer-fill"></i> Imprimir resumen
-            </button>
-          </div>
-          <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="buscarTabla">
-              <thead>
-                <tr style="background:var(--bg-surface-2);">
-                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Fecha</th>
-                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Categoría</th>
-                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Descripción</th>
-                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Estado</th>
-                  <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Monto</th>
-                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Forma pago</th>
-                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">F. Pago</th>
-                </tr>
-              </thead>
-              <tbody id="buscarTbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="buscarVacio" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);">
-          <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>
-          Sin resultados para ese período
-        </div>
-      </div>
-      <!-- ══════════════════════════════════════════════════════════ -->
 
       <!-- ── Gastos agrupados por categoría ───────────────────────── -->
       <% if (!gastosMes.length) { %>
@@ -238,6 +159,7 @@
           <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
             <% if (!g.pagado) { %>
               <% if (g.tiene_arrastre) { %>
+              <!-- Con arrastre: dos opciones claras -->
               <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
                 <button onclick="marcarPagado(<%= g.id %>, <%= mes %>, <%= anio %>, true)"
                   style="padding:7px 13px;background:rgba(16,185,129,.12);color:var(--color-success);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font-body);white-space:nowrap;">
@@ -249,6 +171,7 @@
                 </button>
               </div>
               <% } else { %>
+              <!-- Sin arrastre: botón simple -->
               <button onclick="marcarPagado(<%= g.id %>, <%= mes %>, <%= anio %>, false)"
                 style="padding:7px 14px;background:rgba(16,185,129,.12);color:var(--color-success);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font-body);">
                 <i class="bi bi-check-circle"></i> Pagado
@@ -259,7 +182,15 @@
                 title="Editar monto">
                 <i class="bi bi-pencil"></i>
               </button>
+              <button onclick="eliminarGastoFijo(<%= g.id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
+                style="padding:7px 10px;background:var(--bg-surface-2);color:var(--text-muted);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;"
+                title="Eliminar este gasto fijo"
+                onmouseover="this.style.color='var(--color-danger)';this.style.borderColor='rgba(239,68,68,.3)'"
+                onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border-color)'">
+                <i class="bi bi-trash3"></i>
+              </button>
             <% } else { %>
+            <!-- Pagado: checkbox discreto + opción de deshacer pequeña -->
             <div style="display:flex;align-items:center;gap:10px;">
               <label onclick="marcarPendiente(<%= g.id %>, <%= mes %>, <%= anio %>)"
                 style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 12px;border-radius:8px;border:1.5px solid rgba(16,185,129,.25);background:rgba(16,185,129,.08);transition:.15s;"
@@ -274,6 +205,13 @@
                 style="padding:6px 9px;background:var(--bg-surface-2);color:var(--text-muted);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);"
                 title="Editar monto">
                 <i class="bi bi-pencil"></i>
+              </button>
+              <button onclick="eliminarGastoFijo(<%= g.id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
+                style="padding:6px 9px;background:var(--bg-surface-2);color:var(--text-muted);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;"
+                title="Eliminar este gasto fijo"
+                onmouseover="this.style.color='var(--color-danger)';this.style.borderColor='rgba(239,68,68,.3)'"
+                onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border-color)'">
+                <i class="bi bi-trash3"></i>
               </button>
             </div>
             <% } %>
@@ -330,6 +268,7 @@
       </div>
     </div>
 
+    <!-- Preview rápido de qué va a mostrar -->
     <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px;">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:10px;">El resumen incluye:</div>
       <div style="display:flex;flex-direction:column;gap:7px;">
@@ -363,6 +302,7 @@
       <button onclick="cerrarModalCategorias()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
+    <!-- Lista de categorías existentes -->
     <div id="listaCategorias" style="max-height:260px;overflow-y:auto;margin-bottom:16px;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
       <% if (!categorias.length) { %>
       <div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:13px;">Sin categorías. Agregá la primera.</div>
@@ -386,6 +326,7 @@
       <% } %>
     </div>
 
+    <!-- Formulario nueva categoría -->
     <div style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:14px;background:var(--bg-surface-2);">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Nueva categoría</div>
       <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
@@ -434,6 +375,7 @@
     <input type="hidden" id="pagoMes">
     <input type="hidden" id="pagoAnio">
     <input type="hidden" id="pagoTodo">
+    <!-- Indicador de qué se está pagando -->
     <div id="pagoTodoAviso" style="display:none;padding:10px 14px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:8px;margin-bottom:14px;font-size:12.5px;color:var(--color-success);">
       <i class="bi bi-check-circle-fill"></i> <strong>Pagar todo</strong> — se va a cancelar el mes actual y el arrastre pendiente del mes anterior.
     </div>
@@ -537,16 +479,6 @@
   </div>
 </div>
 
-<style>
-.filtro-rapido {
-  padding:4px 12px;border-radius:20px;border:1.5px solid var(--border-color);
-  background:var(--bg-surface);color:var(--text-secondary);font-size:11px;
-  font-weight:600;cursor:pointer;font-family:var(--font-body);transition:.15s;
-}
-.filtro-rapido:hover { border-color:var(--color-primary);color:var(--color-primary);background:var(--bg-hover); }
-.filtro-rapido.activo { border-color:var(--color-primary);background:var(--color-primary);color:#fff; }
-</style>
-
 <%- include('../partials/scripts') %>
 <script>
 const _MES  = <%= mes %>;
@@ -560,22 +492,30 @@ function marcarPagado(gastoId, mes, anio, pagarTodo) {
   document.getElementById('pagoTodo').value    = pagarTodo ? '1' : '0';
   document.getElementById('pagoFecha').value   = new Date().toISOString().split('T')[0];
   document.getElementById('pagoMetodo').value  = '';
+  // Mostrar el aviso correcto
   document.getElementById('pagoTodoAviso').style.display    = pagarTodo ? 'block' : 'none';
-  document.getElementById('pagoSoloMesAviso').style.display = (!pagarTodo && pagarTodo === false) ? 'block' : 'none';
+  document.getElementById('pagoSoloMesAviso').style.display = pagarTodo ? 'none' : 'none'; // solo mostrar si hay arrastre y eligió solo mes
+  if (!pagarTodo && gastoId) {
+    // Verificar si este gasto tiene arrastre revisando si se pasó false explícitamente
+    // Solo mostrar aviso "solo este mes" si pagarTodo === false (no undefined)
+    if (pagarTodo === false) {
+      document.getElementById('pagoSoloMesAviso').style.display = 'block';
+    }
+  }
   document.getElementById('modalPago').classList.add('open');
-  setTimeout(function(){ document.getElementById('pagoFecha').focus(); }, 80);
+  setTimeout(() => document.getElementById('pagoFecha').focus(), 80);
 }
 function cerrarModalPago() { document.getElementById('modalPago').classList.remove('open'); }
 
 async function confirmarPago() {
-  var id       = document.getElementById('pagoGastoId').value;
-  var mes      = document.getElementById('pagoMes').value;
-  var anio     = document.getElementById('pagoAnio').value;
-  var fecha    = document.getElementById('pagoFecha').value;
-  var metodo   = document.getElementById('pagoMetodo').value;
-  var pagarTodo= document.getElementById('pagoTodo').value === '1';
+  const id       = document.getElementById('pagoGastoId').value;
+  const mes      = document.getElementById('pagoMes').value;
+  const anio     = document.getElementById('pagoAnio').value;
+  const fecha    = document.getElementById('pagoFecha').value;
+  const metodo   = document.getElementById('pagoMetodo').value;
+  const pagarTodo= document.getElementById('pagoTodo').value === '1';
   try {
-    var r = await fetch('/gastos/api/recurrentes/' + id + '/pagar', {
+    const r = await fetch(`/gastos/api/recurrentes/${id}/pagar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -583,10 +523,10 @@ async function confirmarPago() {
         pagado: true,
         fecha_pago: fecha,
         metodo_pago: metodo || null,
-        pagar_todo: pagarTodo,
+        pagar_todo: pagarTodo,   // ← el service decide si cierra el mes anterior
       }),
     });
-    if (!r.ok) { var d = await r.json(); alert(d.error || 'Error'); return; }
+    if (!r.ok) { const d = await r.json(); alert(d.error || 'Error'); return; }
     cerrarModalPago();
     location.reload();
   } catch(e) { alert('Error de conexión'); }
@@ -596,12 +536,12 @@ async function confirmarPago() {
 async function marcarPendiente(gastoId, mes, anio) {
   if (!confirm('¿Marcar como pendiente?')) return;
   try {
-    var r = await fetch('/gastos/api/recurrentes/' + gastoId + '/pagar', {
+    const r = await fetch(`/gastos/api/recurrentes/${gastoId}/pagar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mes: mes, anio: anio, pagado: false }),
+      body: JSON.stringify({ mes, anio, pagado: false }),
     });
-    if (!r.ok) { var d = await r.json(); alert(d.error || 'Error'); return; }
+    if (!r.ok) { const d = await r.json(); alert(d.error || 'Error'); return; }
     location.reload();
   } catch(e) { alert('Error de conexión'); }
 }
@@ -613,23 +553,23 @@ function editarMonto(gastoId, montoActual, mes, anio) {
   document.getElementById('montoAnio').value    = anio;
   document.getElementById('montoValor').value   = montoActual;
   document.getElementById('modalMonto').classList.add('open');
-  setTimeout(function(){ document.getElementById('montoValor').select(); }, 80);
+  setTimeout(() => document.getElementById('montoValor').select(), 80);
 }
 function cerrarModalMonto() { document.getElementById('modalMonto').classList.remove('open'); }
 
 async function confirmarMonto() {
-  var id    = document.getElementById('montoGastoId').value;
-  var mes   = document.getElementById('montoMes').value;
-  var anio  = document.getElementById('montoAnio').value;
-  var monto = parseFloat(document.getElementById('montoValor').value);
+  const id    = document.getElementById('montoGastoId').value;
+  const mes   = document.getElementById('montoMes').value;
+  const anio  = document.getElementById('montoAnio').value;
+  const monto = parseFloat(document.getElementById('montoValor').value);
   if (isNaN(monto) || monto < 0) { alert('Monto inválido'); return; }
   try {
-    var r = await fetch('/gastos/api/recurrentes/' + id + '/pagar', {
+    const r = await fetch(`/gastos/api/recurrentes/${id}/pagar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mes: Number(mes), anio: Number(anio), pagado: false, monto_real: monto }),
     });
-    if (!r.ok) { var d = await r.json(); alert(d.error || 'Error'); return; }
+    if (!r.ok) { const d = await r.json(); alert(d.error || 'Error'); return; }
     cerrarModalMonto();
     location.reload();
   } catch(e) { alert('Error de conexión'); }
@@ -654,169 +594,58 @@ function abrirModalGasto(rec) {
     document.getElementById('g_dia').value          = '1';
   }
   document.getElementById('modalGasto').classList.add('open');
-  setTimeout(function(){ document.getElementById('g_descripcion').focus(); }, 80);
+  setTimeout(() => document.getElementById('g_descripcion').focus(), 80);
 }
 function cerrarModalGasto() { document.getElementById('modalGasto').classList.remove('open'); }
 
 async function guardarGasto() {
-  var errEl = document.getElementById('gastoError');
+  const errEl = document.getElementById('gastoError');
   errEl.style.display = 'none';
-  var id           = document.getElementById('gasto_edit_id').value;
-  var descripcion  = document.getElementById('g_descripcion').value.trim();
-  var categoria_id = document.getElementById('g_categoria_id').value || null;
-  var monto        = parseFloat(document.getElementById('g_monto').value);
-  var dia          = parseInt(document.getElementById('g_dia').value);
+  const id          = document.getElementById('gasto_edit_id').value;
+  const descripcion = document.getElementById('g_descripcion').value.trim();
+  const categoria_id= document.getElementById('g_categoria_id').value || null;
+  const monto       = parseFloat(document.getElementById('g_monto').value);
+  const dia         = parseInt(document.getElementById('g_dia').value);
 
-  if (!descripcion)           { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display='block'; return; }
+  if (!descripcion)      { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display='block'; return; }
   if (isNaN(monto)||monto<=0) { errEl.textContent = 'El monto debe ser mayor a 0'; errEl.style.display='block'; return; }
-  if (!dia||dia<1||dia>31)    { errEl.textContent = 'El día debe estar entre 1 y 31'; errEl.style.display='block'; return; }
+  if (!dia||dia<1||dia>31) { errEl.textContent = 'El día debe estar entre 1 y 31'; errEl.style.display='block'; return; }
 
   try {
-    var url    = id ? '/gastos/api/recurrentes/' + id : '/gastos/api/recurrentes';
-    var method = id ? 'PUT' : 'POST';
-    var r = await fetch(url, {
-      method: method,
+    const url    = id ? `/gastos/api/recurrentes/${id}` : '/gastos/api/recurrentes';
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ descripcion: descripcion, categoria_id: categoria_id, monto_estimado: monto, dia_vencimiento: dia }),
+      body: JSON.stringify({ descripcion, categoria_id, monto_estimado: monto, dia_vencimiento: dia }),
     });
-    if (!r.ok) { var d = await r.json(); errEl.textContent = d.error||'Error'; errEl.style.display='block'; return; }
+    if (!r.ok) { const d = await r.json(); errEl.textContent = d.error||'Error'; errEl.style.display='block'; return; }
     cerrarModalGasto();
     location.reload();
   } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
 }
 
-// ── Buscador por período ───────────────────────────────────────
-var _buscarDesde = '';
-var _buscarHasta  = '';
-var _buscarQ      = '';
-
-var fmtB = function(n) { return '$' + Number(n||0).toLocaleString('es-AR', {minimumFractionDigits:2}); };
-var fmtFechaB = function(f) { return f ? new Date(f+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; };
-
-function setFiltroRapido(tipo) {
-  var hoy = new Date();
-  var pad = function(n) { return String(n).padStart(2,'0'); };
-  var ymd = function(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); };
-
-  document.querySelectorAll('.filtro-rapido').forEach(function(b){ b.classList.remove('activo'); });
-  event.target.classList.add('activo');
-
-  var desde, hasta;
-  if (tipo === 'mes') {
-    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
-    hasta  = ymd(new Date(hoy.getFullYear(), hoy.getMonth()+1, 0));
-  } else if (tipo === 'mes_ant') {
-    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth()-1, 1));
-    hasta  = ymd(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
-  } else if (tipo === 'trim') {
-    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth()-2, 1));
-    hasta  = ymd(hoy);
-  } else if (tipo === 'anio') {
-    desde = hoy.getFullYear() + '-01-01';
-    hasta  = ymd(hoy);
-  }
-  document.getElementById('filtroDesde').value = desde;
-  document.getElementById('filtroHasta').value  = hasta;
-  buscarGastos();
-}
-
-async function buscarGastos() {
-  var desde = document.getElementById('filtroDesde').value;
-  var hasta  = document.getElementById('filtroHasta').value;
-  var q      = document.getElementById('filtroQ').value.trim();
-
-  if (!desde && !hasta && !q) {
-    alert('Ingresá al menos una fecha o un término de búsqueda');
-    return;
-  }
-
-  // Guardar para el imprimir
-  _buscarDesde = desde;
-  _buscarHasta  = hasta;
-  _buscarQ      = q;
-
-  var params = new URLSearchParams();
-  if (desde) params.set('desde', desde);
-  if (hasta)  params.set('hasta',  hasta);
-  if (q)      params.set('q',      q);
-
+// ── Eliminar gasto fijo ────────────────────────────────────────
+async function eliminarGastoFijo(id, nombre) {
+  if (!confirm('¿Eliminar el gasto "' + nombre + '"? Se eliminará de todos los meses donde no haya sido pagado. Los meses ya pagados quedan en el historial.')) return;
   try {
-    var r = await fetch('/gastos/api/buscar?' + params.toString());
-    var d = await r.json();
-    if (!r.ok) { alert(d.error || 'Error'); return; }
-
-    // KPIs
-    var kpis = document.getElementById('buscarKpis');
-    kpis.style.display = 'grid';
-    var pct = d.total > 0 ? Math.round(d.pagado / d.total * 100) : 0;
-    var cantPag  = d.gastos.filter(function(g){ return g.pagado; }).length;
-    var cantPend = d.gastos.filter(function(g){ return !g.pagado; }).length;
-
-    function kpiDiv(label, valor, color) {
-      return '<div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">' +
-        '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:' + color + ';margin-bottom:4px;">' + label + '</div>' +
-        '<div style="font-size:18px;font-weight:900;color:' + color + ';font-family:var(--font-mono);">' + valor + '</div>' +
-        '</div>';
-    }
-    kpis.innerHTML =
-      kpiDiv('Total', fmtB(d.total) + ' (' + d.cantidad + ' gastos)', 'var(--color-primary)') +
-      kpiDiv('Pagado', fmtB(d.pagado) + ' (' + cantPag + ')', 'var(--color-success)') +
-      kpiDiv('Pendiente', fmtB(d.pendiente) + ' (' + cantPend + ')', 'var(--color-alert)') +
-      '<div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">' +
-        '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:4px;">% Pagado</div>' +
-        '<div style="font-size:18px;font-weight:900;color:#6366f1;font-family:var(--font-mono);">' + pct + '%</div>' +
-        '<div style="height:5px;background:var(--bg-surface);border-radius:3px;margin-top:6px;overflow:hidden;">' +
-          '<div style="height:100%;width:' + pct + '%;background:#6366f1;border-radius:3px;"></div>' +
-        '</div>' +
-      '</div>';
-
-    var tituloTxt = d.cantidad + ' gasto' + (d.cantidad!==1?'s':'') + ' encontrados';
-    if (desde) tituloTxt += ' · desde ' + fmtFechaB(desde);
-    if (hasta)  tituloTxt += ' hasta '  + fmtFechaB(hasta);
-    document.getElementById('buscarTitulo').textContent = tituloTxt;
-
-    if (!d.gastos.length) {
-      document.getElementById('buscarResultado').style.display = 'none';
-      document.getElementById('buscarVacio').style.display    = 'block';
-      return;
-    }
-
-    document.getElementById('buscarVacio').style.display    = 'none';
-    document.getElementById('buscarResultado').style.display = 'block';
-
-    document.getElementById('buscarTbody').innerHTML = d.gastos.map(function(g, i) {
-      var cat  = g.categoria || g.rec_cat || '—';
-      var desc = g.rec_nombre || g.descripcion || '—';
-      var pag  = !!g.pagado;
-      var bg   = i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-surface-2)';
-      var estadoSpan = pag
-        ? '<span style="background:rgba(16,185,129,.1);color:var(--color-success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">&#10003; Pagado</span>'
-        : '<span style="background:rgba(245,158,11,.1);color:var(--color-alert);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Pendiente</span>';
-      var montoColor = pag ? 'var(--color-success)' : 'var(--color-danger)';
-      return '<tr style="border-bottom:1px solid var(--border-color);background:' + bg + ';">' +
-        '<td style="padding:8px 12px;color:var(--text-secondary);font-size:12px;">' + fmtFechaB(g.fecha) + '</td>' +
-        '<td style="padding:8px 12px;color:var(--text-primary);font-weight:600;">' + cat + '</td>' +
-        '<td style="padding:8px 12px;color:var(--text-primary);">' + desc + '</td>' +
-        '<td style="padding:8px 12px;text-align:center;">' + estadoSpan + '</td>' +
-        '<td style="padding:8px 12px;text-align:right;font-family:var(--font-mono);font-weight:800;color:' + montoColor + ';">' + fmtB(g.monto) + '</td>' +
-        '<td style="padding:8px 12px;text-align:center;color:var(--text-secondary);font-size:12px;">' + (g.metodo_pago||'—') + '</td>' +
-        '<td style="padding:8px 12px;text-align:center;color:var(--text-secondary);font-size:12px;">' + fmtFechaB(g.fecha_pago) + '</td>' +
-        '</tr>';
-    }).join('');
-
+    const r = await fetch('/gastos/api/gasto/' + id, { method: 'DELETE' });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error al eliminar'); return; }
+    location.reload();
   } catch(e) { alert('Error de conexión'); }
 }
 
-// ── Imprimir búsqueda — mismo diseño que gastos fijos ─────────
-function imprimirBusqueda() {
-  var params = new URLSearchParams();
-  if (_buscarDesde) params.set('desde', _buscarDesde);
-  if (_buscarHasta)  params.set('hasta',  _buscarHasta);
-  if (_buscarQ)      params.set('q',      _buscarQ);
-  window.open('/gastos/resumen-busqueda?' + params.toString(), '_blank');
-}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    cerrarModalPago();
+    cerrarModalMonto();
+    cerrarModalGasto();
+    cerrarModalCategorias();
+    cerrarModalImprimir();
+  }
+});
 
-// ── Modal Imprimir (gastos fijos del mes) ─────────────────────
+// ── Modal Imprimir ─────────────────────────────────────────────
 function abrirModalImprimir() {
   document.getElementById('imprimirMes').value  = _MES;
   document.getElementById('imprimirAnio').value = _ANIO;
@@ -826,38 +655,38 @@ function cerrarModalImprimir() {
   document.getElementById('modalImprimir').classList.remove('open');
 }
 function confirmarImprimir() {
-  var mes  = document.getElementById('imprimirMes').value;
-  var anio = document.getElementById('imprimirAnio').value;
+  const mes  = document.getElementById('imprimirMes').value;
+  const anio = document.getElementById('imprimirAnio').value;
   if (!anio || isNaN(Number(anio))) { alert('Año inválido'); return; }
   cerrarModalImprimir();
-  window.open('/gastos/resumen?mes=' + mes + '&anio=' + anio, '_blank');
+  window.open(`/gastos/resumen?mes=${mes}&anio=${anio}`, '_blank');
 }
 
-// ── Categorías ─────────────────────────────────────────────────
+// ── Categorías ──────────────────────────────────────────────────
 function abrirModalCategorias() {
   document.getElementById('nuevaCatNombre').value = '';
   document.getElementById('catError').style.display = 'none';
   document.getElementById('modalCategorias').classList.add('open');
-  setTimeout(function(){ document.getElementById('nuevaCatNombre').focus(); }, 80);
+  setTimeout(() => document.getElementById('nuevaCatNombre').focus(), 80);
 }
 function cerrarModalCategorias() {
   document.getElementById('modalCategorias').classList.remove('open');
 }
 
 async function guardarCategoria() {
-  var errEl  = document.getElementById('catError');
+  const errEl  = document.getElementById('catError');
   errEl.style.display = 'none';
-  var nombre = document.getElementById('nuevaCatNombre').value.trim();
-  var icono  = document.getElementById('nuevaCatIcono').value;
-  var color  = document.getElementById('nuevaCatColor').value;
+  const nombre = document.getElementById('nuevaCatNombre').value.trim();
+  const icono  = document.getElementById('nuevaCatIcono').value;
+  const color  = document.getElementById('nuevaCatColor').value;
   if (!nombre) { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display='block'; return; }
   try {
-    var r = await fetch('/gastos/api/categorias', {
+    const r = await fetch('/gastos/api/categorias', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre: nombre, icono: icono, color: color }),
+      body: JSON.stringify({ nombre, icono, color }),
     });
-    if (!r.ok) { var d = await r.json(); errEl.textContent = d.error||'Error'; errEl.style.display='block'; return; }
+    if (!r.ok) { const d = await r.json(); errEl.textContent = d.error||'Error'; errEl.style.display='block'; return; }
     cerrarModalCategorias();
     location.reload();
   } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
@@ -866,20 +695,10 @@ async function guardarCategoria() {
 async function eliminarCategoria(id) {
   if (!confirm('¿Eliminar esta categoría? Los gastos que la usen quedarán sin categoría.')) return;
   try {
-    var r = await fetch('/gastos/api/categorias/' + id, { method: 'DELETE' });
+    const r = await fetch(`/gastos/api/categorias/${id}`, { method: 'DELETE' });
     if (!r.ok) { alert('Error al eliminar'); return; }
-    var row = document.getElementById('cat-row-' + id);
+    const row = document.getElementById(`cat-row-${id}`);
     if (row) row.remove();
   } catch(e) { alert('Error de conexión'); }
 }
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    cerrarModalPago();
-    cerrarModalMonto();
-    cerrarModalGasto();
-    cerrarModalCategorias();
-    cerrarModalImprimir();
-  }
-});
 </script>

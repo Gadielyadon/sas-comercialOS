@@ -278,24 +278,6 @@ function recepcionarPedido({ pedidoId, recepciones, sucursal_id }) {
   return { ok: true, estado_recepcion: estadoRecepcion };
 }
 
-// Marcar un pedido como pagado o pendiente
-function marcarPagoPedido({ pedidoId, pagado, pago_monto, pago_fecha, pago_metodo }) {
-  const p = findById(pedidoId);
-  if (!p) throw new Error('Pedido no encontrado');
-  const hoy = new Date().toISOString().split('T')[0];
-  run(
-    `UPDATE pedidos SET pago_estado=?, pago_monto=?, pago_fecha=?, pago_metodo=?, updated_at=datetime('now','localtime') WHERE id=?`,
-    [
-      pagado ? 'pagado' : null,
-      pagado ? (Number(pago_monto) || null) : null,
-      pagado ? (pago_fecha || hoy)           : null,
-      pagado ? (pago_metodo || null)         : null,
-      Number(pedidoId),
-    ]
-  );
-  return findById(pedidoId);
-}
-
 function countUrgentes() {
   const r = get(`SELECT COUNT(*) as n FROM pedidos WHERE estado='pendiente' AND prioridad='urgente'`);
   return r?.n || 0;
@@ -311,6 +293,5 @@ module.exports = {
   initPedidosSchema,
   list, findById, getItems, create, update, remove,
   enviarAProveedor, getPedidosByProveedor, recepcionarPedido,
-  marcarPagoPedido,
   countUrgentes, countRecordatoriosHoy,
 };
