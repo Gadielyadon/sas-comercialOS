@@ -417,6 +417,10 @@
       </div>
       <button onclick="cerrarPagoPedido()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
     </div>
+    <div id="pagoPedSinCosto" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#d97706;">
+      <i class="bi bi-exclamation-triangle"></i>
+      Los productos no tienen precio de costo cargado. El total puede no ser preciso. Podés editarlos al recepcionar.
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
       <div style="background:rgba(27,79,216,.08);border:1px solid rgba(27,79,216,.2);border-radius:8px;padding:10px 12px;">
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;color:var(--color-primary);margin-bottom:3px;">Total</div>
@@ -920,6 +924,7 @@ function renderPedidosProv(pedidos) {
     const badgeTxt = p.estado_recepcion === 'enviado' ? 'Enviado' : 'Parcialmente recibido';
     const totalPed = (p.items||[]).reduce((s,i)=>s+(Number(i.cantidad)*Number(i.precio_costo||0)),0);
     const totalFmt = fmtPP(totalPed);
+    const sinCosto = totalPed === 0 && p.items && p.items.length > 0;
     return `
     <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;margin-bottom:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);">
@@ -928,7 +933,10 @@ function renderPedidosProv(pedidos) {
           <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${new Date(p.created_at).toLocaleDateString('es-AR')} · ${p.items.length} producto${p.items.length!==1?'s':''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:13px;font-weight:800;color:var(--text-primary);font-family:var(--font-mono;">${totalFmt}</span>
+          ${sinCosto
+            ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;display:inline-flex;align-items:center;gap:4px;" title="Los productos no tienen precio de costo cargado. Podés editarlos desde el pedido o al recepcionar."><i class=\"bi bi-exclamation-triangle\"></i> Sin precio de costo</span>'
+            : '<span style="font-size:13px;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);">' + totalFmt + '</span>'
+          }
           ${p.pago_estado==='pagado'
             ?'<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(16,185,129,.12);color:#059669;border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:11px;font-weight:700;">&#10003; Pagado</span>'
             :p.pago_estado==='parcial'
