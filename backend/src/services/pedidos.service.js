@@ -49,6 +49,18 @@ function initPedidosSchema() {
   sa(`ALTER TABLE pedidos ADD COLUMN pago_monto   REAL DEFAULT NULL`);
   sa(`ALTER TABLE pedidos ADD COLUMN pago_fecha   TEXT DEFAULT NULL`);
   sa(`ALTER TABLE pedidos ADD COLUMN pago_metodo  TEXT DEFAULT NULL`);
+
+  // Tabla de pagos parciales por pedido
+  run(`CREATE TABLE IF NOT EXISTS pedido_pagos (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    pedido_id    INTEGER NOT NULL,
+    monto        REAL NOT NULL,
+    fecha        TEXT NOT NULL,
+    metodo       TEXT,
+    nota         TEXT,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+  )`);
 }
 
 // ── PEDIDOS ───────────────────────────────────────────────────
@@ -289,9 +301,70 @@ function countRecordatoriosHoy() {
   return r?.n || 0;
 }
 
+// ── Pagos parciales por pedido ────────────────────────────────
+function getPagosPedido(pedidoId) {
+  return all(
+    `SELECT * FROM pedido_pagos WHERE pedido_id=? ORDER BY fecha ASC, id ASC`,
+    [Number(pedidoId)]
+  );
+}
+
+function registrarPagoPedido({ pedidoId, monto, fecha, metodo, nota }) {
+  const p = findById(pedidoId);
+  if (!p) throw new Error('Pedido no encontrado');
+  if (!monto || Number(monto) <= 0) throw new Error('Monto inválido');
+  const hoy = new Date().toISOString().split('T')[0];
+  run(
+    `INSERT INTO pedido_pagos (pedido_id, monto, fecha, metodo, nota) VALUES (?,?,?,?,?)`,
+    [Number(pedidoId), Number(monto), fecha || hoy, metodo || null, nota || null]
+  );
+  // Calcular total pagado y actualizar estado del pedido
+  const pagos  = getPagosPedido(pedidoId);
+  const totalPagado = pagos.reduce((s, pg) => s + Number(pg.monto), 0);
+  // Calcular total del pedido por sus ítems
+  const items  = getItems(pedidoId);
+  const totalPedido = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo || 0)), 0);
+  const estado = totalPagado >= totalPedido ? 'pagado' : 'parcial';
+  run(
+    `UPDATE pedidos SET pago_estado=?, pago_monto=?, updated_at=datetime('now','localtime') WHERE id=?`,
+    [estado, totalPagado, Number(pedidoId)]
+  );
+  return { pagos: getPagosPedido(pedidoId), totalPagado, totalPedido, estado };
+}
+
+function eliminarPagoPedido(pagoId) {
+  const pg = get(`SELECT * FROM pedido_pagos WHERE id=?`, [Number(pagoId)]);
+  if (!pg) throw new Error('Pago no encontrado');
+  run(`DELETE FROM pedido_pagos WHERE id=?`, [Number(pagoId)]);
+  // Recalcular estado del pedido
+  const pagos = getPagosPedido(pg.pedido_id);
+  const totalPagado = pagos.reduce((s, p) => s + Number(p.monto), 0);
+  const items = getItems(pg.pedido_id);
+  const totalPedido = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo || 0)), 0);
+  const estado = pagos.length === 0 ? null : totalPagado >= totalPedido ? 'pagado' : 'parcial';
+  run(
+    `UPDATE pedidos SET pago_estado=?, pago_monto=?, updated_at=datetime('now','localtime') WHERE id=?`,
+    [estado, totalPagado, Number(pg.pedido_id)]
+  );
+  return { ok: true };
+}
+
+// Mantener compatibilidad con la función anterior
+function marcarPagoPedido({ pedidoId, pagado, pago_monto, pago_fecha, pago_metodo }) {
+  if (pagado && pago_monto) {
+    return registrarPagoPedido({ pedidoId, monto: pago_monto, fecha: pago_fecha, metodo: pago_metodo });
+  } else {
+    // Desmarcar — eliminar todos los pagos
+    run(`DELETE FROM pedido_pagos WHERE pedido_id=?`, [Number(pedidoId)]);
+    run(`UPDATE pedidos SET pago_estado=NULL, pago_monto=NULL WHERE id=?`, [Number(pedidoId)]);
+    return findById(pedidoId);
+  }
+}
+
 module.exports = {
   initPedidosSchema,
   list, findById, getItems, create, update, remove,
   enviarAProveedor, getPedidosByProveedor, recepcionarPedido,
+  marcarPagoPedido, registrarPagoPedido, eliminarPagoPedido, getPagosPedido,
   countUrgentes, countRecordatoriosHoy,
 };

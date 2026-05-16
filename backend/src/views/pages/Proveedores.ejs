@@ -404,26 +404,53 @@
   </div>
 </div>
 
-<!-- Modal: pago de pedido -->
+<!-- Modal: pagos del pedido -->
 <div class="sale-overlay" id="modalPagoPedido" onclick="if(event.target.id==='modalPagoPedido')cerrarPagoPedido()">
-  <div class="sale-modal" style="max-width:400px;text-align:left;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+  <div class="sale-modal" style="max-width:500px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
-          <i class="bi bi-cash"></i>
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;"><i class="bi bi-cash-stack"></i></div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Pagos del pedido</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="pagoPedNombre">—</div>
         </div>
-        <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Registrar pago del pedido</div>
       </div>
       <button onclick="cerrarPagoPedido()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <div>
-        <label class="form-lbl">Monto pagado</label>
-        <input type="number" id="pagoPedMonto" class="form-input" min="0" step="0.01" placeholder="0,00">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="background:rgba(27,79,216,.08);border:1px solid rgba(27,79,216,.2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;color:var(--color-primary);margin-bottom:3px;">Total</div>
+        <div style="font-size:15px;font-weight:900;color:var(--color-primary);font-family:var(--font-mono);" id="pagoPedTotal">$0</div>
       </div>
-      <div>
-        <label class="form-lbl">Fecha de pago</label>
-        <input type="date" id="pagoPedFecha" class="form-input">
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;color:#059669;margin-bottom:3px;">Pagado</div>
+        <div style="font-size:15px;font-weight:900;color:#059669;font-family:var(--font-mono);" id="pagoPedPagado">$0</div>
+      </div>
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;color:#d97706;margin-bottom:3px;">Pendiente</div>
+        <div style="font-size:15px;font-weight:900;color:#d97706;font-family:var(--font-mono);" id="pagoPedPendiente">$0</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:7px;">Historial de pagos</div>
+      <div id="pagoPedHistorial" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;">
+        <div style="text-align:center;color:var(--text-secondary);font-size:12.5px;padding:12px;">Sin pagos aún</div>
+      </div>
+    </div>
+    <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:10px;">Registrar nuevo pago</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label class="form-lbl">Monto</label>
+          <div style="display:flex;gap:5px;">
+            <input type="number" id="pagoPedMonto" class="form-input" min="0" step="0.01" placeholder="0,00" style="flex:1;">
+            <button onclick="pagarTodoPedido()" style="padding:7px 10px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);">Todo</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-lbl">Fecha</label>
+          <input type="date" id="pagoPedFecha" class="form-input">
+        </div>
       </div>
       <div>
         <label class="form-lbl">Forma de pago <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
@@ -433,16 +460,13 @@
           <option value="Transferencia">Transferencia</option>
           <option value="Cheque">Cheque</option>
           <option value="Tarjeta">Tarjeta</option>
+          <option value="Mercado Pago">Mercado Pago</option>
         </select>
       </div>
-    </div>
-    <div id="pagoPedError" style="display:none;margin-top:8px;font-size:12.5px;color:#dc2626;"></div>
-    <div style="display:flex;gap:8px;margin-top:20px;">
-      <button onclick="confirmarPagoPedido()"
-        style="flex:1;padding:11px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+      <div id="pagoPedError" style="display:none;margin-top:8px;font-size:12px;color:#dc2626;"></div>
+      <button onclick="confirmarPagoPedido()" style="width:100%;margin-top:12px;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
         <i class="bi bi-check-circle-fill"></i> Confirmar pago
       </button>
-      <button onclick="cerrarPagoPedido()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
     </div>
   </div>
 </div>
@@ -892,57 +916,32 @@ async function verPedidosProveedor(id, nombre) {
 }
 
 function renderPedidosProv(pedidos) {
-  // Resumen de totales
-  const totalPedidos  = pedidos.reduce((s,p) => s + calcTotalPedido(p), 0);
-  const totalPagado   = pedidos.filter(p=>p.pago_estado==='pagado').reduce((s,p) => s + (Number(p.pago_monto)||calcTotalPedido(p)), 0);
-  const totalPendiente= totalPedidos - totalPagado;
-  const cantPagados   = pedidos.filter(p=>p.pago_estado==='pagado').length;
-
-  const resumenHtml = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-      <div style="background:rgba(27,79,216,.08);border:1px solid rgba(27,79,216,.2);border-radius:10px;padding:12px 14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--color-primary);margin-bottom:4px;">Total pedidos</div>
-        <div style="font-size:18px;font-weight:900;color:var(--color-primary);font-family:var(--font-mono);">${fmtPP(totalPedidos)}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:2px;">${pedidos.length} pedido${pedidos.length!==1?'s':''}</div>
-      </div>
-      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px 14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;margin-bottom:4px;">Pagado</div>
-        <div style="font-size:18px;font-weight:900;color:#059669;font-family:var(--font-mono);">${fmtPP(totalPagado)}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:2px;">${cantPagados} pagado${cantPagados!==1?'s':''}</div>
-      </div>
-      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px 14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:4px;">Pendiente</div>
-        <div style="font-size:18px;font-weight:900;color:#d97706;font-family:var(--font-mono);">${fmtPP(totalPendiente)}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:2px;">${pedidos.length-cantPagados} sin pagar</div>
-      </div>
-    </div>`;
-
   const html = pedidos.map(p => {
-    const badgeTxt   = p.estado_recepcion === 'enviado' ? 'Enviado' : 'Parcialmente recibido';
-    const totalPed   = calcTotalPedido(p);
-    const estaPagado = p.pago_estado === 'pagado';
+    const badgeTxt = p.estado_recepcion === 'enviado' ? 'Enviado' : 'Parcialmente recibido';
+    const totalPed = (p.items||[]).reduce((s,i)=>s+(Number(i.cantidad)*Number(i.precio_costo||0)),0);
+    const totalFmt = fmtPP(totalPed);
     return `
     <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);">
+        <div>
           <div style="font-weight:800;font-size:14px;color:var(--text-primary);">${p.titulo}</div>
           <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${new Date(p.created_at).toLocaleDateString('es-AR')} · ${p.items.length} producto${p.items.length!==1?'s':''}</div>
-          ${estaPagado ? `<div style="font-size:11px;color:#059669;margin-top:3px;">✓ Pagado el ${p.pago_fecha||''} ${p.pago_metodo?'· '+p.pago_metodo:''} · ${fmtPP(p.pago_monto||totalPed)}</div>` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <div style="font-family:var(--font-mono);font-size:15px;font-weight:900;color:var(--text-primary);">${fmtPP(totalPed)}</div>
-          ${estaPagado
-            ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:rgba(16,185,129,.12);color:#059669;border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="desmarcarPagoPedido(${p.id})" title="Clic para desmarcar">
-                <i class="bi bi-check-circle-fill"></i> Pagado
-               </span>`
-            : `<button onclick="abrirPagoPedido(${p.id}, ${totalPed})"
-                style="padding:6px 13px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-                <i class="bi bi-cash"></i> Marcar pagado
-               </button>`
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:800;color:var(--text-primary);font-family:var(--font-mono;">${totalFmt}</span>
+          ${p.pago_estado==='pagado'
+            ?'<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(16,185,129,.12);color:#059669;border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:11px;font-weight:700;">&#10003; Pagado</span>'
+            :p.pago_estado==='parcial'
+            ?'<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(245,158,11,.12);color:#d97706;border:1.5px solid rgba(245,158,11,.25);border-radius:8px;font-size:11px;font-weight:700;">Pago parcial</span>'
+            :''
           }
+          <button data-pid="${p.id}" data-tit="${(p.titulo||'').replace(/"/g,'')}" onclick="abrirPagoPedido(this.dataset.pid, this.dataset.tit)"
+            style="padding:6px 11px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            <i class="bi bi-cash"></i> Pagos
+          </button>
           <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366f1;">${badgeTxt}</span>
           <button onclick="abrirConfRecepcion(${JSON.stringify(p).replace(/"/g,'&quot;')})"
-            style="padding:6px 12px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            style="padding:6px 11px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-box-arrow-in-down"></i> Recepcionar
           </button>
         </div>
@@ -968,67 +967,84 @@ function renderPedidosProv(pedidos) {
       </table>
     </div>`;
   }).join('');
-  document.getElementById('pedProvListado').innerHTML = resumenHtml + html;
-}
-
-// Calcular total de un pedido por sus ítems
-function calcTotalPedido(p) {
-  if (!p.items || !p.items.length) return 0;
-  return p.items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo||0)), 0);
+  document.getElementById('pedProvListado').innerHTML = html;
 }
 
 function cerrarPedidosProv() { document.getElementById('modalPedidosProv').classList.remove('open'); }
 
-// ── Control de pago por pedido ─────────────────────────────────
-let _pagoProvPedidoId  = null;
-let _pagoProvTotal     = 0;
+// ══ PAGOS PARCIALES POR PEDIDO ═══════════════════════════════
+let _pagoPedId = null;
+const fmtPP2 = n => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
 
-function abrirPagoPedido(pedidoId, total) {
-  _pagoProvPedidoId = pedidoId;
-  _pagoProvTotal    = total;
-  document.getElementById('pagoPedMonto').value  = total.toFixed(2);
-  document.getElementById('pagoPedFecha').value  = new Date().toISOString().split('T')[0];
+async function abrirPagoPedido(pedidoId, titulo) {
+  _pagoPedId = pedidoId;
+  document.getElementById('pagoPedNombre').textContent = titulo || 'Pedido';
+  document.getElementById('pagoPedMonto').value = '';
+  document.getElementById('pagoPedFecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('pagoPedMetodo').value = '';
   document.getElementById('pagoPedError').style.display = 'none';
+  document.getElementById('pagoPedHistorial').innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-secondary);">Cargando...</div>';
   document.getElementById('modalPagoPedido').classList.add('open');
-  setTimeout(() => document.getElementById('pagoPedMonto').focus(), 80);
+  await recargarPagosPedido();
 }
 
-function cerrarPagoPedido() {
-  document.getElementById('modalPagoPedido').classList.remove('open');
+async function recargarPagosPedido() {
+  try {
+    const r = await fetch('/proveedores/api/pedido/' + _pagoPedId + '/pagos');
+    const d = await r.json();
+    document.getElementById('pagoPedTotal').textContent    = fmtPP2(d.total);
+    document.getElementById('pagoPedPagado').textContent   = fmtPP2(d.pagado);
+    document.getElementById('pagoPedPendiente').textContent= fmtPP2(d.pendiente);
+    if (!d.pagos || !d.pagos.length) {
+      document.getElementById('pagoPedHistorial').innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12.5px;padding:12px;">Sin pagos registrados</div>';
+    } else {
+      document.getElementById('pagoPedHistorial').innerHTML = d.pagos.map(function(p) {
+        var f = p.fecha ? p.fecha.slice(8)+'/'+p.fecha.slice(5,7)+'/'+p.fecha.slice(0,4) : '--';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(16,185,129,.06);border-radius:8px;border:1px solid rgba(16,185,129,.15);">' +
+          '<i class="bi bi-check-circle-fill" style="color:#059669;font-size:14px;flex-shrink:0;"></i>' +
+          '<div style="flex:1;"><div style="font-size:12.5px;font-weight:700;color:var(--text-primary);">' + fmtPP2(p.monto) + '</div>' +
+          '<div style="font-size:11px;color:var(--text-secondary);">' + f + (p.metodo ? ' · ' + p.metodo : '') + '</div></div>' +
+          '<button onclick="eliminarPagoItem(' + p.id + ')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:13px;padding:3px;" title="Eliminar pago" onmouseover="this.style.color=&quot;#ef4444&quot;" onmouseout="this.style.color=&quot;var(--text-secondary)&quot;">' +
+          '<i class="bi bi-trash3"></i></button></div>';
+      }).join('');
+    }
+    // Recargar lista si hay proveedor abierto
+    if (_pedProvId) verPedidosProveedor(_pedProvId, document.getElementById('pedProvNombre').textContent);
+  } catch(e) {}
+}
+
+function pagarTodoPedido() {
+  var pend = parseFloat((document.getElementById('pagoPedPendiente').textContent||'0').replace(/[^0-9,.]/g,'').replace('.','').replace(',','.')) || 0;
+  document.getElementById('pagoPedMonto').value = pend.toFixed(2);
 }
 
 async function confirmarPagoPedido() {
-  const errEl  = document.getElementById('pagoPedError');
+  var errEl = document.getElementById('pagoPedError');
   errEl.style.display = 'none';
-  const monto  = parseFloat(document.getElementById('pagoPedMonto').value);
-  const fecha  = document.getElementById('pagoPedFecha').value;
-  const metodo = document.getElementById('pagoPedMetodo').value.trim() || null;
+  var monto  = parseFloat(document.getElementById('pagoPedMonto').value);
+  var fecha  = document.getElementById('pagoPedFecha').value;
+  var metodo = document.getElementById('pagoPedMetodo').value;
   if (!monto || monto <= 0) { errEl.textContent='Ingresá un monto válido'; errEl.style.display='block'; return; }
   try {
-    const r = await fetch(`/proveedores/api/pedido/${_pagoProvPedidoId}/pago`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ pagado: true, pago_monto: monto, pago_fecha: fecha, pago_metodo: metodo }),
+    var r = await fetch('/proveedores/api/pedido/' + _pagoPedId + '/pago', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ monto: monto, fecha: fecha, metodo: metodo })
     });
-    if (!r.ok) { const e=await r.json().catch(()=>({})); errEl.textContent=e.error||'Error'; errEl.style.display='block'; return; }
-    cerrarPagoPedido();
-    // Recargar la lista de pedidos del proveedor
-    verPedidosProveedor(_pedProvId, document.getElementById('pedProvNombre').textContent);
+    if (!r.ok) { var e=await r.json().catch(function(){return {};}); errEl.textContent=e.error||'Error'; errEl.style.display='block'; return; }
+    document.getElementById('pagoPedMonto').value = '';
+    await recargarPagosPedido();
   } catch(e) { errEl.textContent='Error de conexión'; errEl.style.display='block'; }
 }
 
-async function desmarcarPagoPedido(pedidoId) {
-  if (!confirm('¿Desmarcar este pedido como pagado?')) return;
+async function eliminarPagoItem(pagoId) {
+  if (!confirm('Eliminar este pago?')) return;
   try {
-    await fetch(`/proveedores/api/pedido/${pedidoId}/pago`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ pagado: false }),
-    });
-    verPedidosProveedor(_pedProvId, document.getElementById('pedProvNombre').textContent);
+    await fetch('/proveedores/api/pago/' + pagoId, { method: 'DELETE' });
+    await recargarPagosPedido();
   } catch(e) { alert('Error de conexión'); }
 }
+
+function cerrarPagoPedido() { document.getElementById('modalPagoPedido').classList.remove('open'); }
 
 function abrirConfRecepcion(pedido) {
   _pedActual = pedido;
@@ -1180,7 +1196,6 @@ document.addEventListener('keydown',e=>{
     cerrarRecepcion();
     cerrarPedidosProv();
     cerrarPagosCtrl();
-    cerrarPagoPedido();
     document.getElementById('modalFactura').classList.remove('open');
     document.getElementById('modalPagoP').classList.remove('open');
   }
@@ -1312,7 +1327,7 @@ function renderRecItems() {
       <td style="padding:4px 6px;text-align:center;">
         <button onclick="quitarItemRecepcion(${idx})"
           style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;padding:4px;border-radius:6px;transition:.15s;"
-          onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'">
+          onmouseover="this.style.color=&quot;#ef4444&quot;" onmouseout="this.style.color=&quot;var(--text-secondary)&quot;">
           <i class="bi bi-x-circle"></i>
         </button>
       </td>

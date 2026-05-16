@@ -110,17 +110,38 @@ router.post('/api/:id/recepcion', (req, res) => {
   }
 });
 
-// ── Marcar pago de un pedido ──────────────────────────────────
+// ── Pagos parciales por pedido ────────────────────────────────
+// GET pagos de un pedido
+router.get('/api/pedido/:pedidoId/pagos', (req, res) => {
+  try {
+    const pedSvc = require('../services/pedidos.service');
+    const pagos  = pedSvc.getPagosPedido(req.params.pedidoId);
+    const items  = pedSvc.getItems(req.params.pedidoId);
+    const total  = items.reduce((s,i) => s + (Number(i.cantidad)*Number(i.precio_costo||0)), 0);
+    const pagado = pagos.reduce((s,p) => s + Number(p.monto), 0);
+    res.json({ pagos, total, pagado, pendiente: Math.max(0, total - pagado) });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// POST registrar un pago parcial
 router.post('/api/pedido/:pedidoId/pago', (req, res) => {
   try {
     const pedSvc = require('../services/pedidos.service');
-    const { pagado, pago_monto, pago_fecha, pago_metodo } = req.body;
-    const result = pedSvc.marcarPagoPedido({
-      pedidoId:   req.params.pedidoId,
-      pagado:     !!pagado,
-      pago_monto, pago_fecha, pago_metodo,
+    const { monto, fecha, metodo, nota } = req.body;
+    const result = pedSvc.registrarPagoPedido({
+      pedidoId: req.params.pedidoId,
+      monto, fecha, metodo, nota
     });
-    res.json({ ok: true, pedido: result });
+    res.json({ ok: true, ...result });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+// DELETE eliminar un pago puntual
+router.delete('/api/pago/:pagoId', (req, res) => {
+  try {
+    const pedSvc = require('../services/pedidos.service');
+    const result = pedSvc.eliminarPagoPedido(req.params.pagoId);
+    res.json(result);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
