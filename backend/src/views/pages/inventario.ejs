@@ -159,7 +159,7 @@
                   <td>
                     <strong><%= p.name %></strong>
                     <% if (p.pesable) { %><span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,.12);color:#059669;margin-left:5px;"><i class="bi bi-scales"></i> Pesable</span><% } %>
-                    <% if (p.descripcion) { %><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;"><%= p.descripcion.length > 50 ? p.descripcion.slice(0,50) + '…' : p.descripcion %></div><% } %>
+                    <% if (p.descripcion) { %><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;"><%= p.descripcion %></div><% } %>
                   </td>
                   <td style="color:var(--text-secondary);font-size:12.5px"><%= p.category || '—' %></td>
                   <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)"><%= p.price_cost ? '$' + Number(p.price_cost).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
@@ -425,7 +425,7 @@ function renderTable(list) {
     const margenCell = p.margen
       ? `<span style="font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;">${Number(p.margen).toFixed(1)}%</span>`
       : `<span style="color:var(--text-secondary);font-size:12px">—</span>`;
-    const descHTML = p.descripcion ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;">${(p.descripcion.length>50?p.descripcion.slice(0,50)+'…':p.descripcion)}</div>` : '';
+    const descHTML = p.descripcion ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;">${p.descripcion}</div>` : '';
     const pesableBadge = p.pesable ? `<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(16,185,129,.12);color:#059669;margin-left:5px;"><i class="bi bi-scales"></i> Pesable</span>` : '';
     const pEsc = JSON.stringify(p).replace(/"/g, '&quot;');
     const esMini = _listaInv === 'minorista';
@@ -531,7 +531,7 @@ function calcPrecioVenta() {
   const costo  = parseFloat(document.getElementById('m_price_cost')?.value) || 0;
   const margen = parseFloat(document.getElementById('m_margen')?.value) || 0;
   const ind    = document.getElementById('margenIndicador');
-  if (costo > 0 && margen > 0) { const precioVenta = costo * (1 + margen / 100); document.getElementById('m_price').value = precioVenta.toFixed(2); if (ind) { ind.style.display='block'; ind.innerHTML=`Costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})} + ${margen}% = <strong>$${precioVenta.toLocaleString('es-AR',{minimumFractionDigits:2})}</strong> precio final cargado`; } actualizarPreview(); }
+  if (costo > 0 && margen > 0) { const precioVenta = Math.round(costo * (1 + margen / 100)); document.getElementById('m_price').value = precioVenta; if (ind) { ind.style.display='block'; ind.innerHTML=`Costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})} + ${margen}% = <strong>$${precioVenta.toLocaleString('es-AR')}</strong> precio final cargado`; } actualizarPreview(); }
   else if (ind) { ind.style.display='none'; }
 }
 // Sucursal activa — inyectada por el servidor
