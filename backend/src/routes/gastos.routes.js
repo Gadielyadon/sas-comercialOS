@@ -20,6 +20,12 @@ router.get('/', (req, res) => {
   const resumen    = svc.getResumenMes(mes, anio);
   const categorias = svc.getCategorias();
 
+  // Gastos variables históricos (recurrente_id IS NULL)
+  const { all: dbAll } = require('../db');
+  const gastosHistoricos = dbAll(
+    `SELECT * FROM gastos WHERE recurrente_id IS NULL ORDER BY fecha DESC LIMIT 100`
+  );
+
   // Navegación mes anterior / siguiente
   const mesPrev  = mes === 1  ? 12 : mes - 1;
   const anioPrev = mes === 1  ? anio - 1 : anio;
@@ -29,7 +35,7 @@ router.get('/', (req, res) => {
   res.render('pages/gastos', {
     title: 'Gastos', module: 'Gastos', active: 'gastos',
     user: { name: req.session.user.nombre || req.session.user.username, role: req.session.user.role },
-    gastosMes, resumen, categorias,
+    gastosMes, resumen, categorias, gastosHistoricos,
     mes, anio,
     mesNombre: MESES[mes - 1],
     mesPrev, anioPrev, mesSig, anioSig,

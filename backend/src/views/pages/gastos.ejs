@@ -11,6 +11,67 @@
 
     <div class="page-body">
 
+      <!-- ── Buscador por período ──────────────────────────────── -->
+      <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:12px;padding:16px 20px;margin-bottom:20px;" class="no-print">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <i class="bi bi-search"></i> Buscar gastos por período
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+          <div>
+            <label class="form-lbl">Desde</label>
+            <input type="date" id="filtroDesde" class="form-input" style="cursor:pointer;">
+          </div>
+          <div>
+            <label class="form-lbl">Hasta</label>
+            <input type="date" id="filtroHasta" class="form-input" style="cursor:pointer;">
+          </div>
+          <div>
+            <label class="form-lbl">Buscar <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+            <input type="text" id="filtroQ" class="form-input" placeholder="Descripción o categoría..." onkeydown="if(event.key==='Enter')buscarGastos()">
+          </div>
+          <button onclick="buscarGastos()" style="padding:9px 20px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;white-space:nowrap;height:38px;">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-secondary);font-weight:600;align-self:center;">Acceso rápido:</span>
+          <button onclick="setFiltroRapido('mes')"  class="filtro-rapido">Este mes</button>
+          <button onclick="setFiltroRapido('mes_ant')" class="filtro-rapido">Mes anterior</button>
+          <button onclick="setFiltroRapido('trim')" class="filtro-rapido">Últimos 3 meses</button>
+          <button onclick="setFiltroRapido('anio')" class="filtro-rapido">Este año</button>
+        </div>
+        <!-- Resultados -->
+        <div id="buscarKpis" style="display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;"></div>
+        <div id="buscarResultado" style="display:none;border:1px solid var(--border-color);border-radius:10px;overflow:hidden;margin-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
+            <span style="font-size:13px;font-weight:700;color:var(--text-primary);" id="buscarTitulo">Resultados</span>
+            <button onclick="window.print()" style="padding:5px 12px;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text-secondary);font-family:var(--font-body);display:flex;align-items:center;gap:5px;">
+              <i class="bi bi-printer"></i> Imprimir
+            </button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="buscarTabla">
+              <thead>
+                <tr style="background:var(--bg-surface-2);">
+                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Fecha</th>
+                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Categoría</th>
+                  <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Descripción</th>
+                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Estado</th>
+                  <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Monto</th>
+                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Forma pago</th>
+                </tr>
+              </thead>
+              <tbody id="buscarTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="buscarVacio" style="display:none;text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">
+          <i class="bi bi-search" style="font-size:24px;display:block;margin-bottom:6px;opacity:.4;"></i>
+          Sin resultados para ese período
+        </div>
+      </div>
+
+
       <!-- ── Navegación mes ───────────────────────────────────────── -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
         <div style="display:flex;align-items:center;gap:10px;">
@@ -221,6 +282,87 @@
         <% } %>
       </div>
       <% } %>
+      <% } %>
+
+      <!-- ── Gastos históricos (variables sin recurrente) ──────── -->
+      <% if (typeof gastosHistoricos !== 'undefined' && gastosHistoricos && gastosHistoricos.length > 0) { %>
+      <div style="margin-top:28px;" class="no-print">
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="height:1px;flex:1;background:var(--border-color);"></div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
+            <i class="bi bi-clock-history"></i> Gastos variables cargados
+            <span style="font-size:10px;font-weight:400;color:var(--text-secondary);">(<%= gastosHistoricos.length %>)</span>
+          </span>
+          <div style="height:1px;flex:1;background:var(--border-color);"></div>
+        </div>
+
+        <% const totalHist = gastosHistoricos.reduce((s,g) => s + Number(g.monto), 0); %>
+        <% const pagadosHist = gastosHistoricos.filter(g => g.pagado).reduce((s,g) => s + Number(g.monto), 0); %>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+          <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;">Total</div>
+            <div style="font-size:17px;font-weight:900;color:var(--text-primary);font-family:var(--font-mono);">$<%= totalHist.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          </div>
+          <div style="background:var(--bg-surface-2);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--color-success);margin-bottom:4px;">Pagado</div>
+            <div style="font-size:17px;font-weight:900;color:var(--color-success);font-family:var(--font-mono);">$<%= pagadosHist.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          </div>
+          <div style="background:var(--bg-surface-2);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--color-alert);margin-bottom:4px;">Pendiente</div>
+            <div style="font-size:17px;font-weight:900;color:var(--color-alert);font-family:var(--font-mono);">$<%= (totalHist - pagadosHist).toLocaleString('es-AR',{minimumFractionDigits:2}) %></div>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="background:var(--bg-surface-2);">
+                <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Fecha</th>
+                <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Categoría</th>
+                <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Descripción</th>
+                <th style="padding:8px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Estado</th>
+                <th style="padding:8px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Método</th>
+                <th style="padding:8px 14px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Monto</th>
+                <th style="padding:8px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Eliminar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for (let i = 0; i < gastosHistoricos.length; i++) { %>
+              <% const g = gastosHistoricos[i]; %>
+              <tr style="border-bottom:1px solid var(--border-color);background:<%= i%2===0 ? 'var(--bg-surface)' : 'var(--bg-surface-2)' %>;">
+                <td style="padding:8px 14px;color:var(--text-secondary);font-size:12px;white-space:nowrap;">
+                  <%= new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) %>
+                </td>
+                <td style="padding:8px 14px;font-weight:600;color:var(--text-primary);"><%= g.categoria || '—' %></td>
+                <td style="padding:8px 14px;color:var(--text-primary);"><%= g.descripcion || '—' %></td>
+                <td style="padding:8px 14px;text-align:center;">
+                  <% if (g.pagado) { %>
+                  <span style="background:rgba(16,185,129,.1);color:var(--color-success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">✓ Pagado</span>
+                  <% } else { %>
+                  <span style="background:rgba(245,158,11,.1);color:var(--color-alert);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Pendiente</span>
+                  <% } %>
+                </td>
+                <td style="padding:8px 14px;text-align:center;color:var(--text-secondary);font-size:12px;"><%= g.metodo_pago || '—' %></td>
+                <td style="padding:8px 14px;text-align:right;font-family:var(--font-mono);font-weight:800;color:<%= g.pagado ? 'var(--color-success)' : 'var(--color-danger)' %>;">
+                  $<%= Number(g.monto).toLocaleString('es-AR',{minimumFractionDigits:2}) %>
+                </td>
+                <td style="padding:8px 14px;text-align:center;">
+                  <button onclick="eliminarGastoFijo(<%= g.id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
+                    style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:14px;padding:3px 6px;border-radius:5px;transition:.15s;"
+                    title="Eliminar"
+                    onmouseover="this.style.color='var(--color-danger)'" onmouseout="this.style.color='var(--text-secondary)'">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
       <% } %>
 
     </div><!-- /page-body -->
@@ -632,6 +774,109 @@ async function eliminarGastoFijo(id, nombre) {
     const r = await fetch('/gastos/api/gasto/' + id, { method: 'DELETE' });
     if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error al eliminar'); return; }
     location.reload();
+  } catch(e) { alert('Error de conexión'); }
+}
+
+// ── CSS filtros rápidos ────────────────────────────────────────
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.filtro-rapido{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:.15s;}.filtro-rapido:hover{border-color:var(--color-primary);color:var(--color-primary);}@media print{.no-print{display:none!important;}}';
+  document.head.appendChild(st);
+})();
+
+const fmtBuscar = function(n){ return '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2}); };
+const fmtFechaBuscar = function(f){ return f ? new Date(f+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; };
+
+function setFiltroRapido(tipo) {
+  var hoy = new Date();
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+  var ymd = function(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+  document.querySelectorAll('.filtro-rapido').forEach(function(b){ b.classList.remove('activo'); });
+  event.target.classList.add('activo');
+  var desde, hasta;
+  if (tipo === 'mes') {
+    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    hasta = ymd(new Date(hoy.getFullYear(), hoy.getMonth()+1, 0));
+  } else if (tipo === 'mes_ant') {
+    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth()-1, 1));
+    hasta = ymd(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
+  } else if (tipo === 'trim') {
+    desde = ymd(new Date(hoy.getFullYear(), hoy.getMonth()-2, 1));
+    hasta = ymd(hoy);
+  } else if (tipo === 'anio') {
+    desde = hoy.getFullYear() + '-01-01';
+    hasta = ymd(hoy);
+  }
+  document.getElementById('filtroDesde').value = desde;
+  document.getElementById('filtroHasta').value  = hasta;
+  buscarGastos();
+}
+
+async function buscarGastos() {
+  var desde = document.getElementById('filtroDesde').value;
+  var hasta  = document.getElementById('filtroHasta').value;
+  var q      = document.getElementById('filtroQ').value.trim();
+  if (!desde && !hasta && !q) { alert('Ingresá al menos una fecha o término'); return; }
+  var params = new URLSearchParams();
+  if (desde) params.set('desde', desde);
+  if (hasta)  params.set('hasta',  hasta);
+  if (q)      params.set('q',      q);
+  try {
+    var r = await fetch('/gastos/api/buscar?' + params.toString());
+    var d = await r.json();
+    if (!r.ok) { alert(d.error || 'Error'); return; }
+    // KPIs
+    var kpis = document.getElementById('buscarKpis');
+    kpis.style.display = 'grid';
+    var pct = d.total > 0 ? Math.round(d.pagado/d.total*100) : 0;
+    var cantPag  = d.gastos.filter(function(g){return g.pagado;}).length;
+    var cantPend = d.gastos.filter(function(g){return !g.pagado;}).length;
+    function kpiDiv(label, valor, color) {
+      return '<div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">' +
+        '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:'+color+';margin-bottom:4px;">'+label+'</div>' +
+        '<div style="font-size:17px;font-weight:900;color:'+color+';font-family:var(--font-mono);">'+valor+'</div>' +
+        '</div>';
+    }
+    kpis.innerHTML =
+      kpiDiv('Total', fmtBuscar(d.total) + ' (' + d.cantidad + ')', 'var(--color-primary)') +
+      kpiDiv('Pagado', fmtBuscar(d.pagado) + ' (' + cantPag + ')', 'var(--color-success)') +
+      kpiDiv('Pendiente', fmtBuscar(d.pendiente) + ' (' + cantPend + ')', 'var(--color-alert)') +
+      '<div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">' +
+        '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6366f1;margin-bottom:4px;">% Pagado</div>' +
+        '<div style="font-size:17px;font-weight:900;color:#6366f1;font-family:var(--font-mono);">' + pct + '%</div>' +
+        '<div style="height:5px;background:var(--bg-surface);border-radius:3px;margin-top:6px;overflow:hidden;">' +
+          '<div style="height:100%;width:'+pct+'%;background:#6366f1;border-radius:3px;"></div>' +
+        '</div>' +
+      '</div>';
+    // Título
+    var tit = d.cantidad + ' gasto' + (d.cantidad!==1?'s':'') + ' encontrados';
+    if (desde) tit += ' · desde ' + fmtFechaBuscar(desde);
+    if (hasta)  tit += ' hasta '  + fmtFechaBuscar(hasta);
+    document.getElementById('buscarTitulo').textContent = tit;
+    if (!d.gastos.length) {
+      document.getElementById('buscarResultado').style.display = 'none';
+      document.getElementById('buscarVacio').style.display = 'block';
+      return;
+    }
+    document.getElementById('buscarVacio').style.display    = 'none';
+    document.getElementById('buscarResultado').style.display = 'block';
+    document.getElementById('buscarTbody').innerHTML = d.gastos.map(function(g, i) {
+      var cat  = g.categoria || g.rec_cat || '—';
+      var desc = g.descripcion || '—';
+      var pag  = !!g.pagado;
+      var bg   = i%2===0 ? 'var(--bg-surface)' : 'var(--bg-surface-2)';
+      var est  = pag
+        ? '<span style="background:rgba(16,185,129,.1);color:var(--color-success);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">&#10003; Pagado</span>'
+        : '<span style="background:rgba(245,158,11,.1);color:var(--color-alert);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">Pendiente</span>';
+      return '<tr style="border-bottom:1px solid var(--border-color);background:'+bg+';">' +
+        '<td style="padding:8px 12px;color:var(--text-secondary);font-size:12px;">' + fmtFechaBuscar(g.fecha) + '</td>' +
+        '<td style="padding:8px 12px;font-weight:600;color:var(--text-primary);">' + cat + '</td>' +
+        '<td style="padding:8px 12px;color:var(--text-primary);">' + desc + '</td>' +
+        '<td style="padding:8px 12px;text-align:center;">' + est + '</td>' +
+        '<td style="padding:8px 12px;text-align:right;font-family:var(--font-mono);font-weight:800;color:'+(pag?'var(--color-success)':'var(--color-danger)')+';">' + fmtBuscar(g.monto) + '</td>' +
+        '<td style="padding:8px 12px;text-align:center;color:var(--text-secondary);font-size:12px;">' + (g.metodo_pago||'—') + '</td>' +
+        '</tr>';
+    }).join('');
   } catch(e) { alert('Error de conexión'); }
 }
 
