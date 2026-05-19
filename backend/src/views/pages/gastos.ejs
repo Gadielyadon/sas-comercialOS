@@ -59,6 +59,7 @@
                   <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Estado</th>
                   <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Monto</th>
                   <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Forma pago</th>
+                  <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Eliminar</th>
                 </tr>
               </thead>
               <tbody id="buscarTbody"></tbody>
@@ -875,8 +876,18 @@ async function buscarGastos() {
         '<td style="padding:8px 12px;text-align:center;">' + est + '</td>' +
         '<td style="padding:8px 12px;text-align:right;font-family:var(--font-mono);font-weight:800;color:'+(pag?'var(--color-success)':'var(--color-danger)')+';">' + fmtBuscar(g.monto) + '</td>' +
         '<td style="padding:8px 12px;text-align:center;color:var(--text-secondary);font-size:12px;">' + (g.metodo_pago||'—') + '</td>' +
+        '<td style="padding:8px 12px;text-align:center;"><button onclick="eliminarGastoBuscador('+g.id+')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:14px;padding:3px;" title="Eliminar"><i class="bi bi-trash3"></i></button></td>' +
         '</tr>';
     }).join('');
+  } catch(e) { alert('Error de conexión'); }
+}
+
+async function eliminarGastoBuscador(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  try {
+    const r = await fetch('/gastos/api/gasto/' + id, { method: 'DELETE' });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error||'Error'); return; }
+    buscarGastos(); // recargar resultados
   } catch(e) { alert('Error de conexión'); }
 }
 
