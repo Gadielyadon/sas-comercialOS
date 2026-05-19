@@ -20,12 +20,6 @@ router.get('/', (req, res) => {
   const resumen    = svc.getResumenMes(mes, anio);
   const categorias = svc.getCategorias();
 
-  // Gastos variables históricos (recurrente_id IS NULL)
-  const { all: dbAll } = require('../db');
-  const gastosHistoricos = dbAll(
-    `SELECT * FROM gastos WHERE recurrente_id IS NULL ORDER BY fecha DESC LIMIT 100`
-  );
-
   // Navegación mes anterior / siguiente
   const mesPrev  = mes === 1  ? 12 : mes - 1;
   const anioPrev = mes === 1  ? anio - 1 : anio;
@@ -35,7 +29,7 @@ router.get('/', (req, res) => {
   res.render('pages/gastos', {
     title: 'Gastos', module: 'Gastos', active: 'gastos',
     user: { name: req.session.user.nombre || req.session.user.username, role: req.session.user.role },
-    gastosMes, resumen, categorias, gastosHistoricos,
+    gastosMes, resumen, categorias,
     mes, anio,
     mesNombre: MESES[mes - 1],
     mesPrev, anioPrev, mesSig, anioSig,
@@ -526,5 +520,37 @@ router.delete('/api/gasto/:id', (req, res) => {
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
+
+// ── API: buscar gastos por rango de fechas ────────────────────
+router.get('/api/buscar', (req, res) => {
+  try {
+    const { desde, hasta, q } = req.query;
+    const { all: dbAll } = require('../db');
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (desde) { where += ' AND fecha >= ?'; params.push(desde); }
+    if (hasta) { where += ' AND fecha <= ?'; params.push(hasta); }
+    if (q && q.trim()) {
+      where += ' AND (descripcion LIKE ? OR categoria LIKE ?)';
+      params.push(`%${q.trim()}%`, `%${q.trim()}%`);
+    }
+
+    const gastos = dbAll(
+      `SELECT * FROM gastos ${where} ORDER BY fecha DESC, id DESC LIMIT 200`,
+      params
+    );
+
+    const total     = gastos.reduce((s, g) => s + Number(g.monto), 0);
+    const pagado    = gastos.filter(g => g.pagado).reduce((s, g) => s + Number(g.monto), 0);
+    const pendiente = total - pagado;
+
+    res.json({ gastos, total, pagado, pendiente, cantidad: gastos.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Gastos variables históricos en la vista principal ─────────
+// (ya incluido en router.get('/') via gastosHistoricos)
 
 module.exports = router;
