@@ -81,6 +81,22 @@ router.delete('/api/recurrentes/:id', (req, res) => {
   svc.deleteRecurrente(req.params.id); res.json({ ok: true });
 });
 
+// ── API: pagos parciales por gasto mensual ────────────────────
+router.get('/api/gasto/:gastoId/pagos', (req, res) => {
+  try { res.json(svc.getPagosResumen(req.params.gastoId)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+router.post('/api/gasto/:gastoId/pago', (req, res) => {
+  try {
+    const { monto, fecha, metodo, nota } = req.body;
+    res.json(svc.registrarPagoGasto({ gastoId: req.params.gastoId, monto, fecha, metodo, nota }));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+router.delete('/api/pago/:pagoId', (req, res) => {
+  try { res.json(svc.eliminarPagoGasto(req.params.pagoId)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
 // ── API: CRUD de categorías ───────────────────────────────────
 router.get('/api/categorias',       (req, res) => res.json(svc.getCategorias()));
 router.post('/api/categorias',      (req, res) => {

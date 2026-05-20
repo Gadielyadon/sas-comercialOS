@@ -107,7 +107,7 @@
             <i class="bi bi-tags"></i> Categorías
           </button>
           <button onclick="abrirModalGasto()" class="btn-action btn-action-primary" style="display:flex;align-items:center;gap:6px;">
-            <i class="bi bi-plus-lg"></i> Nuevo gasto fijo
+            <i class="bi bi-plus-lg"></i> Nuevo gasto
           </button>
         </div>
       </div>
@@ -191,6 +191,12 @@
           <div style="flex:1;min-width:180px;">
             <div style="font-weight:700;font-size:13.5px;color:var(--text-primary);">
               <%= g.descripcion %>
+              <% if (g.tipo === 'extraordinario') { %>
+              <span style="background:rgba(99,102,241,.12);color:#6366f1;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:5px;">Extraordinario</span>
+              <% } %>
+              <% if (g.cuotas_total) { %>
+              <span style="background:rgba(245,158,11,.12);color:#d97706;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:5px;">Cuota <%= g.cuota_actual || '?' %>/<%= g.cuotas_total %></span>
+              <% } %>
               <% if (g.tiene_arrastre) { %>
               <a href="/gastos?mes=<%= g.mes_arrastre %>&anio=<%= g.anio_arrastre %>"
                 title="Ver el mes donde quedó pendiente"
@@ -200,11 +206,14 @@
               </a>
               <% } %>
             </div>
+            <% if (g.notas) { %>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;"><i class="bi bi-sticky" style="font-size:10px;"></i> <%= g.notas %></div>
+            <% } %>
             <% if (g.pagado && g.fecha_pago) { %>
             <div style="font-size:11px;color:var(--color-success);margin-top:2px;">
               ✓ Pagado el <%= fmtFecha(g.fecha_pago) %><%= g.metodo_pago ? ' · ' + g.metodo_pago : '' %>
             </div>
-            <% } else { %>
+            <% } else if (!g.pagado) { %>
             <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Vence día <%= g.dia_vencimiento %></div>
             <% } %>
           </div>
@@ -227,21 +236,24 @@
                   style="padding:7px 13px;background:rgba(16,185,129,.12);color:var(--color-success);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font-body);white-space:nowrap;">
                   <i class="bi bi-check-circle-fill"></i> Pagar todo (<%= fmt(g.gasto_monto) %>)
                 </button>
-                <button onclick="marcarPagado(<%= g.id %>, <%= mes %>, <%= anio %>, false)"
+                <button onclick="abrirPagosGasto(<%= g.gasto_id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
                   style="padding:5px 13px;background:var(--bg-surface-2);color:var(--text-secondary);border:1.5px solid var(--border-color);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font-body);white-space:nowrap;">
-                  <i class="bi bi-check-circle"></i> Solo este mes (<%= fmt(g.monto_base) %>)
+                  <i class="bi bi-cash-stack"></i> Registrar pago parcial
                 </button>
               </div>
               <% } else { %>
-              <!-- Sin arrastre: botón simple -->
-              <button onclick="marcarPagado(<%= g.id %>, <%= mes %>, <%= anio %>, false)"
+              <!-- Sin arrastre: botón de pagos parciales -->
+              <button onclick="abrirPagosGasto(<%= g.gasto_id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
                 style="padding:7px 14px;background:rgba(16,185,129,.12);color:var(--color-success);border:1.5px solid rgba(16,185,129,.25);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font-body);">
-                <i class="bi bi-check-circle"></i> Pagado
+                <i class="bi bi-cash-stack"></i> Registrar pago
               </button>
               <% } %>
-              <button onclick="editarMonto(<%= g.id %>, <%= g.gasto_monto %>, <%= mes %>, <%= anio %>)"
-                style="padding:7px 10px;background:var(--bg-surface-2);color:var(--text-secondary);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);"
-                title="Editar monto">
+              <button onclick="abrirModalGastoDesdeBtn(this)"
+                data-rec="<%- JSON.stringify({id:g.id,descripcion:g.descripcion,categoria_id:g.categoria_id,monto_estimado:g.monto_estimado,dia_vencimiento:g.dia_vencimiento,tipo:g.tipo||'fijo',cuotas_total:g.cuotas_total||null,fecha_fin:g.fecha_fin||null,notas:g.notas||null}).replace(/"/g,'&quot;') %>"
+                style="padding:7px 10px;background:var(--bg-surface-2);color:var(--text-secondary);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;"
+                title="Editar gasto"
+                onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'"
+                onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'">
                 <i class="bi bi-pencil"></i>
               </button>
               <button onclick="eliminarGastoFijo(<%= g.id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
@@ -263,9 +275,12 @@
                 </span>
                 <span style="font-size:12px;font-weight:700;color:var(--color-success);">Pagado</span>
               </label>
-              <button onclick="editarMonto(<%= g.id %>, <%= g.gasto_monto %>, <%= mes %>, <%= anio %>)"
-                style="padding:6px 9px;background:var(--bg-surface-2);color:var(--text-muted);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);"
-                title="Editar monto">
+              <button onclick="abrirModalGastoDesdeBtn(this)"
+                data-rec="<%- JSON.stringify({id:g.id,descripcion:g.descripcion,categoria_id:g.categoria_id,monto_estimado:g.monto_estimado,dia_vencimiento:g.dia_vencimiento,tipo:g.tipo||'fijo',cuotas_total:g.cuotas_total||null,fecha_fin:g.fecha_fin||null,notas:g.notas||null}).replace(/"/g,'&quot;') %>"
+                style="padding:6px 9px;background:var(--bg-surface-2);color:var(--text-muted);border:1.5px solid var(--border-color);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-body);transition:.15s;"
+                title="Editar gasto"
+                onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'"
+                onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-muted)'">
                 <i class="bi bi-pencil"></i>
               </button>
               <button onclick="eliminarGastoFijo(<%= g.id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')"
@@ -579,16 +594,34 @@
 
 <!-- MODAL: Nuevo / editar gasto fijo -->
 <div class="sale-overlay" id="modalGasto" onclick="if(event.target.id==='modalGasto')cerrarModalGasto()">
-  <div class="sale-modal" style="max-width:500px;text-align:left;">
+  <div class="sale-modal" style="max-width:520px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="font-size:16px;font-weight:800;color:var(--text-primary);" id="modalGastoTitulo">Nuevo gasto fijo</div>
       <button onclick="cerrarModalGasto()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <input type="hidden" id="gasto_edit_id">
     <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Tipo de gasto -->
+      <div>
+        <label class="form-lbl">Tipo de gasto</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="tipoGastoSelector">
+          <button type="button" id="btnTipoFijo" onclick="setTipoGasto('fijo')"
+            style="padding:10px;border-radius:8px;border:2px solid var(--color-primary);background:rgba(27,79,216,.1);color:var(--color-primary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-arrow-repeat"></i> Mensual fijo
+          </button>
+          <button type="button" id="btnTipoExtraordinario" onclick="setTipoGasto('extraordinario')"
+            style="padding:10px;border-radius:8px;border:2px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-lightning-charge"></i> Extraordinario
+          </button>
+        </div>
+        <div id="tipoHint" style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Se genera todos los meses automáticamente.</div>
+      </div>
+
+      <!-- Nombre y categoría -->
       <div>
         <label class="form-lbl">Nombre del gasto *</label>
-        <input type="text" id="g_descripcion" class="form-input" placeholder="Ej: Luz, Alquiler, Empleado Juan…">
+        <input type="text" id="g_descripcion" class="form-input" placeholder="Ej: Luz, Alquiler, Cuota préstamo…">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
@@ -605,11 +638,37 @@
           <input type="number" id="g_monto" class="form-input" min="0" step="0.01" placeholder="0.00">
         </div>
       </div>
-      <div>
+
+      <!-- Día de vencimiento (oculto para extraordinario) -->
+      <div id="g_dia_wrap">
         <label class="form-lbl">Día de vencimiento <span style="font-weight:400;text-transform:none;font-size:10px;">(1-31)</span></label>
         <input type="number" id="g_dia" class="form-input" min="1" max="31" value="1">
         <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">El sistema lo ajusta si el mes tiene menos días.</div>
       </div>
+
+      <!-- Cuotas / Fecha de corte (solo para tipo fijo) -->
+      <div id="g_limite_wrap">
+        <label class="form-lbl">Límite <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional — dejá vacío si es indefinido)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:10.5px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:4px;">Cantidad de cuotas</label>
+            <input type="number" id="g_cuotas" class="form-input" min="1" placeholder="Ej: 12" style="font-size:13px;">
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">Ej: préstamo en 12 cuotas</div>
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:4px;">O fecha de corte</label>
+            <input type="month" id="g_fecha_fin" class="form-input" style="font-size:13px;">
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">Ej: Diciembre 2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nota general -->
+      <div>
+        <label class="form-lbl">Nota <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <textarea id="g_notas" class="form-input" rows="2" placeholder="Ej: Cuota del préstamo HSBC, Plan de pagos…" style="resize:vertical;min-height:58px;"></textarea>
+      </div>
+
     </div>
     <div style="display:flex;gap:8px;margin-top:20px;">
       <button onclick="guardarGasto()"
@@ -623,6 +682,87 @@
 </div>
 
 <%- include('../partials/scripts') %>
+
+<!-- MODAL: Pagos parciales del gasto mensual -->
+<div class="sale-overlay" id="modalPagosGasto" onclick="if(event.target.id==='modalPagosGasto')cerrarPagosGasto()">
+  <div class="sale-modal" style="max-width:500px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Pagos del gasto</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="pgNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarPagosGasto()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="background:rgba(27,79,216,.07);border:1px solid rgba(27,79,216,.18);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--color-primary);margin-bottom:3px;">Total</div>
+        <div style="font-size:15px;font-weight:900;color:var(--color-primary);font-family:var(--font-mono);" id="pgTotal">—</div>
+      </div>
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.18);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#059669;margin-bottom:3px;">Pagado</div>
+        <div style="font-size:15px;font-weight:900;color:#059669;font-family:var(--font-mono);" id="pgPagado">—</div>
+      </div>
+      <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18);border-radius:8px;padding:9px 12px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#d97706;margin-bottom:3px;">Pendiente</div>
+        <div style="font-size:15px;font-weight:900;color:#d97706;font-family:var(--font-mono);" id="pgPendiente">—</div>
+      </div>
+    </div>
+
+    <!-- Historial de pagos -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:6px;">Historial de pagos</div>
+    <div id="pgHistorial" style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px;max-height:180px;overflow-y:auto;">
+      <div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:10px;">Cargando…</div>
+    </div>
+
+    <!-- Formulario nuevo pago -->
+    <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary);margin-bottom:10px;">Registrar nuevo pago</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label class="form-lbl">Monto</label>
+          <div style="display:flex;gap:5px;">
+            <input type="number" id="pgMonto" class="form-input" min="0" step="0.01" placeholder="0,00" style="flex:1;">
+            <button onclick="pgTodo()" style="padding:7px 10px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);">Todo</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-lbl">Fecha</label>
+          <input type="date" id="pgFecha" class="form-input">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label class="form-lbl">Forma de pago <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <select id="pgMetodo" class="form-input" style="cursor:pointer;">
+            <option value="">— Sin especificar —</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta débito">Tarjeta débito</option>
+            <option value="Tarjeta crédito">Tarjeta crédito</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Mercado Pago">Mercado Pago</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-lbl">Nota <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <input type="text" id="pgNota" class="form-input" placeholder="Ej: de cuenta HSBC…">
+        </div>
+      </div>
+      <div id="pgError" style="display:none;font-size:12px;color:#dc2626;margin-bottom:8px;"></div>
+      <button onclick="pgConfirmar()"
+        style="width:100%;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i class="bi bi-check-circle-fill"></i> Confirmar pago
+      </button>
+    </div>
+  </div>
+</div>
 <script>
 const _MES  = <%= mes %>;
 const _ANIO = <%= anio %>;
@@ -719,22 +859,71 @@ async function confirmarMonto() {
 }
 
 // ── Nuevo / editar gasto fijo ──────────────────────────────────
+// Helper: lee el data-rec del botón lápiz y abre el modal completo
+function abrirModalGastoDesdeBtn(btn) {
+  try {
+    const rec = JSON.parse(btn.dataset.rec);
+    abrirModalGasto(rec);
+  } catch(e) {
+    console.error('Error parseando rec:', e);
+  }
+}
+
+let _tipoGasto = 'fijo';
+function setTipoGasto(tipo) {
+  _tipoGasto = tipo;
+  const btnFijo = document.getElementById('btnTipoFijo');
+  const btnExt  = document.getElementById('btnTipoExtraordinario');
+  const hint    = document.getElementById('tipoHint');
+  const limWrap = document.getElementById('g_limite_wrap');
+  const diaWrap = document.getElementById('g_dia_wrap');
+  if (tipo === 'fijo') {
+    btnFijo.style.borderColor = 'var(--color-primary)';
+    btnFijo.style.background  = 'rgba(27,79,216,.1)';
+    btnFijo.style.color       = 'var(--color-primary)';
+    btnExt.style.borderColor  = 'var(--border-color)';
+    btnExt.style.background   = 'var(--bg-surface-2)';
+    btnExt.style.color        = 'var(--text-secondary)';
+    hint.textContent = 'Se genera todos los meses automáticamente.';
+    limWrap.style.display = 'block';
+    diaWrap.style.display = 'block';
+  } else {
+    btnExt.style.borderColor  = '#6366f1';
+    btnExt.style.background   = 'rgba(99,102,241,.1)';
+    btnExt.style.color        = '#6366f1';
+    btnFijo.style.borderColor = 'var(--border-color)';
+    btnFijo.style.background  = 'var(--bg-surface-2)';
+    btnFijo.style.color       = 'var(--text-secondary)';
+    hint.textContent = 'Gasto puntual — se genera solo una vez este mes.';
+    limWrap.style.display = 'none';
+    diaWrap.style.display = 'none';
+  }
+}
+
 function abrirModalGasto(rec) {
   document.getElementById('gastoError').style.display = 'none';
   if (rec) {
-    document.getElementById('modalGastoTitulo').textContent = 'Editar gasto fijo';
+    document.getElementById('modalGastoTitulo').textContent = 'Editar gasto';
     document.getElementById('gasto_edit_id').value  = rec.id;
     document.getElementById('g_descripcion').value  = rec.descripcion;
     document.getElementById('g_categoria_id').value = rec.categoria_id || '';
     document.getElementById('g_monto').value        = rec.monto_estimado;
     document.getElementById('g_dia').value          = rec.dia_vencimiento;
+    document.getElementById('g_cuotas').value       = rec.cuotas_total || '';
+    document.getElementById('g_fecha_fin').value    = rec.fecha_fin || '';
+    document.getElementById('g_notas').value        = rec.notas || '';
+    setTipoGasto(rec.tipo || 'fijo');
   } else {
-    document.getElementById('modalGastoTitulo').textContent = 'Nuevo gasto fijo';
+    document.getElementById('modalGastoTitulo').textContent = 'Nuevo gasto';
     document.getElementById('gasto_edit_id').value  = '';
     document.getElementById('g_descripcion').value  = '';
     document.getElementById('g_categoria_id').value = '';
     document.getElementById('g_monto').value        = '';
     document.getElementById('g_dia').value          = '1';
+    document.getElementById('g_cuotas').value       = '';
+    document.getElementById('g_fecha_fin').value    = '';
+    document.getElementById('g_notas').value        = '';
+    setTipoGasto('fijo');
   }
   document.getElementById('modalGasto').classList.add('open');
   setTimeout(() => document.getElementById('g_descripcion').focus(), 80);
@@ -748,11 +937,14 @@ async function guardarGasto() {
   const descripcion = document.getElementById('g_descripcion').value.trim();
   const categoria_id= document.getElementById('g_categoria_id').value || null;
   const monto       = parseFloat(document.getElementById('g_monto').value);
-  const dia         = parseInt(document.getElementById('g_dia').value);
+  const dia         = parseInt(document.getElementById('g_dia').value) || 1;
+  const cuotas      = document.getElementById('g_cuotas').value ? parseInt(document.getElementById('g_cuotas').value) : null;
+  const fecha_fin   = document.getElementById('g_fecha_fin').value || null;
+  const notas       = document.getElementById('g_notas').value.trim() || null;
 
-  if (!descripcion)      { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display='block'; return; }
+  if (!descripcion)           { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display='block'; return; }
   if (isNaN(monto)||monto<=0) { errEl.textContent = 'El monto debe ser mayor a 0'; errEl.style.display='block'; return; }
-  if (!dia||dia<1||dia>31) { errEl.textContent = 'El día debe estar entre 1 y 31'; errEl.style.display='block'; return; }
+  if (_tipoGasto === 'fijo' && (!dia||dia<1||dia>31)) { errEl.textContent = 'El día debe estar entre 1 y 31'; errEl.style.display='block'; return; }
 
   try {
     const url    = id ? `/gastos/api/recurrentes/${id}` : '/gastos/api/recurrentes';
@@ -760,12 +952,96 @@ async function guardarGasto() {
     const r = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ descripcion, categoria_id, monto_estimado: monto, dia_vencimiento: dia }),
+      body: JSON.stringify({ descripcion, categoria_id, monto_estimado: monto, dia_vencimiento: dia,
+                             tipo: _tipoGasto, cuotas_total: cuotas, fecha_fin, notas }),
     });
     if (!r.ok) { const d = await r.json(); errEl.textContent = d.error||'Error'; errEl.style.display='block'; return; }
     cerrarModalGasto();
     location.reload();
   } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
+}
+
+// ── Pagos parciales del gasto ──────────────────────────────────
+let _pgGastoId = null;
+const fmtPG = n => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+
+async function abrirPagosGasto(gastoId, nombre) {
+  _pgGastoId = gastoId;
+  document.getElementById('pgNombre').textContent = nombre || 'Gasto';
+  document.getElementById('pgMonto').value  = '';
+  document.getElementById('pgFecha').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('pgMetodo').value = '';
+  document.getElementById('pgNota').value   = '';
+  document.getElementById('pgError').style.display = 'none';
+  document.getElementById('modalPagosGasto').classList.add('open');
+  await pgCargar();
+}
+function cerrarPagosGasto() { document.getElementById('modalPagosGasto').classList.remove('open'); }
+
+async function pgCargar() {
+  try {
+    const r = await fetch('/gastos/api/gasto/' + _pgGastoId + '/pagos');
+    const d = await r.json();
+    document.getElementById('pgTotal').textContent    = fmtPG(d.total);
+    document.getElementById('pgPagado').textContent   = fmtPG(d.pagado);
+    document.getElementById('pgPendiente').textContent= fmtPG(d.pendiente);
+    const hEl = document.getElementById('pgHistorial');
+    if (!d.pagos || !d.pagos.length) {
+      hEl.innerHTML = '<div style="text-align:center;color:var(--text-secondary);font-size:12px;padding:10px 0;">Sin pagos aún — podés registrar el primero abajo</div>';
+    } else {
+      hEl.innerHTML = d.pagos.map(p => {
+        const f = p.fecha ? p.fecha.slice(8)+'/'+p.fecha.slice(5,7)+'/'+p.fecha.slice(0,4) : '--';
+        const metodoNota = [p.metodo, p.nota].filter(Boolean).join(' · ');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(16,185,129,.06);border-radius:8px;border:1px solid rgba(16,185,129,.15);">
+          <i class="bi bi-check-circle-fill" style="color:#059669;font-size:14px;flex-shrink:0;"></i>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${fmtPG(p.monto)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">${f}${metodoNota ? ' · ' + metodoNota : ''}</div>
+          </div>
+          <button onclick="pgEliminar(${p.id})" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:13px;padding:3px;"
+            title="Eliminar pago" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {}
+}
+
+function pgTodo() {
+  const pnd = parseFloat((document.getElementById('pgPendiente').textContent||'0').replace(/[^0-9,.]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+  document.getElementById('pgMonto').value = pnd.toFixed(2);
+}
+
+async function pgConfirmar() {
+  const errEl  = document.getElementById('pgError');
+  errEl.style.display = 'none';
+  const monto  = parseFloat(document.getElementById('pgMonto').value);
+  const fecha  = document.getElementById('pgFecha').value;
+  const metodo = document.getElementById('pgMetodo').value;
+  const nota   = document.getElementById('pgNota').value.trim();
+  if (!monto || monto <= 0) { errEl.textContent='Ingresá un monto válido'; errEl.style.display='block'; return; }
+  try {
+    const r = await fetch('/gastos/api/gasto/' + _pgGastoId + '/pago', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ monto, fecha, metodo, nota }),
+    });
+    if (!r.ok) { const e=await r.json().catch(()=>({})); errEl.textContent=e.error||'Error'; errEl.style.display='block'; return; }
+    document.getElementById('pgMonto').value = '';
+    document.getElementById('pgNota').value  = '';
+    await pgCargar();
+    // Si quedó saldo 0, cerrar y recargar
+    const pnd = parseFloat((document.getElementById('pgPendiente').textContent||'0').replace(/[^0-9,.]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+    if (pnd <= 0) { cerrarPagosGasto(); location.reload(); }
+  } catch(e) { errEl.textContent='Error de conexión'; errEl.style.display='block'; }
+}
+
+async function pgEliminar(pagoId) {
+  if (!confirm('¿Eliminar este pago?')) return;
+  try {
+    await fetch('/gastos/api/pago/' + pagoId, { method: 'DELETE' });
+    await pgCargar();
+  } catch(e) { alert('Error de conexión'); }
 }
 
 // ── Eliminar gasto fijo ────────────────────────────────────────
@@ -898,6 +1174,7 @@ document.addEventListener('keydown', e => {
     cerrarModalGasto();
     cerrarModalCategorias();
     cerrarModalImprimir();
+    cerrarPagosGasto();
   }
 });
 

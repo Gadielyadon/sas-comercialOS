@@ -66,8 +66,26 @@ function initGastosSchema() {
     created_at       TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     FOREIGN KEY (categoria_id) REFERENCES categorias_gasto(id) ON DELETE SET NULL
   )`);
-}
 
+  // Columnas nuevas — migracion segura
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN tipo TEXT NOT NULL DEFAULT 'fijo'`); // 'fijo' | 'extraordinario'
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN cuotas_total INTEGER DEFAULT NULL`); // ej: 12
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN cuota_actual INTEGER DEFAULT 0`);    // contador interno
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN fecha_fin TEXT DEFAULT NULL`);       // ej: '2026-12'
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN notas TEXT DEFAULT NULL`);           // nota general
+
+  // Tabla de pagos parciales por gasto mensual
+  run(`CREATE TABLE IF NOT EXISTS gasto_pagos (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    gasto_id   INTEGER NOT NULL,
+    monto      REAL NOT NULL,
+    fecha      TEXT NOT NULL,
+    metodo     TEXT,
+    nota       TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (gasto_id) REFERENCES gastos(id) ON DELETE CASCADE
+  )`);
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // CATEGORÍAS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,7 +132,7 @@ function getRecurrentes() {
 function getRecurrenteById(id) {
   return get(`SELECT * FROM gastos_recurrentes WHERE id = ?`, [Number(id)]);
 }
-function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id }) {
+function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, fecha_fin, notas }) {
   if (!descripcion || !descripcion.trim()) throw new Error('La descripcion es obligatoria');
   if (!monto_estimado || isNaN(Number(monto_estimado))) throw new Error('El monto estimado es obligatorio');
   const dia = Number(dia_vencimiento);
@@ -124,10 +142,12 @@ function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_e
     const cat = getCategoriaById(categoria_id);
     if (cat) catNombre = cat.nombre;
   }
+  const tipoVal = tipo === 'extraordinario' ? 'extraordinario' : 'fijo';
   const r = run(
-    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id)
-     VALUES (?,?,?,?,?,?)`,
-    [categoria_id || null, catNombre, descripcion.trim(), Number(monto_estimado), dia, sucursal_id || 1]
+    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, cuota_actual, fecha_fin, notas)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    [categoria_id || null, catNombre, descripcion.trim(), Number(monto_estimado), dia, sucursal_id || 1,
+     tipoVal, cuotas_total ? Number(cuotas_total) : null, 0, fecha_fin || null, notas || null]
   );
   return getRecurrenteById(r.lastInsertRowid);
 }
@@ -140,13 +160,17 @@ function updateRecurrente(id, f) {
     if (cat) catNombre = cat.nombre;
   }
   run(
-    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=? WHERE id=?`,
+    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=?, tipo=?, cuotas_total=?, fecha_fin=?, notas=? WHERE id=?`,
     [
       f.categoria_id    !== undefined ? (f.categoria_id || null) : r.categoria_id,
       catNombre,
       f.descripcion     !== undefined ? f.descripcion     : r.descripcion,
       f.monto_estimado  !== undefined ? Number(f.monto_estimado) : r.monto_estimado,
       f.dia_vencimiento !== undefined ? Number(f.dia_vencimiento): r.dia_vencimiento,
+      f.tipo            !== undefined ? f.tipo             : (r.tipo || 'fijo'),
+      f.cuotas_total    !== undefined ? (f.cuotas_total ? Number(f.cuotas_total) : null) : r.cuotas_total,
+      f.fecha_fin       !== undefined ? (f.fecha_fin || null)    : r.fecha_fin,
+      f.notas           !== undefined ? (f.notas || null)        : r.notas,
       Number(id),
     ]
   );
@@ -188,6 +212,19 @@ function generarGastosMes({ mes, anio } = {}) {
   let creados = 0;
 
   for (const p of plantillas) {
+    // ── Verificar si este gasto ya expiró ────────────────────────
+    // Por fecha de corte
+    if (p.fecha_fin) {
+      const [fAnio, fMes] = p.fecha_fin.split('-').map(Number);
+      if (a > fAnio || (a === fAnio && m > fMes)) continue;
+    }
+    // Por cuotas completadas
+    if (p.cuotas_total && Number(p.cuota_actual || 0) >= Number(p.cuotas_total)) continue;
+    // Extraordinario: solo genera en el mes de creación (cuotas_total=1 implícito si tipo=extraordinario)
+    if (p.tipo === 'extraordinario' && !p.cuotas_total) {
+      const creadoMs = (p.created_at || '').slice(0, 7); // 'YYYY-MM'
+      if (creadoMs !== ms) continue;
+    }
     const dia   = Math.min(p.dia_vencimiento, new Date(a, m, 0).getDate());
     const fecha = `${a}-${String(m).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 
@@ -211,6 +248,10 @@ function generarGastosMes({ mes, anio } = {}) {
          VALUES (?,?,?,?,?,?,0,?,?)`,
         [p.categoria_nombre, p.descripcion, montoNuevo, montoArrastre, fecha, p.id, p.sucursal_id || 1, ms]
       );
+      // Incrementar contador de cuotas si aplica
+      if (p.cuotas_total) {
+        run(`UPDATE gastos_recurrentes SET cuota_actual = cuota_actual + 1 WHERE id = ?`, [p.id]);
+      }
       creados++;
     } else if (!existe.pagado) {
       // Ya existe y está pendiente → actualizar monto y arrastre por si
@@ -473,12 +514,75 @@ function getResumenCompleto({ desde, hasta } = {}) {
     total, porCategoria };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGOS PARCIALES POR GASTO MENSUAL
+// ─────────────────────────────────────────────────────────────────────────────
+function getPagosGasto(gastoId) {
+  return all(
+    `SELECT * FROM gasto_pagos WHERE gasto_id = ? ORDER BY fecha ASC, id ASC`,
+    [Number(gastoId)]
+  );
+}
+
+function registrarPagoGasto({ gastoId, monto, fecha, metodo, nota }) {
+  const g = get(`SELECT * FROM gastos WHERE id = ?`, [Number(gastoId)]);
+  if (!g) throw new Error('Gasto no encontrado');
+  if (!monto || Number(monto) <= 0) throw new Error('Monto inválido');
+  const hoy = new Date().toISOString().split('T')[0];
+  run(
+    `INSERT INTO gasto_pagos (gasto_id, monto, fecha, metodo, nota) VALUES (?,?,?,?,?)`,
+    [Number(gastoId), Number(monto), fecha || hoy, metodo || null, nota || null]
+  );
+  // Recalcular estado del gasto
+  const pagos = getPagosGasto(gastoId);
+  const totalPagado = pagos.reduce((s, p) => s + Number(p.monto), 0);
+  const totalGasto  = Number(g.monto);
+  if (totalPagado >= totalGasto) {
+    // Marcar como pagado
+    run(
+      `UPDATE gastos SET pagado=1, fecha_pago=?, metodo_pago=? WHERE id=?`,
+      [fecha || hoy, metodo || null, Number(gastoId)]
+    );
+  }
+  return { pagos: getPagosGasto(gastoId), totalPagado, totalGasto, pendiente: Math.max(0, totalGasto - totalPagado) };
+}
+
+function eliminarPagoGasto(pagoId) {
+  const pg = get(`SELECT * FROM gasto_pagos WHERE id = ?`, [Number(pagoId)]);
+  if (!pg) throw new Error('Pago no encontrado');
+  run(`DELETE FROM gasto_pagos WHERE id = ?`, [Number(pagoId)]);
+  // Si el gasto estaba marcado pagado, revisar si hay que desmarcarlo
+  const pagos = getPagosGasto(pg.gasto_id);
+  const g     = get(`SELECT * FROM gastos WHERE id = ?`, [pg.gasto_id]);
+  if (g && g.pagado) {
+    const totalPagado = pagos.reduce((s, p) => s + Number(p.monto), 0);
+    if (totalPagado < Number(g.monto)) {
+      run(`UPDATE gastos SET pagado=0, fecha_pago=NULL WHERE id=?`, [pg.gasto_id]);
+    }
+  }
+  return { ok: true };
+}
+
+function getPagosResumen(gastoId) {
+  const g     = get(`SELECT * FROM gastos WHERE id = ?`, [Number(gastoId)]);
+  if (!g) throw new Error('Gasto no encontrado');
+  const pagos = getPagosGasto(gastoId);
+  const totalPagado = pagos.reduce((s, p) => s + Number(p.monto), 0);
+  return {
+    pagos,
+    total:     Number(g.monto),
+    pagado:    totalPagado,
+    pendiente: Math.max(0, Number(g.monto) - totalPagado),
+  };
+}
+
 module.exports = {
   initGastosSchema,
   getCategorias, getCategoriaById, createCategoria, updateCategoria, deleteCategoria,
   getRecurrentes, getRecurrenteById, createRecurrente, updateRecurrente, deleteRecurrente,
   generarGastosMes, getGastoDelMes, pagarRecurrenteMes, getRecurrentesConEstado,
   getResumenMes,
+  getPagosGasto, registrarPagoGasto, eliminarPagoGasto, getPagosResumen,
   list, getResumen, getResumenCompleto, getGastadoPagado,
   getFondo, setFondo, create, update, remove,
 };

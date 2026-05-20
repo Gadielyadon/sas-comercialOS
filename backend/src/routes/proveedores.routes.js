@@ -159,4 +159,29 @@ router.post('/api/pedido/:pedidoId/recepcionar', (req, res) => {
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── Reparar saldos incorrectos (recalcula desde movimientos) ──
+router.post('/api/reparar-saldos', (req, res) => {
+  try {
+    const { all: dbAll, run: dbRun } = require('../db');
+    const proveedores = svc.list();
+    let reparados = 0;
+    for (const p of proveedores) {
+      const movs = dbAll(
+        `SELECT tipo, monto FROM proveedores_movimientos WHERE proveedor_id = ?`,
+        [p.id]
+      );
+      const facturado = movs.filter(m => m.tipo === 'factura').reduce((s, m) => s + Number(m.monto), 0);
+      const pagado    = movs.filter(m => m.tipo === 'pago').   reduce((s, m) => s + Number(m.monto), 0);
+      const saldoReal = Math.max(0, facturado - pagado);
+      if (Math.abs(saldoReal - Number(p.saldo)) > 0.01) {
+        dbRun(`UPDATE proveedores SET saldo=? WHERE id=?`, [saldoReal, p.id]);
+        reparados++;
+      }
+    }
+    res.json({ ok: true, reparados });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

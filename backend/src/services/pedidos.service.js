@@ -314,14 +314,13 @@ function registrarPagoPedido({ pedidoId, monto, fecha, metodo, nota }) {
   if (!p) throw new Error('Pedido no encontrado');
   if (!monto || Number(monto) <= 0) throw new Error('Monto inválido');
   const hoy = new Date().toISOString().split('T')[0];
-  run(
+  const r = run(
     `INSERT INTO pedido_pagos (pedido_id, monto, fecha, metodo, nota) VALUES (?,?,?,?,?)`,
     [Number(pedidoId), Number(monto), fecha || hoy, metodo || null, nota || null]
   );
   // Calcular total pagado y actualizar estado del pedido
   const pagos  = getPagosPedido(pedidoId);
   const totalPagado = pagos.reduce((s, pg) => s + Number(pg.monto), 0);
-  // Calcular total del pedido por sus ítems
   const items  = getItems(pedidoId);
   const totalPedido = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo || 0)), 0);
   const estado = totalPagado >= totalPedido ? 'pagado' : 'parcial';

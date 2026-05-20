@@ -85,7 +85,10 @@ function registrarFactura(proveedorId, monto, descripcion = 'Factura', nro_factu
 function registrarPago(proveedorId, monto, descripcion = 'Pago') {
   const p = findById(proveedorId);
   if (!p) throw new Error('No encontrado');
-  const nuevoSaldo = (p.saldo || 0) - Number(monto);
+  // El saldo nunca puede quedar negativo — si el pago supera la deuda, solo se descuenta hasta 0
+  const saldoActual = Number(p.saldo) || 0;
+  const montoReal   = Math.min(Number(monto), saldoActual); // no bajar de 0
+  const nuevoSaldo  = Math.max(0, saldoActual - Number(monto)); // piso en 0
   run(`UPDATE proveedores SET saldo=? WHERE id=?`, [nuevoSaldo, Number(proveedorId)]);
   run(
     `INSERT INTO proveedores_movimientos (proveedor_id,tipo,descripcion,monto,saldo_post) VALUES (?,?,?,?,?)`,
