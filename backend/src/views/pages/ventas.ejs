@@ -3260,11 +3260,13 @@ function imprimirTicket(){
   w.document.write(html);
   w.document.close();
   w.focus();
-  // Despues de imprimir ticket del cliente, mostrar modal para copia
+  // Después de imprimir, cerrar la ventana automáticamente
   setTimeout(() => {
     w.print();
-    // Esperar un momento y mostrar el modal de copia
-    setTimeout(() => mostrarModalCopia(), 800);
+    setTimeout(() => {
+      w.close();
+      mostrarModalCopia();
+    }, 800);
   }, 300);
 }
 
@@ -3422,7 +3424,7 @@ function imprimirCopiaTicket() {
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(() => w.print(), 300);
+  setTimeout(() => { w.print(); setTimeout(() => w.close(), 800); }, 300);
 }
 
 function nuevaVenta(){
