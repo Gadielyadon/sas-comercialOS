@@ -32,11 +32,54 @@ app.use(express.json({ limit: '10mb' }));
 
 const session = require('express-session');
 
+// ── Session store en SQLite (evita leak de RAM del MemoryStore) ──
+function makeSqliteStore(session) {
+  const Store = session.Store;
+  const Database = require('better-sqlite3');
+  const path = require('path');
+  const db = new Database(path.join(__dirname, 'db', 'sessions.sqlite'));
+  db.pragma('journal_mode = WAL');
+  db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expired INTEGER NOT NULL
+  )`);
+  class SqliteStore extends Store {
+    get(sid, cb) {
+      try {
+        const row = db.prepare('SELECT sess, expired FROM sessions WHERE sid=?').get(sid);
+        if (!row) return cb(null, null);
+        if (Date.now() > row.expired) { this.destroy(sid, ()=>{}); return cb(null, null); }
+        cb(null, JSON.parse(row.sess));
+      } catch(e) { cb(e); }
+    }
+    set(sid, sess, cb) {
+      try {
+        const maxAge = (sess.cookie && sess.cookie.maxAge) ? sess.cookie.maxAge : 1000*60*60*8;
+        const expired = Date.now() + maxAge;
+        db.prepare('INSERT OR REPLACE INTO sessions (sid, sess, expired) VALUES (?,?,?)').run(sid, JSON.stringify(sess), expired);
+        cb && cb(null);
+      } catch(e) { cb && cb(e); }
+    }
+    destroy(sid, cb) {
+      try { db.prepare('DELETE FROM sessions WHERE sid=?').run(sid); cb && cb(null); }
+      catch(e) { cb && cb(e); }
+    }
+    touch(sid, sess, cb) { this.set(sid, sess, cb); }
+  }
+  // Limpiar sesiones expiradas cada 15 minutos
+  setInterval(() => {
+    try { db.prepare('DELETE FROM sessions WHERE expired<?').run(Date.now()); } catch(e) {}
+  }, 1000 * 60 * 15);
+  return new SqliteStore();
+}
+
 app.use(session({
+  store: makeSqliteStore(session),
   secret: process.env.SESSION_SECRET || 'comercial-os-secret-2024',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 8  // 8 horas
   }
