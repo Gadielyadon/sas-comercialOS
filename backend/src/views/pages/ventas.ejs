@@ -2032,66 +2032,92 @@ function filterCat(cat,btn){
   document.getElementById('barcodeInput').value='';
   renderGrid(cat?allProducts.filter(p=>p.category===cat):allProducts);
 }
+// ── Renderizado virtualizado — solo muestra los productos visibles ──
+const CHUNK_SIZE = 40; // productos por lote
+let _renderTimer = null;
+let _lastRenderedProducts = [];
+
 function renderGrid(products){
-  const grid=document.getElementById('productsGrid');
-  if(!products.length){
-    grid.innerHTML='<div class="products-empty"><i class="bi bi-box-seam"></i><p>Sin productos</p></div>';
+  const grid = document.getElementById('productsGrid');
+  if (!products.length) {
+    grid.innerHTML = '<div class="products-empty"><i class="bi bi-box-seam"></i><p>Sin productos</p></div>';
     return;
   }
-  const header=`<div class="prod-table-head">
+  _lastRenderedProducts = products;
+  // Limpiar timer anterior si hay uno pendiente
+  if (_renderTimer) { clearTimeout(_renderTimer); _renderTimer = null; }
+
+  const header = `<div class="prod-table-head">
     <div class="prod-th th-img"></div>
     <div class="prod-th">Producto</div>
     <div class="prod-th th-stock" style="text-align:center;">Stock</div>
     <div class="prod-th th-price" style="text-align:right;">Precio</div>
   </div>`;
-  const rows=products.map(p=>{
-    const ep = getPrecioLista(p);
-    const esPromo = p.en_promo && p.price_promo && _listaIdx === 0;
-    const lista   = LISTAS[_listaIdx];
-    // Precio tachado: si es lista base y hay promo → tachar precio normal
-    // Si es lista mayorista/tarjeta y tiene precio propio → tachar minorista
-    const precioBase = Number(p.price);
-    const tienePrecioEspecial = lista.campo !== 'price' && p[lista.campo] && Number(p[lista.campo]) > 0;
-    const promoOld = esPromo
-      ? `<span class="prod-price-old">${fmt(p.price)}</span>`
-      : tienePrecioEspecial
-        ? `<span class="prod-price-old" style="font-size:9px;">${fmt(precioBase)}</span>`
-        : '';
-    const promoBadge = esPromo
-      ? '<span class="prod-badge-promo">Promo</span>'
-      : tienePrecioEspecial
-        ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size:8px;">${lista.label}</span>`
-        : '';
-    const stock=Number(p.stock??0);
-    const esLibre = p.pesable || p.venta_sin_stock;
-    const hayDisponible = (p.hay == null || p.hay == 1);
-    const sinStock = esLibre ? !hayDisponible : stock<=0;
-    const inCart=cart.find(i=>i.sku===p.sku);
-    const stockCls = esLibre ? (hayDisponible?'ok':'zero') : (stock<=0?'zero':stock<=5?'low':'ok');
-    const stockTxt = esLibre ? (hayDisponible?'Hay':'No hay') : (stock<=0?'0':String(stock));
-    const skuSafe=p.sku.replace(/'/g,"\\'");
-    const nameSafe=p.name.replace(/"/g,'&quot;');
-    const imgSafe=p.imagen?p.imagen.replace(/"/g,'&quot;'):'';
-    const inCartBadge=inCart?`<span class="prod-badge-qty">${inCart.qty}</span>`:'';
-    const descHTML=p.descripcion?`<div class="prod-desc">${p.descripcion}</div>`:'';
-    const sinStockBadge=sinStock?'<span class="prod-sin-stock">Sin stock</span>':'';
-    const thumbCell=p.imagen
-      ? `<div class="prod-td-img"><div class="prod-thumb" onclick="event.stopPropagation();abrirZoom('${nameSafe}','${imgSafe}')" title="Ver imagen"><img src="${imgSafe}" alt="" loading="lazy"></div></div>`
-      : `<div class="prod-td-img"><div class="prod-thumb-empty"><i class="bi bi-box-seam"></i></div></div>`;
-    return `<div class="prod-card ${sinStock?'out-stock':''} ${inCart?'in-cart':''}" id="pcard-${CSS.escape(p.sku)}" onclick="${sinStock?'':` addBySku('${skuSafe}',this)`}">
-      ${thumbCell}
-      <div class="prod-td">
-        ${sinStockBadge}
-        <div class="prod-name">${p.name}${inCartBadge}${promoBadge}</div>
-        ${descHTML}
-      </div>
-      <div class="prod-td" style="text-align:center;"><span class="prod-stock-badge ${stockCls}">${stockTxt}</span></div>
-      <div class="prod-td" style="text-align:right;">${promoOld}<div class="prod-price">${fmt(ep)}</div></div>
-    </div>`;
-  }).join('');
-  grid.innerHTML=header+rows;
+
+  grid.innerHTML = header;
+
+  // Renderizar en chunks para no bloquear el hilo principal
+  let idx = 0;
+  function renderChunk() {
+    const fragment = document.createDocumentFragment();
+    const end = Math.min(idx + CHUNK_SIZE, products.length);
+    for (let i = idx; i < end; i++) {
+      const el = document.createElement('div');
+      el.innerHTML = buildProductCard(products[i]);
+      fragment.appendChild(el.firstChild);
+    }
+    grid.appendChild(fragment);
+    idx = end;
+    if (idx < products.length) {
+      _renderTimer = setTimeout(renderChunk, 0);
+    }
+  }
+  renderChunk();
 }
 
+function buildProductCard(p) {
+  const ep = getPrecioLista(p);
+  const esPromo = p.en_promo && p.price_promo && _listaIdx === 0;
+  const lista   = LISTAS[_listaIdx];
+  const precioBase = Number(p.price);
+  const tienePrecioEspecial = lista.campo !== 'price' && p[lista.campo] && Number(p[lista.campo]) > 0;
+  const promoOld = esPromo
+    ? `<span class="prod-price-old">${fmt(p.price)}</span>`
+    : tienePrecioEspecial
+      ? `<span class="prod-price-old" style="font-size:9px;">${fmt(precioBase)}</span>`
+      : '';
+  const promoBadge = esPromo
+    ? '<span class="prod-badge-promo">Promo</span>'
+    : tienePrecioEspecial
+      ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size:8px;">${lista.label}</span>`
+      : '';
+  const stock = Number(p.stock ?? 0);
+  const esLibre = p.pesable || p.venta_sin_stock;
+  const hayDisponible = (p.hay == null || p.hay == 1);
+  const sinStock = esLibre ? !hayDisponible : stock <= 0;
+  const inCart = cart.find(i => i.sku === p.sku);
+  const stockCls = esLibre ? (hayDisponible ? 'ok' : 'zero') : (stock <= 0 ? 'zero' : stock <= 5 ? 'low' : 'ok');
+  const stockTxt = esLibre ? (hayDisponible ? 'Hay' : 'No hay') : (stock <= 0 ? '0' : String(stock));
+  const skuSafe = p.sku.replace(/'/g, "\\'");
+  const nameSafe = p.name.replace(/"/g, '&quot;');
+  const imgSafe = p.imagen ? p.imagen.replace(/"/g, '&quot;') : '';
+  const inCartBadge = inCart ? `<span class="prod-badge-qty">${inCart.qty}</span>` : '';
+  const descHTML = p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : '';
+  const sinStockBadge = sinStock ? '<span class="prod-sin-stock">Sin stock</span>' : '';
+  const thumbCell = p.imagen
+    ? `<div class="prod-td-img"><div class="prod-thumb" onclick="event.stopPropagation();abrirZoom('${nameSafe}','${imgSafe}')" title="Ver imagen"><img src="${imgSafe}" alt="" loading="lazy"></div></div>`
+    : `<div class="prod-td-img"><div class="prod-thumb-empty"><i class="bi bi-box-seam"></i></div></div>`;
+  return `<div class="prod-card ${sinStock ? 'out-stock' : ''} ${inCart ? 'in-cart' : ''}" id="pcard-${CSS.escape(p.sku)}" onclick="${sinStock ? '' : `addBySku('${skuSafe}',this)`}">
+    ${thumbCell}
+    <div class="prod-td">
+      ${sinStockBadge}
+      <div class="prod-name">${p.name}${inCartBadge}${promoBadge}</div>
+      ${descHTML}
+    </div>
+    <div class="prod-td" style="text-align:center;"><span class="prod-stock-badge ${stockCls}">${stockTxt}</span></div>
+    <div class="prod-td" style="text-align:right;">${promoOld}<div class="prod-price">${fmt(ep)}</div></div>
+  </div>`;
+}
 
 function updateCardState(sku){
   const card = document.getElementById('pcard-' + CSS.escape(sku));
