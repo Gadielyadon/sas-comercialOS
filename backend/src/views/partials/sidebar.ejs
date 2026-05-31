@@ -318,20 +318,40 @@ window.axNotif=(function(){
   return {toggle,close,marcarLeidas};
 })();
 
-/* ── Botón hamburguesa fijo en mobile ── */
+/* ── Botón hamburguesa — mobile abre overlay, desktop colapsa sidebar ── */
 (function(){
   const btn = document.createElement('button');
   btn.id = 'axHamburger';
-  btn.title = 'Menú';
+  btn.title = 'Ocultar/mostrar menú';
   btn.innerHTML = '<i class="bi bi-list"></i>';
-  btn.onclick = () => window.openSidebar();
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  btn.onclick = () => {
+    if (isMobile()) {
+      window.openSidebar();
+    } else {
+      document.body.classList.toggle('sidebar-collapsed');
+      // Guardar preferencia
+      localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
+    }
+  };
+
   document.body.appendChild(btn);
-  // Ocultar cuando el sidebar está abierto
+
+  // En mobile: ocultar botón cuando sidebar está abierto
   const sb = document.getElementById('sidebar');
   const observer = new MutationObserver(() => {
-    btn.style.opacity = sb && sb.classList.contains('open') ? '0' : '1';
-    btn.style.pointerEvents = sb && sb.classList.contains('open') ? 'none' : '';
+    if (isMobile()) {
+      btn.style.opacity = sb && sb.classList.contains('open') ? '0' : '1';
+      btn.style.pointerEvents = sb && sb.classList.contains('open') ? 'none' : '';
+    }
   });
   if (sb) observer.observe(sb, { attributes: true, attributeFilter: ['class'] });
+
+  // Restaurar preferencia en desktop al cargar
+  if (!isMobile() && localStorage.getItem('sidebarCollapsed') === '1') {
+    document.body.classList.add('sidebar-collapsed');
+  }
 })();
 </script>

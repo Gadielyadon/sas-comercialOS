@@ -1261,27 +1261,61 @@ input::placeholder, textarea::placeholder { color: var(--text-muted) !important;
 .ax-sidebar-close:hover { background: rgba(255,255,255,.25); }
 
 #axHamburger {
-  display: none;
+  display: flex;
   position: fixed;
   top: 12px; left: 12px;
   z-index: 350;
-  width: 40px; height: 40px;
-  border-radius: 10px; border: none;
-  background: #1B4FD8;
-  color: #fff;
-  font-size: 22px; cursor: pointer;
+  width: 36px; height: 36px;
+  border-radius: 8px; border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px; cursor: pointer;
   align-items: center; justify-content: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,.25);
-  transition: background .15s;
+  transition: background .15s, color .15s;
 }
-#axHamburger:hover { background: #1540b8; }
+#axHamburger:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Desktop: sidebar colapsable */
+@media (min-width: 769px) {
+  #axHamburger {
+    position: fixed;
+    top: 14px;
+    left: 200px;
+    z-index: 400;
+    width: 32px; height: 32px;
+    font-size: 18px;
+    transition: left .25s ease, background .15s, color .15s;
+  }
+  body.sidebar-collapsed #axHamburger {
+    left: 12px;
+  }
+  body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+  }
+  body.sidebar-collapsed .main-content {
+    margin-left: 0 !important;
+  }
+  .sidebar {
+    transition: transform .25s ease;
+  }
+  .main-content {
+    transition: margin-left .25s ease;
+  }
+}
 
 @media (max-width: 768px) {
   .ax-sidebar-close { display: flex !important; }
-  #axHamburger { display: flex !important; }
-  
-  /* Empujar el contenido para que no quede tapado por el hamburger */
+  #axHamburger {
+    position: fixed;
+    top: 12px; left: 12px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: #1B4FD8;
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #axHamburger:hover { background: #1540b8; }
   .main-content { padding-top: 0; }
   .page-body { padding-top: 20px; }
 }
- 

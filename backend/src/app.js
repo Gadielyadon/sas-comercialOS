@@ -32,13 +32,10 @@ app.use(express.json({ limit: '10mb' }));
 
 const session = require('express-session');
 
-// ── Session store en SQLite (evita leak de RAM del MemoryStore) ──
+// ── Session store en SQLite — usa la conexión existente, sin recompilar ──
 function makeSqliteStore(session) {
   const Store = session.Store;
-  const Database = require('better-sqlite3');
-  const path = require('path');
-  const db = new Database(path.join(__dirname, 'db', 'sessions.sqlite'));
-  db.pragma('journal_mode = WAL');
+  const { db } = require('./db');
   db.exec(`CREATE TABLE IF NOT EXISTS sessions (
     sid TEXT PRIMARY KEY,
     sess TEXT NOT NULL,
@@ -67,7 +64,6 @@ function makeSqliteStore(session) {
     }
     touch(sid, sess, cb) { this.set(sid, sess, cb); }
   }
-  // Limpiar sesiones expiradas cada 15 minutos
   setInterval(() => {
     try { db.prepare('DELETE FROM sessions WHERE expired<?').run(Date.now()); } catch(e) {}
   }, 1000 * 60 * 15);
@@ -84,7 +80,6 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 8  // 8 horas
   }
 }));
-
 
 // ── Protección de rutas: redirige al login si no hay sesión ───
 app.use((req, res, next) => {
