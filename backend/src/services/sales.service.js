@@ -328,20 +328,32 @@ function createSale({
       || (payment_method || '').toLowerCase().includes('fiado')
       || (payment_method || '').toLowerCase().includes('cuenta corriente');
 
-    const clienteFiado = (esCuentaCorrienteFinal && cliente_id && Number(cliente_id) > 1)
-      ? Number(cliente_id)
-      : null;
+    const clienteValido = cliente_id && Number(cliente_id) > 1;
 
-    if (clienteFiado) {
-      const cli = getClienteStmt.get(clienteFiado);
+    if (clienteValido) {
+      const cli = getClienteStmt.get(Number(cliente_id));
       if (cli) {
-        insertCuentaCorrienteStmt.run(
-          clienteFiado,
-          toNumber(total),
-          `Venta #${sale_id} — Fiado`,
-          sale_id
-        );
-        updateClienteSaldoStmt.run(toNumber(total), clienteFiado);
+        if (esCuentaCorrienteFinal) {
+          // Venta fiada — suma al saldo
+          insertCuentaCorrienteStmt.run(
+            Number(cliente_id),
+            toNumber(total),
+            `Venta #${sale_id} — Fiado`,
+            sale_id
+          );
+          updateClienteSaldoStmt.run(toNumber(total), Number(cliente_id));
+        } else {
+          // Venta pagada — registrar en historial como cargo informativo sin afectar saldo
+          run(
+            `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, sale_id, saldo_post)
+             VALUES (?, 'cargo', ?, ?, ?, ?)`,
+            [Number(cliente_id), toNumber(total),
+             `Venta #${sale_id} — ${payment_method || 'Pagado'}`,
+             sale_id,
+             Number(cli.saldo || 0)]
+          );
+          // No modificar el saldo — es una venta pagada, no fiada
+        }
       }
     }
 

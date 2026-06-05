@@ -119,10 +119,25 @@ function remove(id) {
 }
 
 function getMovimientos(clienteId) {
-  return all(
+  // Todos los movimientos manuales + ventas pagadas registradas
+  const movs = all(
     `SELECT * FROM clientes_movimientos WHERE cliente_id = ? ORDER BY created_at ASC`,
     [Number(clienteId)]
   );
+
+  // Ventas fiadas ya están en clientes_movimientos
+  // Ventas pagadas también (tipo='venta_pagada')
+  // Agregar items a cada movimiento que tenga sale_id
+  return movs.map(m => {
+    if (m.sale_id) {
+      const items = all(
+        `SELECT name as nombre, qty as cantidad, price as precio_unitario FROM sale_items WHERE sale_id = ?`,
+        [m.sale_id]
+      );
+      return { ...m, items };
+    }
+    return m;
+  });
 }
 
 function registrarCargo(clienteId, monto, descripcion = 'Cargo', saleId = null) {
@@ -151,9 +166,70 @@ function registrarPago(clienteId, monto, descripcion = 'Pago') {
   return findById(clienteId);
 }
 
+// ─────────────────────────────────────────────────────────────
+// Historial de ventas del cliente (pagadas + fiadas)
+// ─────────────────────────────────────────────────────────────
+function getHistorialVentas(clienteId, limit = 200) {
+  const ventas = all(
+    `SELECT
+       s.id,
+       s.total,
+       s.payment_method,
+       s.status,
+       s.discount_pct,
+       s.discount_fixed,
+       s.created_at
+     FROM sales s
+     WHERE s.cliente_id = ?
+       AND s.status != 'anulada'
+     ORDER BY s.created_at DESC
+     LIMIT ?`,
+    [Number(clienteId), limit]
+  );
+
+  return ventas.map(v => {
+    const items = all(
+      `SELECT name, qty, price, subtotal FROM sale_items WHERE sale_id = ?`,
+      [v.id]
+    );
+    return { ...v, items };
+  });
+}
+
+// Estadísticas resumidas del cliente
+function getEstadisticasCliente(clienteId) {
+  const row = get(
+    `SELECT
+       COUNT(*)                          AS total_ventas,
+       COALESCE(SUM(total), 0)           AS total_comprado,
+       COALESCE(AVG(total), 0)           AS ticket_promedio,
+       COALESCE(MAX(total), 0)           AS venta_maxima,
+       MAX(created_at)                   AS ultima_compra
+     FROM sales
+     WHERE cliente_id = ?
+       AND status != 'anulada'`,
+    [Number(clienteId)]
+  );
+
+  const topProducto = get(
+    `SELECT si.name, SUM(si.qty) AS veces
+     FROM sale_items si
+     JOIN sales s ON s.id = si.sale_id
+     WHERE s.cliente_id = ?
+       AND s.status != 'anulada'
+     GROUP BY si.name
+     ORDER BY veces DESC
+     LIMIT 1`,
+    [Number(clienteId)]
+  );
+
+  return { ...row, top_producto: topProducto || null };
+}
+
 module.exports = {
   initClientesSchema, list, search, findById,
   create, update, remove,
   getMovimientos, registrarCargo, registrarPago,
   checkLimite, importMasivo,
+  getHistorialVentas, getEstadisticasCliente,
 };

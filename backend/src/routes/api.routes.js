@@ -341,6 +341,22 @@ router.get('/clientes/:id/movimientos', (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Historial de ventas del cliente (pagadas + fiadas)
+router.get('/clientes/:id/ventas', (req, res) => {
+  try {
+    const svc = require('../services/clientes.service');
+    res.json(svc.getHistorialVentas(Number(req.params.id)));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Estadísticas del cliente
+router.get('/clientes/:id/estadisticas', (req, res) => {
+  try {
+    const svc = require('../services/clientes.service');
+    res.json(svc.getEstadisticasCliente(Number(req.params.id)));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/clientes/:id', (req, res) => {
   try {
     const c = require('../services/clientes.service').findById(req.params.id);
@@ -367,9 +383,26 @@ router.put('/clientes/:id', (req, res) => {
 
 router.delete('/clientes/:id', (req, res) => {
   try {
-    const ok = require('../services/clientes.service').remove(req.params.id);
+    const id = Number(req.params.id);
+    if (id === 1) return res.status(400).json({ error: 'No se puede eliminar Consumidor Final' });
+    const { run } = require('../db');
+    // Reasignar a Consumidor Final — cada UPDATE en su propio try por si la columna no existe aún
+    const tablas = ['sales', 'clientes_movimientos', 'cuenta_corriente', 'presupuestos'];
+    for (const t of tablas) {
+      try { run(`UPDATE ${t} SET cliente_id = 1 WHERE cliente_id = ?`, [id]); } catch(_) {}
+    }
+    const ok = require('../services/clientes.service').remove(id);
     if (!ok) return res.status(400).json({ error: 'No se puede eliminar' });
     res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/clientes/:id/check-limite', (req, res) => {
+  try {
+    const { monto } = req.body;
+    if (!monto) return res.status(400).json({ error: 'Falta monto' });
+    const result = require('../services/clientes.service').checkLimite(Number(req.params.id), Number(monto));
+    res.json(result);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -948,6 +981,29 @@ router.get('/notificaciones', (req, res) => {
           detalle: `Total: $${Number(deudaProv.total).toLocaleString('es-AR',{minimumFractionDigits:2})}`,
           link: '/proveedores',
           id: 'deuda_proveedores',
+        });
+      }
+    } catch(e) {}
+
+    // ── Novedades del sistema (changelog.json) ──
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const changelogPath = path.join(__dirname, '../../../changelog.json');
+      if (fs.existsSync(changelogPath)) {
+        const changelog = JSON.parse(fs.readFileSync(changelogPath, 'utf8'));
+        const novedades = changelog.novedades || [];
+        novedades.forEach(n => {
+          notifs.unshift({
+            tipo: 'novedad',
+            icono: n.icono || 'bi-stars',
+            color: n.color || '#6366f1',
+            titulo: `Novedad v${n.version}: ${n.titulo}`,
+            detalle: n.detalle,
+            imagen: n.imagen || '',
+            link: n.link || '#',
+            id: `novedad_${n.id}`,
+          });
         });
       }
     } catch(e) {}

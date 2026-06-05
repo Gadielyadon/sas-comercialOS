@@ -150,6 +150,12 @@
                         <i class="bi bi-clock-history"></i> Cuenta
                       </button>
                       <% if (c.id !== 1) { %>
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirHistorialVentas(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>')" title="Ver historial de compras"
+                          style="color:#6366f1;border-color:rgba(99,102,241,.3);">
+                          <i class="bi bi-bag-check"></i> Compras
+                        </button>
+                      <% } %>
+                      <% if (c.id !== 1) { %>
                         <button class="btn-action btn-action-outline btn-sm" onclick="abrirCargo(<%= c.id %>, '<%= c.nombre %>')" title="Registrar deuda manual"
                           style="color:#d97706;border-color:rgba(217,119,6,.3);">
                           <i class="bi bi-plus-circle"></i> Cargar
@@ -551,6 +557,51 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     MODAL: Historial de compras del cliente
+══════════════════════════════════════ -->
+<div class="sale-overlay" id="modalHistorialVentas" onclick="if(event.target.id==='modalHistorialVentas')cerrarHistorialVentas()">
+  <div style="width:100%;max-width:980px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+          <i class="bi bi-bag-check-fill"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Historial de compras</div>
+          <div style="font-size:12px;color:var(--text-secondary);" id="hvClienteNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarHistorialVentas()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body: stats arriba + tabla abajo -->
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;">
+
+      <!-- Stats cards -->
+      <div id="hvStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--border-color);flex-shrink:0;"></div>
+
+      <!-- Buscador local -->
+      <div style="padding:10px 20px 0;flex-shrink:0;">
+        <input type="text" id="hvBuscar" placeholder="Buscar en el historial por producto o medio de pago…"
+          oninput="filtrarHistorial()"
+          style="width:100%;padding:9px 13px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13px;outline:none;box-sizing:border-box;transition:border-color .15s;"
+          onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+
+      <!-- Listado de ventas -->
+      <div style="flex:1;overflow-y:auto;padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;" id="hvListado">
+        <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <%- include('../partials/scripts') %>
 
 <script>
@@ -808,12 +859,26 @@ async function verMovimientos(id, nombre, saldo) {
   if (totalEl) totalEl.textContent = `${movs.length} movimiento${movs.length!==1?'s':''}`;
 
   document.getElementById('movListado').innerHTML = conAcum.map(m => {
-    const esCargo = m.tipo === 'cargo';
-    const color   = esCargo ? '#dc2626' : '#10b981';
-    const bg      = esCargo ? 'rgba(239,68,68,.04)' : 'rgba(16,185,129,.04)';
-    const borde   = esCargo ? 'rgba(239,68,68,.15)' : 'rgba(16,185,129,.15)';
-    const icono   = esCargo ? 'bi-arrow-up-circle-fill' : 'bi-arrow-down-circle-fill';
-    const signo   = esCargo ? '+' : '-';
+    const esPago        = m.tipo === 'pago';
+    const esVentaPagada = m.tipo === 'cargo' && m.descripcion && m.descripcion.includes('Venta #') && !m.descripcion.includes('Fiado');
+    const esVentaFiada  = m.tipo === 'cargo' && m.descripcion && m.descripcion.includes('Fiado');
+    const esCargo       = m.tipo === 'cargo' && !esVentaPagada && !esVentaFiada;
+    const color    = esPago ? '#10b981' : esVentaPagada ? 'var(--color-primary)' : '#dc2626';
+    const bg       = esPago ? 'rgba(16,185,129,.04)' : esVentaPagada ? 'rgba(27,79,216,.04)' : 'rgba(239,68,68,.04)';
+    const borde    = esPago ? 'rgba(16,185,129,.15)' : esVentaPagada ? 'rgba(27,79,216,.15)' : 'rgba(239,68,68,.15)';
+    const icono    = esPago ? 'bi-arrow-down-circle-fill' : esVentaPagada ? 'bi-receipt' : 'bi-arrow-up-circle-fill';
+    const iconCol  = esPago ? '#10b981' : esVentaPagada ? 'var(--color-primary)' : '#dc2626';
+    const signo    = esPago ? '-' : '+';
+
+    // Items de la venta si los tiene
+    const itemsHtml = m.items && m.items.length
+      ? `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-surface-2);border-radius:6px;display:flex;flex-direction:column;gap:3px;">
+          ${m.items.map(i => `<div style="font-size:11px;color:var(--text-secondary);display:flex;justify-content:space-between;">
+            <span>${i.nombre} x${i.cantidad}</span>
+            <span style="font-family:var(--font-mono);">$${Number(i.precio_unitario*i.cantidad).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+          </div>`).join('')}
+        </div>`
+      : '';
     const desc    = m.descripcion || (esCargo ? 'Cargo' : 'Pago');
     const fecha   = (m.created_at || '').slice(0,16).replace('T',' ');
     const [fechaPart, horaPart] = fecha.split(' ');
@@ -824,9 +889,10 @@ async function verMovimientos(id, nombre, saldo) {
 
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bg};border-radius:10px;border:1px solid ${borde};"
         data-mov data-tipo="${m.tipo}" data-desc="${desc.replace(/"/g,'&quot;')}" data-monto="${m.monto}" data-acum="${m.acum}" data-fecha="${fecha}">
-      <i class="bi ${icono}" style="font-size:22px;color:${color};flex-shrink:0;"></i>
+      <i class="bi ${icono}" style="font-size:22px;color:${iconCol};flex-shrink:0;"></i>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}</div>
+        ${itemsHtml}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
             <i class="bi bi-calendar3" style="font-size:10px;"></i>${fechaPart}
@@ -1233,4 +1299,138 @@ function descargarPlantillaClientes() {
     s.onload = generar; document.head.appendChild(s);
   } else { generar(); }
 }
+
+/* ════════════════════════════════════
+   HISTORIAL DE VENTAS DEL CLIENTE
+════════════════════════════════════ */
+let _hvRaw = [];
+let _hvClienteId = null;
+
+function fmt2(n) {
+  return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function abrirHistorialVentas(id, nombre) {
+  _hvClienteId = id;
+  document.getElementById('hvClienteNombre').textContent = nombre;
+  document.getElementById('hvBuscar').value = '';
+  document.getElementById('hvListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>';
+  document.getElementById('hvStats').innerHTML = '';
+  document.getElementById('modalHistorialVentas').classList.add('open');
+
+  try {
+    const [rVentas, rStats] = await Promise.all([
+      fetch(`/api/clientes/${id}/ventas`),
+      fetch(`/api/clientes/${id}/estadisticas`)
+    ]);
+    _hvRaw = await rVentas.json();
+    const stats = await rStats.json();
+    renderHvStats(stats);
+    renderHvListado(_hvRaw);
+  } catch(e) {
+    document.getElementById('hvListado').innerHTML = `<p style="color:#ef4444;text-align:center;padding:32px 0;">Error al cargar: ${e.message}</p>`;
+  }
+}
+
+function renderHvStats(s) {
+  const cards = [
+    { label: 'Total compras', valor: '$' + fmt2(s.total_comprado), color: '#6366f1', bg: 'rgba(99,102,241,.08)', border: 'rgba(99,102,241,.2)', icono: 'bi-bag-fill' },
+    { label: 'Cantidad de ventas', valor: s.total_ventas, color: '#0891b2', bg: 'rgba(8,145,178,.08)', border: 'rgba(8,145,178,.2)', icono: 'bi-receipt' },
+    { label: 'Ticket promedio', valor: '$' + fmt2(s.ticket_promedio), color: '#059669', bg: 'rgba(5,150,105,.08)', border: 'rgba(5,150,105,.2)', icono: 'bi-graph-up' },
+    { label: 'Venta más alta', valor: '$' + fmt2(s.venta_maxima), color: '#d97706', bg: 'rgba(217,119,6,.08)', border: 'rgba(217,119,6,.2)', icono: 'bi-star-fill' },
+  ];
+  document.getElementById('hvStats').innerHTML = cards.map(c => `
+    <div style="background:${c.bg};border:1px solid ${c.border};border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;">
+      <i class="bi ${c.icono}" style="font-size:22px;color:${c.color};flex-shrink:0;"></i>
+      <div>
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${c.color};opacity:.8;margin-bottom:3px;">${c.label}</div>
+        <div style="font-size:20px;font-weight:800;font-family:var(--font-mono);color:${c.color};line-height:1;">${c.valor}</div>
+      </div>
+    </div>`).join('');
+
+  if (s.top_producto) {
+    document.getElementById('hvStats').innerHTML += `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;grid-column:1/-1;">
+        <i class="bi bi-trophy-fill" style="font-size:20px;color:#10b981;flex-shrink:0;"></i>
+        <div>
+          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#10b981;opacity:.8;margin-bottom:2px;">Producto más comprado</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${s.top_producto.name} <span style="font-family:var(--font-mono);font-weight:600;color:#10b981;">(${s.top_producto.veces} unidades)</span></div>
+        </div>
+      </div>`;
+  }
+}
+
+function renderHvListado(ventas) {
+  if (!ventas || !ventas.length) {
+    document.getElementById('hvListado').innerHTML = `
+      <div style="text-align:center;padding:40px 0;color:var(--text-secondary);">
+        <i class="bi bi-bag-x" style="font-size:40px;opacity:.2;display:block;margin-bottom:10px;"></i>
+        <div style="font-size:14px;font-weight:700;">Sin compras registradas</div>
+        <div style="font-size:12px;margin-top:4px;opacity:.6;">Cuando este cliente realice una compra aparecerá aquí</div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('hvListado').innerHTML = ventas.map(v => {
+    const fecha = (v.created_at || '').slice(0,16).replace('T',' ');
+    const [fp, hp] = fecha.split(' ');
+    const esFiado = (v.payment_method || '').toLowerCase().includes('fiado') || (v.payment_method || '').toLowerCase().includes('cuenta');
+    const metodoCOlor = esFiado ? '#dc2626' : '#059669';
+    const metodoBg    = esFiado ? 'rgba(239,68,68,.1)' : 'rgba(5,150,105,.1)';
+    const itemsHtml = v.items && v.items.length
+      ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
+          ${v.items.slice(0,4).map(i => `
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-secondary);">
+              <span>${i.name} × ${i.qty}</span>
+              <span style="font-family:var(--font-mono);">$${fmt2(i.subtotal)}</span>
+            </div>`).join('')}
+          ${v.items.length > 4 ? `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;">+ ${v.items.length - 4} ítems más</div>` : ''}
+        </div>`
+      : '';
+
+    return `
+      <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:10px;padding:13px 16px;"
+           data-venta data-total="${v.total}" data-metodo="${(v.payment_method||'').toLowerCase()}" data-items="${(v.items||[]).map(i=>i.name).join(' ').toLowerCase()}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+            <div style="width:34px;height:34px;border-radius:8px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi bi-receipt" style="color:#6366f1;font-size:15px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:700;color:var(--text-primary);">Venta #${v.id}</span>
+                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${metodoBg};color:${metodoCOlor};">${v.payment_method || '—'}</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">
+                <i class="bi bi-calendar3" style="font-size:10px;"></i> ${fp}
+                <span style="margin-left:6px;"><i class="bi bi-clock" style="font-size:10px;"></i> ${hp || ''}</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--text-primary);">$${fmt2(v.total)}</div>
+            <div style="font-size:11px;color:var(--text-secondary);">${(v.items||[]).length} ítem${(v.items||[]).length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        ${itemsHtml}
+      </div>`;
+  }).join('');
+}
+
+function filtrarHistorial() {
+  const q = (document.getElementById('hvBuscar').value || '').trim().toLowerCase();
+  if (!q) { renderHvListado(_hvRaw); return; }
+  const filtered = _hvRaw.filter(v => {
+    const metodo = (v.payment_method || '').toLowerCase();
+    const itemNames = (v.items || []).map(i => i.name.toLowerCase()).join(' ');
+    return `#${v.id} ${metodo} ${itemNames}`.includes(q);
+  });
+  renderHvListado(filtered);
+}
+
+function cerrarHistorialVentas() {
+  document.getElementById('modalHistorialVentas').classList.remove('open');
+  _hvRaw = [];
+}
+
 </script>

@@ -306,7 +306,7 @@
                   </div>
                   <div class="field">
                     <label>IVA por defecto en ítems</label>
-                    <select name="iva_default" id="ivaDefault">
+                    <select name="iva_default" id="ivaDefault" onchange="aplicarIvaATodos(this.value)">
                       <option value="">Sin IVA</option>
                       <option value="0" <%= (presupuesto?.iva_default === 0 || presupuesto?.iva_default === '0') ? 'selected' : '' %>>Exento (0%)</option>
                       <option value="10.5" <%= (presupuesto?.iva_default == 10.5) ? 'selected' : '' %>>10.5%</option>
@@ -1157,4 +1157,14 @@ calcularTotales();
 <% } %>
 
 renderCatalogo();
+
+// ─────────────────────────────────────────────────────────────
+// Aplicar IVA por defecto a TODOS los ítems existentes
+// ─────────────────────────────────────────────────────────────
+function aplicarIvaATodos(valor) {
+  const pct = (valor === '' || valor === null || valor === undefined) ? null : parseFloat(valor);
+  items.forEach(item => { item.pct_iva = pct; });
+  renderItems();
+}
+
 </script>

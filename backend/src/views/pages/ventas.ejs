@@ -1288,18 +1288,24 @@
         <div class="cart-cliente-bloque">
           <div class="cart-field-row">
             <label class="cart-field-lbl"><i class="bi bi-person"></i> Cliente</label>
-            <div class="cart-cliente-wrap">
-              <i class="bi bi-person cart-cliente-ico"></i>
-              <input type="text" class="cart-cliente-inp" id="posClienteSearch"
-                placeholder="Consumidor Final" autocomplete="off"
-                oninput="buscarClientePos(this.value)"
-                onfocus="mostrarTodosClientes()"
-                onblur="setTimeout(cerrarDropCliente,200)">
-              <div class="cart-cliente-drop" id="posClienteResultados"></div>
-              <div class="cart-cliente-sel" id="posClienteSeleccionado">
-                <span id="posClienteNombre" style="font-weight:600;color:var(--text-primary)"></span>
-                <span style="font-size:10px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 6px;border-radius:10px">✓</span>
+            <div class="cart-cliente-wrap" style="display:flex;align-items:center;gap:5px;">
+              <div style="flex:1;position:relative;">
+                <i class="bi bi-person cart-cliente-ico"></i>
+                <input type="text" class="cart-cliente-inp" id="posClienteSearch"
+                  placeholder="Consumidor Final" autocomplete="off"
+                  oninput="buscarClientePos(this.value)"
+                  onfocus="mostrarTodosClientes()"
+                  onblur="setTimeout(cerrarDropCliente,200)">
+                <div class="cart-cliente-drop" id="posClienteResultados"></div>
+                <div class="cart-cliente-sel" id="posClienteSeleccionado">
+                  <span id="posClienteNombre" style="font-weight:600;color:var(--text-primary)"></span>
+                  <span style="font-size:10px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 6px;border-radius:10px">✓</span>
+                </div>
               </div>
+              <button onclick="abrirCrearClienteRapido('')" title="Nuevo cliente"
+                style="flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.08);color:var(--color-primary);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1;"
+                onmouseover="this.style.background='rgba(27,79,216,.18)'"
+                onmouseout="this.style.background='rgba(27,79,216,.08)'">+</button>
             </div>
           </div>
 
@@ -1781,6 +1787,89 @@
   </div>
 </div>
 
+<!-- MODAL: Crear cliente rápido desde el POS -->
+<div class="sale-overlay" id="modalCrearClienteRapido" onclick="if(event.target.id==='modalCrearClienteRapido')cerrarCrearClienteRapido()">
+  <div class="sale-modal" style="max-width:420px;text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#1540b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+          <i class="bi bi-person-plus-fill"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Nuevo cliente</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Creación rápida desde el POS</div>
+        </div>
+      </div>
+      <button onclick="cerrarCrearClienteRapido()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label class="form-lbl">Nombre *</label>
+        <input type="text" id="ccrNombre" class="form-input" placeholder="Nombre del cliente">
+      </div>
+      <div>
+        <label class="form-lbl">DNI / CUIT <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <input type="text" id="ccrDni" class="form-input" placeholder="Ej: 20450801373">
+      </div>
+      <div>
+        <label class="form-lbl">Teléfono <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <input type="text" id="ccrTel" class="form-input" placeholder="Ej: 3834123456">
+      </div>
+    </div>
+    <div id="ccrError" style="display:none;margin-top:10px;font-size:12.5px;color:#dc2626;"></div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button onclick="confirmarCrearClienteRapido()"
+        style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#1540b8);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        <i class="bi bi-person-check-fill"></i> Crear y seleccionar
+      </button>
+      <button onclick="cerrarCrearClienteRapido()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirCrearClienteRapido(nombreSugerido) {
+  cerrarDropCliente();
+  document.getElementById('ccrNombre').value = nombreSugerido || '';
+  document.getElementById('ccrDni').value    = '';
+  document.getElementById('ccrTel').value    = '';
+  document.getElementById('ccrError').style.display = 'none';
+  document.getElementById('modalCrearClienteRapido').classList.add('open');
+  setTimeout(() => document.getElementById('ccrNombre').focus(), 80);
+}
+function cerrarCrearClienteRapido() {
+  document.getElementById('modalCrearClienteRapido').classList.remove('open');
+}
+async function confirmarCrearClienteRapido() {
+  const errEl  = document.getElementById('ccrError');
+  errEl.style.display = 'none';
+  const nombre = document.getElementById('ccrNombre').value.trim();
+  const dni    = document.getElementById('ccrDni').value.trim();
+  const tel    = document.getElementById('ccrTel').value.trim();
+  if (!nombre) { errEl.textContent = 'El nombre es obligatorio'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch('/api/clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, cuit: dni || null, telefono: tel || null })
+    });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); errEl.textContent = e.error || 'Error al crear cliente'; errEl.style.display = 'block'; return; }
+    const cliente = await r.json();
+    // Seleccionar el cliente recién creado en el POS
+    selClientePos(cliente.id, cliente.nombre, cliente.telefono || '');
+    cerrarCrearClienteRapido();
+    showToast('Cliente creado y seleccionado ✓', 'success');
+  } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display = 'block'; }
+}
+// Enter en los campos del modal
+document.addEventListener('DOMContentLoaded', function() {
+  ['ccrNombre','ccrDni','ccrTel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') confirmarCrearClienteRapido(); });
+  });
+});
+</script>
+
 <%- include('../partials/scripts') %>
 
 <script>
@@ -2193,6 +2282,16 @@ function addToCart(product){
   }
 }
 
+// ── Delegación de eventos para botón editar precio ──
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-edit-price');
+  if (!btn) return;
+  e.stopPropagation();
+  const sku   = btn.dataset.sku;
+  const price = parseFloat(btn.dataset.price);
+  editarPrecioItem(sku, price);
+});
+
 function renderCartList(){
   const emptyState = document.getElementById('cartEmptyState');
   const grid       = document.getElementById('cartItemsGrid');
@@ -2225,14 +2324,15 @@ function renderCartList(){
         <div class="cart-card-name">${item.name}</div>
         <button class="btn-del" onclick="removeItem('${item.sku}')"><i class="bi bi-trash3"></i></button>
       </div>
-      <div class="cart-card-unit">Precio unitario: <span>${fmt(item.price)}${item.isMayorista ? ' <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : ''}</span></div>
+      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isMayorista ? ' <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : ''}${item.precioEditado ? ' <span style="color:#f59e0b;font-size:9px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
       <div class="cart-card-bottom">
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="chgQty('${item.sku}',-1)"><i class="bi bi-dash"></i></button>
           <span class="qty-val" onclick="abrirTecladoCantidad('${item.sku}',${item.qty})" title="Tocá para cambiar cantidad" style="cursor:pointer;background:var(--color-primary);color:#fff;border-radius:4px;padding:0 4px;">${item.qty}</span>
           <button class="qty-btn" onclick="chgQty('${item.sku}',1)"><i class="bi bi-plus"></i></button>
         </div>
-        <div class="cart-card-price">${fmt(item.price * item.qty)}</div>
+        <div class="cart-card-price">${fmt(item.price * item.qty)}${item.precioEditado ? '<span style="color:#f59e0b;font-size:9px;font-weight:800;margin-left:3px;" title="Precio modificado">✎</span>' : ''}</div>
+        <button class="btn-edit-price" data-sku="${item.sku.replace(/"/g,'&quot;')}" data-price="${item.price}" title="Editar precio unitario" style="width:20px;height:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;padding:0;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'"><i class="bi bi-pencil"></i></button>
       </div>`;
   });
 
@@ -2256,6 +2356,51 @@ function chgQty(sku,d){
   updateCardState(sku);
   renderCartList();
   updateTotals();
+}
+
+function editarPrecioItem(sku, precioActual) {
+  const item = cart.find(i => i.sku === sku);
+  if (!item) return;
+  const id = 'ci-' + CSS.escape(sku);
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // Buscar el div de precio visible en desktop
+  const precioDiv = el.querySelector('.cart-card-price');
+  if (!precioDiv) return;
+
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.min = '0';
+  inp.step = '1';
+  inp.value = precioActual;
+  inp.style.cssText = 'width:90px;padding:2px 6px;border-radius:5px;border:2px solid var(--color-primary);background:var(--bg-surface);color:var(--text-primary);font-size:14px;font-weight:700;font-family:var(--font-mono);text-align:right;outline:none;';
+
+  // Guardar contenido original
+  const contenidoOriginal = precioDiv.innerHTML;
+  precioDiv.innerHTML = '';
+  precioDiv.appendChild(inp);
+  inp.focus();
+  inp.select();
+
+  function confirmar() {
+    const nuevo = parseFloat(inp.value);
+    if (!isNaN(nuevo) && nuevo >= 0) {
+      item.price      = nuevo;
+      item.price_base = nuevo;
+      item.precioEditado = true;
+      renderCartList();
+      updateTotals();
+    } else {
+      precioDiv.innerHTML = contenidoOriginal;
+    }
+  }
+
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmar(); }
+    if (e.key === 'Escape') { precioDiv.innerHTML = contenidoOriginal; }
+  });
+  inp.addEventListener('blur', confirmar);
 }
 
 function removeItem(sku){
@@ -2409,9 +2554,10 @@ async function generarPresupuestoDesdeCarrito() {
   const items = cart.map(i => ({
     tipo: 'producto',
     sku: i.sku || null,
-    nombre: i.name,
-    cantidad: i.qty,
-    precio_unitario: i.price,
+    name: i.name,
+    qty: i.qty,
+    price: i.price,
+    subtotal: i.price * i.qty,
     descuento_item_pct: 0,
     pct_iva: null
   }));
@@ -2757,15 +2903,40 @@ function selectPayMethod(btn){
   }
 }
 
-function renderClienteDrop(list){
+function renderClienteDrop(list, query){
   const drop=document.getElementById('posClienteResultados');
-  if(!list||!list.length){drop.classList.remove('visible');return;}
+  const q = query || document.getElementById('posClienteSearch').value.trim();
+  if(!list||!list.length){
+    // Sin resultados — mostrar botón crear cliente
+    if (q && q.length > 0) {
+      drop.innerHTML = `<div style="padding:10px 12px;">
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;">Sin resultados para "<strong>${q}</strong>"</div>
+        <button onmousedown="abrirCrearClienteRapido('${q.replace(/'/g,"\\'")}');"
+          style="width:100%;padding:8px 12px;background:rgba(27,79,216,.1);color:var(--color-primary);border:1.5px solid rgba(27,79,216,.3);border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+          <i class="bi bi-person-plus-fill"></i> Crear cliente "${q}"
+        </button>
+      </div>`;
+      drop.classList.add('visible');
+    } else {
+      drop.classList.remove('visible');
+    }
+    return;
+  }
   drop.innerHTML=list.map(c=>{
     const nom=c.nombre||'',tel=c.telefono||'',saldo=Number(c.saldo||0);
     const sTag=saldo>0?`<span style="font-size:10px;font-weight:700;color:#dc2626;background:rgba(239,68,68,.1);padding:1px 5px;border-radius:8px">Debe ${fmt(saldo)}</span>`:'';
     const dTag=c.id===1?`<span style="font-size:10px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 5px;border-radius:8px;margin-left:4px">Default</span>`:'';
     return `<div style="padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border-color);font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s" onmouseenter="this.style.background='rgba(0,180,216,.06)'" onmouseleave="this.style.background=''" onmousedown="selClientePos(${c.id},'${nom.replace(/'/g,"\\'")}','${tel.replace(/'/g,"\\'")}')"><div><strong>${nom}</strong>${dTag}${tel?`<span style="color:var(--text-secondary);font-size:10.5px;margin-left:5px">${tel}</span>`:''}</div>${sTag}</div>`;
   }).join('');
+  // Agregar opción de crear nuevo al final si hay búsqueda activa
+  if (q && q.length > 1) {
+    drop.innerHTML += `<div style="padding:7px 11px;border-top:1px solid var(--border-color);">
+      <button onmousedown="abrirCrearClienteRapido('${q.replace(/'/g,"\\'")}');"
+        style="width:100%;padding:6px 10px;background:transparent;color:var(--color-primary);border:1px dashed rgba(27,79,216,.4);border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:5px;">
+        <i class="bi bi-person-plus"></i> Crear nuevo cliente
+      </button>
+    </div>`;
+  }
   drop.classList.add('visible');
 }
 async function mostrarTodosClientes(){try{const r=await fetch('/api/clientes');if(!r.ok)return;renderClienteDrop(await r.json());}catch(e){}}
@@ -2776,7 +2947,7 @@ function buscarClientePos(q){
     try{
       const r=await fetch('/api/clientes?q='+encodeURIComponent(q));
       if(!r.ok)return;
-      renderClienteDrop(await r.json());
+      renderClienteDrop(await r.json(), q);
     }catch(e){}
   },200);
 }
