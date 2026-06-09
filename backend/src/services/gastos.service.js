@@ -73,6 +73,8 @@ function initGastosSchema() {
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN cuota_actual INTEGER DEFAULT 0`);    // contador interno
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN fecha_fin TEXT DEFAULT NULL`);       // ej: '2026-12'
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN notas TEXT DEFAULT NULL`);           // nota general
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN fecha TEXT DEFAULT NULL`);            // fecha de vencimiento/referencia
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN nro_boleta TEXT DEFAULT NULL`);       // número de boleta / referencia
 
   // Tabla de pagos parciales por gasto mensual
   run(`CREATE TABLE IF NOT EXISTS gasto_pagos (
@@ -132,7 +134,7 @@ function getRecurrentes() {
 function getRecurrenteById(id) {
   return get(`SELECT * FROM gastos_recurrentes WHERE id = ?`, [Number(id)]);
 }
-function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, fecha_fin, notas }) {
+function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, fecha_fin, notas, fecha, nro_boleta }) {
   if (!descripcion || !descripcion.trim()) throw new Error('La descripcion es obligatoria');
   if (!monto_estimado || isNaN(Number(monto_estimado))) throw new Error('El monto estimado es obligatorio');
   const dia = Number(dia_vencimiento);
@@ -144,10 +146,10 @@ function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_e
   }
   const tipoVal = tipo === 'extraordinario' ? 'extraordinario' : 'fijo';
   const r = run(
-    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, cuota_actual, fecha_fin, notas)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, cuota_actual, fecha_fin, notas, fecha, nro_boleta)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [categoria_id || null, catNombre, descripcion.trim(), Number(monto_estimado), dia, sucursal_id || 1,
-     tipoVal, cuotas_total ? Number(cuotas_total) : null, 0, fecha_fin || null, notas || null]
+     tipoVal, cuotas_total ? Number(cuotas_total) : null, 0, fecha_fin || null, notas || null, fecha || null, nro_boleta || null]
   );
   return getRecurrenteById(r.lastInsertRowid);
 }
@@ -160,7 +162,7 @@ function updateRecurrente(id, f) {
     if (cat) catNombre = cat.nombre;
   }
   run(
-    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=?, tipo=?, cuotas_total=?, fecha_fin=?, notas=? WHERE id=?`,
+    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=?, tipo=?, cuotas_total=?, fecha_fin=?, notas=?, fecha=?, nro_boleta=? WHERE id=?`,
     [
       f.categoria_id    !== undefined ? (f.categoria_id || null) : r.categoria_id,
       catNombre,
@@ -171,6 +173,8 @@ function updateRecurrente(id, f) {
       f.cuotas_total    !== undefined ? (f.cuotas_total ? Number(f.cuotas_total) : null) : r.cuotas_total,
       f.fecha_fin       !== undefined ? (f.fecha_fin || null)    : r.fecha_fin,
       f.notas           !== undefined ? (f.notas || null)        : r.notas,
+      f.fecha           !== undefined ? (f.fecha || null)        : r.fecha,
+      f.nro_boleta      !== undefined ? (f.nro_boleta || null)   : r.nro_boleta,
       Number(id),
     ]
   );
