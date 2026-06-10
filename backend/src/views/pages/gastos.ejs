@@ -184,8 +184,9 @@
 
         <!-- Ítems de la categoría -->
         <% for (const g of items) { %>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border-color);gap:12px;flex-wrap:wrap;background:var(--bg-surface);"
-             id="fila-<%= g.id %>">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border-color);gap:12px;flex-wrap:wrap;background:var(--bg-surface);cursor:pointer;"
+             id="fila-<%= g.id %>"
+             onclick="if(event.target.closest('button,a,input,select')) return; abrirPagosGasto(<%= g.gasto_id %>, '<%= (g.descripcion||'').replace(/'/g,'') %>')">
 
           <!-- Info del gasto -->
           <div style="flex:1;min-width:180px;">
@@ -223,7 +224,13 @@
 
           <!-- Monto -->
           <div style="font-family:var(--font-mono);font-size:15px;font-weight:900;color:var(--text-primary);min-width:110px;text-align:right;">
+            <% if (g.tiene_pago_parcial) { %>
+            <span style="color:var(--color-warning, #d97706);"><%= fmt(g.monto_pendiente) %></span>
+            <div style="font-size:10px;font-weight:500;color:var(--text-muted);text-decoration:line-through;">Total: <%= fmt(g.gasto_monto) %></div>
+            <div style="font-size:10px;font-weight:700;color:var(--color-success);">Pagado: <%= fmt(g.monto_pagado) %></div>
+            <% } else { %>
             <%= fmt(g.gasto_monto) %>
+            <% } %>
             <% if (g.tiene_arrastre) { %>
             <div style="font-size:10px;font-weight:500;color:var(--text-muted);">Base: <%= fmt(g.monto_base) %></div>
             <% } %>

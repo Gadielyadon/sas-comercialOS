@@ -318,6 +318,14 @@ function getRecurrentesConEstado(mes, anio) {
       ? (gasto.pagado ? Number(gasto.monto) : montoBase + montoArrastre)
       : (montoBase + montoArrastre);
 
+    // Pagos parciales registrados para este gasto
+    let montoPagado = 0;
+    if (gasto) {
+      const pagosG = getPagosGasto(gasto.id);
+      montoPagado = pagosG.reduce((s, pg) => s + Number(pg.monto), 0);
+    }
+    const montoPendiente = Math.max(0, gastoMonto - montoPagado);
+
     return {
       ...p,
       gasto_id:         gasto ? gasto.id    : null,
@@ -331,6 +339,9 @@ function getRecurrentesConEstado(mes, anio) {
       fecha_pago:       gasto ? (gasto.fecha_pago  || null) : null,
       metodo_pago:      gasto ? (gasto.metodo_pago || null) : null,
       generado:         !!gasto,
+      monto_pagado:     montoPagado,
+      monto_pendiente:  montoPendiente,
+      tiene_pago_parcial: !!(gasto && !gasto.pagado && montoPagado > 0),
     };
   }).filter(Boolean);
 }
