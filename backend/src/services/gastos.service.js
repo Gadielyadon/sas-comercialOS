@@ -224,19 +224,20 @@ function generarGastosMes({ mes, anio } = {}) {
     }
     // Por cuotas completadas
     if (p.cuotas_total && Number(p.cuota_actual || 0) >= Number(p.cuotas_total)) continue;
-    // Extraordinario: solo genera en el mes de creación (cuotas_total=1 implícito si tipo=extraordinario)
-    if (p.tipo === 'extraordinario' && !p.cuotas_total) {
-      const creadoMs = (p.created_at || '').slice(0, 7); // 'YYYY-MM'
-      if (creadoMs !== ms) continue;
+
+    // Extraordinario: es de una sola vez, no se regenera en meses siguientes
+    if (p.tipo === 'extraordinario') {
+      const yaGenerado = get(`SELECT id FROM gastos WHERE recurrente_id = ?`, [p.id]);
+      if (yaGenerado) continue;
     }
     const dia   = Math.min(p.dia_vencimiento, new Date(a, m, 0).getDate());
     const fecha = `${a}-${String(m).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 
-    // Buscar arrastre del mes anterior (solo si ese mes sigue pendiente)
-    const gastoPrev = get(
+    // Buscar arrastre del mes anterior (solo fijos, los extraordinarios no arrastran)
+    const gastoPrev = (p.tipo !== 'extraordinario') ? get(
       `SELECT * FROM gastos WHERE recurrente_id = ? AND mes_origen = ? AND pagado = 0`,
       [p.id, msPrev]
-    );
+    ) : null;
     const montoArrastre = gastoPrev ? Number(gastoPrev.monto) : 0;
     const montoNuevo    = Number(p.monto_estimado) + montoArrastre;
 
@@ -291,6 +292,9 @@ function getRecurrentesConEstado(mes, anio) {
   return plantillas.map(p => {
     const gasto = get(`SELECT * FROM gastos WHERE recurrente_id = ? AND mes_origen = ?`, [p.id, ms]);
 
+    // Extraordinario: si no tiene gasto generado en este mes, no mostrar en otros meses
+    if (p.tipo === 'extraordinario' && !gasto) return null;
+
     // monto_base = estimado actual de la plantilla (siempre fresco)
     const montoBase = Number(p.monto_estimado);
 
@@ -328,7 +332,7 @@ function getRecurrentesConEstado(mes, anio) {
       metodo_pago:      gasto ? (gasto.metodo_pago || null) : null,
       generado:         !!gasto,
     };
-  });
+  }).filter(Boolean);
 }
 
 // Marcar pagado / pendiente y permitir editar el monto real
