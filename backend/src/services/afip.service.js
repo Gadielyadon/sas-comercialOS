@@ -84,6 +84,15 @@ function initAfipSchema() {
     )
   `);
 
+  // Migración: si la tabla 'facturas' ya existía sin estas columnas
+  // (esquema viejo), agregarlas — evita "no such column: f.cliente_nombre"
+  // en /api/ventas/buscar.
+  try {
+    const cols = all(`PRAGMA table_info(facturas)`).map(c => c.name);
+    if (!cols.includes('cliente_cuit'))   run(`ALTER TABLE facturas ADD COLUMN cliente_cuit TEXT`);
+    if (!cols.includes('cliente_nombre')) run(`ALTER TABLE facturas ADD COLUMN cliente_nombre TEXT`);
+  } catch(e) { console.warn('[afip.service] Migración facturas:', e.message); }
+
   const defaults = [
     ['facturacion_habilitada', '0'],
     ['afip_cuit', ''],

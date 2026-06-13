@@ -8,10 +8,12 @@ const cajaCtrl     = require('../controllers/caja.controller');
 
 // ── Migración: columnas de comisiones en payment_methods ──────
 // Se ejecuta UNA vez al arrancar. ALTER TABLE falla silenciosamente si ya existe.
+let PM_LEGACY_NAME_NOTNULL = false;
 try {
   const { db } = require('../db');
   // Columnas nuevas (nombre, tipo, icono, color) por si viene de una DB vieja
-  const cols = db.prepare(`PRAGMA table_info(payment_methods)`).all().map(c => c.name);
+  const colsInfo = db.prepare(`PRAGMA table_info(payment_methods)`).all();
+  const cols = colsInfo.map(c => c.name);
   if (!cols.includes('nombre'))              db.prepare(`ALTER TABLE payment_methods ADD COLUMN nombre TEXT`).run();
   if (!cols.includes('tipo'))               db.prepare(`ALTER TABLE payment_methods ADD COLUMN tipo TEXT DEFAULT 'otro'`).run();
   if (!cols.includes('icono'))              db.prepare(`ALTER TABLE payment_methods ADD COLUMN icono TEXT DEFAULT 'bi-cash'`).run();
@@ -21,6 +23,13 @@ try {
   // Si la tabla tenía 'name' pero no 'nombre', migrar datos
   if (cols.includes('name') && !cols.includes('nombre_migrado')) {
     db.prepare(`UPDATE payment_methods SET nombre = name WHERE nombre IS NULL OR nombre = ''`).run();
+  }
+  // Detectar si 'name' sigue existiendo con NOT NULL y sin DEFAULT —
+  // en ese caso, los INSERTs nuevos (que no incluyen 'name') deben
+  // seguir completando esa columna para no romper la constraint.
+  const nameCol = colsInfo.find(c => c.name === 'name');
+  if (nameCol && nameCol.notnull && nameCol.dflt_value === null) {
+    PM_LEGACY_NAME_NOTNULL = true;
   }
 } catch(e) { console.warn('[api.routes] Migración payment_methods:', e.message); }
 
@@ -238,8 +247,18 @@ router.get('/payment-methods', (req, res) => {
       { nombre:'Crédito',      tipo:'otro',     icono:'bi-credit-card-2-front',  color:'purple'},
       { nombre:'Transferencia',tipo:'otro',     icono:'bi-phone',                color:'cyan'  },
     ];
-    const ins = db.prepare(`INSERT INTO payment_methods (nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct) VALUES (?,?,?,?,1,0,0)`);
-    defaults.forEach(d => ins.run(d.nombre, d.tipo, d.icono, d.color));
+    const cols2 = PM_LEGACY_NAME_NOTNULL
+      ? `nombre,name,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct`
+      : `nombre,tipo,icono,color,activo,recargo_cliente_pct,comision_interna_pct`;
+    const vals2 = PM_LEGACY_NAME_NOTNULL
+      ? `(?,?,?,?,?,1,0,0)`
+      : `(?,?,?,?,1,0,0)`;
+    const ins = db.prepare(`INSERT INTO payment_methods (${cols2}) VALUES ${vals2}`);
+    defaults.forEach(d => {
+      PM_LEGACY_NAME_NOTNULL
+        ? ins.run(d.nombre, d.nombre, d.tipo, d.icono, d.color)
+        : ins.run(d.nombre, d.tipo, d.icono, d.color);
+    });
     res.json(all(`SELECT * FROM payment_methods ORDER BY id ASC`));
   } catch(e) {
     console.error('[GET /payment-methods]', e.message);
@@ -271,10 +290,17 @@ router.post('/payment-methods', (req, res) => {
       recargo_cliente_pct = 0, comision_interna_pct = 0
     } = req.body;
     if (!nombre) return res.status(400).json({ error: 'nombre es requerido' });
-    run(`INSERT INTO payment_methods (nombre, tipo, icono, color, activo, recargo_cliente_pct, comision_interna_pct)
-         VALUES (?, ?, ?, ?, 1, ?, ?)`,
-      [String(nombre), String(tipo), String(icono), String(color),
-       Number(recargo_cliente_pct) || 0, Number(comision_interna_pct) || 0]);
+    if (PM_LEGACY_NAME_NOTNULL) {
+      run(`INSERT INTO payment_methods (nombre, name, tipo, icono, color, activo, recargo_cliente_pct, comision_interna_pct)
+           VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        [String(nombre), String(nombre), String(tipo), String(icono), String(color),
+         Number(recargo_cliente_pct) || 0, Number(comision_interna_pct) || 0]);
+    } else {
+      run(`INSERT INTO payment_methods (nombre, tipo, icono, color, activo, recargo_cliente_pct, comision_interna_pct)
+           VALUES (?, ?, ?, ?, 1, ?, ?)`,
+        [String(nombre), String(tipo), String(icono), String(color),
+         Number(recargo_cliente_pct) || 0, Number(comision_interna_pct) || 0]);
+    }
     res.json(all(`SELECT * FROM payment_methods ORDER BY id ASC`));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1059,4 +1085,4 @@ router.get('/gastos.xlsx', (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;s
