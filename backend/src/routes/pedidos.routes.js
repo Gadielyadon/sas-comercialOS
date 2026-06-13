@@ -2,6 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const svc     = require('../services/pedidos.service');
+const configSvc = require('../services/config.service');
 
 svc.initPedidosSchema();
 
@@ -28,6 +29,16 @@ router.get('/', (req, res) => {
     proveedores,
     urgentes, recordatorios,
   });
+});
+
+// ── Vista de impresión / PDF de un pedido individual ──────────
+router.get('/:id/imprimir', (req, res) => {
+  const p = svc.findById(req.params.id);
+  if (!p) return res.status(404).send('Pedido no encontrado');
+  const items = svc.getItems(p.id);
+  const user  = req.session?.user || { name: 'Admin', role: 'admin' };
+  const config = configSvc.getAll();
+  res.render('pages/pedido_imprimir', { pedido: p, items, user, config });
 });
 
 // ── API: buscador de productos (antes de rutas con :id) ───────

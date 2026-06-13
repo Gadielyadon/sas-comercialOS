@@ -534,6 +534,24 @@ function calcPrecioVenta() {
   if (costo > 0 && margen > 0) { const precioVenta = Math.round(costo * (1 + margen / 100)); document.getElementById('m_price').value = precioVenta; if (ind) { ind.style.display='block'; ind.innerHTML=`Costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})} + ${margen}% = <strong>$${precioVenta.toLocaleString('es-AR')}</strong> precio final cargado`; } actualizarPreview(); }
   else if (ind) { ind.style.display='none'; }
 }
+// Igual que calcPrecioVenta pero NO toca el precio de venta — solo muestra el
+// indicador informativo. Se usa al abrir "Editar" para no pisar el precio
+// que el usuario ya tiene cargado manualmente.
+function mostrarIndicadorMargen() {
+  const costo  = parseFloat(document.getElementById('m_price_cost')?.value) || 0;
+  const margen = parseFloat(document.getElementById('m_margen')?.value) || 0;
+  const precio = parseFloat(document.getElementById('m_price')?.value) || 0;
+  const ind    = document.getElementById('margenIndicador');
+  if (!ind) return;
+  if (costo > 0 && margen > 0) {
+    const precioCalculado = Math.round(costo * (1 + margen / 100));
+    ind.style.display = 'block';
+    ind.innerHTML = `Costo $${costo.toLocaleString('es-AR',{minimumFractionDigits:2})} + ${margen}% = <strong>$${precioCalculado.toLocaleString('es-AR')}</strong>` +
+      (precio !== precioCalculado ? ` <span style="color:var(--text-muted);">(precio actual: $${precio.toLocaleString('es-AR')})</span>` : '');
+  } else {
+    ind.style.display = 'none';
+  }
+}
 // Sucursal activa — inyectada por el servidor
 const SUCURSAL_ID     = <%- typeof sucursal_id !== 'undefined' ? sucursal_id : 1 %>;
 const SUCURSAL_NOMBRE = '<%- typeof sucursal !== "undefined" && sucursal ? sucursal.nombre.replace(/'/g, "\'") : "Casa Central" %>';
@@ -620,7 +638,7 @@ function abrirEditar(p) {
   if (document.getElementById('m_en_promo')) { document.getElementById('m_en_promo').checked = enPromo; togglePromo(document.getElementById('m_en_promo')); }
   if (enPromo && document.getElementById('m_price_promo')) document.getElementById('m_price_promo').value = p.price_promo || '';
   mostrarAhorroPromo();
-  calcPrecioVenta();
+  mostrarIndicadorMargen();
   const ivaCheck = p.iva > 0;
   document.getElementById('m_iva_check').checked = ivaCheck;
   document.getElementById('m_iva').value = p.iva || 16;
@@ -1451,3 +1469,4 @@ async function vrGuardar(){
   if(ok>0){cerrarVariantes();try{const rv=await fetch('/api/products?limit=9999');if(rv.ok){_allProducts=await rv.json();renderTable(_allProducts);}}catch(e){location.reload();}showToast(`✅ ${ok} producto${ok!==1?'s':''} creado${ok!==1?'s':''}`, 'success');}
 }
 </script>
+s

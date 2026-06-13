@@ -78,7 +78,13 @@ router.put('/api/recurrentes/:id', (req, res) => {
   r ? res.json(r) : res.status(404).json({ error: 'No encontrado' });
 });
 router.delete('/api/recurrentes/:id', (req, res) => {
-  svc.deleteRecurrente(req.params.id); res.json({ ok: true });
+  const { mes, anio } = req.query;
+  if (mes && anio) {
+    svc.deactivateRecurrenteDesdeMes(req.params.id, Number(mes), Number(anio));
+  } else {
+    svc.deleteRecurrente(req.params.id);
+  }
+  res.json({ ok: true });
 });
 
 // ── API: pagos parciales por gasto mensual ────────────────────
@@ -512,11 +518,12 @@ router.get('/resumen', (req, res) => {
   } catch(e) { res.status(500).send('<pre>Error: ' + e.message + '\n' + e.stack + '</pre>'); }
 });
 
-// ── DELETE: eliminar gasto (recurrente + sus instancias pendientes) ──
+// ── DELETE: eliminar/dar de baja gasto (recurrente) desde un mes ──
 router.delete('/api/gasto/:id', (req, res) => {
   try {
     const id = Number(req.params.id);
     const { run: dbRun, get: dbGet } = require('../db');
+    const { mes, anio } = req.query;
 
     // El ID que llega es el ID del recurrente (gastos_recurrentes.id)
     const recurrente = dbGet('SELECT * FROM gastos_recurrentes WHERE id=?', [id]);
@@ -528,10 +535,17 @@ router.delete('/api/gasto/:id', (req, res) => {
       return res.json({ ok: true });
     }
 
-    // Eliminar instancias mensuales NO pagadas
-    dbRun('DELETE FROM gastos WHERE recurrente_id=? AND pagado=0', [id]);
-    // Eliminar el recurrente raíz para que no se regenere
-    dbRun('DELETE FROM gastos_recurrentes WHERE id=?', [id]);
+    if (mes && anio) {
+      // Baja "desde este mes": no se vuelve a generar a partir de mes/anio.
+      // Solo borra instancias NO pagadas de ESTE mes en adelante.
+      const ms = `${anio}-${String(mes).padStart(2,'0')}`;
+      dbRun('DELETE FROM gastos WHERE recurrente_id=? AND pagado=0 AND mes_origen >= ?', [id, ms]);
+      svc.deactivateRecurrenteDesdeMes(id, Number(mes), Number(anio));
+    } else {
+      // Fallback (sin contexto de mes): comportamiento anterior, baja total inmediata.
+      dbRun('DELETE FROM gastos WHERE recurrente_id=? AND pagado=0', [id]);
+      dbRun('DELETE FROM gastos_recurrentes WHERE id=?', [id]);
+    }
 
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -563,6 +577,82 @@ router.get('/api/buscar', (req, res) => {
     const pendiente = total - pagado;
 
     res.json({ gastos, total, pagado, pendiente, cantidad: gastos.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Exportar gastos a Excel (CSV compatible) ──────────────────
+router.get('/api/exportar', (req, res) => {
+  try {
+    const { desde, hasta, q } = req.query;
+    const { all: dbAll } = require('../db');
+
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (desde) { where += ' AND g.fecha >= ?'; params.push(desde); }
+    if (hasta) { where += ' AND g.fecha <= ?'; params.push(hasta); }
+    if (q && q.trim()) {
+      where += ' AND (g.descripcion LIKE ? OR g.categoria LIKE ?)';
+      params.push(`%${q.trim()}%`, `%${q.trim()}%`);
+    }
+
+    const gastos = dbAll(
+      `SELECT g.*, r.nro_boleta as r_nro_boleta, r.tipo as r_tipo
+       FROM gastos g
+       LEFT JOIN gastos_recurrentes r ON r.id = g.recurrente_id
+       ${where}
+       ORDER BY g.fecha ASC, g.id ASC`,
+      params
+    );
+
+    // Helpers de formato
+    const fmtFechaCsv = (f) => {
+      if (!f) return '';
+      const [a, m, d] = String(f).split('-');
+      return (a && m && d) ? `${d}/${m}/${a}` : f;
+    };
+    const fmtMontoCsv = (n) => Number(n || 0).toFixed(2).replace('.', ',');
+    const csvEscape = (v) => {
+      const s = (v === null || v === undefined) ? '' : String(v);
+      // Si tiene ; " o salto de línea, va entre comillas
+      if (/[;"\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+
+    const headers = [
+      'Fecha', 'Categoria', 'Descripcion', 'Tipo', 'Nro. Boleta',
+      'Monto', 'Estado', 'Fecha de Pago', 'Metodo de Pago', 'Nota/Comprobante'
+    ];
+
+    const rows = gastos.map(g => [
+      fmtFechaCsv(g.fecha),
+      g.categoria || '',
+      g.descripcion || '',
+      g.r_tipo === 'extraordinario' ? 'Extraordinario' : 'Fijo',
+      g.r_nro_boleta || '',
+      fmtMontoCsv(g.monto),
+      g.pagado ? 'Pagado' : 'Pendiente',
+      fmtFechaCsv(g.fecha_pago),
+      g.metodo_pago || '',
+      g.comprobante || '',
+    ]);
+
+    // Fila de totales al final
+    const totalGeneral  = gastos.reduce((s, g) => s + Number(g.monto), 0);
+    const totalPagado   = gastos.filter(g=>g.pagado).reduce((s, g) => s + Number(g.monto), 0);
+    const totalPendiente = totalGeneral - totalPagado;
+    rows.push([]);
+    rows.push(['', '', '', '', 'TOTAL', fmtMontoCsv(totalGeneral), '', '', '', '']);
+    rows.push(['', '', '', '', 'PAGADO', fmtMontoCsv(totalPagado), '', '', '', '']);
+    rows.push(['', '', '', '', 'PENDIENTE', fmtMontoCsv(totalPendiente), '', '', '', '']);
+
+    const lines = [headers, ...rows].map(r => r.map(csvEscape).join(';'));
+    // BOM para que Excel detecte UTF-8 y acentos/ñ se vean bien
+    const csv = '\uFEFF' + lines.join('\r\n');
+
+    const nombreArchivo = `gastos${desde ? '_' + desde : ''}${hasta ? '_a_' + hasta : ''}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+    res.send(csv);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

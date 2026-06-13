@@ -50,9 +50,6 @@
           <p>Armá pedidos con productos del sistema y enviálos a tus proveedores.</p>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="window.print()" class="btn-action btn-action-outline">
-            <i class="bi bi-printer"></i> Imprimir
-          </button>
           <button onclick="abrirNuevoPedido()" class="btn-action btn-action-primary">
             <i class="bi bi-plus-lg"></i> Nuevo pedido
           </button>
@@ -163,6 +160,9 @@
               </button>
               <% } %>
               <div style="display:flex;gap:5px;">
+                <a href="/pedidos/<%= p.id %>/imprimir" target="_blank" class="btn-accion" title="Imprimir / Descargar PDF" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">
+                  <i class="bi bi-file-pdf"></i>
+                </a>
                 <button class="btn-accion btn-editar-pedido" data-id="<%= p.id %>" title="<%= p.estado_recepcion ? 'Agregar ítems (los ya recibidos se conservan)' : 'Editar pedido' %>">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -186,10 +186,10 @@
 
 <!-- ══ MODAL: NUEVO / EDITAR PEDIDO ══ -->
 <div class="sale-overlay" id="modalPedido" onclick="if(event.target.id==='modalPedido')cerrarModal()">
-  <div class="sale-modal" style="max-width:820px;text-align:left;">
+  <div class="sale-modal" style="max-width:820px;text-align:left;max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <!-- Header (fijo) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
           <i class="bi bi-journal-check"></i>
@@ -201,6 +201,9 @@
       </div>
       <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
     </div>
+
+    <!-- Contenido scrolleable -->
+    <div style="overflow-y:auto;flex:1;padding:20px 24px;">
 
     <input type="hidden" id="m_id">
 
@@ -289,20 +292,25 @@
     </div>
 
     <!-- Notas -->
-    <div style="margin-bottom:16px;">
+    <div>
       <label class="form-lbl">Notas <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
       <textarea id="m_notas" class="form-inp" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
     </div>
 
-    <!-- Botones -->
-    <div style="display:flex;gap:8px;">
-      <button onclick="guardarPedido()"
-        style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-        <i class="bi bi-check-lg"></i> Guardar pedido
-      </button>
-      <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
     </div>
-    <div id="pedError" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+    <!-- /Contenido scrolleable -->
+
+    <!-- Botones (fijos abajo) -->
+    <div style="padding:16px 24px;border-top:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="guardarPedido()"
+          style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-check-lg"></i> Guardar pedido
+        </button>
+        <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
+      </div>
+      <div id="pedError" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+    </div>
   </div>
 </div>
 

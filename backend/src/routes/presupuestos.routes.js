@@ -225,7 +225,21 @@ router.put('/api/producto-precio/:sku', requireAuth, (req, res) => {
 function parsearItems(body) {
   try {
     const raw = body.items_json;
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Normalizar: el POS manda {name, qty, price, ...} en vez de
+      // {nombre, cantidad, precio_unitario, ...} que espera el service.
+      return parsed.map(it => ({
+        tipo:               it.tipo || 'producto',
+        sku:                it.sku || null,
+        nombre:             it.nombre ?? it.name ?? '',
+        descripcion:        it.descripcion || '',
+        cantidad:           Number(it.cantidad ?? it.qty ?? 1),
+        precio_unitario:    Number(it.precio_unitario ?? it.price ?? 0),
+        descuento_item_pct: Number(it.descuento_item_pct || 0),
+        pct_iva:            (it.pct_iva === '' || it.pct_iva === undefined) ? null : it.pct_iva,
+      }));
+    }
   } catch (e) {}
 
   const nombres = [].concat(body.item_nombre || []);

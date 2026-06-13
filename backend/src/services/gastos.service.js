@@ -75,6 +75,8 @@ function initGastosSchema() {
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN notas TEXT DEFAULT NULL`);           // nota general
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN fecha TEXT DEFAULT NULL`);            // fecha de vencimiento/referencia
   safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN nro_boleta TEXT DEFAULT NULL`);       // número de boleta / referencia
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN mes_inicio TEXT DEFAULT NULL`);       // 'YYYY-MM' — desde qué mes se genera (incluido)
+  safeAlter(`ALTER TABLE gastos_recurrentes ADD COLUMN mes_baja TEXT DEFAULT NULL`);         // 'YYYY-MM' — a partir de qué mes deja de generarse (excluido)
 
   // Tabla de pagos parciales por gasto mensual
   run(`CREATE TABLE IF NOT EXISTS gasto_pagos (
@@ -134,7 +136,7 @@ function getRecurrentes() {
 function getRecurrenteById(id) {
   return get(`SELECT * FROM gastos_recurrentes WHERE id = ?`, [Number(id)]);
 }
-function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, fecha_fin, notas, fecha, nro_boleta }) {
+function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, fecha_fin, notas, fecha, nro_boleta, mes_inicio }) {
   if (!descripcion || !descripcion.trim()) throw new Error('La descripcion es obligatoria');
   if (!monto_estimado || isNaN(Number(monto_estimado))) throw new Error('El monto estimado es obligatorio');
   const dia = Number(dia_vencimiento);
@@ -145,11 +147,14 @@ function createRecurrente({ categoria_id, categoria_nombre, descripcion, monto_e
     if (cat) catNombre = cat.nombre;
   }
   const tipoVal = tipo === 'extraordinario' ? 'extraordinario' : 'fijo';
+  // Por defecto, el gasto empieza a generarse desde el mes actual (no retroactivo)
+  const hoy = new Date();
+  const mesInicioVal = mes_inicio || mesStr(hoy.getMonth() + 1, hoy.getFullYear());
   const r = run(
-    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, cuota_actual, fecha_fin, notas, fecha, nro_boleta)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO gastos_recurrentes (categoria_id, categoria_nombre, descripcion, monto_estimado, dia_vencimiento, sucursal_id, tipo, cuotas_total, cuota_actual, fecha_fin, notas, fecha, nro_boleta, mes_inicio)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [categoria_id || null, catNombre, descripcion.trim(), Number(monto_estimado), dia, sucursal_id || 1,
-     tipoVal, cuotas_total ? Number(cuotas_total) : null, 0, fecha_fin || null, notas || null, fecha || null, nro_boleta || null]
+     tipoVal, cuotas_total ? Number(cuotas_total) : null, 0, fecha_fin || null, notas || null, fecha || null, nro_boleta || null, mesInicioVal]
   );
   return getRecurrenteById(r.lastInsertRowid);
 }
@@ -162,7 +167,7 @@ function updateRecurrente(id, f) {
     if (cat) catNombre = cat.nombre;
   }
   run(
-    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=?, tipo=?, cuotas_total=?, fecha_fin=?, notas=?, fecha=?, nro_boleta=? WHERE id=?`,
+    `UPDATE gastos_recurrentes SET categoria_id=?, categoria_nombre=?, descripcion=?, monto_estimado=?, dia_vencimiento=?, tipo=?, cuotas_total=?, fecha_fin=?, notas=?, fecha=?, nro_boleta=?, mes_inicio=? WHERE id=?`,
     [
       f.categoria_id    !== undefined ? (f.categoria_id || null) : r.categoria_id,
       catNombre,
@@ -175,11 +180,19 @@ function updateRecurrente(id, f) {
       f.notas           !== undefined ? (f.notas || null)        : r.notas,
       f.fecha           !== undefined ? (f.fecha || null)        : r.fecha,
       f.nro_boleta      !== undefined ? (f.nro_boleta || null)   : r.nro_boleta,
+      f.mes_inicio      !== undefined ? (f.mes_inicio || null)   : r.mes_inicio,
       Number(id),
     ]
   );
   return getRecurrenteById(id);
 }
+// Da de baja el recurrente a partir de un mes (no afecta meses ya generados ni anteriores)
+function deactivateRecurrenteDesdeMes(id, mes, anio) {
+  const ms = mesStr(mes, anio);
+  run(`UPDATE gastos_recurrentes SET mes_baja = ? WHERE id = ?`, [ms, Number(id)]);
+  return true;
+}
+// Baja total e inmediata (uso interno / casos donde nunca se generó nada)
 function deleteRecurrente(id) {
   run(`UPDATE gastos_recurrentes SET activo = 0 WHERE id = ?`, [Number(id)]);
   return true;
@@ -216,6 +229,10 @@ function generarGastosMes({ mes, anio } = {}) {
   let creados = 0;
 
   for (const p of plantillas) {
+    // ── No generar antes del mes en que el gasto fue dado de alta ──
+    if (p.mes_inicio && ms < p.mes_inicio) continue;
+    // ── No generar a partir del mes en que fue dado de baja ────────
+    if (p.mes_baja && ms >= p.mes_baja) continue;
     // ── Verificar si este gasto ya expiró ────────────────────────
     // Por fecha de corte
     if (p.fecha_fin) {
@@ -294,6 +311,14 @@ function getRecurrentesConEstado(mes, anio) {
 
     // Extraordinario: si no tiene gasto generado en este mes, no mostrar en otros meses
     if (p.tipo === 'extraordinario' && !gasto) return null;
+
+    // Fijo: si el mes está fuera del rango [mes_inicio, mes_baja) y no hay gasto
+    // generado para ese mes, no mostrarlo (evita "fantasmas" en meses anteriores
+    // a su alta, o posteriores a su baja)
+    if (p.tipo !== 'extraordinario' && !gasto) {
+      if (p.mes_inicio && ms < p.mes_inicio) return null;
+      if (p.mes_baja && ms >= p.mes_baja) return null;
+    }
 
     // monto_base = estimado actual de la plantilla (siempre fresco)
     const montoBase = Number(p.monto_estimado);
@@ -598,7 +623,7 @@ function getPagosResumen(gastoId) {
 module.exports = {
   initGastosSchema,
   getCategorias, getCategoriaById, createCategoria, updateCategoria, deleteCategoria,
-  getRecurrentes, getRecurrenteById, createRecurrente, updateRecurrente, deleteRecurrente,
+  getRecurrentes, getRecurrenteById, createRecurrente, updateRecurrente, deleteRecurrente, deactivateRecurrenteDesdeMes,
   generarGastosMes, getGastoDelMes, pagarRecurrenteMes, getRecurrentesConEstado,
   getResumenMes,
   getPagosGasto, registrarPagoGasto, eliminarPagoGasto, getPagosResumen,

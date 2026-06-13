@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido - <%= pedido.titulo %></title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Arial', 'Helvetica Neue', sans-serif; color: #111; font-size: 13px; line-height: 1.5; margin: 0; padding: 24px; background: #f3f4f6; }
+    .doc { max-width: 800px; margin: 0 auto; background: #fff; padding: 32px 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .afip-header { display: grid; grid-template-columns: 1fr auto; gap: 0; border: 1.5px solid #333; margin-bottom: 18px; }
+    .afip-col-empresa { padding: 16px 18px; border-right: 1.5px solid #333; }
+    .afip-col-doc { padding: 16px 18px; text-align: right; min-width: 180px; }
+    .emp-logo { max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
+    .emp-nombre { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .emp-dato { font-size: 11px; color: #444; line-height: 1.7; }
+    .doc-titulo { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .doc-nro { font-size: 20px; font-weight: 900; letter-spacing: .5px; }
+    .doc-fecha-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 8px; }
+    .doc-fecha-val { font-size: 13px; font-weight: 600; }
+    .prioridad-badge { display:inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-top: 6px; }
+    .prio-urgente { background: #fee2e2; color: #dc2626; }
+    .prio-normal  { background: #e0e7ff; color: #4f46e5; }
+    .prio-baja    { background: #f3f4f6; color: #6b7280; }
+    .meta-row { display:flex; flex-wrap: wrap; gap: 18px; font-size: 12px; color: #555; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: #555; border-bottom: 2px solid #ddd; }
+    th.num, td.num { text-align: right; }
+    th.center, td.center { text-align: center; }
+    td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 12.5px; }
+    .badge-recibido { font-size: 10px; background: #d1fae5; color: #059669; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+    .badge-manual { font-size: 10px; background: #fef3c7; color: #d97706; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+    .notas { font-size: 12px; color: #555; background: #f9fafb; padding: 10px 14px; border-radius: 6px; border-left: 3px solid #ddd; margin-top: 8px; }
+    .toolbar { max-width: 800px; margin: 0 auto 14px; display: flex; justify-content: flex-end; }
+    .btn-print { padding: 10px 20px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .doc { box-shadow: none; padding: 0; max-width: 100%; }
+      .toolbar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn-print" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir / Guardar PDF</button>
+  </div>
+  <div class="doc">
+    <div class="afip-header">
+      <div class="afip-col-empresa">
+        <% if (config && config.empresa_logo) { %>
+          <img src="<%= config.empresa_logo %>" class="emp-logo" alt="Logo">
+        <% } %>
+        <div class="emp-nombre"><%= (config && config.empresa_nombre) || 'Mi Empresa' %></div>
+        <div class="emp-dato">
+          <% if (config && config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
+          <% if (config && config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
+          <% if (config && config.afip_cuit)         { %><div>CUIT: <%= config.afip_cuit %></div><% } %>
+        </div>
+      </div>
+      <div class="afip-col-doc">
+        <div class="doc-titulo">PEDIDO A PROVEEDOR</div>
+        <div class="doc-nro">#<%= pedido.id %></div>
+        <div class="doc-fecha-label">Fecha</div>
+        <div class="doc-fecha-val"><%= new Date(pedido.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %></div>
+        <span class="prioridad-badge prio-<%= pedido.prioridad || 'normal' %>">
+          <%= pedido.prioridad === 'urgente' ? '🔴 Urgente' : pedido.prioridad === 'baja' ? 'Baja' : 'Normal' %>
+        </span>
+      </div>
+    </div>
+
+    <div style="font-size:16px;font-weight:800;margin-bottom:8px;"><%= pedido.titulo %></div>
+
+    <div class="meta-row">
+      <% if (pedido.proveedor) { %><div>🚚 Proveedor: <strong><%= pedido.proveedor %></strong></div><% } %>
+      <% if (pedido.fecha_entrega) { %><div>📅 Entrega: <%= pedido.fecha_entrega %></div><% } %>
+      <div>📦 <%= items.length %> producto<%= items.length !== 1 ? 's' : '' %></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="center" style="width:80px;">Cant.</th>
+          <th class="num" style="width:110px;">P. Costo</th>
+          <th class="num" style="width:110px;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let total = 0; %>
+        <% items.forEach(item => {
+          const sub = Number(item.precio_costo || 0) * Number(item.cantidad || 0);
+          total += sub;
+        %>
+        <tr>
+          <td>
+            <%= item.nombre %>
+            <% if (item.es_manual) { %><span class="badge-manual">Manual</span><% } %>
+            <% if (item.recibido) { %><span class="badge-recibido">✓ Recibido</span><% } %>
+          </td>
+          <td class="center"><%= item.cantidad %></td>
+          <td class="num"><%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
+          <td class="num"><%= sub > 0 ? '$' + sub.toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <% if (total > 0) { %>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="text-align:right;font-weight:800;border-bottom:none;">TOTAL ESTIMADO</td>
+          <td class="num" style="font-weight:800;border-bottom:none;">$<%= total.toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
+        </tr>
+      </tfoot>
+      <% } %>
+    </table>
+
+    <% if (pedido.notas) { %>
+    <div class="notas">📝 <%= pedido.notas %></div>
+    <% } %>
+  </div>
+
+  <script>
+    // Auto-abre el diálogo de impresión para que el usuario pueda
+    // "Guardar como PDF" directamente, tanto en PC como en celular.
+    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+  </script>
+</body>
+</html>
