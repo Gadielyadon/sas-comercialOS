@@ -2,6 +2,41 @@
 
 <script src="/js/offline.js"></script>
 
+<!-- ── Recordatorio de pago mensual del sistema ─────────────────── -->
+<script>
+(function () {
+  // Cambiar esta clave cada mes (ej: '2026-07') para que vuelva a salir
+  var RECORDATORIO_KEY   = 'recordatorio_pago_2026-06';
+  var RECORDATORIO_TEXTO = 'Recordatorio: el pago mensual del sistema correspondiente a Junio 2026 vence el 15/06/2026. Abonalo antes de esa fecha para evitar intereses.';
+
+  if (localStorage.getItem(RECORDATORIO_KEY) === 'ok') return;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;'
+      + 'background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;'
+      + 'padding:12px 18px;display:flex;align-items:center;justify-content:center;'
+      + 'gap:14px;font-size:13px;font-weight:600;flex-wrap:wrap;text-align:center;'
+      + 'box-shadow:0 2px 10px rgba(0,0,0,.15);font-family:var(--font-body, sans-serif);';
+
+    bar.innerHTML =
+      '<span><i class="bi bi-exclamation-triangle-fill"></i> ' + RECORDATORIO_TEXTO + '</span>'
+      + '<button id="recordatorioPagoOk" style="background:#fff;color:#d97706;border:none;'
+      + 'padding:6px 16px;border-radius:6px;font-size:13px;font-weight:800;cursor:pointer;'
+      + 'white-space:nowrap;">Aceptar</button>';
+
+    document.body.prepend(bar);
+    document.body.style.paddingTop = (bar.offsetHeight) + 'px';
+
+    document.getElementById('recordatorioPagoOk').addEventListener('click', function () {
+      localStorage.setItem(RECORDATORIO_KEY, 'ok');
+      document.body.style.paddingTop = '';
+      bar.remove();
+    });
+  });
+})();
+</script>
+
 <style>
 @keyframes slideUp {
   from { transform:translateY(20px); opacity:0; }
