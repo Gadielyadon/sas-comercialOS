@@ -975,10 +975,77 @@
     border-radius:14px;
   }
 
-  /* Zoom */
-  .prod-zoom-overlay{
-    backdrop-filter:blur(4px);
+  /* ── Lightbox zoom imagen producto ── */
+  .prod-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
   }
+  .prod-zoom-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .prod-zoom-box {
+    position: relative;
+    background: var(--bg-surface);
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 32px 80px rgba(0,0,0,.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    transform: scale(.93);
+    transition: transform .2s ease;
+  }
+  .prod-zoom-overlay.open .prod-zoom-box {
+    transform: scale(1);
+  }
+  #prodZoomImg {
+    max-width: min(520px, 85vw);
+    max-height: 65vh;
+    object-fit: contain;
+    border-radius: 10px;
+    display: block;
+  }
+  .prod-zoom-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    max-width: 500px;
+  }
+  .prod-zoom-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    transition: background .15s, transform .15s;
+  }
+  .prod-zoom-close:hover { background: #dc2626; transform: scale(1.1); }
 
   /* Responsivo */
   @media (max-width: 1100px){
@@ -1778,12 +1845,12 @@
 
 <div class="pos-toast" id="posToast"><i id="toastIcon" class="bi bi-check-circle-fill"></i><span id="toastMsg">Producto agregado</span></div>
 
-<!-- Zoom overlay para imagen de producto -->
+<!-- Lightbox imagen producto — clic afuera o X para cerrar -->
 <div class="prod-zoom-overlay" id="prodZoomOverlay" onclick="cerrarZoom()">
   <div class="prod-zoom-box" onclick="event.stopPropagation()">
+    <button class="prod-zoom-close" onclick="cerrarZoom()" title="Cerrar">✕</button>
     <img id="prodZoomImg" src="" alt="">
     <div class="prod-zoom-name" id="prodZoomName"></div>
-    <button class="prod-zoom-close" onclick="cerrarZoom()">Cerrar</button>
   </div>
 </div>
 
@@ -3704,6 +3771,15 @@ function renderDeptosGrid() {
 }
 
 function abrirDeptoPrecio(id, nombre, icono) {
+  // Cerrar el panel de departamentos automáticamente al seleccionar uno
+  const chip = document.getElementById('chipDeptos');
+  const bar  = document.getElementById('deptosBar');
+  const scroll = document.querySelector('.products-scroll');
+  if (chip && chip.classList.contains('active')) {
+    chip.classList.remove('active');
+    if (bar) bar.style.display = 'none';
+    if (scroll) scroll.style.display = '';
+  }
   _deptoActual = { id, nombre, icono };
   const overlay = document.getElementById('deptoPriceOverlay');
   if (!overlay) return;
@@ -3808,9 +3884,10 @@ function eliminarDepto(id) {
 
 function abrirZoom(nombre, imgSrc){
   if(!imgSrc) return;
-  document.getElementById('prodZoomImg').src=imgSrc;
-  document.getElementById('prodZoomName').textContent=nombre;
+  document.getElementById('prodZoomImg').src = imgSrc;
+  document.getElementById('prodZoomName').textContent = nombre;
   document.getElementById('prodZoomOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 document.addEventListener('click', function(e){
@@ -3829,8 +3906,17 @@ document.addEventListener('click', function(e){
   if(img) abrirZoom(name, img);
 });
 
+// Cerrar lightbox con Escape
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') cerrarZoom();
+});
+
 function cerrarZoom(){
-  document.getElementById('prodZoomOverlay').classList.remove('open');
+  const overlay = document.getElementById('prodZoomOverlay');
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  // Limpiar src después de la transición para no mostrar imagen vieja al reabrirse
+  setTimeout(() => { document.getElementById('prodZoomImg').src = ''; }, 220);
 }
 
 /* ── Bloqueo por límite de crédito ── */
@@ -4758,6 +4844,109 @@ document.addEventListener('keydown', e => {
     cancelarMPPoint();
   }
 });
+
+// ── Verificador de precios (F9) ───────────────────────────────
+// Listener independiente — siempre activo, sin importar el foco
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'F9') {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleVerificadorPrecios();
+  }
+}, true); // capture=true para interceptar antes que cualquier otro listener
+(function() {
+  // Crear modal
+  const overlay = document.createElement('div');
+  overlay.id = 'verificadorOverlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:16px;width:min(520px,95vw);box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,var(--color-primary),#4f46e5);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;color:#fff;">
+          <i class="bi bi-tag-fill" style="font-size:18px;"></i>
+          <span style="font-weight:800;font-size:15px;">Verificador de Precios</span>
+          <kbd style="background:rgba(255,255,255,.2);border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:800;color:#fff;">F9</kbd>
+        </div>
+        <button onclick="cerrarVerificador()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">&times;</button>
+      </div>
+      <div style="padding:16px;">
+        <input type="text" id="verificadorInput"
+          placeholder="Buscá por nombre o SKU..."
+          autocomplete="off"
+          style="width:100%;padding:10px 14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;outline:none;box-sizing:border-box;font-family:var(--font-body);"
+          oninput="buscarVerificador(this.value)">
+      </div>
+      <div id="verificadorResultados" style="max-height:340px;overflow-y:auto;padding:0 16px 16px;"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) cerrarVerificador(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.style.display === 'flex') {
+      e.preventDefault();
+      cerrarVerificador();
+    }
+  });
+})();
+
+function toggleVerificadorPrecios() {
+  const overlay = document.getElementById('verificadorOverlay');
+  if (!overlay) return;
+  if (overlay.style.display === 'flex') {
+    cerrarVerificador();
+  } else {
+    overlay.style.display = 'flex';
+    const inp = document.getElementById('verificadorInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    document.getElementById('verificadorResultados').innerHTML = `
+      <div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">
+        <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>
+        Escribí para buscar un producto
+      </div>`;
+  }
+}
+
+function cerrarVerificador() {
+  const overlay = document.getElementById('verificadorOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function buscarVerificador(q) {
+  const res = document.getElementById('verificadorResultados');
+  if (!res) return;
+  const term = (q || '').trim().toLowerCase();
+  if (!term) {
+    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;"><i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>Escribí para buscar un producto</div>`;
+    return;
+  }
+  const productos = (typeof allProducts !== 'undefined' ? allProducts : [])
+    .filter(p => (p.name||'').toLowerCase().includes(term) || (p.sku||'').toLowerCase().includes(term))
+    .slice(0, 12);
+
+  if (!productos.length) {
+    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">Sin resultados para "<strong>${q}</strong>"</div>`;
+    return;
+  }
+
+  const fmt = n => Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+  res.innerHTML = productos.map(p => {
+    const stockColor = p.stock > 5 ? 'var(--color-success)' : p.stock > 0 ? '#f59e0b' : '#ef4444';
+    const stockTxt  = p.stock > 0 ? `${p.stock} en stock` : 'Sin stock';
+    return `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--bg-surface);margin-bottom:6px;gap:12px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">SKU: ${p.sku||'—'} &nbsp;·&nbsp; <span style="color:${stockColor};font-weight:700;">${stockTxt}</span></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:17px;font-weight:900;color:var(--color-primary);">$${fmt(p.price)}</div>
+        ${p.price_tarjeta && p.price_tarjeta !== p.price ? `<div style="font-size:11px;color:var(--text-secondary);">Tarjeta: $${fmt(p.price_tarjeta)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 </script>
 
 

@@ -1,0 +1,352 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+.rv-wrap    { padding: 24px; max-width: 1100px; margin: 0 auto; }
+.rv-card    { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px; }
+.rv-title   { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.rv-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.rv-label   { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+.rv-input   { padding: 8px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-primary); font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color .15s; }
+.rv-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27,79,216,.10); }
+.rv-btn     { padding: 9px 18px; border-radius: var(--radius-sm); border: none; font-family: var(--font-body); font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; gap: 6px; }
+.rv-btn-primary  { background: var(--color-primary); color: #fff; }
+.rv-btn-primary:hover  { opacity: .88; }
+.rv-btn-success  { background: #16a34a; color: #fff; }
+.rv-btn-success:hover  { opacity: .88; }
+.rv-btn-outline  { background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border-color); }
+.rv-btn-outline:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+
+.shortcut-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.pill { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); cursor: pointer; transition: all .12s; font-family: var(--font-body); }
+.pill:hover, .pill.on { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+
+.rv-stats   { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.rv-stat    { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 18px; }
+.rv-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 4px; }
+.rv-stat-val   { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.rv-stat-sub   { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+
+.rv-table-wrap { overflow-x: auto; }
+.rv-table   { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rv-table th { padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--table-head-color); background: var(--table-head-bg); text-align: left; }
+.rv-table th:first-child { border-radius: 8px 0 0 8px; }
+.rv-table th:last-child  { border-radius: 0 8px 8px 0; }
+.rv-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; }
+.rv-table tr:last-child td { border-bottom: none; }
+.rv-table tr:hover td { background: var(--bg-surface-2); }
+.rv-bar-bg  { height: 6px; border-radius: 3px; background: var(--border-color); overflow: hidden; margin-top: 4px; min-width: 80px; }
+.rv-bar-fg  { height: 100%; border-radius: 3px; background: var(--color-primary); transition: width .5s ease; }
+.cat-badge  { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; background: rgba(27,79,216,.10); color: var(--color-primary); }
+.rank-num   { font-size: 12px; font-weight: 800; color: var(--text-muted); width: 22px; text-align: center; }
+.rv-empty   { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
+.section-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.stab { padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); cursor: pointer; transition: all .12s; font-family: var(--font-body); }
+.stab:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.stab.on    { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+#spinner    { display: none; width: 18px; height: 18px; border: 3px solid rgba(27,79,216,.2); border-top-color: var(--color-primary); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<%- include('../partials/header') %>
+<%- include('../partials/sidebar') %>
+
+<div class="main-content">
+  <div class="rv-wrap">
+
+    <!-- Filtros -->
+    <div class="rv-card">
+      <div class="rv-title"><i class="bi bi-bar-chart-line"></i> Reporte de ventas</div>
+
+      <div class="shortcut-pills">
+        <button class="pill" onclick="setRango('hoy')">Hoy</button>
+        <button class="pill" onclick="setRango('ayer')">Ayer</button>
+        <button class="pill" onclick="setRango('semana')">Esta semana</button>
+        <button class="pill" onclick="setRango('mes')">Este mes</button>
+        <button class="pill" onclick="setRango('mes_ant')">Mes anterior</button>
+      </div>
+
+      <div class="rv-filters">
+        <div>
+          <div class="rv-label">Desde</div>
+          <input type="date" id="fechaDesde" class="rv-input" />
+        </div>
+        <div>
+          <div class="rv-label">Hasta</div>
+          <input type="date" id="fechaHasta" class="rv-input" />
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="rv-btn rv-btn-primary" onclick="buscar()">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+          <div id="spinner"></div>
+        </div>
+        <div style="margin-left:auto;">
+          <button class="rv-btn rv-btn-success" onclick="exportarXLS()" id="btnExport" style="display:none;">
+            <i class="bi bi-file-earmark-excel"></i> Exportar .xlsx
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div id="secResumen" style="display:none;">
+      <div class="rv-stats">
+        <div class="rv-stat">
+          <div class="rv-stat-label">Total vendido</div>
+          <div class="rv-stat-val" id="stTotal">-</div>
+          <div class="rv-stat-sub" id="stPeriodo"></div>
+        </div>
+        <div class="rv-stat">
+          <div class="rv-stat-label">Transacciones</div>
+          <div class="rv-stat-val" id="stCount">-</div>
+          <div class="rv-stat-sub">ventas en el período</div>
+        </div>
+        <div class="rv-stat">
+          <div class="rv-stat-label">Ticket promedio</div>
+          <div class="rv-stat-val" id="stTicket">-</div>
+          <div class="rv-stat-sub">por venta</div>
+        </div>
+        <div class="rv-stat">
+          <div class="rv-stat-label">Productos distintos</div>
+          <div class="rv-stat-val" id="stProds">-</div>
+          <div class="rv-stat-sub">artículos vendidos</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="rv-card">
+        <div class="section-tabs">
+          <button class="stab on" onclick="showTab('productos')">
+            <i class="bi bi-trophy"></i> Productos
+          </button>
+          <button class="stab" onclick="showTab('categorias')">
+            <i class="bi bi-tags"></i> Por categoría
+          </button>
+          <button class="stab" onclick="showTab('metodos')">
+            <i class="bi bi-credit-card"></i> Métodos de pago
+          </button>
+        </div>
+
+        <!-- Tab: Productos -->
+        <div id="tabProductos">
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Cant. vendida</th>
+                <th>Total $</th>
+                <th style="min-width:120px;">Participación</th>
+              </tr></thead>
+              <tbody id="tbodyProductos">
+                <tr><td colspan="6" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Categorías -->
+        <div id="tabCategorias" style="display:none;">
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>Categoría</th>
+                <th>Productos distintos</th>
+                <th>Cant. vendida</th>
+                <th>Total $</th>
+                <th style="min-width:120px;">Participación</th>
+              </tr></thead>
+              <tbody id="tbodyCategorias">
+                <tr><td colspan="5" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Métodos -->
+        <div id="tabMetodos" style="display:none;">
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>Método de pago</th>
+                <th>Transacciones</th>
+                <th>Total $</th>
+                <th style="min-width:120px;">Participación</th>
+              </tr></thead>
+              <tbody id="tbodyMetodos">
+                <tr><td colspan="4" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="secVacio" class="rv-card rv-empty" style="display:none;">
+      <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+      No hay ventas en el período seleccionado
+    </div>
+
+  </div>
+</div>
+
+<script>
+const fmtPesos = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum   = n => Number(n).toLocaleString('es-AR');
+
+let _datosActuales = null;
+
+function hoyStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+function addDays(str, n) {
+  const d = new Date(str + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function setRango(tipo) {
+  const hoy = hoyStr();
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('on'));
+  event.target.classList.add('on');
+  if (tipo === 'hoy') {
+    set(hoy, hoy);
+  } else if (tipo === 'ayer') {
+    const a = addDays(hoy, -1);
+    set(a, a);
+  } else if (tipo === 'semana') {
+    const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
+    set(d.toISOString().split('T')[0], hoy);
+  } else if (tipo === 'mes') {
+    const d = new Date(); d.setDate(1);
+    set(d.toISOString().split('T')[0], hoy);
+  } else if (tipo === 'mes_ant') {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+    const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    set(d.toISOString().split('T')[0], fin.toISOString().split('T')[0]);
+  }
+  buscar();
+}
+
+function set(desde, hasta) {
+  document.getElementById('fechaDesde').value = desde;
+  document.getElementById('fechaHasta').value = hasta;
+}
+
+function showTab(tab) {
+  ['Productos','Categorias','Metodos'].forEach(t => {
+    document.getElementById('tab'+t).style.display = t.toLowerCase() === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.stab').forEach((b, i) => {
+    b.classList.toggle('on', ['productos','categorias','metodos'][i] === tab);
+  });
+}
+
+async function buscar() {
+  const desde = document.getElementById('fechaDesde').value;
+  const hasta = document.getElementById('fechaHasta').value;
+  if (!desde || !hasta) { alert('Seleccioná las fechas'); return; }
+
+  const sp = document.getElementById('spinner');
+  sp.style.display = 'block';
+  document.getElementById('secResumen').style.display = 'none';
+  document.getElementById('secVacio').style.display = 'none';
+  document.getElementById('btnExport').style.display = 'none';
+
+  try {
+    const r = await fetch(`/api/reportes/ventas?desde=${desde}&hasta=${hasta}`);
+    const data = await r.json();
+    sp.style.display = 'none';
+
+    if (!data.ok) { alert('Error: ' + data.error); return; }
+    if (!data.total_ventas || data.total_ventas === 0) {
+      document.getElementById('secVacio').style.display = '';
+      return;
+    }
+
+    _datosActuales = { desde, hasta, ...data };
+    renderResumen(data);
+    document.getElementById('secResumen').style.display = '';
+    document.getElementById('btnExport').style.display = '';
+  } catch(e) {
+    sp.style.display = 'none';
+    alert('Error de conexión');
+  }
+}
+
+function renderResumen(data) {
+  const ticket = data.count_ventas > 0 ? data.total_ventas / data.count_ventas : 0;
+  document.getElementById('stTotal').textContent  = fmtPesos(data.total_ventas);
+  document.getElementById('stCount').textContent  = fmtNum(data.count_ventas);
+  document.getElementById('stTicket').textContent = fmtPesos(ticket);
+  document.getElementById('stProds').textContent  = fmtNum(data.productos?.length || 0);
+  document.getElementById('stPeriodo').textContent = 'en el período seleccionado';
+
+  // Productos
+  const maxP = data.productos?.[0]?.cantidad || 1;
+  document.getElementById('tbodyProductos').innerHTML = (data.productos || []).length === 0
+    ? '<tr><td colspan="6" class="rv-empty">Sin datos</td></tr>'
+    : (data.productos || []).map((p, i) => `
+        <tr>
+          <td><span class="rank-num">${i+1}</span></td>
+          <td style="font-weight:600;">${p.name}</td>
+          <td><span class="cat-badge">${p.category || 'Sin cat.'}</span></td>
+          <td>${fmtNum(p.cantidad)}</td>
+          <td>${fmtPesos(p.total)}</td>
+          <td>
+            <div style="font-size:11px;color:var(--text-muted);">${((p.cantidad/maxP)*100).toFixed(0)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(p.cantidad/maxP)*100}%"></div></div>
+          </td>
+        </tr>`).join('');
+
+  // Categorías
+  const maxC = data.categorias?.[0]?.total || 1;
+  document.getElementById('tbodyCategorias').innerHTML = (data.categorias || []).length === 0
+    ? '<tr><td colspan="5" class="rv-empty">Sin datos</td></tr>'
+    : (data.categorias || []).map(c => `
+        <tr>
+          <td style="font-weight:700;">${c.category || 'Sin categoría'}</td>
+          <td>${fmtNum(c.productos_distintos)}</td>
+          <td>${fmtNum(c.cantidad)}</td>
+          <td>${fmtPesos(c.total)}</td>
+          <td>
+            <div style="font-size:11px;color:var(--text-muted);">${((c.total/maxC)*100).toFixed(0)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(c.total/maxC)*100}%;background:#16a34a;"></div></div>
+          </td>
+        </tr>`).join('');
+
+  // Métodos
+  const maxM = data.metodos?.[0]?.total || 1;
+  document.getElementById('tbodyMetodos').innerHTML = (data.metodos || []).length === 0
+    ? '<tr><td colspan="4" class="rv-empty">Sin datos</td></tr>'
+    : (data.metodos || []).map(m => `
+        <tr>
+          <td style="font-weight:600;text-transform:capitalize;">${m.payment_method || 'Sin método'}</td>
+          <td>${fmtNum(m.count)}</td>
+          <td>${fmtPesos(m.total)}</td>
+          <td>
+            <div style="font-size:11px;color:var(--text-muted);">${((m.total/maxM)*100).toFixed(0)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(m.total/maxM)*100}%;background:#f59e0b;"></div></div>
+          </td>
+        </tr>`).join('');
+}
+
+function exportarXLS() {
+  if (!_datosActuales) return;
+  const { desde, hasta } = _datosActuales;
+  window.location.href = `/api/reportes/ventas/export?desde=${desde}&hasta=${hasta}`;
+}
+
+// Inicializar con hoy
+window.addEventListener('DOMContentLoaded', () => {
+  const hoy = hoyStr();
+  document.getElementById('fechaDesde').value = hoy;
+  document.getElementById('fechaHasta').value = hoy;
+});
+</script>
+
+<%- include('../partials/scripts') %>
+<%- include('../partials/footer') %>

@@ -359,6 +359,185 @@ router.get('/sucursales', (req, res) => {
 router.get('/reportes/caja', reportesCtrl.caja);
 router.get('/reportes',      (req, res) => res.redirect('/reportes/caja'));
 
+// ── Reporte de ventas por rango de fechas ─────────────────────
+router.get('/reportes/ventas', requirePermiso('historial'), (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  res.render('pages/reporte_ventas', {
+    title: 'Reporte de Ventas', module: 'Reportes', active: 'reportes', user,
+    empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'),
+    sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
+  });
+});
+
+// API: datos JSON para el reporte
+router.get('/api/reportes/ventas', (req, res) => {
+  try {
+    const desde = String(req.query.desde || '').trim();
+    const hasta = String(req.query.hasta || '').trim();
+    if (!desde || !hasta) return res.status(400).json({ ok: false, error: 'Fechas requeridas' });
+
+    const sucursal_id = res.locals?.sucursal_filtro ?? null;
+    const sWhere = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+
+    const resumen = get(
+      `SELECT COALESCE(SUM(s.total),0) as total, COUNT(*) as count
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
+      [desde, hasta]
+    );
+
+    const productos = all(
+      `SELECT si.name, COALESCE(p.category,'Sin categoría') as category,
+              COALESCE(SUM(si.qty),0) as cantidad,
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as total
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY si.name
+       ORDER BY cantidad DESC
+       LIMIT 100`,
+      [desde, hasta]
+    );
+
+    const categorias = all(
+      `SELECT COALESCE(p.category,'Sin categoría') as category,
+              COUNT(DISTINCT si.name) as productos_distintos,
+              COALESCE(SUM(si.qty),0) as cantidad,
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as total
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY category
+       ORDER BY total DESC`,
+      [desde, hasta]
+    );
+
+    const metodos = all(
+      `SELECT COALESCE(payment_method,'Sin método') as payment_method,
+              COUNT(*) as count,
+              COALESCE(SUM(total),0) as total
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY payment_method
+       ORDER BY total DESC`,
+      [desde, hasta]
+    );
+
+    res.json({
+      ok: true,
+      total_ventas: resumen?.total || 0,
+      count_ventas: resumen?.count || 0,
+      productos,
+      categorias,
+      metodos,
+    });
+  } catch(e) {
+    console.error('API reporte ventas:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// API: exportar Excel
+router.get('/api/reportes/ventas/export', (req, res) => {
+  try {
+    const desde = String(req.query.desde || '').trim();
+    const hasta = String(req.query.hasta || '').trim();
+    if (!desde || !hasta) return res.status(400).send('Fechas requeridas');
+
+    const sucursal_id = res.locals?.sucursal_filtro ?? null;
+    const sWhere = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+
+    const productos = all(
+      `SELECT si.name as Producto,
+              COALESCE(p.category,'Sin categoría') as Categoría,
+              COALESCE(SUM(si.qty),0) as "Cant. vendida",
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as "Total $"
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY si.name
+       ORDER BY "Cant. vendida" DESC`,
+      [desde, hasta]
+    );
+
+    const categorias = all(
+      `SELECT COALESCE(p.category,'Sin categoría') as Categoría,
+              COUNT(DISTINCT si.name) as "Productos distintos",
+              COALESCE(SUM(si.qty),0) as "Cant. vendida",
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as "Total $"
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY Categoría
+       ORDER BY "Total $" DESC`,
+      [desde, hasta]
+    );
+
+    const metodos = all(
+      `SELECT COALESCE(payment_method,'Sin método') as "Método de pago",
+              COUNT(*) as Transacciones,
+              COALESCE(SUM(total),0) as "Total $"
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       GROUP BY payment_method
+       ORDER BY "Total $" DESC`,
+      [desde, hasta]
+    );
+
+    const XLSX = require('xlsx');
+    const wb   = XLSX.utils.book_new();
+
+    // Hoja 1 — Productos
+    const wsProds = XLSX.utils.json_to_sheet(productos.map(p => ({
+      'Producto':       p.Producto,
+      'Categoría':      p['Categoría'],
+      'Cant. vendida':  Number(p['Cant. vendida']),
+      'Total $':        Number(Number(p['Total $']).toFixed(2)),
+    })));
+    wsProds['!cols'] = [{ wch: 40 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, wsProds, 'Productos');
+
+    // Hoja 2 — Categorías
+    const wsCats = XLSX.utils.json_to_sheet(categorias.map(c => ({
+      'Categoría':           c['Categoría'],
+      'Productos distintos': Number(c['Productos distintos']),
+      'Cant. vendida':       Number(c['Cant. vendida']),
+      'Total $':             Number(Number(c['Total $']).toFixed(2)),
+    })));
+    wsCats['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, wsCats, 'Categorías');
+
+    // Hoja 3 — Métodos de pago
+    const wsMet = XLSX.utils.json_to_sheet(metodos.map(m => ({
+      'Método de pago': m['Método de pago'],
+      'Transacciones':  Number(m['Transacciones']),
+      'Total $':        Number(Number(m['Total $']).toFixed(2)),
+    })));
+    wsMet['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, wsMet, 'Métodos de pago');
+
+    const buf      = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `reporte_ventas_${desde}_${hasta}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
+  } catch(e) {
+    console.error('Export reporte ventas:', e.message);
+    res.status(500).send('Error al exportar');
+  }
+});
+
 // ── Cambiar sucursal ──────────────────────────────────────────
 router.post('/api/cambiar-sucursal', (req, res) => {
   try {

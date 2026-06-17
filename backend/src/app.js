@@ -32,6 +32,22 @@ app.use(express.json({ limit: '10mb' }));
 
 const session = require('express-session');
 
+// ── Milisegundos hasta medianoche hora Argentina ──────────────
+// La sesión vence a las 00:00, así cubre cualquier horario de negocio
+// y el "día" siempre reinicia junto con el cambio de fecha.
+function msHastaMedianoche() {
+  const ahora = new Date();
+  // Fecha actual en Buenos Aires
+  const ahoraArg = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  // Medianoche de mañana en Buenos Aires
+  const maniana = new Date(ahoraArg);
+  maniana.setDate(maniana.getDate() + 1);
+  maniana.setHours(0, 0, 0, 0);
+  const ms = maniana - ahoraArg;
+  // Mínimo 1 minuto por si se llama justo en el tick de medianoche
+  return Math.max(ms, 60 * 1000);
+}
+
 // ── Session store en SQLite — usa la conexión existente, sin recompilar ──
 function makeSqliteStore(session) {
   const Store = session.Store;
@@ -52,7 +68,7 @@ function makeSqliteStore(session) {
     }
     set(sid, sess, cb) {
       try {
-        const maxAge = (sess.cookie && sess.cookie.maxAge) ? sess.cookie.maxAge : 1000*60*60*8;
+        const maxAge = (sess.cookie && sess.cookie.maxAge) ? sess.cookie.maxAge : msHastaMedianoche();
         const expired = Date.now() + maxAge;
         db.prepare('INSERT OR REPLACE INTO sessions (sid, sess, expired) VALUES (?,?,?)').run(sid, JSON.stringify(sess), expired);
         cb && cb(null);
@@ -77,7 +93,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 8  // 8 horas
+    maxAge: msHastaMedianoche()  // vence a medianoche (hora Argentina)
   }
 }));
 
@@ -329,7 +345,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\n🚀  ComercialOS en http://localhost:${PORT}\n`);
 });
