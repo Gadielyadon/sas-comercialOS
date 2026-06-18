@@ -360,7 +360,7 @@ router.get('/reportes/caja', reportesCtrl.caja);
 router.get('/reportes',      (req, res) => res.redirect('/reportes/caja'));
 
 // ── Reporte de ventas por rango de fechas ─────────────────────
-router.get('/reportes/ventas', requirePermiso('historial'), (req, res) => {
+router.get('/reportes/ventas', requirePermiso('reportes'), (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
   res.render('pages/reporte_ventas', {
     title: 'Reporte de Ventas', module: 'Reportes', active: 'reportes', user,

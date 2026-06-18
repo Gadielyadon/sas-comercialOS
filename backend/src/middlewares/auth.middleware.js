@@ -1,15 +1,17 @@
 // src/middlewares/auth.middleware.js
 // Mapa de ruta → clave de permiso
 const RUTA_PERMISO = {
-  '/ventas':       'ventas',
-  '/historial':    'historial',
-  '/caja':         'caja',
-  '/clientes':     'clientes',
-  '/presupuestos': 'presupuestos',
-  '/inventario':   'inventario',
-  '/stock':        'stock',
-  '/proveedores':  'proveedores',
-  '/gastos':       'gastos',
+  '/ventas':          'ventas',
+  '/historial':       'historial',
+  '/reportes':        'reportes',
+  '/reportes/ventas': 'reportes',
+  '/caja':            'caja',
+  '/clientes':        'clientes',
+  '/presupuestos':    'presupuestos',
+  '/inventario':      'inventario',
+  '/stock':           'stock',
+  '/proveedores':     'proveedores',
+  '/gastos':          'gastos',
 };
 
 /* ── Requiere estar logueado ── */
