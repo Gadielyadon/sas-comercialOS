@@ -790,6 +790,7 @@
           {key:'dashboard',    label:'Dashboard',   icon:'bi-speedometer2'},
           {key:'ventas',       label:'Pto. Venta',  icon:'bi-cart-check'},
           {key:'historial',    label:'Historial',   icon:'bi-clock-history'},
+          {key:'reportes',     label:'Reportes',    icon:'bi-bar-chart-line'},
           {key:'caja',         label:'Caja',        icon:'bi-cash-coin'},
           {key:'clientes',     label:'Clientes',    icon:'bi-people'},
           {key:'presupuestos', label:'Presupuestos',icon:'bi-file-earmark-text'},
@@ -1255,7 +1256,7 @@ async function cargarUsuarios() {
     </tr>`).join('');
 }
 
-const SECCIONES_KEYS = ['dashboard','ventas','historial','caja','clientes','presupuestos','inventario','stock','proveedores','gastos'];
+const SECCIONES_KEYS = ['dashboard','ventas','historial','reportes','caja','clientes','presupuestos','inventario','stock','proveedores','gastos'];
 
 function togglePerm(key) {
   const chk = document.getElementById('perm_' + key);
