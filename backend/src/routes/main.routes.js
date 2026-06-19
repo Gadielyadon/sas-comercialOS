@@ -16,6 +16,24 @@ try {
   }
 } catch(e) { console.warn('[main.routes] auth.middleware no disponible:', e.message); }
 
+// ─────────────────────────────────────────────────────────────
+// Fecha en hora Argentina (UTC-3) — robusta para cualquier zona del server.
+// fechaArg(0) = hoy, fechaArg(-1) = ayer, fechaArg(-6) = hace 6 días, etc.
+// Devuelve 'YYYY-MM-DD'. El día corta a las 00:00 hora Argentina.
+// ─────────────────────────────────────────────────────────────
+function fechaArg(offsetDias = 0) {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date(Date.now() + offsetDias * 86400000));
+  } catch (e) {
+    // Fallback: restar 3 horas y formatear
+    return new Date(Date.now() + offsetDias * 86400000 - 3 * 3600000)
+      .toISOString().split('T')[0];
+  }
+}
+
 // ── Prepared statements del dashboard — se preparan una vez ──
 const stmtVentasHoy  = db.prepare(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=?`);
 const stmtVentasAyer = db.prepare(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=?`);
@@ -36,13 +54,13 @@ function getCajaActual(sucursal_id) {
 function getVentasSemana(sucursal_id) {
   try {
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    return all(`SELECT DATE(created_at) as fecha, COALESCE(SUM(total), 0) as total FROM sales WHERE created_at >= datetime('now', '-6 days') ${where} GROUP BY DATE(created_at) ORDER BY fecha ASC`);
+    return all(`SELECT DATE(created_at) as fecha, COALESCE(SUM(total), 0) as total FROM sales WHERE DATE(created_at) >= ? ${where} GROUP BY DATE(created_at) ORDER BY fecha ASC`, [fechaArg(-6)]);
   } catch(e) { return []; }
 }
 
 function getVentasPorMetodo(sucursal_id) {
   try {
-    const hoy   = new Date().toISOString().split('T')[0];
+    const hoy   = fechaArg(0);
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
     return all(`SELECT payment_method, COALESCE(SUM(total), 0) as total FROM sales WHERE DATE(created_at) = ? ${where} GROUP BY payment_method`, [hoy]);
   } catch(e) { return []; }
@@ -51,14 +69,14 @@ function getVentasPorMetodo(sucursal_id) {
 function getTopProductos(sucursal_id) {
   try {
     const where = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
-    return all(`SELECT si.name as name, COALESCE(SUM(si.qty), 0) as cantidad FROM sale_items si JOIN sales s ON s.id = si.sale_id WHERE s.created_at >= datetime('now', '-30 days') ${where} GROUP BY si.name ORDER BY cantidad DESC LIMIT 8`);
+    return all(`SELECT si.name as name, COALESCE(SUM(si.qty), 0) as cantidad FROM sale_items si JOIN sales s ON s.id = si.sale_id WHERE DATE(s.created_at) >= ? ${where} GROUP BY si.name ORDER BY cantidad DESC LIMIT 8`, [fechaArg(-29)]);
   } catch(e) { return []; }
 }
 
 function getStats(sucursal_id) {
   try {
-    const hoy   = new Date().toISOString().split('T')[0];
-    const ayer  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const hoy   = fechaArg(0);
+    const ayer  = fechaArg(-1);
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
     const v     = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [hoy]);
     const vAyer = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [ayer]);
@@ -80,16 +98,15 @@ function getStats(sucursal_id) {
 function getMetricasExtra(sucursal_id) {
   try {
     const where     = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    const inicioMes = new Date(); inicioMes.setDate(1);
-    const desdeStr  = inicioMes.toISOString().split('T')[0];
+    const desdeStr  = fechaArg(0).substring(0, 8) + '01';   // primer día del mes, hora Argentina
     const mes = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at) >= ? ${where}`, [desdeStr]);
     const ticketMes = mes.count > 0 ? Math.round(mes.total / mes.count) : 0;
-    const estaSemana = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE created_at >= datetime('now','-6 days') ${where}`);
-    const semAnt     = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE created_at >= datetime('now','-13 days') AND created_at < datetime('now','-6 days') ${where}`);
+    const estaSemana = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE DATE(created_at) >= ? ${where}`, [fechaArg(-6)]);
+    const semAnt     = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) < ? ${where}`, [fechaArg(-13), fechaArg(-6)]);
     const diffSem    = semAnt.total > 0 ? Math.round(((estaSemana.total - semAnt.total) / semAnt.total) * 100) : null;
-    const horaPico = get(`SELECT CAST(strftime('%H', created_at) AS INTEGER) as hora, COUNT(*) as cant FROM sales WHERE created_at >= datetime('now','-30 days') ${where} GROUP BY hora ORDER BY cant DESC LIMIT 1`);
+    const horaPico = get(`SELECT CAST(strftime('%H', created_at) AS INTEGER) as hora, COUNT(*) as cant FROM sales WHERE DATE(created_at) >= ? ${where} GROUP BY hora ORDER BY cant DESC LIMIT 1`, [fechaArg(-29)]);
     const diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    const mejorDia   = get(`SELECT CAST(strftime('%w', created_at) AS INTEGER) as dia, COALESCE(SUM(total),0) as total FROM sales WHERE created_at >= datetime('now','-30 days') ${where} GROUP BY dia ORDER BY total DESC LIMIT 1`);
+    const mejorDia   = get(`SELECT CAST(strftime('%w', created_at) AS INTEGER) as dia, COALESCE(SUM(total),0) as total FROM sales WHERE DATE(created_at) >= ? ${where} GROUP BY dia ORDER BY total DESC LIMIT 1`, [fechaArg(-29)]);
     let anuladas = { count: 0, total: 0 };
     try { anuladas = get(`SELECT COUNT(*) as count, COALESCE(SUM(total),0) as total FROM sales WHERE status='anulada' AND DATE(created_at) >= ? ${where}`, [desdeStr]) || anuladas; } catch(_) {}
     return { ticketMes, ventasMes: { total: mes.total, count: mes.count }, semanaActual: Math.round(estaSemana.total), semanaAnt: Math.round(semAnt.total), diffSemPct: diffSem, horaPico: horaPico ? `${String(horaPico.hora).padStart(2,'0')}:00 hs` : null, mejorDia: mejorDia ? diasSemana[mejorDia.dia] : null, anuladas };
@@ -104,10 +121,8 @@ function getConfigValue(key, def = '') {
 
 function getGastosMes() {
   try {
-    const hoy   = new Date();
-    const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const desdeStr = desde.toISOString().split('T')[0];
-    const hastaStr = hoy.toISOString().split('T')[0];
+    const desdeStr = fechaArg(0).substring(0, 8) + '01';
+    const hastaStr = fechaArg(0);
     const { get: dbGet, all: dbAll } = require('../db');
     // Solo gastos PAGADOS del mes → refleja plata real salida, no compromisos
     const total  = dbGet(
@@ -124,8 +139,7 @@ function getGastosMes() {
 
 function getVentasMes() {
   try {
-    const desde = new Date(); desde.setDate(1);
-    const desdeStr = desde.toISOString().split('T')[0];
+    const desdeStr = fechaArg(0).substring(0, 8) + '01';
     const r = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at) >= ?`, [desdeStr]);
     return { total: r?.total || 0, count: r?.count || 0 };
   } catch(e) { return { total: 0, count: 0 }; }
