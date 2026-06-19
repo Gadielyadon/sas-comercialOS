@@ -474,10 +474,112 @@ function anularVenta({ sale_id, motivo, usuario }) {
   return { ok: true, sale_id: Number(sale_id) };
 }
 
+// ─────────────────────────────────────────────────────────────
+// STATS DASHBOARD — ventas hoy, ayer, stock bajo
+// ─────────────────────────────────────────────────────────────
+function getStatsDashboard(sucursal_id = null) {
+  try {
+    const hoy  = nowArgentina().substring(0, 10);
+    const ayer = new Date(new Date(hoy).getTime() - 86400000).toISOString().substring(0, 10);
+    const sW   = (sucursal_id && HAS_SALES_SUCURSAL) ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+
+    const hoyRow  = get(`SELECT COALESCE(SUM(total),0) as t, COUNT(*) as n FROM sales WHERE DATE(created_at)=? AND COALESCE(status,'completada')!='anulada' ${sW}`, [hoy]);
+    const ayerRow = get(`SELECT COALESCE(SUM(total),0) as t, COUNT(*) as n FROM sales WHERE DATE(created_at)=? AND COALESCE(status,'completada')!='anulada' ${sW}`, [ayer]);
+    const stockRow = get(`SELECT COUNT(*) as n FROM products WHERE stock <= stock_min`);
+
+    return {
+      ventasHoy:  { t: hoyRow?.t  || 0, n: hoyRow?.n  || 0 },
+      ventasAyer: { t: ayerRow?.t || 0, n: ayerRow?.n || 0 },
+      stockBajo:  { n: stockRow?.n || 0 },
+      totalProd:  { n: 0 },
+    };
+  } catch(e) {
+    console.error('getStatsDashboard:', e.message);
+    return {
+      ventasHoy:  { t: 0, n: 0 },
+      ventasAyer: { t: 0, n: 0 },
+      stockBajo:  { n: 0 },
+      totalProd:  { n: 0 },
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// VENTAS POR DÍA — últimos N días
+// ─────────────────────────────────────────────────────────────
+function ventasPorDia(dias = 7, sucursal_id = null) {
+  try {
+    const sW = (sucursal_id && HAS_SALES_SUCURSAL) ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+    const rows = all(
+      `SELECT DATE(created_at) as fecha, COALESCE(SUM(total),0) as total
+       FROM sales
+       WHERE created_at >= date('now','-${Number(dias)-1} days')
+         AND COALESCE(status,'completada') != 'anulada' ${sW}
+       GROUP BY DATE(created_at)
+       ORDER BY fecha ASC`
+    );
+    return rows;
+  } catch(e) {
+    console.error('ventasPorDia:', e.message);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// VENTAS POR MÉTODO DE PAGO — hoy
+// ─────────────────────────────────────────────────────────────
+function ventasPorMetodo(sucursal_id = null) {
+  try {
+    const hoy = nowArgentina().substring(0, 10);
+    const sW  = (sucursal_id && HAS_SALES_SUCURSAL) ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+    const rows = all(
+      `SELECT payment_method, COALESCE(SUM(total),0) as total, COUNT(*) as count
+       FROM sales
+       WHERE DATE(created_at) = ?
+         AND COALESCE(status,'completada') != 'anulada' ${sW}
+       GROUP BY payment_method
+       ORDER BY total DESC`,
+      [hoy]
+    );
+    return rows;
+  } catch(e) {
+    console.error('ventasPorMetodo:', e.message);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// PRODUCTOS MÁS VENDIDOS — últimos 30 días
+// ─────────────────────────────────────────────────────────────
+function productosMasVendidos(limit = 8, sucursal_id = null) {
+  try {
+    const sW = (sucursal_id && HAS_SALES_SUCURSAL) ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+    const rows = all(
+      `SELECT si.name, COALESCE(SUM(si.qty),0) as cantidad
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       WHERE s.created_at >= date('now','-30 days')
+         AND COALESCE(s.status,'completada') != 'anulada' ${sW}
+       GROUP BY si.name
+       ORDER BY cantidad DESC
+       LIMIT ?`,
+      [Number(limit)]
+    );
+    return rows;
+  } catch(e) {
+    console.error('productosMasVendidos:', e.message);
+    return [];
+  }
+}
+
 module.exports = {
   initSalesSchema,
   createSale,
   listRecent,
   listToday,
   anularVenta,
+  getStatsDashboard,
+  ventasPorDia,
+  ventasPorMetodo,
+  productosMasVendidos,
 };
