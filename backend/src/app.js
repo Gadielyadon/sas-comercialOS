@@ -93,9 +93,19 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: msHastaMedianoche()  // vence a medianoche (hora Argentina)
+    // maxAge se recalcula en cada login — ver loginHandler en auth.routes.js
+    maxAge: 1000 * 60 * 60 * 24  // 24h de fallback, el login lo reemplaza
   }
 }));
+
+// ── Middleware: renovar expiración de sesión a medianoche en cada request ──
+app.use((req, res, next) => {
+  if (req.session?.user) {
+    // Recalcular cuánto falta para medianoche Argentina en este momento
+    req.session.cookie.maxAge = msHastaMedianoche();
+  }
+  next();
+});
 
 // ── Protección de rutas: redirige al login si no hay sesión ───
 app.use((req, res, next) => {
