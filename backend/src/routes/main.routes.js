@@ -153,6 +153,81 @@ function getStockCritico() {
   try { return require('../services/products.service').list().filter(p => p.stock <= 5 && p.stock > 0); } catch(e) { return []; }
 }
 
+// ── Resumen del mes: comparativo mes vs mes + ganancia estimada real ──
+// Reemplaza la tarjeta de "rentabilidad" alarmista. Usa el costo (price_cost)
+// que ya guardan los productos para calcular ganancia REAL (precio - costo).
+// Si no hay costos cargados, hayCostos=false y la vista invita a cargarlos.
+function getResumenMes(sucursal_id) {
+  try {
+    const where   = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}`   : '';
+    const whereS  = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+    const noAnul  = `AND COALESCE(status,'completada')!='anulada'`;
+    const noAnulS = `AND COALESCE(s.status,'completada')!='anulada'`;
+
+    // Fechas en hora Argentina (mismo período: del 1 a hoy, contra el mes anterior a la misma altura)
+    const hoyStr = fechaArg(0);
+    const [Y, M, D] = hoyStr.split('-').map(Number);
+    const pad = n => String(n).padStart(2, '0');
+    const desdeMes = `${Y}-${pad(M)}-01`;
+    let pY = Y, pM = M - 1; if (pM === 0) { pM = 12; pY = Y - 1; }
+    const desdeMesAnt  = `${pY}-${pad(pM)}-01`;
+    const lastDayPrev  = new Date(pY, pM, 0).getDate();
+    const hastaMesAnt  = `${pY}-${pad(pM)}-${pad(Math.min(D, lastDayPrev))}`;
+
+    const m  = get(`SELECT COALESCE(SUM(total),0) total, COUNT(*) count FROM sales WHERE DATE(created_at) BETWEEN ? AND ? ${noAnul} ${where}`, [desdeMes, hoyStr]) || {};
+    const ma = get(`SELECT COALESCE(SUM(total),0) total FROM sales WHERE DATE(created_at) BETWEEN ? AND ? ${noAnul} ${where}`, [desdeMesAnt, hastaMesAnt]) || {};
+
+    const vendidoMes    = m.total || 0;
+    const countMes      = m.count || 0;
+    const vendidoMesAnt = ma.total || 0;
+    const diffMesPct    = vendidoMesAnt > 0 ? Math.round(((vendidoMes - vendidoMesAnt) / vendidoMesAnt) * 100) : null;
+
+    // Ganancia estimada = Σ qty*(precio - costo), solo sobre items con costo cargado
+    const g = get(`
+      SELECT
+        COALESCE(SUM(CASE WHEN p.price_cost IS NOT NULL THEN si.qty*si.price     END),0) AS ingreso_cc,
+        COALESCE(SUM(CASE WHEN p.price_cost IS NOT NULL THEN si.qty*p.price_cost END),0) AS costo_cc,
+        COALESCE(SUM(CASE WHEN p.price_cost IS NOT NULL THEN si.qty ELSE 0 END),0)       AS u_con_costo,
+        COALESCE(SUM(si.qty),0) AS u_total
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      LEFT JOIN (SELECT sku, AVG(price_cost) AS price_cost FROM products WHERE price_cost IS NOT NULL AND price_cost > 0 GROUP BY sku) p
+             ON p.sku = si.sku
+      WHERE DATE(s.created_at) BETWEEN ? AND ? ${noAnulS} ${whereS}
+    `, [desdeMes, hoyStr]) || {};
+
+    const ganancia  = (g.ingreso_cc || 0) - (g.costo_cc || 0);
+    const uTotal    = g.u_total || 0;
+    const cobertura = uTotal > 0 ? Math.round(((g.u_con_costo || 0) / uTotal) * 100) : 0;
+
+    return { vendidoMes, countMes, vendidoMesAnt, diffMesPct, ganancia, hayCostos: (g.u_con_costo || 0) > 0, cobertura };
+  } catch (e) {
+    return { vendidoMes: 0, countMes: 0, vendidoMesAnt: 0, diffMesPct: null, ganancia: 0, hayCostos: false, cobertura: 0 };
+  }
+}
+
+// ── Top productos por GANANCIA (no por cantidad) — últimos 30 días ──
+// Usa price_cost. Solo incluye productos con costo cargado. Si no hay costos, []
+function getTopGanancia(sucursal_id, limit = 6) {
+  try {
+    const whereS = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+    return all(`
+      SELECT si.name AS name,
+             COALESCE(SUM(si.qty),0) AS unidades,
+             COALESCE(SUM(si.qty*(si.price - p.price_cost)),0) AS ganancia
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      JOIN (SELECT sku, AVG(price_cost) AS price_cost FROM products WHERE price_cost IS NOT NULL AND price_cost > 0 GROUP BY sku) p
+        ON p.sku = si.sku
+      WHERE DATE(s.created_at) >= ? AND COALESCE(s.status,'completada')!='anulada' ${whereS}
+      GROUP BY si.name
+      HAVING ganancia > 0
+      ORDER BY ganancia DESC
+      LIMIT ${Number(limit)}
+    `, [fechaArg(-29)]);
+  } catch (e) { return []; }
+}
+
 // ── Raíz ──────────────────────────────────────────────────────
 router.get('/', (req, res) => res.redirect('/dashboard'));
 
@@ -173,6 +248,8 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
     graficoMetodos: JSON.stringify(getVentasPorMetodo(sucursal_id)),
     graficoTopProd: JSON.stringify(getTopProductos(sucursal_id)),
     metricasExtra:  getMetricasExtra(sucursal_id),
+    resumenMes:     getResumenMes(sucursal_id),
+    topGanancia:    getTopGanancia(sucursal_id),
     sucursal:       res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
     modulo_sucursales: false, recentSales: [],
     gastosMes, ventasMes, deudaProvs, stockCritico

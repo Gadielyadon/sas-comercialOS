@@ -17,45 +17,7 @@
       </div>
     </a>
 
-    <!-- Campanita — misma fila que AxSoft, bien a la derecha -->
-    <div id="notifWrap" style="position:relative;flex-shrink:0;margin-left:auto;">
-      <button id="notifBtn" onclick="axNotif.toggle(event)" title="Notificaciones"
-        style="position:relative;width:32px;height:32px;border-radius:9px;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;"
-        onmouseover="this.style.background='rgba(255,255,255,.28)'"
-        onmouseout="this.style.background='rgba(255,255,255,.18)'">
-        <i class="bi bi-bell-fill"></i>
-        <span id="notifBadge" style="display:none;position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;min-width:17px;height:17px;border-radius:20px;padding:0 3px;line-height:17px;text-align:center;border:2.5px solid #1B4FD8;"></span>
-      </button>
     </div>
-
-    <%
-      const _sucLista = (typeof locals.sucursales_lista !== 'undefined' && Array.isArray(locals.sucursales_lista))
-        ? locals.sucursales_lista : [];
-      const _sucActualId = (typeof locals.sucursal !== 'undefined' && locals.sucursal) ? locals.sucursal.id : 1;
-    %>
-    <% if (_sucLista.length > 1) { %>
-    <div style="position:relative;flex-shrink:0;">
-      <button id="btnCambiarSuc" onclick="toggleDropSuc(event)" title="Cambiar sucursal"
-        style="width:28px;height:28px;border:none;background:rgba(255,255,255,.13);border-radius:7px;color:rgba(255,255,255,.75);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;"
-        onmouseover="this.style.background='rgba(255,255,255,.22)'"
-        onmouseout="this.style.background='rgba(255,255,255,.13)'">
-        <i class="bi bi-arrow-left-right"></i>
-      </button>
-      <div id="dropSuc" style="display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:#1e2436;border:1px solid rgba(255,255,255,.12);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:999;overflow:hidden;">
-        <div style="padding:7px 12px 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.35);">Cambiar a</div>
-        <% _sucLista.forEach(s => { const esActual = s.id === _sucActualId; %>
-        <button onclick="cambiarSucursal(<%= s.id %>, '<%= s.nombre.replace(/'/g,"\\'") %>')"
-          style="width:100%;padding:9px 14px;border:none;background:<%= esActual ? 'rgba(27,79,216,.4)' : 'transparent' %>;color:<%= esActual ? '#fff' : 'rgba(255,255,255,.75)' %>;font-size:12.5px;font-weight:<%= esActual ? '700' : '500' %>;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:background .12s;font-family:var(--font-body);"
-          onmouseover="if(<%= !esActual %>)this.style.background='rgba(255,255,255,.07)'"
-          onmouseout="if(<%= !esActual %>)this.style.background='transparent'">
-          <i class="bi bi-<%= esActual ? 'check-circle-fill' : 'circle' %>" style="font-size:10px;color:<%= esActual ? '#10b981' : 'inherit' %>;opacity:.8;"></i>
-          <%= s.nombre %>
-        </button>
-        <% }) %>
-      </div>
-    </div>
-    <% } %>
-  </div>
 
   <!-- ── NOMBRE DEL LOCAL ── -->
   <% if (typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre) { %>
@@ -300,7 +262,8 @@ window.axNotif=(function(){
         // Posicionar justo debajo del botón
         const rect=btn.getBoundingClientRect();
         p.style.top=(rect.bottom+8)+'px';
-        p.style.left='12px';
+        p.style.left='auto';
+        p.style.right=Math.max(10,(window.innerWidth-rect.right))+'px';
         p.style.animation='none'; p.offsetHeight;
         p.style.animation='axNotifIn .18s cubic-bezier(.2,.8,.3,1) both';
         p.style.display='block';
@@ -333,38 +296,47 @@ window.axNotif=(function(){
 
 /* ── Botón hamburguesa — mobile abre overlay, desktop colapsa sidebar ── */
 (function(){
-  const btn = document.createElement('button');
-  btn.id = 'axHamburger';
-  btn.title = 'Ocultar/mostrar menú';
-  btn.innerHTML = '<i class="bi bi-list"></i>';
-
   function isMobile() { return window.innerWidth <= 768; }
 
-  btn.onclick = () => {
-    if (isMobile()) {
-      window.openSidebar();
-    } else {
-      document.body.classList.toggle('sidebar-collapsed');
-      // Guardar preferencia
-      localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
+  function initHamburguesa(){
+    let btn = document.getElementById('axTopbarHamburger');
+    if (!btn) {
+      // Fallback: si la página no tiene barra superior, crear botón flotante
+      btn = document.createElement('button');
+      btn.id = 'axHamburger';
+      btn.title = 'Ocultar/mostrar menú';
+      btn.innerHTML = '<i class="bi bi-list"></i>';
+      document.body.appendChild(btn);
     }
-  };
 
-  document.body.appendChild(btn);
+    btn.onclick = () => {
+      if (isMobile()) {
+        window.openSidebar();
+      } else {
+        document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
+      }
+    };
 
-  // En mobile: ocultar botón cuando sidebar está abierto
-  const sb = document.getElementById('sidebar');
-  const observer = new MutationObserver(() => {
-    if (isMobile()) {
-      btn.style.opacity = sb && sb.classList.contains('open') ? '0' : '1';
-      btn.style.pointerEvents = sb && sb.classList.contains('open') ? 'none' : '';
-    }
-  });
-  if (sb) observer.observe(sb, { attributes: true, attributeFilter: ['class'] });
+    const sb = document.getElementById('sidebar');
+    const observer = new MutationObserver(() => {
+      if (isMobile()) {
+        btn.style.opacity = sb && sb.classList.contains('open') ? '0' : '1';
+        btn.style.pointerEvents = sb && sb.classList.contains('open') ? 'none' : '';
+      }
+    });
+    if (sb) observer.observe(sb, { attributes: true, attributeFilter: ['class'] });
+  }
 
-  // Restaurar preferencia en desktop al cargar
+  // Restaurar preferencia de menú colapsado (no depende del botón)
   if (!isMobile() && localStorage.getItem('sidebarCollapsed') === '1') {
     document.body.classList.add('sidebar-collapsed');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHamburguesa);
+  } else {
+    initHamburguesa();
   }
 })();
 
