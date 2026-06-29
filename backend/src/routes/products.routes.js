@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
     if (q) {
       const l = limit ? Math.min(parseInt(limit, 10), 3500) : 3500;
       const results = productsService
-        .list()
+        .list(res.locals.sucursal_id || null)
         .filter(
           (p) =>
             String(p.name || '').toLowerCase().includes(String(q).toLowerCase()) ||
@@ -21,7 +21,7 @@ router.get('/', (req, res) => {
       return res.json(results);
     }
 
-    res.json(productsService.list());
+    res.json(productsService.list(res.locals.sucursal_id || null));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener productos' });
@@ -128,13 +128,32 @@ router.patch('/:sku/stock', (req, res) => {
       return res.status(400).json({ error: 'Falta delta' });
     }
 
-    const result = productsService.adjustStock(req.params.sku, Number(delta));
+    const result = productsService.adjustStock(req.params.sku, Number(delta), res.locals.sucursal_id || 1, { usuario: req.session && req.session.user ? req.session.user.name : null });
     if (result.error) return res.status(400).json(result);
 
     res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al ajustar stock' });
+  }
+});
+
+// POST /api/products/:sku/transfer — mover stock entre sucursales/depósitos
+router.post('/:sku/transfer', (req, res) => {
+  try {
+    const existencias = require('../services/existencias.service');
+    const { hacia, qty, desde, motivo } = req.body || {};
+    const origen = desde != null ? Number(desde) : (res.locals.sucursal_id || 1);
+    if (hacia == null) return res.status(400).json({ error: 'Falta la sucursal destino' });
+    const r = existencias.transferStock(
+      req.params.sku, origen, Number(hacia), Number(qty),
+      { motivo: motivo || null, usuario: req.session && req.session.user ? req.session.user.name : null }
+    );
+    if (r.error) return res.status(400).json(r);
+    res.json(r);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al mover stock' });
   }
 });
 

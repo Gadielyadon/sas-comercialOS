@@ -156,14 +156,15 @@
                         </button>
                       <% } %>
                       <% if (c.id !== 1) { %>
-                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirCargo(<%= c.id %>, '<%= c.nombre %>')" title="Registrar deuda manual"
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirCargo(<%= c.id %>, '<%= c.nombre %>')" title="Lo que el cliente se lleva (descuenta del saldo a favor o suma a la cuenta)"
                           style="color:#d97706;border-color:rgba(217,119,6,.3);">
-                          <i class="bi bi-plus-circle"></i> Cargar
+                          <i class="bi bi-bag-dash"></i> Consumo
                         </button>
                       <% } %>
-                      <% if (c.saldo > 0) { %>
-                        <button class="btn-action btn-action-primary btn-sm" onclick="abrirPago(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="Registrar pago">
-                          <i class="bi bi-cash"></i> Cobrar
+                      <% if (c.id !== 1) { %>
+                        <% const _debe = (c.saldo || 0) > 0; %>
+                        <button class="btn-action btn-action-primary btn-sm" onclick="abrirPago(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="<%= _debe ? 'Registrar un pago del cliente' : 'Cargar saldo a favor (recarga)' %>">
+                          <i class="bi <%= _debe ? 'bi-cash' : 'bi-wallet2' %>"></i> <%= _debe ? 'Cobrar' : 'Recargar' %>
                         </button>
                       <% } %>
                       <% if (c.id !== 1) { %>
@@ -432,7 +433,7 @@
           <i class="bi bi-cash-stack"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Registrar Pago</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="pagoTitulo">Registrar Pago</div>
           <div style="font-size:11px;color:var(--text-secondary);" id="pagoClienteNombre">—</div>
         </div>
       </div>
@@ -440,16 +441,16 @@
     </div>
 
     <!-- Saldo deudor actual -->
-    <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12px;color:#dc2626;font-weight:600;">Saldo deudor total</span>
+    <div id="pagoSaldoBox" style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:#dc2626;font-weight:600;" id="pagoSaldoLabel">Saldo deudor total</span>
       <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:#dc2626;" id="pagoSaldoActual">$0.00</span>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;">Monto a cobrar ($)</label>
-          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-primary);background:rgba(27,79,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
+          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;" id="pagoMontoLabel">Monto a cobrar ($)</label>
+          <button id="pagoCobrarTodo" onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-primary);background:rgba(27,79,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
             Cobrar todo
           </button>
         </div>
@@ -716,11 +717,27 @@ async function confirmarCargo() {
 /* ════════════════════════════════════
    PAGO (parcial o total)
 ════════════════════════════════════ */
+let _pagoDebe = false;
 function abrirPago(id, nombre, saldo) {
   _pagoClienteId = id;
   _pagoSaldo     = Number(saldo);
+  _pagoDebe      = _pagoSaldo > 0;
   document.getElementById('pagoClienteNombre').textContent = nombre;
-  document.getElementById('pagoSaldoActual').textContent   = '$' + _pagoSaldo.toFixed(2);
+  document.getElementById('pagoTitulo').textContent = _pagoDebe ? 'Registrar pago' : 'Recargar saldo';
+  const box = document.getElementById('pagoSaldoBox');
+  const lbl = document.getElementById('pagoSaldoLabel');
+  const val = document.getElementById('pagoSaldoActual');
+  if (_pagoDebe) {
+    box.style.background = 'rgba(239,68,68,.07)'; box.style.border = '1px solid rgba(239,68,68,.2)';
+    lbl.textContent = 'Saldo deudor total'; lbl.style.color = '#dc2626';
+    val.style.color = '#dc2626'; val.textContent = '$' + _pagoSaldo.toFixed(2);
+  } else {
+    box.style.background = 'rgba(16,185,129,.07)'; box.style.border = '1px solid rgba(16,185,129,.2)';
+    lbl.textContent = 'Saldo a favor actual'; lbl.style.color = '#059669';
+    val.style.color = '#059669'; val.textContent = '$' + Math.abs(_pagoSaldo).toFixed(2);
+  }
+  document.getElementById('pagoMontoLabel').textContent = _pagoDebe ? 'Monto a cobrar ($)' : 'Monto a recargar ($)';
+  document.getElementById('pagoCobrarTodo').style.display = _pagoDebe ? '' : 'none';
   document.getElementById('p_monto').value = '';
   document.getElementById('p_desc').value  = '';
   document.getElementById('restanteWrap').style.display = 'none';
@@ -734,27 +751,34 @@ function pagarTodo() {
 }
 
 function calcRestante() {
-  const monto     = parseFloat(document.getElementById('p_monto').value) || 0;
-  const restante  = _pagoSaldo - monto;
-  const wrap      = document.getElementById('restanteWrap');
-  const label     = document.getElementById('restanteLabel');
-  const valor     = document.getElementById('restanteValor');
+  const monto = parseFloat(document.getElementById('p_monto').value) || 0;
+  const wrap  = document.getElementById('restanteWrap');
+  const label = document.getElementById('restanteLabel');
+  const valor = document.getElementById('restanteValor');
 
   if (monto <= 0) { wrap.style.display = 'none'; return; }
-
   wrap.style.display = 'flex';
+
+  if (!_pagoDebe) {
+    const aFavor = Math.abs(_pagoSaldo) + monto;
+    wrap.style.cssText += ';background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
+    label.style.color = '#059669'; valor.style.color = '#059669';
+    label.textContent = 'Nuevo saldo a favor';
+    valor.textContent = '$' + aFavor.toFixed(2);
+    return;
+  }
+
+  const restante = _pagoSaldo - monto;
   if (restante <= 0) {
-    wrap.style.cssText  += ';background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
-    label.style.color   = '#059669';
-    valor.style.color   = '#059669';
-    label.textContent   = 'Quedará al día ✓';
-    valor.textContent   = '$0,00';
+    wrap.style.cssText += ';background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);';
+    label.style.color = '#059669'; valor.style.color = '#059669';
+    label.textContent = restante < 0 ? 'Queda a favor' : 'Quedará al día ✓';
+    valor.textContent = '$' + Math.abs(restante).toFixed(2);
   } else {
-    wrap.style.cssText  += ';background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);';
-    label.style.color   = '#d97706';
-    valor.style.color   = '#d97706';
-    label.textContent   = 'Saldo pendiente tras el pago';
-    valor.textContent   = '$' + restante.toFixed(2);
+    wrap.style.cssText += ';background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);';
+    label.style.color = '#d97706'; valor.style.color = '#d97706';
+    label.textContent = 'Saldo pendiente tras el pago';
+    valor.textContent = '$' + restante.toFixed(2);
   }
 }
 
@@ -766,7 +790,7 @@ async function confirmarPago() {
   if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
   const r = await fetch(`/api/clientes/${_pagoClienteId}/pago`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ monto, descripcion: desc || 'Pago manual' })
+    body: JSON.stringify({ monto, descripcion: desc || (_pagoDebe ? 'Pago' : 'Recarga de saldo') })
   });
   if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
   location.reload();

@@ -1,4 +1,5 @@
 const { get, all, run, db } = require('../db');
+const existencias = require('./existencias.service');
 
 // ─────────────────────────────────────────────────────────────
 // Hora Argentina — robusta para VPS con cualquier timezone configurada
@@ -310,11 +311,9 @@ function createSale({
         pesable
       );
 
-      if (HAS_PRODUCTS_SUCURSAL) {
-        updateStockBySucursalStmt.run(qty, sku, prod.sucursal_id || suc);
-      } else {
-        updateStockStmt.run(qty, sku);
-      }
+      // Descontar del stock de la sucursal donde se vende (motor de existencias).
+      // El espejo deja products.stock sincronizado para el código que aún lo lea.
+      existencias.adjustStock(sku, suc, -qty, { tipo: 'venta', motivo: 'Venta', permitirNegativo: true });
 
       // mantener cache consistente por si el SKU aparece otra vez en la misma venta
       prod.stock = toNumber(prod.stock, 0) - qty;
@@ -342,6 +341,15 @@ function createSale({
             sale_id
           );
           updateClienteSaldoStmt.run(toNumber(total), Number(cliente_id));
+          // Historial unificado: que la venta fiada también figure en "Cuenta"
+          run(
+            `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, sale_id, saldo_post)
+             VALUES (?, 'cargo', ?, ?, ?, ?)`,
+            [Number(cliente_id), toNumber(total),
+             `Venta #${sale_id} — Fiado`,
+             sale_id,
+             Number(cli.saldo || 0) + toNumber(total)]
+          );
         } else {
           // Venta pagada — registrar en historial como cargo informativo sin afectar saldo
           run(

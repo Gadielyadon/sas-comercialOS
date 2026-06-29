@@ -100,6 +100,7 @@ router.get('/ver/:id', (req, res) => {
 
 // ── POST /presupuestos/crear ─────────────────────────────────
 router.post('/crear', (req, res) => {
+  const wantsJson = req.body.json === '1' || req.body.json === 1 || (req.get('accept') || '').includes('application/json');
   try {
     const user = req.session.user;
     const items = parsearItems(req.body);
@@ -120,9 +121,14 @@ router.post('/crear', (req, res) => {
       items
     });
 
+    // Desde el Punto de Venta se pide por fetch: devolvemos JSON y NO navegamos
+    if (wantsJson) {
+      return res.json({ ok: true, presupuesto: svc.findById(p.id) });
+    }
     res.redirect(`/presupuestos/ver/${p.id}`);
   } catch (e) {
     console.error('crear presupuesto:', e);
+    if (wantsJson) return res.status(500).json({ error: 'No se pudo generar el presupuesto' });
     res.redirect('/presupuestos/nuevo');
   }
 });

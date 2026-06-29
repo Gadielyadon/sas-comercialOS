@@ -87,6 +87,7 @@ router.get('/products/categories', (req, res) => {
 router.get('/products/:sku',         productsCtrl.getBySku);
 router.put('/products/:sku',         productsCtrl.update);
 router.patch('/products/:sku/stock', productsCtrl.adjustStock);
+router.post('/products/:sku/transfer', productsCtrl.transfer);
 router.delete('/products/:sku',      productsCtrl.remove);
 router.get('/products.csv',          productsCtrl.exportCsv);
 router.get('/products.xlsx',         productsCtrl.exportXlsx);

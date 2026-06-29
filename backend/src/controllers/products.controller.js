@@ -39,6 +39,9 @@ exports.create = (req, res) => {
       imagen,
       price_mayorista, // ← AGREGADO
       qty_mayorista,   // ← AGREGADO
+      venta_sin_stock,
+      price_tarjeta,
+      hay,
     } = req.body || {};
 
     if (!sku || !name || price === undefined) {
@@ -54,6 +57,9 @@ exports.create = (req, res) => {
       iva: iva === undefined ? 0 : Number(iva),
       ieps: ieps === undefined ? 0 : Number(ieps),
       pesable: pesable ? 1 : 0,
+      venta_sin_stock: venta_sin_stock ? 1 : 0,
+      hay: hay !== undefined ? (hay ? 1 : 0) : undefined,
+      price_tarjeta: price_tarjeta !== undefined && price_tarjeta !== null && price_tarjeta !== '' ? Number(price_tarjeta) : null,
       descripcion: descripcion !== undefined ? (descripcion || null) : null,
       price_cost: price_cost !== undefined && price_cost !== null && price_cost !== '' ? Number(price_cost) : null,
       margen: margen !== undefined && margen !== null && margen !== '' ? Number(margen) : null,
@@ -111,6 +117,7 @@ exports.update = (req, res) => {
       qty_mayorista,
       venta_sin_stock,
       price_tarjeta,
+      hay,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -123,6 +130,7 @@ exports.update = (req, res) => {
       ieps: ieps !== undefined ? Number(ieps) : undefined,
       pesable: pesable !== undefined ? (pesable ? 1 : 0) : undefined,
       venta_sin_stock: venta_sin_stock !== undefined ? (venta_sin_stock ? 1 : 0) : undefined,
+      hay: hay !== undefined ? (hay ? 1 : 0) : undefined,
       descripcion: descripcion !== undefined ? (descripcion || null) : undefined,
       price_cost:
         price_cost !== undefined
@@ -169,7 +177,9 @@ exports.adjustStock = (req, res) => {
       return res.status(400).json({ error: 'delta es obligatorio (número)' });
     }
 
-    const result = productsService.adjustStock(String(req.params.sku), Number(delta));
+    const suc = res.locals.sucursal_id || 1;
+    const usuario = req.session && req.session.user ? req.session.user.name : null;
+    const result = productsService.adjustStock(String(req.params.sku), Number(delta), suc, { usuario });
     if (result.error) return res.status(400).json(result);
 
     res.json(result);
@@ -180,6 +190,26 @@ exports.adjustStock = (req, res) => {
 };
 
 exports.updateStock = exports.adjustStock;
+
+// Mover stock entre sucursales/depósitos
+exports.transfer = (req, res) => {
+  try {
+    const existencias = require('../services/existencias.service');
+    const { hacia, qty, desde, motivo } = req.body || {};
+    const origen = desde != null ? Number(desde) : (res.locals.sucursal_id || 1);
+    if (hacia == null) return res.status(400).json({ error: 'Falta la sucursal destino' });
+    const usuario = req.session && req.session.user ? req.session.user.name : null;
+    const r = existencias.transferStock(
+      String(req.params.sku), origen, Number(hacia), Number(qty),
+      { motivo: motivo || null, usuario }
+    );
+    if (r.error) return res.status(400).json(r);
+    res.json(r);
+  } catch (err) {
+    console.error('products.controller.transfer =>', err);
+    res.status(500).json({ error: 'Error al mover stock' });
+  }
+};
 
 exports.remove = (req, res) => {
   try {

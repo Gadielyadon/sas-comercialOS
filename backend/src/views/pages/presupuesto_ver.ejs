@@ -146,6 +146,7 @@
           <span class="badge-estado badge-<%= presupuesto.estado %>"><%= presupuesto.estado %></span>
         </div>
         <div class="top-bar-actions">
+          <button class="btn-act" onclick="if(window.opener&&!window.opener.closed){window.close()}else{location.href='/presupuestos'}"><i class="bi bi-arrow-left"></i> Volver</button>
           <% if (presupuesto.estado === 'Borrador') { %>
             <form method="POST" action="/presupuestos/estado/<%= presupuesto.id %>" style="margin:0">
               <input type="hidden" name="estado" value="Enviado">

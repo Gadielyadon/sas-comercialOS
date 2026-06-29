@@ -1,4 +1,5 @@
 const { get, all, run } = require('../db');
+const existencias = require('./existencias.service');
 
 function initPromoSchema() {
   try { run(`ALTER TABLE products ADD COLUMN price_promo REAL DEFAULT NULL`); } catch (_) {}
@@ -86,10 +87,21 @@ function _getStmtFindSku() {
 }
 
 function list(sucursal_id = null) {
-  const rows = sucursal_id
-    ? _getStmtListSuc().all(Number(sucursal_id))
-    : _getStmtListAll().all();
-  return rows.map(withPrecioEfectivo);
+  if (sucursal_id) {
+    const rows = all(`
+      SELECT p.id, p.sku, p.name, p.price,
+        p.price_promo, COALESCE(p.en_promo,0) AS en_promo, p.descripcion,
+        COALESCE(e.stock, 0) AS stock, p.category, p.sucursal_id,
+        p.price_cost, p.margen, COALESCE(p.iva,0) AS iva, COALESCE(p.ieps,0) AS ieps,
+        COALESCE(p.pesable,0) AS pesable, p.imagen, p.price_mayorista, p.qty_mayorista,
+        COALESCE(p.hay,1) AS hay, COALESCE(p.venta_sin_stock,0) AS venta_sin_stock,
+        p.price_tarjeta, e.stock_min
+      FROM products p
+      LEFT JOIN existencias e ON e.sku = p.sku AND e.sucursal_id = ?
+      ORDER BY p.name ASC`, [Number(sucursal_id)]);
+    return rows.map(withPrecioEfectivo);
+  }
+  return _getStmtListAll().all().map(withPrecioEfectivo);
 }
 
 function search(q, limit = 8, sucursal_id = null) {
@@ -104,11 +116,11 @@ function search(q, limit = 8, sucursal_id = null) {
 }
 
 function findBySku(sku, sucursal_id = null) {
-  // Para la búsqueda directa por SKU exacto usamos prepared statement
-  // Si hay sucursal filtramos después (raro, la mayoría de calls no la pasan)
   const p = _getStmtFindSku().get(String(sku));
   if (!p) return null;
-  if (sucursal_id && p.sucursal_id && p.sucursal_id !== Number(sucursal_id)) return null;
+  // Catálogo global: el producto existe en todas las sucursales.
+  // El stock real viene de existencias para la sucursal pedida.
+  if (sucursal_id) p.stock = existencias.getStock(String(sku), Number(sucursal_id));
   return withPrecioEfectivo(p);
 }
 
@@ -143,6 +155,8 @@ function create({
       hay !== undefined ? toBoolInt(hay, 1) : 1,
     ]
   );
+  // El alta crea la existencia del producto en su sucursal
+  existencias.ensureRow(String(sku), suc, toNumber(stock));
   // Una sola findBySku al final — sin verificación previa
   return findBySku(sku, suc);
 }
@@ -198,16 +212,11 @@ function updateBySku(sku, fields, sucursal_id = null) {
   return findBySku(newSku, targetSucursal);
 }
 
-function adjustStock(sku, delta, sucursal_id = null) {
-  const p = findBySku(sku, sucursal_id);
-  if (!p) return { error: 'Producto no encontrado' };
-  const newStock = toNumber(p.stock) + toNumber(delta);
-  if (newStock < 0) return { error: `Stock insuficiente. Disponible: ${p.stock}` };
-  run(
-    `UPDATE products SET stock = ? WHERE sku = ? AND sucursal_id = ?`,
-    [newStock, String(sku), p.sucursal_id || 1]
-  );
-  return findBySku(sku, sucursal_id);
+function adjustStock(sku, delta, sucursal_id = null, opts = {}) {
+  const suc = Number(sucursal_id || 1);
+  const r = existencias.adjustStock(String(sku), suc, toNumber(delta), opts);
+  if (r && r.error) return r;
+  return findBySku(sku, suc);
 }
 
 function remove(sku, sucursal_id = null) {
@@ -222,7 +231,7 @@ function remove(sku, sucursal_id = null) {
 
 function exportCsv(sucursal_id = null) {
   const rows = list(sucursal_id);
-  const header = 'sku,name,price,price_mayorista,price_tarjeta,price_cost,stock,category,iva,ieps,pesable,qty_mayorista,descripcion';
+  const header = 'sku,name,price,price_mayorista,price_tarjeta,price_cost,stock,category,iva,ieps,pesable,qty_mayorista,vender_sin_control_de_stock,hay,descripcion';
   return [
     header,
     ...rows.map((r) =>
@@ -239,6 +248,8 @@ function exportCsv(sucursal_id = null) {
         r.ieps ?? 0,
         r.pesable ?? 0,
         r.qty_mayorista ?? '',
+        r.venta_sin_stock ? 'SI' : 'NO',
+        (r.hay == null || r.hay) ? 'SI' : 'NO',
         `"${(r.descripcion||'').replace(/"/g,'""')}"`,
       ].join(',')
     ),
@@ -260,6 +271,8 @@ function exportXlsxData(sucursal_id = null) {
     IVA:              r.iva ?? 0,
     IEPS:             r.ieps ?? 0,
     Pesable:          r.pesable ? 'SI' : 'NO',
+    'Vender sin control de stock': r.venta_sin_stock ? 'SI' : 'NO',
+    Hay:              (r.hay == null || r.hay) ? 'SI' : 'NO',
     Descripcion:      r.descripcion ?? '',
     'En Promo':       r.en_promo ? 'SI' : 'NO',
     'Precio Promo':   r.price_promo ?? '',

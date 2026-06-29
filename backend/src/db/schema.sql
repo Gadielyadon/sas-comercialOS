@@ -304,3 +304,32 @@ CREATE TABLE IF NOT EXISTS gastos_recurrentes (
 
 -- Columna que vincula un gasto puntual con su plantilla recurrente
 -- (ALTER TABLE seguro porque usa IF NOT EXISTS via el service al init)
+
+-- ─────────────────────────────────────────────────────────────
+-- Stock por sucursal/depósito (existencias) + historial de movimientos
+-- Una fila por cada producto en cada lugar. El catálogo (products) es global.
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS existencias (
+  sku         TEXT    NOT NULL,
+  sucursal_id INTEGER NOT NULL,
+  stock       REAL    NOT NULL DEFAULT 0,
+  stock_min   REAL    DEFAULT NULL,
+  updated_at  TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+  PRIMARY KEY (sku, sucursal_id)
+);
+CREATE INDEX IF NOT EXISTS idx_existencias_suc ON existencias(sucursal_id);
+
+CREATE TABLE IF NOT EXISTS movimientos_stock (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  sku             TEXT    NOT NULL,
+  sucursal_id     INTEGER NOT NULL,
+  delta           REAL    NOT NULL,
+  stock_result    REAL,
+  tipo            TEXT    NOT NULL,   -- alta | ajuste | venta | transfer_out | transfer_in
+  motivo          TEXT,
+  ref_sucursal_id INTEGER,           -- en transferencias: el otro lugar
+  usuario         TEXT,
+  created_at      TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_mov_sku ON movimientos_stock(sku);
+CREATE INDEX IF NOT EXISTS idx_mov_suc ON movimientos_stock(sucursal_id);

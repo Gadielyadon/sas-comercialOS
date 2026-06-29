@@ -4,6 +4,18 @@ const express = require('express');
 const path    = require('path');
 const app     = express();
 
+// ── Versión de assets para cache-busting ──────────────────────
+// Cambia sola cuando cambia el CSS, así los navegadores bajan la
+// versión nueva sin que el cliente tenga que borrar el caché.
+try {
+  const fs = require('fs');
+  app.locals.assetVersion = Math.floor(
+    fs.statSync(path.join(__dirname, 'public', 'css', 'styles.css')).mtimeMs
+  );
+} catch (e) {
+  app.locals.assetVersion = Date.now();
+}
+
 // ── Trust proxy — necesario para cookies seguras detrás de Nginx ──
 app.set('trust proxy', 1);
 

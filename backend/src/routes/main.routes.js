@@ -311,21 +311,8 @@ router.get('/ventas', requirePermiso('ventas'), (req, res) => {
       updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     )`);
 
-    // Seed solo si la tabla está vacía (primera instalación)
-    const row = get(`SELECT COUNT(*) as n FROM departamentos`);
-    if (!row || row.n === 0) {
-      const defaults = [
-        ['Mantenimiento', '🔧', '#3b82f6', 1],
-        ['Mano de obra',  '👷', '#10b981', 2],
-        ['Materiales',    '🪵', '#f59e0b', 3],
-        ['Traslado',      '🚚', '#8b5cf6', 4],
-        ['Servicio',      '⚙️', '#ef4444', 5],
-      ];
-      for (const [nombre, icono, color, orden] of defaults) {
-        run(`INSERT INTO departamentos (nombre, icono, color, orden) VALUES (?,?,?,?)`,
-            [nombre, icono, color, orden]);
-      }
-    }
+    // Sin departamentos por defecto: cada cliente crea los que necesite.
+    // (La API de crear/editar/borrar sigue igual; solo no se precargan ejemplos.)
     console.log('✅  Departamentos schema OK');
   } catch(e) { console.log('⚠️   Error en departamentos schema:', e.message); }
 })();
@@ -520,6 +507,21 @@ router.get('/api/reportes/ventas', (req, res) => {
       [desde, hasta]
     );
 
+    const departamentos = all(
+      `SELECT si.name AS departamento,
+              COUNT(DISTINCT s.id) as transacciones,
+              COALESCE(SUM(si.qty),0) as cantidad,
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as total
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada'
+         AND (si.sku LIKE 'DEPTO-%' OR si.sku LIKE 'BAL-%') ${sWhere}
+       GROUP BY si.name
+       ORDER BY total DESC`,
+      [desde, hasta]
+    );
+
     res.json({
       ok: true,
       total_ventas: resumen?.total || 0,
@@ -527,6 +529,7 @@ router.get('/api/reportes/ventas', (req, res) => {
       productos,
       categorias,
       metodos,
+      departamentos,
     });
   } catch(e) {
     console.error('API reporte ventas:', e.message);

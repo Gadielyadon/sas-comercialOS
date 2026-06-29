@@ -125,6 +125,9 @@
           <button class="stab" onclick="showTab('metodos')">
             <i class="bi bi-credit-card"></i> Métodos de pago
           </button>
+          <button class="stab" onclick="showTab('departamentos')">
+            <i class="bi bi-grid-1x2"></i> Por departamento
+          </button>
         </div>
 
         <!-- Tab: Productos -->
@@ -176,6 +179,25 @@
               </tr></thead>
               <tbody id="tbodyMetodos">
                 <tr><td colspan="4" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Departamentos -->
+        <div id="tabDepartamentos" style="display:none;">
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>#</th>
+                <th>Departamento</th>
+                <th>Transacciones</th>
+                <th>Cant. vendida</th>
+                <th>Total $</th>
+                <th style="min-width:120px;">Participación</th>
+              </tr></thead>
+              <tbody id="tbodyDepartamentos">
+                <tr><td colspan="6" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
               </tbody>
             </table>
           </div>
@@ -237,11 +259,11 @@ function set(desde, hasta) {
 }
 
 function showTab(tab) {
-  ['Productos','Categorias','Metodos'].forEach(t => {
+  ['Productos','Categorias','Metodos','Departamentos'].forEach(t => {
     document.getElementById('tab'+t).style.display = t.toLowerCase() === tab ? '' : 'none';
   });
   document.querySelectorAll('.stab').forEach((b, i) => {
-    b.classList.toggle('on', ['productos','categorias','metodos'][i] === tab);
+    b.classList.toggle('on', ['productos','categorias','metodos','departamentos'][i] === tab);
   });
 }
 
@@ -330,6 +352,23 @@ function renderResumen(data) {
           <td>
             <div style="font-size:11px;color:var(--text-muted);">${((m.total/maxM)*100).toFixed(0)}%</div>
             <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(m.total/maxM)*100}%;background:#f59e0b;"></div></div>
+          </td>
+        </tr>`).join('');
+
+  // Departamentos
+  const maxD = data.departamentos?.[0]?.total || 1;
+  document.getElementById('tbodyDepartamentos').innerHTML = (data.departamentos || []).length === 0
+    ? '<tr><td colspan="6" class="rv-empty">No hubo ventas por departamento en este período</td></tr>'
+    : (data.departamentos || []).map((d, i) => `
+        <tr>
+          <td><span class="rank-num">${i+1}</span></td>
+          <td style="font-weight:700;">${d.departamento || '—'}</td>
+          <td>${fmtNum(d.transacciones)}</td>
+          <td>${fmtNum(d.cantidad)}</td>
+          <td>${fmtPesos(d.total)}</td>
+          <td>
+            <div style="font-size:11px;color:var(--text-muted);">${((d.total/maxD)*100).toFixed(0)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(d.total/maxD)*100}%;background:#8b5cf6;"></div></div>
           </td>
         </tr>`).join('');
 }
