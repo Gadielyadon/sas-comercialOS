@@ -207,13 +207,37 @@ function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, cond
 
   const pid = r.lastInsertRowid;
 
+  // Algunas bases viejas tienen columnas en inglés (name/price/qty) marcadas NOT NULL
+  // junto con las nuevas (nombre/precio_unitario/cantidad). Detectamos las columnas
+  // reales y llenamos todas las que existan, para que funcione en cualquier base.
+  const itemCols = all(`PRAGMA table_info(presupuesto_items)`).map(c => c.name);
+  const hasCol = (c) => itemCols.includes(c);
+
   for (const item of items) {
     const qty      = Number(item.cantidad || 1);
     const precio   = Number(item.precio_unitario || 0);
     const descItem = Number(item.descuento_item_pct || 0);
     const pctIva   = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '') ? Number(item.pct_iva) : null;
-    run(`INSERT INTO presupuesto_items (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, descuento_item_pct, pct_iva, subtotal) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [pid, item.tipo || 'custom', item.sku || null, String(item.nombre || ''), item.descripcion || null, qty, precio, descItem, pctIva, qty * precio * (1 - descItem / 100)]);
+    const nombre   = String(item.nombre || item.name || '');
+    const sub      = qty * precio * (1 - descItem / 100);
+
+    const cols = ['presupuesto_id'];
+    const vals = [pid];
+    const add = (col, val) => { if (hasCol(col)) { cols.push(col); vals.push(val); } };
+    add('tipo', item.tipo || 'producto');
+    add('sku', item.sku || null);
+    add('nombre', nombre);
+    add('name', nombre);                 // columna vieja en inglés (NOT NULL en bases viejas)
+    add('descripcion', item.descripcion || null);
+    add('cantidad', qty);
+    add('qty', qty);                     // vieja
+    add('precio_unitario', precio);
+    add('price', precio);                // vieja
+    add('descuento_item_pct', descItem);
+    add('pct_iva', pctIva);
+    add('subtotal', sub);
+
+    run(`INSERT INTO presupuesto_items (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`, vals);
   }
 
   return findById(pid);
