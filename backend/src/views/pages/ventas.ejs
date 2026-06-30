@@ -1266,6 +1266,7 @@
             <span class="scan-dot" id="scanDot"></span>
             <i class="bi bi-upc-scan scan-icon"></i>
             <input type="text" id="barcodeInput" placeholder="Escaneá código o buscá por nombre…" autocomplete="off" spellcheck="false" autofocus>
+            <span id="qtyMultBadge" style="display:none;align-items:center;justify-content:center;background:var(--color-primary);color:#fff;font-weight:800;font-size:13px;border-radius:7px;padding:3px 9px;margin-left:6px;white-space:nowrap;">×1</span>
           </div>
           <div class="sc-chips">
             <div class="sc-chip chip-cobrar" onclick="cart.length?openCobroModal():showToast('Carrito vacío','warn')" title="F10 — Cobrar"><kbd>F10</kbd> Cobrar</div>
@@ -2304,10 +2305,22 @@ function updateCardState(sku){
   }
 }
 
+// ── Multiplicador de cantidad (tecla x + número) ──
+let qtyMultiplier = 1;
+function setQtyMultiplier(n){ qtyMultiplier = Math.min(999, Math.max(1, parseInt(n,10)||1)); renderMultBadge(); }
+function resetQtyMultiplier(){ qtyMultiplier = 1; renderMultBadge(); }
+function renderMultBadge(){
+  const b=document.getElementById('qtyMultBadge'); if(!b) return;
+  if(qtyMultiplier>1){ b.textContent='×'+qtyMultiplier; b.style.display='inline-flex'; }
+  else { b.style.display='none'; }
+}
+// Agrega aplicando el multiplicador y lo resetea (solo en acciones del usuario)
+function commitAdd(product){ const q=qtyMultiplier; addToCart(product, q); if(q>1) resetQtyMultiplier(); }
+
 function addBySku(sku,el){
   if(el){el.style.transform='scale(.95)';setTimeout(()=>el.style.transform='',130);}
   const p=allProducts.find(x=>x.sku===sku);
-  if(p)addToCart(p);
+  if(p)commitAdd(p);
 }
 
 function aplicarPrecioMayorista(item) {
@@ -2324,11 +2337,12 @@ function aplicarPrecioMayorista(item) {
   }
 }
 
-function addToCart(product){
+function addToCart(product, qty){
+  qty = Math.max(1, parseInt(qty, 10) || 1);
   const ep = getPrecioLista(product);
   const existing=cart.find(i=>i.sku===product.sku);
   if(existing){
-    existing.qty++;
+    existing.qty += qty;
     aplicarPrecioMayorista(existing);
     showToast(`${existing.name} — x${existing.qty}`,'info');
   } else {
@@ -2342,7 +2356,7 @@ function addToCart(product){
       isMayorista: false,
       descripcion: product.descripcion || null,
       isPromo: !!(product.en_promo && product.price_promo),
-      qty: 1
+      qty: qty
     });
     showToast(`${product.name}${product.en_promo?' 🏷️':''} agregado`,'success');
   }
@@ -4128,6 +4142,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     else{isScanMode=false;keyCount=0;dot.classList.remove('scanner-mode');}
 
     if(e.key==='Escape'){
+      if(qtyMultiplier>1){ resetQtyMultiplier(); }
       if(kbCardIdx >= 0){ kbClearCards(); return; }
       input.value='';filtrarCards('');
       return;
@@ -4174,8 +4189,18 @@ document.addEventListener('DOMContentLoaded',async()=>{
         return;
       }
 
-      const query=input.value.trim();
+      let query=input.value.trim();
       if(!query){if(cart.length)openCobroModal();return;}
+
+      // ── Multiplicador de cantidad: "x3" (Enter) deja ×3 listo; "x3 algo" o "x3<codigo>" lo aplica ──
+      let _mm;
+      if(_mm=query.match(/^[xX*]\s*(\d{1,3})$/)){
+        setQtyMultiplier(_mm[1]); input.value=''; beep('add');
+        showToast(`Cantidad ×${qtyMultiplier} lista — escaneá o tocá el producto`,'info');
+        return;
+      }
+      if(_mm=query.match(/^[xX*]\s*(\d{1,3})\s+(.+)$/)){ setQtyMultiplier(_mm[1]); query=_mm[2].trim(); }
+      else if(_mm=query.match(/^[xX*](\d)(\d{6,})$/)){ setQtyMultiplier(_mm[1]); query=_mm[2]; }
 
       // ══════════════════════════════════════════════════
       // ⚖️  DETECCIÓN BALANZA — va ANTES de cualquier
@@ -4211,7 +4236,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
           // SKU único por escaneo (evita que se incremente qty de otro escaneo)
           prod.sku = `BAL-${balanza.sku}-${Date.now()}`;
 
-          addToCart(prod);
+          commitAdd(prod);
           input.value = '';
           filtrarCards('');
           kbClearCards();
@@ -4232,11 +4257,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
       }
 
       const exacto=allProducts.find(p=>p.sku.toLowerCase()===query.toLowerCase()||(p.barcode&&p.barcode===query));
-      if(exacto){addToCart(exacto);input.value='';filtrarCards('');kbClearCards();return;}
+      if(exacto){commitAdd(exacto);input.value='';filtrarCards('');kbClearCards();return;}
       const vis=allProducts.filter(p=>p.name.toLowerCase().includes(query.toLowerCase())||p.sku.toLowerCase().includes(query.toLowerCase()));
-      if(vis.length===1){addToCart(vis[0]);input.value='';filtrarCards('');kbClearCards();return;}
+      if(vis.length===1){commitAdd(vis[0]);input.value='';filtrarCards('');kbClearCards();return;}
       const prod=await apiBySku(query);
-      if(prod){addToCart(prod);input.value='';filtrarCards('');kbClearCards();return;}
+      if(prod){commitAdd(prod);input.value='';filtrarCards('');kbClearCards();return;}
       beep('error');showToast(`"${query}" no encontrado`,'error');input.select();
     }
 
