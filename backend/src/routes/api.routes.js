@@ -43,26 +43,25 @@ router.post('/products',             productsCtrl.create);
 router.get('/products/next-sku', (req, res) => {
   try {
     const { get: dbGet } = require('../db');
-    const suc = req.session?.user?.sucursal_id || null;
-    const sucFilt = suc ? `AND sucursal_id = ${Number(suc)}` : '';
 
-    // Solo considerar SKUs cortos (máx 6 dígitos) — ignorar códigos de barras
+    // Catálogo global: el SKU corto es único en TODO el sistema.
+    // Buscamos el número más alto (ignorando códigos de barras largos).
     const row = dbGet(
       `SELECT sku FROM products
        WHERE sku GLOB '[0-9]*'
        AND length(sku) <= 6
-       ${sucFilt}
        ORDER BY CAST(sku AS INTEGER) DESC LIMIT 1`
     );
 
-    let nextSku;
-    if (row && row.sku) {
-      const num  = parseInt(row.sku, 10);
-      const next = num + 1;
-      // Formato: siempre 4 dígitos mínimo, sube si hace falta
-      nextSku = String(next).padStart(Math.max(4, row.sku.length), '0');
-    } else {
-      nextSku = '0001'; // primer producto del sistema
+    let n = (row && row.sku) ? parseInt(row.sku, 10) + 1 : 1;
+    const width = (row && row.sku) ? Math.max(4, row.sku.length) : 4;
+
+    // Asegurar que el SKU no exista ya (nunca devolver uno repetido); sin límite.
+    let nextSku = String(n).padStart(width, '0');
+    let guard = 0;
+    while (dbGet(`SELECT 1 AS x FROM products WHERE sku = ?`, [nextSku]) && guard < 1000000) {
+      n++; guard++;
+      nextSku = String(n).padStart(Math.max(width, String(n).length), '0');
     }
 
     res.json({ sku: nextSku });

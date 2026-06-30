@@ -208,6 +208,17 @@ function updateBySku(sku, fields, sucursal_id = null) {
     ]
   );
 
+  // Si cambió el SKU, migrar las existencias y movimientos a la nueva clave
+  if (newSku !== String(sku)) {
+    try { run(`UPDATE existencias SET sku = ? WHERE sku = ?`, [newSku, String(sku)]); } catch (_) {}
+    try { run(`UPDATE movimientos_stock SET sku = ? WHERE sku = ?`, [newSku, String(sku)]); } catch (_) {}
+  }
+
+  // Si se editó el stock, reflejarlo en existencias (la fuente de verdad por sucursal)
+  if (fields.stock !== undefined) {
+    existencias.setStock(newSku, targetSucursal, toNumber(fields.stock), { tipo: 'ajuste', motivo: 'Edición de producto' });
+  }
+
   // Una sola findBySku al final — sin segunda verificación
   return findBySku(newSku, targetSucursal);
 }
