@@ -218,12 +218,30 @@
           </div>
           <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
             <div class="aj-field">
-              <label>Inicio de actividades</label>
-              <input type="text" id="aj_inicio_actividades" placeholder="Ej: 10/2025">
+              <label>CUIT</label>
+              <input type="text" id="aj_cuit" placeholder="Ej: 27-26433670-3">
+              <span style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">Si AFIP está conectado, se usa el CUIT de AFIP.</span>
             </div>
+            <div class="aj-field">
+              <label>Inicio de actividades</label>
+              <input type="text" id="aj_inicio_actividades" placeholder="Ej: 10/05/2025">
+            </div>
+          </div>
+          <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
             <div class="aj-field">
               <label>Ingresos Brutos (IIBB)</label>
               <input type="text" id="aj_iibb" placeholder="Ej: 76771">
+            </div>
+            <div class="aj-field">
+              <label>Condición IVA (para presupuestos)</label>
+              <select id="aj_cond_iva_presup">
+                <option value="Responsable Inscripto">Responsable Inscripto</option>
+                <option value="Monotributista">Monotributista</option>
+                <option value="Exento">Exento</option>
+                <option value="No Responsable">No Responsable</option>
+                <option value="Consumidor Final">Consumidor Final</option>
+              </select>
+              <span style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">Se muestra en el encabezado del presupuesto.</span>
             </div>
           </div>
         </div>
@@ -942,6 +960,17 @@ async function cargarConfig() {
   document.getElementById('aj_footer').value    = _config.ticket_footer     || '¡Gracias por su compra!';
   document.getElementById('aj_inicio_actividades').value = _config.empresa_inicio_actividades || '';
   document.getElementById('aj_iibb').value               = _config.empresa_iibb               || '';
+  const _cuitEl = document.getElementById('aj_cuit');
+  if (_cuitEl) _cuitEl.value = _config.empresa_cuit || '';
+  const _condPresup = document.getElementById('aj_cond_iva_presup');
+  if (_condPresup) {
+    _condPresup.value = _config.empresa_cond_iva || 'Responsable Inscripto';
+    // Mantener sincronizado con el selector de la sección AFIP
+    _condPresup.addEventListener('change', () => {
+      const afipSel = document.getElementById('empresa_cond_iva');
+      if (afipSel) afipSel.value = _condPresup.value;
+    });
+  }
 
   const formato = _config.ticket_formato || '58mm';
   document.getElementById('aj_fmt58').checked = formato === '58mm';
@@ -1046,6 +1075,7 @@ async function guardarAjustes() {
     empresa_email:                document.getElementById('aj_email').value.trim(),
     empresa_inicio_actividades:   document.getElementById('aj_inicio_actividades').value.trim(),
     empresa_iibb:                 document.getElementById('aj_iibb').value.trim(),
+    empresa_cuit:                 (document.getElementById('aj_cuit')?.value || '').trim(),
     ticket_footer:                document.getElementById('aj_footer').value.trim(),
     ticket_formato:               document.querySelector('input[name="aj_formato"]:checked')?.value || '58mm',
     facturacion_habilitada:       document.getElementById('facturacion_habilitada')?.checked ? '1' : '0',

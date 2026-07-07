@@ -459,21 +459,18 @@ function anularVenta({ sale_id, motivo, usuario }) {
       [motivo || 'Sin motivo', nowArgentina(), usuario || 'sistema', Number(sale_id)]
     );
 
-    // Devolver stock
+    // Devolver stock — a existencias (fuente de verdad por sucursal), que además
+    // espeja products.stock. Simétrico con cómo la venta descuenta el stock.
     for (const item of items) {
       if (!item.sku) continue;
       try {
-        if (sale.sucursal_id) {
-          const affected = run(
-            `UPDATE products SET stock = stock + ? WHERE sku = ? AND sucursal_id = ?`,
-            [Number(item.qty), item.sku, Number(sale.sucursal_id)]
-          );
-          if (!affected?.changes) {
-            run(`UPDATE products SET stock = stock + ? WHERE sku = ?`, [Number(item.qty), item.sku]);
-          }
-        } else {
-          run(`UPDATE products SET stock = stock + ? WHERE sku = ?`, [Number(item.qty), item.sku]);
-        }
+        const suc = Number(sale.sucursal_id || 1);
+        existencias.adjustStock(item.sku, suc, Number(item.qty), {
+          tipo: 'ajuste',
+          motivo: `Anulación venta #${sale_id}`,
+          usuario: usuario || 'sistema',
+          permitirNegativo: true,
+        });
       } catch (_) {}
     }
   });

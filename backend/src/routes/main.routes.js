@@ -688,8 +688,16 @@ router.post('/stock/qty', (req, res) => {
   const { id, stock } = req.body;
   if (!id || stock == null || isNaN(parseInt(stock))) return res.json({ ok: false });
   try {
-    const { run: dbRun } = require('../db');
-    dbRun(`UPDATE products SET stock = ? WHERE id = ?`, [parseInt(stock), parseInt(id)]);
+    const existencias = require('../services/existencias.service');
+    const prod = get(`SELECT sku, sucursal_id FROM products WHERE id = ?`, [parseInt(id)]);
+    if (!prod) return res.json({ ok: false, error: 'Producto no encontrado' });
+    // Fuente de verdad = existencias por sucursal. setStock además espeja
+    // products.stock, así la pantalla de Stock y el punto de venta quedan en sintonía.
+    const sucursalId = res.locals?.sucursal_id || prod.sucursal_id || 1;
+    existencias.setStock(prod.sku, sucursalId, parseInt(stock), {
+      motivo: 'Ajuste desde pantalla de Stock',
+      usuario: user?.name || null,
+    });
     res.json({ ok: true });
   } catch(e) { res.json({ ok: false, error: e.message }); }
 });

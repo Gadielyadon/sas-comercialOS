@@ -49,8 +49,12 @@
   }
   .afip-col-doc { padding: 16px 18px; text-align: right; }
   .emp-logo { max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
-  .emp-nombre { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .emp-nombre { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 2px; }
+  .emp-tagline { font-size: 11.5px; color: #666; font-style: italic; margin-bottom: 2px; line-height: 1.35; }
   .emp-dato { font-size: 11px; color: #444; line-height: 1.7; }
+  .fiscal-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid #ddd; }
+  .fiscal-line { font-size: 11px; color: #333; line-height: 1.75; }
+  .fiscal-line span { color: #999; font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; }
   .tipo-comp { font-size: 36px; font-weight: 900; color: #111; line-height: 1; }
   .tipo-comp-label { font-size: 11px; font-weight: 700; color: #555; margin-top: 4px; text-transform: uppercase; letter-spacing: .4px; }
   .doc-titulo { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 6px; }
@@ -168,9 +172,22 @@
       <div class="doc-wrap">
         <div class="doc-a4" id="docA4">
           <%
+            // ── Recargo general: se funde en el precio de cada ítem (sin línea aparte) ──
+            const factorAjuste = 1 + (Number(presupuesto.ajuste_pct || 0) / 100);
+
+            // ── Datos fiscales del emisor: si AFIP está conectado los toma de AFIP,
+            //    si no, de lo cargado en Ajustes ──
+            const afipOn        = String(config.facturacion_habilitada) === '1';
+            const emisorCuit    = afipOn
+              ? (config.afip_cuit || config.empresa_cuit || '')
+              : (config.empresa_cuit || config.afip_cuit || '');
+            const emisorInicio  = config.empresa_inicio_actividades || '';
+            const emisorIibb    = config.empresa_iibb || '';
+            const emisorCondIva = config.empresa_cond_iva || '';
+
             const itemsCalc = (presupuesto.items || []).map(it => {
               const descPct    = Number(it.descuento_item_pct || 0);
-              const precioBase = Number(it.precio_unitario || 0);
+              const precioBase = Number(it.precio_unitario || 0) * factorAjuste;
               const precioDesc = precioBase * (1 - descPct / 100);
               const cant       = Number(it.cantidad || 0);
               const subSD      = cant * precioDesc;
@@ -191,7 +208,10 @@
                 <img src="<%= config.empresa_logo %>" class="emp-logo" alt="Logo">
               <% } %>
               <div class="emp-nombre"><%= config.empresa_nombre || 'Mi Empresa' %></div>
-              <div class="emp-dato">
+              <% if (config.empresa_tagline) { %>
+                <div class="emp-tagline"><%= config.empresa_tagline %></div>
+              <% } %>
+              <div class="emp-dato" style="margin-top:6px;">
                 <% if (config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
                 <% if (config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
                 <% if (config.empresa_email)     { %><div><%= config.empresa_email %></div><% } %>
@@ -206,12 +226,14 @@
               <div class="doc-nro"><%= presupuesto.numero %></div>
               <div class="doc-fecha-label">Fecha</div>
               <div class="doc-fecha-val"><%= new Date(presupuesto.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %></div>
-              <div style="margin-top:12px;">
-                <% if (config.empresa_cond_iva)             { %><div class="emp-dato"><%= config.empresa_cond_iva %></div><% } %>
-                <% if (config.afip_cuit)                    { %><div class="emp-dato">CUIT: <%= config.afip_cuit %></div><% } %>
-                <% if (config.empresa_inicio_actividades)   { %><div class="emp-dato">Inicio Act.: <%= config.empresa_inicio_actividades %></div><% } %>
-                <% if (config.empresa_iibb)                 { %><div class="emp-dato">Ing. Brutos: <%= config.empresa_iibb %></div><% } %>
-              </div>
+              <% if (emisorCondIva || emisorCuit || emisorInicio || emisorIibb) { %>
+                <div class="fiscal-block">
+                  <% if (emisorCondIva) { %><div class="fiscal-line"><%= emisorCondIva %></div><% } %>
+                  <% if (emisorCuit)    { %><div class="fiscal-line"><span>CUIT</span> <%= emisorCuit %></div><% } %>
+                  <% if (emisorInicio)  { %><div class="fiscal-line"><span>Inicio Act.</span> <%= emisorInicio %></div><% } %>
+                  <% if (emisorIibb)    { %><div class="fiscal-line"><span>Ing. Brutos</span> <%= emisorIibb %></div><% } %>
+                </div>
+              <% } %>
             </div>
           </div>
 
@@ -220,7 +242,7 @@
               <div style="display:flex;gap:32px;flex-wrap:wrap;">
                 <div>
                   <div class="afip-label">Señor/es</div>
-                  <div class="afip-val lg"><%= presupuesto.cliente_nombre || 'Consumidor Final' %></div>
+                  <div class="afip-val lg"><%= (presupuesto.cliente_nombre && presupuesto.cliente_nombre.trim() && presupuesto.cliente_nombre !== 'Sin nombre') ? presupuesto.cliente_nombre : 'Consumidor Final' %></div>
                 </div>
                 <% if (presupuesto.cliente_cuit) { %>
                   <div><div class="afip-label">CUIT / DNI</div><div class="afip-val"><%= presupuesto.cliente_cuit %></div></div>
@@ -235,7 +257,7 @@
             </div>
             <div class="afip-cliente-meta">
               <div class="afip-meta-grid">
-                <div><div class="afip-label">IVA</div><div class="afip-val">Consumidor Final</div></div>
+                <div><div class="afip-label">IVA</div><div class="afip-val"><%= presupuesto.cliente_cond_iva || 'Consumidor Final' %></div></div>
                 <div><div class="afip-label">Estado</div><div class="afip-val"><%= presupuesto.estado %></div></div>
                 <div><div class="afip-label">Sucursal</div><div class="afip-val"><%= presupuesto.sucursal_nombre || 'Casa Central' %></div></div>
                 <% if (presupuesto.validez_dias) { %>
@@ -355,9 +377,13 @@ const config      = <%- JSON.stringify(config) %>;
 const fmt  = n => '$' + (Number(n)||0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
 const fmt0 = n => '$' + (Number(n)||0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
 
+// Recargo general fundido en el precio de cada ítem
+const factorAjuste = 1 + (Number(presupuesto.ajuste_pct || 0) / 100);
+const precioAjustado = i => Number(i.precio_unitario || 0) * factorAjuste;
+
 function calcItemSub(i) {
   const desc = Number(i.descuento_item_pct || 0);
-  return Number(i.cantidad || 0) * Number(i.precio_unitario || 0) * (1 - desc / 100);
+  return Number(i.cantidad || 0) * precioAjustado(i) * (1 - desc / 100);
 }
 function calcItemIva(i) {
   const pct = (i.pct_iva !== null && i.pct_iva !== undefined && i.pct_iva !== '') ? Number(i.pct_iva) : 0;
@@ -388,8 +414,12 @@ function imprimirA4() {
       .afip-col-centro{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px;border-right:1.5px solid #333;min-width:110px;text-align:center;}
       .afip-col-doc{padding:14px 16px;text-align:right;}
       .emp-logo{max-height:48px;max-width:120px;object-fit:contain;margin-bottom:5px;display:block;}
-      .emp-nombre{font-size:15px;font-weight:700;color:#111;margin-bottom:3px;}
+      .emp-nombre{font-size:15px;font-weight:700;color:#111;margin-bottom:2px;}
+      .emp-tagline{font-size:10.5px;color:#666;font-style:italic;margin-bottom:2px;line-height:1.35;}
       .emp-dato{font-size:10px;color:#444;line-height:1.7;}
+      .fiscal-block{margin-top:10px;padding-top:8px;border-top:1px solid #ddd;}
+      .fiscal-line{font-size:10px;color:#333;line-height:1.7;}
+      .fiscal-line span{color:#999;font-size:8.5px;text-transform:uppercase;letter-spacing:.4px;}
       .tipo-comp{font-size:32px;font-weight:900;color:#111;line-height:1;}
       .tipo-comp-label{font-size:10px;font-weight:700;color:#555;margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
       .doc-titulo{font-size:15px;font-weight:700;color:#111;margin-bottom:4px;}
@@ -446,7 +476,7 @@ function imprimirTermica() {
 
   const itemsHTML = (p.items||[]).map(i => {
     const desc   = Number(i.descuento_item_pct || 0);
-    const precio = Number(i.precio_unitario||0) * (1 - desc/100);
+    const precio = precioAjustado(i) * (1 - desc/100);
     const sub    = Number(i.cantidad||0) * precio;
     return `<div style="margin-bottom:6px;">
       <div style="font-weight:700;font-size:13px;text-transform:uppercase;">${i.nombre||''}</div>

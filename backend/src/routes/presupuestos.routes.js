@@ -110,12 +110,14 @@ router.post('/crear', (req, res) => {
       cliente_cuit: req.body.cliente_cuit,
       cliente_email: req.body.cliente_email,
       cliente_tel: req.body.cliente_tel,
+      cliente_cond_iva: req.body.cliente_cond_iva || 'Consumidor Final',
       condicion_pago: req.body.condicion_pago,
       condicion_pago_obs: req.body.condicion_pago_obs,
       validez_dias: req.body.validez_dias || null,
       notas: req.body.notas,
       descuento_pct: req.body.descuento_pct || 0,
       descuento_monto: req.body.descuento_monto || 0,
+      ajuste_pct: req.body.ajuste_pct || 0,
       sucursal_id: user.sucursal_id || 1,
       user_id: user.id,
       items
@@ -143,12 +145,14 @@ router.post('/actualizar/:id', (req, res) => {
       cliente_cuit: req.body.cliente_cuit,
       cliente_email: req.body.cliente_email,
       cliente_tel: req.body.cliente_tel,
+      cliente_cond_iva: req.body.cliente_cond_iva || 'Consumidor Final',
       condicion_pago: req.body.condicion_pago,
       condicion_pago_obs: req.body.condicion_pago_obs,
       validez_dias: req.body.validez_dias || null,
       notas: req.body.notas,
       descuento_pct: req.body.descuento_pct || 0,
       descuento_monto: req.body.descuento_monto || 0,
+      ajuste_pct: req.body.ajuste_pct || 0,
       items
     });
 

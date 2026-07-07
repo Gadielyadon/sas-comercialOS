@@ -251,6 +251,7 @@
         <input type="hidden" name="items_json" id="itemsJson">
         <input type="hidden" name="descuento_pct"   id="hdDescPct"   value="0">
         <input type="hidden" name="descuento_monto" id="hdDescMonto" value="0">
+        <input type="hidden" name="ajuste_pct"      id="hdAjustePct" value="<%= presupuesto?.ajuste_pct || 0 %>">
 
         <div class="form-grid">
           <!-- Zona principal full width -->
@@ -272,7 +273,7 @@
                     <input type="text" name="cliente_cuit" placeholder="20-12345678-9" value="<%= presupuesto?.cliente_cuit || '' %>">
                   </div>
                 </div>
-                <div class="field-row">
+                <div class="field-row triple">
                   <div class="field">
                     <label>Email</label>
                     <input type="email" name="cliente_email" placeholder="cliente@email.com" value="<%= presupuesto?.cliente_email || '' %>">
@@ -280,6 +281,15 @@
                   <div class="field">
                     <label>Teléfono</label>
                     <input type="text" name="cliente_tel" placeholder="0381-4..." value="<%= presupuesto?.cliente_tel || '' %>">
+                  </div>
+                  <div class="field">
+                    <label>Condición IVA del cliente</label>
+                    <% const _condCli = presupuesto?.cliente_cond_iva || 'Consumidor Final'; %>
+                    <select name="cliente_cond_iva">
+                      <% ['Consumidor Final','Responsable Inscripto','Monotributista','Exento','No Responsable'].forEach(c => { %>
+                      <option value="<%= c %>" <%= _condCli === c ? 'selected' : '' %>><%= c %></option>
+                      <% }) %>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -429,6 +439,15 @@
                 </div>
               </div>
 
+              <!-- Buscador rápido de los ítems ya cargados en este presupuesto -->
+              <div id="itemFilterWrap" style="padding:14px 20px 0;">
+                <div class="prod-search-wrap" style="margin-bottom:0;">
+                  <i class="bi bi-search search-ico"></i>
+                  <input type="text" id="itemFilter" placeholder="Buscar dentro de los ítems de este presupuesto..." oninput="filtrarItems()" autocomplete="off">
+                </div>
+                <div id="itemFilterInfo" style="font-size:11.5px;color:var(--text-muted);margin-top:6px;display:none;"></div>
+              </div>
+
               <!-- Tabla de ítems agregados -->
               <div style="overflow-x:auto;margin-top:8px;">
                 <table class="items-table">
@@ -497,7 +516,7 @@
       <!-- Popup descuento -->
       <div class="desc-popup" id="descPopup">
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Aplicar descuento</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
           <div class="field">
             <label>% descuento</label>
             <input type="number" id="descPct" placeholder="0" min="0" max="100" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
@@ -506,6 +525,14 @@
             <label>$ descuento</label>
             <input type="number" id="descMonto" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
           </div>
+        </div>
+        <div style="border-top:1px solid var(--border-color);padding-top:12px;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Recargo general (%)</div>
+          <div class="field">
+            <label>% que se suma a todos los ítems</label>
+            <input type="number" id="ajustePct" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+          </div>
+          <div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.4;">Queda fundido en el precio de cada ítem. No aparece como línea aparte en el presupuesto impreso.</div>
         </div>
         <button type="button" onclick="toggleDescPopup()" style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;">Listo</button>
       </div>
@@ -904,7 +931,9 @@ function renderItems() {
         ? '<span class="badge-tipo badge-catalogo" style="font-size:10px;">Catálogo</span>'
         : '';
 
-    return `<tr>
+    const searchStr = [item.nombre, item.sku, item.descripcion].filter(Boolean).join(' ').toLowerCase();
+
+    return `<tr data-search="${escHTML(searchStr)}">
       <td style="padding-left:20px;min-width:200px;">
         <input class="item-input" type="text" value="${escHTML(item.nombre)}"
           oninput="items[${i}].nombre=this.value" placeholder="Descripción del ítem">
@@ -953,20 +982,56 @@ function renderItems() {
   }).join('');
 
   calcularTotales();
+  filtrarItems(); // re-aplica el buscador si hay algo escrito
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUSCADOR RÁPIDO DE ÍTEMS DEL PRESUPUESTO
+// ─────────────────────────────────────────────────────────────
+function filtrarItems() {
+  const input = document.getElementById('itemFilter');
+  const info  = document.getElementById('itemFilterInfo');
+  if (!input) return;
+  const q = input.value.trim().toLowerCase();
+  const filas = document.querySelectorAll('#itemsBody tr[data-search]');
+
+  if (!q) {
+    filas.forEach(tr => { tr.style.display = ''; });
+    if (info) info.style.display = 'none';
+    return;
+  }
+
+  let visibles = 0;
+  filas.forEach(tr => {
+    const match = (tr.dataset.search || '').includes(q);
+    tr.style.display = match ? '' : 'none';
+    if (match) visibles++;
+  });
+
+  if (info) {
+    info.style.display = '';
+    info.textContent = visibles === 0
+      ? 'Sin coincidencias en este presupuesto.'
+      : `${visibles} ítem${visibles !== 1 ? 's' : ''} coincide${visibles !== 1 ? 'n' : ''}.`;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
 // TOTALES
 // ─────────────────────────────────────────────────────────────
 function calcularTotales() {
+  // Recargo general: sube el precio unitario de cada ítem, fundido en él
+  const ajustePct = parseFloat(document.getElementById('ajustePct')?.value) || 0;
+  const factorAjuste = 1 + (ajustePct / 100);
+
   const subtotal = items.reduce((s, i) => {
-    const base = Number(i.cantidad) * Number(i.precio_unitario);
+    const base = Number(i.cantidad) * Number(i.precio_unitario) * factorAjuste;
     const desc = Number(i.descuento_item_pct || 0);
     return s + base * (1 - desc / 100);
   }, 0);
 
   const totalIva = items.reduce((s, i) => {
-    const base = Number(i.cantidad) * Number(i.precio_unitario);
+    const base = Number(i.cantidad) * Number(i.precio_unitario) * factorAjuste;
     const desc = Number(i.descuento_item_pct || 0);
     const baseConDesc = base * (1 - desc / 100);
     const pct = (i.pct_iva !== null && i.pct_iva !== undefined) ? Number(i.pct_iva) : 0;
@@ -978,7 +1043,21 @@ function calcularTotales() {
   const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
   const total = Math.max(0, subtotal - descuento + totalIva);
 
-  document.getElementById('resSubtotal').textContent = fmt(subtotal);
+  const hdAjuste = document.getElementById('hdAjustePct');
+  if (hdAjuste) hdAjuste.value = ajustePct;
+
+  // Nota "incl. recargo" solo visible en el editor (no en el presupuesto impreso)
+  const subEl = document.getElementById('resSubtotal');
+  subEl.textContent = fmt(subtotal);
+  let hintEl = document.getElementById('ajusteHint');
+  if (!hintEl && subEl) {
+    hintEl = document.createElement('span');
+    hintEl.id = 'ajusteHint';
+    hintEl.style.cssText = 'font-size:10px;color:#f59e0b;font-weight:700;display:block;margin-top:2px;';
+    subEl.parentElement.appendChild(hintEl);
+  }
+  if (hintEl) hintEl.textContent = ajustePct > 0 ? ('incl. +' + ajustePct + '% recargo') : '';
+
   document.getElementById('resTotal').textContent = fmt(total);
 
   let ivaWrap = document.getElementById('ivaWrap');
@@ -1033,6 +1112,7 @@ document.getElementById('formPpto').addEventListener('submit', function(e) {
     alert('Agregá al menos un ítem al presupuesto.');
     return;
   }
+  calcularTotales(); // refresca hidden de descuento/recargo antes de enviar
   document.getElementById('itemsJson').value = JSON.stringify(items);
 });
 
@@ -1153,8 +1233,11 @@ renderItems();
 <% if (presupuesto && (presupuesto.descuento_pct > 0 || presupuesto.descuento_monto > 0)) { %>
 document.getElementById('descPct').value = '<%= presupuesto.descuento_pct || 0 %>';
 document.getElementById('descMonto').value = '<%= presupuesto.descuento_monto || 0 %>';
-calcularTotales();
 <% } %>
+<% if (presupuesto && presupuesto.ajuste_pct > 0) { %>
+document.getElementById('ajustePct').value = '<%= presupuesto.ajuste_pct || 0 %>';
+<% } %>
+calcularTotales();
 
 renderCatalogo();
 

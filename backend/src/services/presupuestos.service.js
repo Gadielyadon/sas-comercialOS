@@ -110,6 +110,10 @@ function initPresupuestosSchema() {
   try { run(`ALTER TABLE presupuestos ADD COLUMN estado TEXT DEFAULT 'Borrador'`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN sucursal_id INTEGER DEFAULT 1`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN user_id INTEGER`); } catch (e) {}
+  // Recargo general (%) que se funde en el precio de cada ítem, sin línea discriminada
+  try { run(`ALTER TABLE presupuestos ADD COLUMN ajuste_pct REAL DEFAULT 0`); } catch (e) {}
+  // Condición IVA del cliente (Consumidor Final / Responsable Inscripto / Monotributista / Exento)
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_cond_iva TEXT DEFAULT 'Consumidor Final'`); } catch (e) {}
   // products
   try { run(`ALTER TABLE products ADD COLUMN precio_presupuesto REAL DEFAULT NULL`); } catch (e) {}
 }
@@ -162,15 +166,20 @@ function findById(id) {
   return p;
 }
 
-function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0) {
+function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0, ajuste_pct = 0) {
+  // Recargo general: sube el precio unitario de cada ítem y queda fundido en él.
+  const factorAjuste = 1 + (Number(ajuste_pct || 0) / 100);
+
   const subtotal = items.reduce((s, i) => {
-    const base = Number(i.cantidad || 0) * Number(i.precio_unitario || 0);
+    const precioAj = Number(i.precio_unitario || 0) * factorAjuste;
+    const base = Number(i.cantidad || 0) * precioAj;
     const desc = Number(i.descuento_item_pct || 0);
     return s + base * (1 - desc / 100);
   }, 0);
 
   const totalIva = items.reduce((s, i) => {
-    const base = Number(i.cantidad || 0) * Number(i.precio_unitario || 0);
+    const precioAj = Number(i.precio_unitario || 0) * factorAjuste;
+    const base = Number(i.cantidad || 0) * precioAj;
     const desc = Number(i.descuento_item_pct || 0);
     const baseConDesc = base * (1 - desc / 100);
     const pct = (i.pct_iva === null || i.pct_iva === undefined || i.pct_iva === '')
@@ -183,27 +192,35 @@ function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0) {
   const descuento = dMonto > 0 ? dMonto : (subtotal * dPct / 100);
   const total = Math.max(0, subtotal - descuento + totalIva);
 
-  return { subtotal, totalIva, descuento_pct: dPct, descuento_monto: dMonto > 0 ? dMonto : descuento, total };
+  return { subtotal, totalIva, descuento_pct: dPct, descuento_monto: dMonto > 0 ? dMonto : descuento, total, ajuste_pct: Number(ajuste_pct || 0) };
 }
 
-function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, condicion_pago, condicion_pago_obs, validez_dias, notas, descuento_pct, descuento_monto, sucursal_id, user_id, items = [] }) {
+function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, cliente_cond_iva, condicion_pago, condicion_pago_obs, validez_dias, notas, descuento_pct, descuento_monto, ajuste_pct, sucursal_id, user_id, items = [] }) {
   const numero = generarNumero();
-  const tot = calcularTotales(items, descuento_pct, descuento_monto);
+  const tot = calcularTotales(items, descuento_pct, descuento_monto, ajuste_pct);
 
-  const r = run(`
-    INSERT INTO presupuestos
-      (numero, cliente_nombre, cliente_cuit, cliente_email, cliente_tel,
-       condicion_pago, condicion_pago_obs, validez_dias, notas,
-       subtotal, descuento_pct, descuento_monto, total, sucursal_id, user_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `, [
+  // Detectamos qué columnas existen para no romper en bases viejas
+  const ppCols = all(`PRAGMA table_info(presupuestos)`).map(c => c.name);
+  const hasPP  = (c) => ppCols.includes(c);
+
+  const cols = ['numero','cliente_nombre','cliente_cuit','cliente_email','cliente_tel',
+                'condicion_pago','condicion_pago_obs','validez_dias','notas',
+                'subtotal','descuento_pct','descuento_monto','total','sucursal_id','user_id'];
+  const vals = [
     numero, String(cliente_nombre || 'Sin nombre'),
     cliente_cuit || null, cliente_email || null, cliente_tel || null,
     condicion_pago || 'Contado', condicion_pago_obs || null,
     validez_dias ? Number(validez_dias) : null, notas || null,
     tot.subtotal, tot.descuento_pct, tot.descuento_monto, tot.total,
     Number(sucursal_id || 1), user_id ? Number(user_id) : null
-  ]);
+  ];
+  if (hasPP('ajuste_pct'))       { cols.push('ajuste_pct');       vals.push(Number(ajuste_pct || 0)); }
+  if (hasPP('cliente_cond_iva')) { cols.push('cliente_cond_iva'); vals.push(cliente_cond_iva || 'Consumidor Final'); }
+
+  const r = run(
+    `INSERT INTO presupuestos (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
+    vals
+  );
 
   const pid = r.lastInsertRowid;
 
@@ -248,18 +265,29 @@ function update(id, datos) {
   if (!p) throw new Error('Presupuesto no encontrado');
 
   const items = datos.items || p.items || [];
-  const tot = calcularTotales(items, datos.descuento_pct ?? p.descuento_pct ?? 0, datos.descuento_monto ?? p.descuento_monto ?? 0);
+  const ajustePct = datos.ajuste_pct ?? p.ajuste_pct ?? 0;
+  const tot = calcularTotales(items, datos.descuento_pct ?? p.descuento_pct ?? 0, datos.descuento_monto ?? p.descuento_monto ?? 0, ajustePct);
 
-  run(`UPDATE presupuestos SET
-      cliente_nombre=?, cliente_cuit=?, cliente_email=?, cliente_tel=?,
-      condicion_pago=?, condicion_pago_obs=?, validez_dias=?, notas=?,
-      subtotal=?, descuento_pct=?, descuento_monto=?, total=?,
-      updated_at=datetime('now','localtime') WHERE id=?`,
-    [datos.cliente_nombre ?? p.cliente_nombre, datos.cliente_cuit ?? p.cliente_cuit,
-     datos.cliente_email ?? p.cliente_email, datos.cliente_tel ?? p.cliente_tel,
-     datos.condicion_pago ?? p.condicion_pago, datos.condicion_pago_obs ?? p.condicion_pago_obs,
-     datos.validez_dias !== undefined ? (datos.validez_dias || null) : p.validez_dias,
-     datos.notas ?? p.notas, tot.subtotal, tot.descuento_pct, tot.descuento_monto, tot.total, Number(id)]);
+  const ppCols = all(`PRAGMA table_info(presupuestos)`).map(c => c.name);
+  const hasPP  = (c) => ppCols.includes(c);
+
+  const sets = [
+    'cliente_nombre=?', 'cliente_cuit=?', 'cliente_email=?', 'cliente_tel=?',
+    'condicion_pago=?', 'condicion_pago_obs=?', 'validez_dias=?', 'notas=?',
+    'subtotal=?', 'descuento_pct=?', 'descuento_monto=?', 'total=?'
+  ];
+  const args = [
+    datos.cliente_nombre ?? p.cliente_nombre, datos.cliente_cuit ?? p.cliente_cuit,
+    datos.cliente_email ?? p.cliente_email, datos.cliente_tel ?? p.cliente_tel,
+    datos.condicion_pago ?? p.condicion_pago, datos.condicion_pago_obs ?? p.condicion_pago_obs,
+    datos.validez_dias !== undefined ? (datos.validez_dias || null) : p.validez_dias,
+    datos.notas ?? p.notas, tot.subtotal, tot.descuento_pct, tot.descuento_monto, tot.total
+  ];
+  if (hasPP('ajuste_pct'))       { sets.push('ajuste_pct=?');       args.push(Number(ajustePct || 0)); }
+  if (hasPP('cliente_cond_iva')) { sets.push('cliente_cond_iva=?'); args.push(datos.cliente_cond_iva ?? p.cliente_cond_iva ?? 'Consumidor Final'); }
+  args.push(Number(id));
+
+  run(`UPDATE presupuestos SET ${sets.join(', ')}, updated_at=datetime('now','localtime') WHERE id=?`, args);
 
   if (datos.items) {
     run(`DELETE FROM presupuesto_items WHERE presupuesto_id = ?`, [Number(id)]);
