@@ -16,6 +16,8 @@ function initPromoSchema() {
   try { run(`ALTER TABLE products ADD COLUMN qty_mayorista INTEGER DEFAULT NULL`); } catch (_) {}
   try { run(`ALTER TABLE products ADD COLUMN venta_sin_stock INTEGER DEFAULT 0`); } catch (_) {}
   try { run(`ALTER TABLE products ADD COLUMN price_tarjeta REAL DEFAULT NULL`); } catch (_) {}
+  // Precios por cantidad (escalones): JSON [{"min":5,"price":21000}, ...]
+  try { run(`ALTER TABLE products ADD COLUMN price_tiers TEXT DEFAULT NULL`); } catch (_) {}
   // Índice en sku para acelerar findBySku
   try { run(`CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku)`); } catch (_) {}
 }
@@ -37,6 +39,22 @@ function toBoolInt(value, fallback = 0) {
   return Number(value) ? 1 : 0;
 }
 
+// Normaliza los escalones de precio por cantidad a un JSON válido y ordenado.
+// Acepta un array [{min, price}] o un string JSON. Devuelve string JSON o null.
+function toTiersJson(value) {
+  if (value === undefined || value === null || value === '') return null;
+  let arr = value;
+  if (typeof value === 'string') {
+    try { arr = JSON.parse(value); } catch (_) { return null; }
+  }
+  if (!Array.isArray(arr)) return null;
+  const limpio = arr
+    .map(t => ({ min: Number(t.min || t.cantidad || 0), price: Number(t.price || t.precio || 0) }))
+    .filter(t => t.min > 0 && t.price > 0)
+    .sort((a, b) => a.min - b.min);
+  return limpio.length ? JSON.stringify(limpio) : null;
+}
+
 function baseSelect() {
   return `
     SELECT
@@ -55,7 +73,8 @@ function baseSelect() {
       COALESCE(qty_mayorista, NULL) AS qty_mayorista,
       COALESCE(hay, 1) AS hay,
       COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
-      COALESCE(price_tarjeta, NULL) AS price_tarjeta
+      COALESCE(price_tarjeta, NULL) AS price_tarjeta,
+      COALESCE(price_tiers, NULL) AS price_tiers
     FROM products
   `;
 }
@@ -95,7 +114,7 @@ function list(sucursal_id = null) {
         p.price_cost, p.margen, COALESCE(p.iva,0) AS iva, COALESCE(p.ieps,0) AS ieps,
         COALESCE(p.pesable,0) AS pesable, p.imagen, p.price_mayorista, p.qty_mayorista,
         COALESCE(p.hay,1) AS hay, COALESCE(p.venta_sin_stock,0) AS venta_sin_stock,
-        p.price_tarjeta, e.stock_min
+        p.price_tarjeta, p.price_tiers, e.stock_min
       FROM products p
       LEFT JOIN existencias e ON e.sku = p.sku AND e.sucursal_id = ?
       ORDER BY p.name ASC`, [Number(sucursal_id)]);
@@ -132,7 +151,7 @@ function create({
   price_promo = null, en_promo = 0,
   imagen = null, price_mayorista = null,
   qty_mayorista = null, venta_sin_stock = 0, hay = 1,
-  price_tarjeta = null,
+  price_tarjeta = null, price_tiers = null,
 }) {
   const suc = Number(sucursal_id || 1);
   run(
@@ -140,8 +159,8 @@ function create({
       sku, name, price, category, stock,
       iva, ieps, pesable, descripcion, sucursal_id,
       price_cost, margen, price_promo, en_promo, imagen,
-      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, hay
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, hay, price_tiers
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       String(sku), String(name), toNumber(price),
       category || null, toNumber(stock),
@@ -153,6 +172,7 @@ function create({
       toNullableNumber(price_mayorista), toNullableNumber(qty_mayorista),
       toBoolInt(venta_sin_stock, 0), toNullableNumber(price_tarjeta),
       hay !== undefined ? toBoolInt(hay, 1) : 1,
+      toTiersJson(price_tiers),
     ]
   );
   // El alta crea la existencia del producto en su sucursal
@@ -180,7 +200,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       price_promo = ?, en_promo = ?,
       sucursal_id = ?, imagen = ?,
       price_mayorista = ?, qty_mayorista = ?, venta_sin_stock = ?,
-      price_tarjeta = ?, hay = ?
+      price_tarjeta = ?, hay = ?, price_tiers = ?
     WHERE sku = ? AND sucursal_id = ?`,
     [
       newSku,
@@ -203,6 +223,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       fields.venta_sin_stock !== undefined ? toBoolInt(fields.venta_sin_stock, 0)     : toBoolInt(p.venta_sin_stock, 0),
       fields.price_tarjeta   !== undefined ? toNullableNumber(fields.price_tarjeta)   : p.price_tarjeta,
       fields.hay             !== undefined ? toBoolInt(fields.hay, 1)                 : (p.hay != null ? toBoolInt(p.hay, 1) : 1),
+      fields.price_tiers     !== undefined ? toTiersJson(fields.price_tiers)          : (p.price_tiers || null),
       String(sku),
       p.sucursal_id || 1,
     ]

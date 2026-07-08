@@ -5,6 +5,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const forge = require('node-forge');
 const soap = require('soap');
 const { get, all, run } = require('../db');
@@ -101,6 +102,9 @@ function initAfipSchema() {
     ['afip_key_path', 'certs/private.key'],
     ['afip_env', 'homologacion'],
     ['empresa_cond_iva', 'Responsable Inscripto'],
+    // Válvula de escape: si algún entorno no valida la cadena TLS de AFIP,
+    // poner en '1' para bajar la validación SOLO en las llamadas a AFIP.
+    ['afip_tls_inseguro', '0'],
   ];
 
   for (const [k, v] of defaults) {
@@ -108,6 +112,18 @@ function initAfipSchema() {
       run(`INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)`, [k, v]);
     } catch (_) {}
   }
+
+  // Cache persistente del Ticket de Acceso (TA) de WSAA, para que sobreviva
+  // reinicios/deploys y no choque con el "TA ya válido" de AFIP (dura ~12h).
+  run(`
+    CREATE TABLE IF NOT EXISTS afip_tokens (
+      cache_key  TEXT PRIMARY KEY,
+      token      TEXT NOT NULL,
+      sign       TEXT NOT NULL,
+      expira     TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )
+  `);
 }
 
 function normalizeArray(value) {
@@ -164,19 +180,48 @@ function withAfipTimeout(promise, ms = AFIP_TIMEOUT_MS) {
   ]);
 }
 
-async function withTemporaryInsecureTls(fn) {
-  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
+// ── TLS: seguro por defecto. Cada llamada a AFIP usa su propio agente HTTPS,
+//    sin tocar la configuración TLS del resto del proceso. ────────────────
+function afipInseguro() {
   try {
-    return await withAfipTimeout(fn());
-  } finally {
-    if (previous === undefined) {
-      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-    } else {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous;
+    return String(configService.getAll().afip_tls_inseguro || '0') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function afipAgent() {
+  // rejectUnauthorized = true (validación normal) salvo que el usuario
+  // active explícitamente el modo inseguro en Ajustes.
+  return new https.Agent({ rejectUnauthorized: !afipInseguro(), keepAlive: true });
+}
+
+// Envuelve una llamada con el timeout de AFIP (sin tocar TLS global).
+function afipCall(fn, ms = AFIP_TIMEOUT_MS) {
+  return withAfipTimeout(fn(), ms);
+}
+
+// Crea el cliente SOAP y devuelve también el agente para reutilizarlo en las
+// llamadas. Solo en modo inseguro se baja la validación TLS, y acotada al
+// fetch del WSDL (breve), nunca a todo el proceso ni de forma permanente.
+async function nuevoClienteAfip(url) {
+  const agent = afipAgent();
+  const opts = { wsdl_options: { httpsAgent: agent } };
+
+  if (afipInseguro()) {
+    const prev = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    try {
+      const client = await afipCall(() => soap.createClientAsync(url, opts));
+      return { client, agent };
+    } finally {
+      if (prev === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prev;
     }
   }
+
+  const client = await afipCall(() => soap.createClientAsync(url, opts));
+  return { client, agent };
 }
 
 function columnExists(table, col) {
@@ -226,11 +271,22 @@ function facturacionHabilitada() {
 
 async function obtenerToken(certPath, keyPath, produccion) {
   const cacheKey = `${certPath}|${keyPath}|${produccion ? 'prod' : 'homo'}`;
-  const cached = _tokenCache[cacheKey];
+  const margen = new Date(Date.now() + 5 * 60 * 1000); // 5 min de colchón
 
-  if (cached && new Date(cached.expira) > new Date(Date.now() + 5 * 60 * 1000)) {
+  // 1) Cache en memoria
+  const cached = _tokenCache[cacheKey];
+  if (cached && new Date(cached.expira) > margen) {
     return { token: cached.token, sign: cached.sign };
   }
+
+  // 2) Cache persistente (sobrevive reinicios/deploys; evita el "TA ya válido" de AFIP)
+  try {
+    const row = get(`SELECT token, sign, expira FROM afip_tokens WHERE cache_key = ?`, [cacheKey]);
+    if (row && new Date(row.expira) > margen) {
+      _tokenCache[cacheKey] = { token: row.token, sign: row.sign, expira: row.expira };
+      return { token: row.token, sign: row.sign };
+    }
+  } catch (_) {}
 
   const certPem = fs.readFileSync(certPath, 'utf8');
   const keyPem = fs.readFileSync(keyPath, 'utf8');
@@ -279,10 +335,8 @@ async function obtenerToken(certPath, keyPath, produccion) {
   const cmsBase64 = forge.util.encode64(der);
   const wsaaUrl = produccion ? URLS.prod.wsaa : URLS.homo.wsaa;
 
-  const [result] = await withTemporaryInsecureTls(async () => {
-    const client = await soap.createClientAsync(wsaaUrl);
-    return client.loginCmsAsync({ in0: cmsBase64 });
-  });
+  const { client, agent } = await nuevoClienteAfip(wsaaUrl);
+  const [result] = await afipCall(() => client.loginCmsAsync({ in0: cmsBase64 }, { httpsAgent: agent }));
 
   const xml = result?.loginCmsReturn || '';
   const token = xmlTagValue(xml, 'token');
@@ -294,6 +348,17 @@ async function obtenerToken(certPath, keyPath, produccion) {
   }
 
   _tokenCache[cacheKey] = { token, sign, expira };
+  // Persistir el TA para reutilizarlo entre reinicios
+  try {
+    run(
+      `INSERT INTO afip_tokens (cache_key, token, sign, expira) VALUES (?,?,?,?)
+       ON CONFLICT(cache_key) DO UPDATE SET
+         token=excluded.token, sign=excluded.sign, expira=excluded.expira,
+         updated_at=datetime('now','localtime')`,
+      [cacheKey, token, sign, expira]
+    );
+  } catch (_) {}
+
   return { token, sign };
 }
 
@@ -534,9 +599,9 @@ function validarDatosClienteParaTipo(tipoLetra, cliente, docInfo) {
   }
 }
 
-async function validarPuntoVenta(client, Auth, puntoVenta) {
-  const [res] = await withTemporaryInsecureTls(() =>
-    client.FEParamGetPtosVentaAsync({ Auth })
+async function validarPuntoVenta(client, agent, Auth, puntoVenta) {
+  const [res] = await afipCall(() =>
+    client.FEParamGetPtosVentaAsync({ Auth }, { httpsAgent: agent })
   );
 
   const resultGet = res?.FEParamGetPtosVentaResult?.ResultGet;
@@ -609,16 +674,16 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
   };
 
   const wsfeUrl = produccion ? URLS.prod.wsfe : URLS.homo.wsfe;
-  const client = await withTemporaryInsecureTls(() => soap.createClientAsync(wsfeUrl));
+  const { client, agent } = await nuevoClienteAfip(wsfeUrl);
 
-  await validarPuntoVenta(client, Auth, puntoVenta);
+  await validarPuntoVenta(client, agent, Auth, puntoVenta);
 
-  const [ultimoRes] = await withTemporaryInsecureTls(() =>
+  const [ultimoRes] = await afipCall(() =>
     client.FECompUltimoAutorizadoAsync({
       Auth,
       PtoVta: puntoVenta,
       CbteTipo: tipoCbte,
-    })
+    }, { httpsAgent: agent })
   );
 
   const ultimoAutorizado = Number(
@@ -653,7 +718,7 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
     detalle.Iva = { AlicIva: imp.ivaArray };
   }
 
-  const [caeResp] = await withTemporaryInsecureTls(() =>
+  const [caeResp] = await afipCall(() =>
     client.FECAESolicitarAsync({
       Auth,
       FeCAEReq: {
@@ -666,7 +731,7 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
           FECAEDetRequest: [detalle],
         },
       },
-    })
+    }, { httpsAgent: agent })
   );
 
   const afipMsg = extraerMensajesAfip(caeResp);
@@ -776,8 +841,8 @@ async function testConexion() {
     const { produccion } = leerConfig();
     const wsfeUrl = produccion ? URLS.prod.wsfe : URLS.homo.wsfe;
 
-    const client = await withTemporaryInsecureTls(() => soap.createClientAsync(wsfeUrl));
-    const [res] = await withTemporaryInsecureTls(() => client.FEDummyAsync({}));
+    const { client, agent } = await nuevoClienteAfip(wsfeUrl);
+    const [res] = await afipCall(() => client.FEDummyAsync({}, { httpsAgent: agent }));
 
     const status = res?.FEDummyResult || {};
 

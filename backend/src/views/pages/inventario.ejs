@@ -335,6 +335,15 @@
             <div id="mayoristaInfo" style="display:none;padding:8px 11px;background:rgba(99,102,241,.08);border-radius:var(--radius-sm);font-size:12.5px;font-weight:700;color:#4338ca;"></div>
           </div>
         </div>
+        <div style="background:var(--bg-card);border:1.5px solid rgba(20,184,166,.35);border-radius:var(--radius-md);padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:11px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.5px;"><i class="bi bi-stack" style="margin-right:5px;color:#14b8a6;"></i>Precios por cantidad</div>
+            <button type="button" onclick="agregarEscalon()" style="font-size:12px;font-weight:700;color:#0f766e;background:rgba(20,184,166,.12);border:none;border-radius:20px;padding:5px 12px;cursor:pointer;"><i class="bi bi-plus-lg"></i> Agregar escalón</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-secondary);font-style:italic;margin-bottom:10px;">A más unidades, mejor precio. En el punto de venta se aplica solo, según la cantidad. Si cargás escalones acá, tienen prioridad sobre el precio mayorista simple de arriba.</div>
+          <div id="tiersList" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div id="tiersEmpty" style="font-size:12px;color:var(--text-muted);font-style:italic;">Sin escalones. Ej: 5u → $21.000, 10u → $18.000, 20u → $15.000.</div>
+        </div>
         <div style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,.35);border-radius:var(--radius-md);padding:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;"><i class="bi bi-tag-fill" style="margin-right:5px;color:#f59e0b;"></i>Promoción</div>
@@ -615,6 +624,7 @@ function abrirModal(prefillSku = '') {
   if (document.getElementById('m_price_mayorista')) document.getElementById('m_price_mayorista').value = '';
   if (document.getElementById('m_qty_mayorista'))   document.getElementById('m_qty_mayorista').value   = '';
   if (document.getElementById('m_price_tarjeta'))   document.getElementById('m_price_tarjeta').value   = '';
+  renderTiers(null);
   setImagenPreview(null);
   document.getElementById('modalProducto').classList.add('open');
   setTimeout(() => document.getElementById(prefillSku ? 'm_name' : 'm_sku').focus(), 80);
@@ -663,6 +673,7 @@ function abrirEditar(p) {
     mostrarAhorroMayorista();
   }
   if (document.getElementById('m_price_tarjeta')) document.getElementById('m_price_tarjeta').value = p.price_tarjeta || '';
+  renderTiers(p.price_tiers || null);
   setImagenPreview(p.imagen || null);
   actualizarPreview();
   document.getElementById('modalProducto').classList.add('open');
@@ -670,6 +681,67 @@ function abrirEditar(p) {
 }
 function cerrarModal() { document.getElementById('modalProducto').classList.remove('open'); }
 function cerrarModalSiOverlay(e) { if (e.target.id === 'modalProducto') cerrarModal(); }
+
+// ── Precios por cantidad (escalones) ───────────────────────────
+function _rowEscalonHTML(min, price) {
+  const m = (min != null && min !== '') ? min : '';
+  const p = (price != null && price !== '') ? price : '';
+  return `<div class="tier-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
+    <div style="position:relative;">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-muted);">desde</span>
+      <input type="number" class="tier-min" value="${m}" min="2" step="1" placeholder="5" style="width:100%;padding:8px 11px 8px 46px;border-radius:var(--radius-sm);border:1.5px solid rgba(20,184,166,.4);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;">
+    </div>
+    <div style="position:relative;">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);">$</span>
+      <input type="number" class="tier-price" value="${p}" min="0" step="0.01" placeholder="21000" style="width:100%;padding:8px 11px 8px 22px;border-radius:var(--radius-sm);border:1.5px solid rgba(20,184,166,.4);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;font-weight:700;outline:none;">
+    </div>
+    <button type="button" onclick="removerEscalon(this)" title="Quitar" style="background:rgba(239,68,68,.1);color:#ef4444;border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:15px;"><i class="bi bi-trash"></i></button>
+  </div>`;
+}
+
+function _actualizarTiersEmpty() {
+  const list = document.getElementById('tiersList');
+  const empty = document.getElementById('tiersEmpty');
+  if (empty) empty.style.display = (list && list.children.length) ? 'none' : 'block';
+}
+
+function agregarEscalon(min = '', price = '') {
+  const list = document.getElementById('tiersList');
+  if (!list) return;
+  list.insertAdjacentHTML('beforeend', _rowEscalonHTML(min, price));
+  _actualizarTiersEmpty();
+}
+
+function removerEscalon(btn) {
+  const row = btn.closest('.tier-row');
+  if (row) row.remove();
+  _actualizarTiersEmpty();
+}
+
+function renderTiers(tiers) {
+  const list = document.getElementById('tiersList');
+  if (!list) return;
+  list.innerHTML = '';
+  let arr = tiers;
+  if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch (_) { arr = []; } }
+  if (Array.isArray(arr)) {
+    arr.forEach(t => agregarEscalon(t.min ?? t.cantidad ?? '', t.price ?? t.precio ?? ''));
+  }
+  _actualizarTiersEmpty();
+}
+
+// Devuelve un array [{min, price}] válido y ordenado, o null si no hay
+function leerTiers() {
+  const rows = document.querySelectorAll('#tiersList .tier-row');
+  const arr = [];
+  rows.forEach(r => {
+    const min = parseInt(r.querySelector('.tier-min')?.value) || 0;
+    const price = parseFloat(r.querySelector('.tier-price')?.value) || 0;
+    if (min > 0 && price > 0) arr.push({ min, price });
+  });
+  arr.sort((a, b) => a.min - b.min);
+  return arr.length ? arr : null;
+}
 
 async function guardarProducto() {
   const sku         = document.getElementById('m_sku').value.trim();
@@ -694,17 +766,18 @@ async function guardarProducto() {
   const qty_mayorista   = tieneMayorista ? (parseInt(document.getElementById('m_qty_mayorista')?.value)    || null) : null;
   const _tarjetaVal = document.getElementById('m_price_tarjeta')?.value.trim();
   const price_tarjeta = _tarjetaVal ? (parseFloat(_tarjetaVal) || null) : null;
+  const price_tiers = leerTiers();
   if (!sku || !name) { alert('SKU y Nombre son obligatorios.'); return; }
   try {
     let saved;
     if (_editSku) {
-      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta }) });
+      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error editando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       const idx = _allProducts.findIndex(p => p.sku === _editSku);
       if (idx !== -1) _allProducts[idx] = saved; else _allProducts.push(saved);
     } else {
-      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta }) });
+      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error creando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       _allProducts.push(saved);

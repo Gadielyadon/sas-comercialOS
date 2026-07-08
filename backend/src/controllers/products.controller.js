@@ -42,6 +42,7 @@ exports.create = (req, res) => {
       venta_sin_stock,
       price_tarjeta,
       hay,
+      price_tiers,
     } = req.body || {};
 
     if (!sku || !name || price === undefined) {
@@ -69,6 +70,7 @@ exports.create = (req, res) => {
       imagen: imagen || null,
       price_mayorista: price_mayorista !== undefined && price_mayorista !== null && price_mayorista !== '' ? Number(price_mayorista) : null, // ← AGREGADO
       qty_mayorista:   qty_mayorista   !== undefined && qty_mayorista   !== null && qty_mayorista   !== '' ? Number(qty_mayorista)   : null, // ← AGREGADO
+      price_tiers: price_tiers !== undefined ? price_tiers : null, // ← escalones (precios por cantidad)
     });
 
     res.status(201).json(created);
@@ -118,6 +120,7 @@ exports.update = (req, res) => {
       venta_sin_stock,
       price_tarjeta,
       hay,
+      price_tiers,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -159,6 +162,7 @@ exports.update = (req, res) => {
         price_tarjeta !== undefined
           ? (price_tarjeta === null || price_tarjeta === '' ? null : Number(price_tarjeta))
           : undefined,
+      price_tiers: price_tiers !== undefined ? price_tiers : undefined, // ← escalones (precios por cantidad)
     });
 
     if (!updated) return res.status(404).json({ error: 'Producto no encontrado' });

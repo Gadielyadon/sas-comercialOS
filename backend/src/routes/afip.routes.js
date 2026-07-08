@@ -1,6 +1,8 @@
 // src/routes/afip.routes.js
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 
 const afipSvc = require('../services/afip.service');
 const configService = require('../services/config.service');
@@ -45,6 +47,53 @@ function getAfipErrorStatus(message = '') {
 
   return 500;
 }
+
+// ─────────────────────────────────────────────────────────────
+// POST /afip/certificados
+// Recibe el contenido del .crt y/o .key (texto PEM), los guarda en la
+// carpeta certs/ del proyecto y setea las rutas en la config. Así el
+// certificado se sube desde Ajustes sin necesidad de SFTP.
+// ─────────────────────────────────────────────────────────────
+router.post('/certificados', (req, res) => {
+  try {
+    const { cert, key } = req.body || {};
+    const certTxt = String(cert || '').trim();
+    const keyTxt  = String(key  || '').trim();
+
+    if (!certTxt && !keyTxt) {
+      return res.status(400).json({ error: 'No se recibió ningún archivo' });
+    }
+
+    const certsDir = path.resolve(process.cwd(), 'certs');
+    try { fs.mkdirSync(certsDir, { recursive: true }); } catch (_) {}
+
+    const updates = {};
+
+    if (certTxt) {
+      if (!/-----BEGIN CERTIFICATE-----/.test(certTxt)) {
+        return res.status(400).json({ error: 'El certificado no parece un .crt/.pem válido (falta "BEGIN CERTIFICATE").' });
+      }
+      fs.writeFileSync(path.join(certsDir, 'cert.crt'), certTxt, 'utf8');
+      updates.afip_cert_path = 'certs/cert.crt';
+    }
+
+    if (keyTxt) {
+      if (!/-----BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY-----/.test(keyTxt)) {
+        return res.status(400).json({ error: 'La clave no parece una private key válida (falta "BEGIN PRIVATE KEY").' });
+      }
+      const keyPath = path.join(certsDir, 'private.key');
+      fs.writeFileSync(keyPath, keyTxt, 'utf8');
+      try { fs.chmodSync(keyPath, 0o600); } catch (_) {} // permisos restrictivos (Linux)
+      updates.afip_key_path = 'certs/private.key';
+    }
+
+    configService.setMany(updates);
+    res.json({ ok: true, ...updates });
+  } catch (e) {
+    console.error('AFIP certificados error:', e.message);
+    res.status(500).json({ error: 'No se pudieron guardar los certificados: ' + e.message });
+  }
+});
 
 // ─────────────────────────────────────────────────────────────
 // GET /afip/historial — vista historial de facturación

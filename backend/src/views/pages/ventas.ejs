@@ -2119,6 +2119,7 @@ function recalcularPreciosCarrito() {
     item.price      = nuevoPrecio;
     item.price_base = nuevoPrecio;
     item.isMayorista = false;
+    item.isTier      = false;
   });
   renderCartList();
   updateTotals();
@@ -2265,10 +2266,17 @@ function buildProductCard(p) {
   const inCartBadge = inCart ? `<span class="prod-badge-qty">${inCart.qty}</span>` : '';
   const descHTML = p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : '';
   const sinStockBadge = sinStock ? '<span class="prod-sin-stock">Sin stock</span>' : '';
-  const tieneMayor = _listaIdx === 0 && p.price_mayorista && Number(p.price_mayorista) > 0 && p.qty_mayorista && Number(p.qty_mayorista) > 1;
-  const mayorHint = tieneMayor
-    ? `<div class="prod-mayor-hint" style="font-size:10px;color:#6366f1;font-weight:700;margin-top:2px;white-space:nowrap;">≥${Number(p.qty_mayorista)}u · ${fmt(Number(p.price_mayorista))} c/u</div>`
-    : '';
+  const _tiersGrid = _parseTiers(p.price_tiers);
+  let mayorHint = '';
+  if (_listaIdx === 0 && _tiersGrid && _tiersGrid.length) {
+    const txt = _tiersGrid.map(t => `≥${t.min}u ${fmt(t.price)}`).join(' · ');
+    mayorHint = `<div class="prod-mayor-hint" style="font-size:10px;color:#0f766e;font-weight:700;margin-top:2px;line-height:1.3;">${txt}</div>`;
+  } else {
+    const tieneMayor = _listaIdx === 0 && p.price_mayorista && Number(p.price_mayorista) > 0 && p.qty_mayorista && Number(p.qty_mayorista) > 1;
+    mayorHint = tieneMayor
+      ? `<div class="prod-mayor-hint" style="font-size:10px;color:#6366f1;font-weight:700;margin-top:2px;white-space:nowrap;">≥${Number(p.qty_mayorista)}u · ${fmt(Number(p.price_mayorista))} c/u</div>`
+      : '';
+  }
   const thumbCell = p.imagen
     ? `<div class="prod-td-img"><div class="prod-thumb" onclick="event.stopPropagation();abrirZoom('${nameSafe}','${imgSafe}')" title="Ver imagen"><img src="${imgSafe}" alt="" loading="lazy"></div></div>`
     : `<div class="prod-td-img"><div class="prod-thumb-empty"><i class="bi bi-box-seam"></i></div></div>`;
@@ -2323,16 +2331,45 @@ function addBySku(sku,el){
   if(p)commitAdd(p);
 }
 
+function _parseTiers(raw) {
+  let t = raw;
+  if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { return null; } }
+  if (!Array.isArray(t) || !t.length) return null;
+  return t.map(x => ({ min: Number(x.min ?? x.cantidad), price: Number(x.price ?? x.precio) }))
+          .filter(x => x.min > 0 && x.price > 0)
+          .sort((a, b) => a.min - b.min);
+}
+
 function aplicarPrecioMayorista(item) {
+  // 1) Escalones por cantidad (tienen prioridad sobre el mayorista simple)
+  const tiers = _parseTiers(item.price_tiers);
+  if (tiers) {
+    const aplicables = tiers.filter(t => item.qty >= t.min);
+    const tier = aplicables.length ? aplicables[aplicables.length - 1] : null; // el de mayor "min" que aplique
+    const nuevoPrecio = tier ? tier.price : item.price_base;
+    // Un escalón por cantidad NO es mayorista: se marca aparte
+    item.isMayorista = false;
+    item.isTier = !!tier;
+    if (Number(item.price) !== Number(nuevoPrecio)) {
+      item.price = nuevoPrecio;
+      if (tier) showToast(`📦 ${item.name} — ${tier.min}+ u · ${fmt(nuevoPrecio)} c/u`, 'info');
+      else      showToast(`${item.name} — precio unitario`, 'info');
+    }
+    return;
+  }
+
+  // 2) Fallback: mayorista simple (un solo escalón)
   if (!item.price_mayorista || !item.qty_mayorista) return;
   const esMayorista = item.qty >= item.qty_mayorista;
   if (esMayorista && !item.isMayorista) {
     item.price     = item.price_mayorista;
     item.isMayorista = true;
+    item.isTier      = false;
     showToast(`🏪 ${item.name} — precio mayorista aplicado`, 'info');
   } else if (!esMayorista && item.isMayorista) {
     item.price     = item.price_base;
     item.isMayorista = false;
+    item.isTier      = false;
     showToast(`${item.name} — precio minorista`, 'info');
   }
 }
@@ -2353,11 +2390,14 @@ function addToCart(product, qty){
       price_base: ep,
       price_mayorista: product.price_mayorista ? Number(product.price_mayorista) : null,
       qty_mayorista: product.qty_mayorista ? Number(product.qty_mayorista) : null,
+      price_tiers: product.price_tiers || null,
       isMayorista: false,
+      isTier: false,
       descripcion: product.descripcion || null,
       isPromo: !!(product.en_promo && product.price_promo),
       qty: qty
     });
+    aplicarPrecioMayorista(cart[cart.length - 1]);
     showToast(`${product.name}${product.en_promo?' 🏷️':''} agregado`,'success');
   }
   beep('add');
@@ -2408,12 +2448,12 @@ function renderCartList(){
     }
     el.innerHTML = `
       ${item.isPromo ? '<span class="cart-promo-tag">Promo</span>' : ''}
-      ${item.isMayorista ? '<span class="cart-promo-tag" style="background:#6366f1;right:8px;">Mayor</span>' : ''}
+      ${item.isTier ? '<span class="cart-promo-tag" style="background:#0f766e;right:8px;">x Cant.</span>' : (item.isMayorista ? '<span class="cart-promo-tag" style="background:#6366f1;right:8px;">Mayor</span>' : '')}
       <div class="cart-card-top">
         <div class="cart-card-name">${item.name}</div>
         <button class="btn-del" onclick="removeItem('${item.sku}')"><i class="bi bi-trash3"></i></button>
       </div>
-      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isMayorista ? ' <span style="color:#6366f1;font-size:10px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : ''}${item.precioEditado ? ' <span style="color:#f59e0b;font-size:9px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
+      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isTier ? ' <span style="color:#0f766e;font-size:10px;font-weight:700;">c/u</span> <span style="color:#0f766e;font-size:9px;font-weight:800;">x CANTIDAD</span>' : (item.isMayorista ? ' <span style="color:#6366f1;font-size:10px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : '')}${item.precioEditado ? ' <span style="color:#f59e0b;font-size:9px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
       <div class="cart-card-bottom">
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="chgQty('${item.sku}',-1)"><i class="bi bi-dash"></i></button>
@@ -3355,6 +3395,7 @@ items: cart.map(i => ({
   subtotal: i.price * i.qty,
   isPromo: !!i.isPromo,
   isMayorista: !!i.isMayorista,
+  isTier: !!i.isTier,
   price_mayorista: i.price_mayorista || null,
   qty_mayorista: i.qty_mayorista || null
 }))
@@ -3436,9 +3477,11 @@ function imprimirTicket(){
 
   /* ── items ── */
   const itemsHtml = lastSaleData.items.map(it => {
-    /* badge PROMO o MAYOR */
+    /* badge PROMO / MAYORISTA / x CANTIDAD */
     let badgeHtml = '';
-    if (it.isMayorista) {
+    if (it.isTier) {
+      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">X CANTIDAD</span>`;
+    } else if (it.isMayorista) {
       badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">MAYORISTA</span>`;
     } else if (it.isPromo) {
       badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">PROMO</span>`;
@@ -3446,7 +3489,7 @@ function imprimirTicket(){
 
     /* precio: tachado + nuevo si hay descuento */
     let precioLinea = '';
-    if ((it.isMayorista || it.isPromo) && it.price_base && it.price_base !== it.price) {
+    if ((it.isMayorista || it.isTier || it.isPromo) && it.price_base && it.price_base !== it.price) {
       precioLinea = `<span style="font-size:${fsSmall};font-weight:700;text-decoration:line-through;">${fmt(it.price_base)}</span>`
                   + `<span style="font-size:${fsSmall};font-weight:900;"> → ${fmt(it.price)} c/u</span>`;
     } else {
