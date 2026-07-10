@@ -34,6 +34,8 @@ function initSalesSchema() {
     `ALTER TABLE sales ADD COLUMN anulada_at     TEXT`,
     `ALTER TABLE sales ADD COLUMN anulada_by     TEXT`,
     `ALTER TABLE sales ADD COLUMN monto_mixto2   REAL    DEFAULT NULL`,
+    // Quién hizo la venta (para auditar descuentos y cambios de precio)
+    `ALTER TABLE sales ADD COLUMN usuario        TEXT    DEFAULT NULL`,
   ];
 
   const saleItemsCols = [
@@ -41,6 +43,9 @@ function initSalesSchema() {
     `ALTER TABLE sale_items ADD COLUMN ieps     REAL    DEFAULT 0`,
     `ALTER TABLE sale_items ADD COLUMN pesable  INTEGER DEFAULT 0`,
     `ALTER TABLE sale_items ADD COLUMN subtotal REAL    DEFAULT 0`,
+    // Precio de lista antes de tocarlo a mano + marca de edición manual
+    `ALTER TABLE sale_items ADD COLUMN price_original REAL    DEFAULT NULL`,
+    `ALTER TABLE sale_items ADD COLUMN precio_editado INTEGER DEFAULT 0`,
   ];
 
   for (const sql of salesCols) {
@@ -157,13 +162,14 @@ function _ensureStmts() {
     INSERT INTO sales (
       total, payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
-      monto_mixto2, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      monto_mixto2, usuario, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   insertSaleItemStmt = db.prepare(`
     INSERT INTO sale_items (
-      sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable,
+      price_original, precio_editado
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   updateStockBySucursalStmt = db.prepare(`
     UPDATE products SET stock = stock - ? WHERE sku = ? AND sucursal_id = ?
@@ -196,6 +202,7 @@ function createSale({
   es_cuenta_corriente,
   sucursal_id,
   monto_mixto2,
+  usuario,
   items,
 }) {
   if (!Array.isArray(items) || !items.length) {
@@ -227,6 +234,7 @@ function createSale({
         : Number(cliente_id),
       suc,
       monto_mixto2 !== undefined && monto_mixto2 !== null ? toNumber(monto_mixto2) : null,
+      usuario || null,
       createdAt
     );
 
@@ -257,7 +265,9 @@ function createSale({
           subtotal,
           iva,
           ieps,
-          pesable
+          pesable,
+          null,
+          0
         );
 
         continue;
@@ -299,6 +309,13 @@ function createSale({
         ? toBoolInt(it.pesable, 0)
         : toBoolInt(prod.pesable, 0);
 
+      // Auditoría de precio: si el cajero lo editó a mano, guardamos con cuánto arrancó.
+      // Si el front no manda price_original, caemos al precio de lista del producto.
+      const priceOriginal = (it?.price_original !== undefined && it?.price_original !== null && it?.price_original !== '')
+        ? toNumber(it.price_original, price)
+        : toNumber(prod.price, price);
+      const precioEditado = toBoolInt(it?.precio_editado, 0) && Number(priceOriginal) !== Number(price) ? 1 : 0;
+
       insertSaleItemStmt.run(
         sale_id,
         sku,
@@ -308,7 +325,9 @@ function createSale({
         subtotal,
         iva,
         ieps,
-        pesable
+        pesable,
+        priceOriginal,
+        precioEditado
       );
 
       // Descontar del stock de la sucursal donde se vende (motor de existencias).

@@ -805,7 +805,7 @@ function marcarPagado(gastoId, mes, anio, pagarTodo) {
   document.getElementById('pagoMes').value     = mes;
   document.getElementById('pagoAnio').value    = anio;
   document.getElementById('pagoTodo').value    = pagarTodo ? '1' : '0';
-  document.getElementById('pagoFecha').value   = new Date().toISOString().split('T')[0];
+  document.getElementById('pagoFecha').value   = window.hoyLocal();
   document.getElementById('pagoMetodo').value  = '';
   // Mostrar el aviso correcto
   document.getElementById('pagoTodoAviso').style.display    = pagarTodo ? 'block' : 'none';
@@ -1010,7 +1010,7 @@ async function abrirPagosGasto(gastoId, nombre) {
   _pgGastoId = gastoId;
   document.getElementById('pgNombre').textContent = nombre || 'Gasto';
   document.getElementById('pgMonto').value  = '';
-  document.getElementById('pgFecha').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('pgFecha').value  = window.hoyLocal();
   document.getElementById('pgMetodo').value = '';
   document.getElementById('pgNota').value   = '';
   document.getElementById('pgError').style.display = 'none';

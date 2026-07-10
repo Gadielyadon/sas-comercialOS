@@ -154,7 +154,7 @@ const fmt  = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigit
 const COLS = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#ef4444'];
 
 (function(){
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = window.hoyLocal();
   document.getElementById('fDesde').value = hoy;
   document.getElementById('fHasta').value = hoy;
 })();

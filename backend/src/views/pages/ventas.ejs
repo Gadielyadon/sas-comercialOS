@@ -1270,7 +1270,6 @@
           </div>
           <div class="sc-chips">
             <div class="sc-chip chip-cobrar" onclick="cart.length?openCobroModal():showToast('Carrito vacío','warn')" title="F10 — Cobrar"><kbd>F10</kbd> Cobrar</div>
-            <div class="sc-chip chip-limpiar" onclick="clearCart()" title="Esc — Limpiar carrito"><kbd>Esc</kbd> Limpiar</div>
             <div class="sc-chip chip-deptos" id="chipDeptos" onclick="toggleDeptosChip(this)" title="F5 — Departamentos">
               <kbd>F5</kbd> Departamentos
             </div>
@@ -2120,6 +2119,8 @@ function recalcularPreciosCarrito() {
     item.price_base = nuevoPrecio;
     item.isMayorista = false;
     item.isTier      = false;
+    item.precioEditado  = false;
+    item.price_original = null;
   });
   renderCartList();
   updateTotals();
@@ -2341,6 +2342,10 @@ function _parseTiers(raw) {
 }
 
 function aplicarPrecioMayorista(item) {
+  // 0) Si el cajero fijó el precio a mano, mandamos ese precio: no lo pisamos
+  //    al cambiar la cantidad (y así tampoco falseamos la auditoría).
+  if (item.precioEditado) return;
+
   // 1) Escalones por cantidad (tienen prioridad sobre el mayorista simple)
   const tiers = _parseTiers(item.price_tiers);
   if (tiers) {
@@ -2515,6 +2520,12 @@ function editarPrecioItem(sku, precioActual) {
   function confirmar() {
     const nuevo = parseFloat(inp.value);
     if (!isNaN(nuevo) && nuevo >= 0) {
+      // Guardamos con qué precio venía justo ANTES de tocarlo a mano (una sola vez).
+      // Usamos item.price (el precio efectivo: ya incluye escalón/promo) y no price_base,
+      // para que el descuento por cantidad no se cuente como descuento manual del cajero.
+      if (item.price_original === undefined || item.price_original === null) {
+        item.price_original = item.price;
+      }
       item.price      = nuevo;
       item.price_base = nuevo;
       item.precioEditado = true;
@@ -3311,7 +3322,9 @@ async function confirmSale() {
       sku: i.sku,
       name: i.name,
       price: i.price,
-      qty: i.qty
+      qty: i.qty,
+      price_original: (i.price_original != null ? i.price_original : i.price_base),
+      precio_editado: i.precioEditado ? 1 : 0
     }))
   };
 
@@ -5128,4 +5141,834 @@ function buscarVerificador(q) {
 
 </script>
 
+<!-- ══════════════════════════════════════════════════════════════════
+     VENTAS EN ESPERA v3  ·  chip en la topbar + fix de tema
+     Atajos:  F7        → nueva venta en espera
+              F8        → siguiente venta
+              Alt+1..9  → ir a la venta N
+              Esc       → cierra el desplegable (si está abierto)
+     ══════════════════════════════════════════════════════════════════ -->
 
+<style>
+  /* ─────────────────────────────────────────────────────────
+     FIX · .sc-chip tenía #fff / #d7dee8 / #334155 hardcodeados
+     (línea ~722) y no respetaba el tema. Al ir después en el
+     documento, con la misma especificidad, estas reglas ganan.
+     ───────────────────────────────────────────────────────── */
+  .sc-chip{
+    background : var(--bg-card);
+    border     : 1.5px solid var(--border-color);
+    color      : var(--text-primary);
+    box-shadow : 0 1px 2px rgba(0,0,0,.03);
+  }
+  .sc-chip:hover{
+    background   : rgba(27,79,216,.07);
+    border-color : var(--color-primary);
+    color        : var(--color-primary);
+  }
+
+  /* Cobrar: base neutra del sistema, acento verde sólo al hover */
+  .sc-chip.chip-cobrar{ border-color: rgba(16,185,129,.30); }
+  .sc-chip.chip-cobrar:hover{
+    background:rgba(16,185,129,.09); border-color:#10b981; color:#059669;
+  }
+
+  /* El kbd de F10 ahora usa el color del sistema, igual que F5.
+     Si preferís mantenerlo verde, borrá esta línea. */
+  .sc-chip.chip-cobrar kbd{ background:var(--color-primary); }
+
+  [data-theme="dark"] .sc-chip{
+    background   : #1b2029;
+    border-color : rgba(255,255,255,.10);
+    color        : #cbd5e1;
+  }
+  [data-theme="dark"] .sc-chip:hover{
+    background   : rgba(59,130,246,.13);
+    border-color : #3b82f6;
+    color        : #93c5fd;
+  }
+  [data-theme="dark"] .sc-chip.chip-cobrar:hover{
+    background:rgba(16,185,129,.14); border-color:#10b981; color:#6ee7b7;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Chip "En espera"
+     ───────────────────────────────────────────────────────── */
+  .ve-wrap{ position:relative; flex-shrink:0; }
+
+  .sc-chip.chip-espera{ position:relative; }
+  .sc-chip.chip-espera kbd{ background:var(--color-primary); }
+
+  /* Cuando hay ventas aguardando, el chip se pone ámbar */
+  .sc-chip.chip-espera.hay{
+    border-color:rgba(245,158,11,.45);
+    background:rgba(245,158,11,.09);
+    color:#b45309;
+  }
+  .sc-chip.chip-espera.hay kbd{ background:#f59e0b; }
+  [data-theme="dark"] .sc-chip.chip-espera.hay{
+    background:rgba(245,158,11,.14); border-color:rgba(245,158,11,.5); color:#fcd34d;
+  }
+
+  .ve-badge{
+    min-width:16px; height:16px; padding:0 4px; border-radius:8px;
+    background:#f59e0b; color:#fff;
+    font-family:var(--font-mono,monospace); font-size:9.5px; font-weight:800;
+    display:none; align-items:center; justify-content:center; line-height:1;
+  }
+  .sc-chip.chip-espera.hay .ve-badge{ display:flex; }
+
+  /* ─────────────────────────────────────────────────────────
+     Desplegable
+     ───────────────────────────────────────────────────────── */
+  .ve-drop{
+    display:none; position:absolute; top:calc(100% + 6px); left:0;
+    min-width:290px; z-index:220;
+    background:var(--bg-card); border:1px solid var(--border-color);
+    border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.18);
+    overflow:hidden;
+  }
+  .ve-drop.open{ display:block; }
+  [data-theme="dark"] .ve-drop{ background:#1b2029; border-color:rgba(255,255,255,.10); }
+
+  .ve-drop-head{
+    padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--text-secondary);
+    border-bottom:1px solid var(--border-color);
+    display:flex; align-items:center; gap:6px;
+  }
+
+  .ve-list{ padding:5px; max-height:290px; overflow-y:auto; }
+
+  .ve-row{
+    display:flex; align-items:center; gap:9px;
+    width:100%; padding:8px 9px; border-radius:8px;
+    cursor:pointer; transition:background .1s; position:relative;
+  }
+  .ve-row:hover{ background:var(--bg-hover); }
+  .ve-row.active{ background:rgba(27,79,216,.09); }
+  [data-theme="dark"] .ve-row.active{ background:rgba(59,130,246,.14); }
+
+  .ve-row-kbd{
+    font-family:var(--font-mono,monospace); font-size:9px; font-weight:800;
+    background:var(--border-color); color:var(--text-secondary);
+    border-radius:5px; padding:3px 5px; flex-shrink:0; letter-spacing:.2px;
+  }
+  .ve-row.active .ve-row-kbd{ background:var(--color-primary); color:#fff; }
+
+  .ve-row-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; text-align:left; }
+  .ve-row-name{
+    font-size:13px; font-weight:700; color:var(--text-primary);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .ve-row.active .ve-row-name{ color:var(--color-primary); }
+  [data-theme="dark"] .ve-row.active .ve-row-name{ color:#93c5fd; }
+  .ve-row-meta{
+    font-size:10.5px; font-weight:600; color:var(--text-secondary);
+    font-family:var(--font-mono,monospace);
+  }
+
+  .ve-row-x{
+    width:22px; height:22px; flex-shrink:0; border:0; border-radius:6px;
+    background:transparent; color:var(--text-secondary); font-size:11px;
+    cursor:pointer; opacity:.4; transition:all .12s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ve-row-x:hover{ opacity:1; background:rgba(239,68,68,.15); color:#ef4444; }
+
+  .ve-drop-foot{
+    border-top:1px solid var(--border-color); padding:5px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .ve-foot-btn{
+    display:flex; align-items:center; gap:8px; width:100%;
+    padding:8px 9px; border:0; border-radius:8px; background:transparent;
+    cursor:pointer; font-family:var(--font-body); font-size:12.5px; font-weight:700;
+    color:var(--color-primary); transition:background .1s; text-align:left;
+  }
+  .ve-foot-btn:hover{ background:rgba(27,79,216,.08); }
+  .ve-foot-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .ve-foot-btn kbd{
+    margin-left:auto; font-family:var(--font-mono,monospace); font-size:9px; font-weight:800;
+    background:var(--color-primary); color:#fff; border-radius:5px; padding:2px 6px;
+  }
+  .ve-foot-btn:disabled kbd{ background:var(--text-secondary); }
+
+  .ve-hint{
+    padding:6px 12px 8px; font-size:10px; color:var(--text-secondary);
+    border-top:1px dashed var(--border-color); line-height:1.6;
+  }
+  .ve-hint b{ font-family:var(--font-mono,monospace); color:var(--text-primary); font-weight:800; }
+
+  @media (max-width:860px){
+    .ve-drop{ left:auto; right:0; min-width:250px; }
+  }
+</style>
+
+<script>
+'use strict';
+(function () {
+
+  /* ─────────────── config ─────────────── */
+  const MAX_TABS = 9;
+  const TTL_MS   = 12 * 60 * 60 * 1000;                 // borradores caducan a las 12 h
+  const SUC      = (typeof SUCURSAL_ID !== 'undefined') ? SUCURSAL_ID : 1;
+  const LS_KEY   = 'pos_ventas_espera_v2_suc' + SUC;
+
+  /* ─────────────── estado ─────────────── */
+  let tabs     = [];      // [{ id, num, nombre, snap }]
+  let activeId = null;
+  let seq      = 0;
+  let busy     = false;   // evita snapshots a mitad de una restauración
+
+  let clienteActual = null;   // el POS sólo guarda clienteId; acá guardamos nombre y tel
+
+  const $ = id => document.getElementById(id);
+  const money = n => (typeof fmt === 'function') ? fmt(n) : ('$' + Number(n||0).toFixed(2));
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  /* ─────────────── snapshot / restore ─────────────── */
+
+  function tomarSnapshot() {
+    return {
+      cart        : JSON.parse(JSON.stringify(cart)),
+      clienteId   : clienteId,
+      cliente     : clienteActual ? Object.assign({}, clienteActual) : null,
+      discType    : discType,
+      discVal     : ($('discInput') || {}).value || '',
+      listaIdx    : (typeof _listaIdx !== 'undefined') ? _listaIdx : 0,
+      comprobante : (typeof _tipoComprobante !== 'undefined') ? _tipoComprobante : 'venta',
+    };
+  }
+
+  function snapshotVacio() {
+    return { cart:[], clienteId:1, cliente:null, discType:'pct', discVal:'',
+             listaIdx:(typeof _listaIdx !== 'undefined' ? _listaIdx : 0), comprobante:'venta' };
+  }
+
+  function restaurarSnapshot(s) {
+    busy = true;
+    try {
+      const skusPrevios = cart.map(i => i.sku);
+      cart = s.cart.map(x => Object.assign({}, x));
+
+      // Lista de precios: si cambió hay que re-pintar el catálogo
+      if (typeof _listaIdx !== 'undefined' && s.listaIdx !== _listaIdx) {
+        _listaIdx = s.listaIdx;
+        if (typeof actualizarChipLista === 'function') actualizarChipLista();
+        if (typeof renderGrid === 'function' && typeof allProducts !== 'undefined' && allProducts.length) {
+          renderGrid(catActiva ? allProducts.filter(p => p.category === catActiva) : allProducts);
+        }
+      } else if (typeof updateCardState === 'function') {
+        // Barato: sólo refrescamos las cards que entraron o salieron del carrito
+        new Set(skusPrevios.concat(cart.map(i => i.sku))).forEach(updateCardState);
+      }
+
+      // Descuento
+      discType = s.discType;
+      const bp = $('btnPct'), bf = $('btnFixed'), ds = $('discSuffix'), di = $('discInput');
+      if (bp) bp.classList.toggle('on', discType === 'pct');
+      if (bf) bf.classList.toggle('on', discType === 'fixed');
+      if (ds) ds.textContent = discType === 'pct' ? '%' : '$';
+      if (di) di.value = s.discVal || '';
+
+      // Cliente
+      clienteActual = s.cliente || null;
+      if (s.cliente && s.clienteId && s.clienteId !== 1) {
+        origSelCliente(s.cliente.id, s.cliente.nombre, s.cliente.tel);
+      } else {
+        origLimpiarCliente();
+      }
+
+      if (typeof setComprobante === 'function') setComprobante(s.comprobante || 'venta');
+      if (typeof renderCartList === 'function') renderCartList();
+      origUpdateTotals();
+      if (typeof resetQtyMultiplier === 'function') resetQtyMultiplier();
+    } finally {
+      busy = false;
+    }
+    if (typeof focusScanner === 'function') focusScanner();
+  }
+
+  /* ─────────────── operaciones ─────────────── */
+
+  const tabActiva = () => tabs.find(t => t.id === activeId);
+
+  function nombreDeTab(t) {
+    if (t.id === activeId && clienteActual && clienteActual.nombre) return clienteActual.nombre;
+    if (t.snap && t.snap.cliente && t.snap.cliente.nombre) return t.snap.cliente.nombre;
+    return 'Venta ' + t.num;
+  }
+
+  function sincronizar() {
+    if (busy) return;
+    const t = tabActiva();
+    if (t) { t.snap = tomarSnapshot(); t.nombre = nombreDeTab(t); }
+    persistir();
+    pintarChip();
+    if (dropAbierto()) pintarDrop();
+  }
+
+  function nueva() {
+    if (tabs.length >= MAX_TABS) {
+      if (typeof showToast === 'function') showToast('Máximo ' + MAX_TABS + ' ventas en espera', 'warn');
+      return;
+    }
+    sincronizar();
+    seq += 1;
+    tabs.push({
+      id   : 't' + Date.now() + Math.random().toString(36).slice(2,5),
+      num  : seq,
+      nombre: 'Venta ' + seq,
+      snap : snapshotVacio(),
+    });
+    activeId = tabs[tabs.length - 1].id;
+    restaurarSnapshot(tabs[tabs.length - 1].snap);
+    persistir(); pintarChip(); pintarDrop();
+    if (typeof showToast === 'function') showToast('Venta anterior en espera · nueva venta lista', 'info');
+  }
+
+  function ir(id) {
+    if (id === activeId) { cerrarDrop(); return; }
+    const t = tabs.find(x => x.id === id);
+    if (!t) return;
+    sincronizar();
+    activeId = id;
+    restaurarSnapshot(t.snap);
+    persistir(); pintarChip(); cerrarDrop();
+    if (typeof showToast === 'function') showToast('Retomando: ' + t.nombre, 'info');
+  }
+
+  function siguiente() {
+    if (tabs.length < 2) return;
+    const i = tabs.findIndex(t => t.id === activeId);
+    ir(tabs[(i + 1) % tabs.length].id);
+  }
+
+  function cerrar(id, sinConfirmar) {
+    const t = tabs.find(x => x.id === id);
+    if (!t) return;
+
+    const items = (id === activeId) ? cart.length : (t.snap.cart || []).length;
+    if (items && !sinConfirmar) {
+      if (!confirm('"' + t.nombre + '" tiene ' + items + ' producto(s) cargado(s).\n¿Descartar esta venta?')) return;
+    }
+
+    // Última pestaña: no se borra, se vacía
+    if (tabs.length === 1) {
+      busy = true;
+      t.snap = snapshotVacio();
+      t.nombre = 'Venta ' + t.num;
+      busy = false;
+      restaurarSnapshot(t.snap);
+      persistir(); pintarChip(); pintarDrop();
+      return;
+    }
+
+    const idx = tabs.findIndex(x => x.id === id);
+    tabs.splice(idx, 1);
+
+    if (id === activeId) {
+      const vecina = tabs[Math.max(0, idx - 1)];
+      activeId = vecina.id;
+      restaurarSnapshot(vecina.snap);
+    }
+    persistir(); pintarChip(); pintarDrop();
+  }
+
+  /* ─────────────── UI ─────────────── */
+
+  function montarChip() {
+    const chips = document.querySelector('.sc-chips');
+    if (!chips || $('veWrap')) return;
+
+    // Anclamos después de "Cobrar". Si no estuviera, va al principio de la barra.
+    const ancla = chips.querySelector('.chip-cobrar');
+
+    const wrap = document.createElement('div');
+    wrap.className = 've-wrap';
+    wrap.id = 'veWrap';
+    wrap.innerHTML =
+      '<div class="sc-chip chip-espera" id="chipEspera" title="F7 — Ventas en espera">' +
+        '<kbd>F7</kbd> En espera' +
+        '<span class="ve-badge" id="veBadge">0</span>' +
+        '<i class="bi bi-chevron-down" style="font-size:9px;opacity:.6;"></i>' +
+      '</div>' +
+      '<div class="ve-drop" id="veDrop"></div>';
+
+    if (ancla) chips.insertBefore(wrap, ancla.nextSibling);
+    else       chips.insertBefore(wrap, chips.firstChild);
+
+    $('chipEspera').addEventListener('click', e => { e.stopPropagation(); toggleDrop(); });
+
+    $('veDrop').addEventListener('click', e => {
+      const x = e.target.closest('.ve-row-x');
+      if (x) { e.stopPropagation(); cerrar(x.dataset.id); return; }
+      const nuevaBtn = e.target.closest('#veFootNueva');
+      if (nuevaBtn) { nueva(); return; }
+      const row = e.target.closest('.ve-row');
+      if (row) ir(row.dataset.id);
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#veWrap')) cerrarDrop();
+    });
+  }
+
+  const dropAbierto = () => { const d = $('veDrop'); return !!d && d.classList.contains('open'); };
+  const cerrarDrop  = () => { const d = $('veDrop'); if (d) d.classList.remove('open'); };
+  function toggleDrop() {
+    const d = $('veDrop');
+    if (!d) return;
+    if (d.classList.contains('open')) { d.classList.remove('open'); return; }
+    const dl = $('dropLista'); if (dl) dl.style.display = 'none';   // no chocar con F6
+    pintarDrop();
+    d.classList.add('open');
+  }
+
+  // Ventas que NO son la activa y tienen productos = las que están "esperando"
+  const enEspera = () => tabs.filter(t => t.id !== activeId && (t.snap.cart || []).length).length;
+
+  function pintarChip() {
+    const chip  = $('chipEspera'), badge = $('veBadge');
+    if (!chip) return;
+    const n = enEspera();
+    chip.classList.toggle('hay', n > 0);
+    if (badge) badge.textContent = n;
+    chip.title = n > 0
+      ? n + ' venta(s) en espera — F7 nueva · F8 siguiente'
+      : 'F7 — Poner esta venta en espera y abrir otra';
+  }
+
+  function pintarDrop() {
+    const d = $('veDrop');
+    if (!d) return;
+
+    let html = '<div class="ve-drop-head"><i class="bi bi-pause-circle"></i> Ventas en curso</div><div class="ve-list">';
+
+    tabs.forEach((t, i) => {
+      const c     = (t.id === activeId) ? cart : (t.snap.cart || []);
+      const items = c.reduce((s, x) => s + x.qty, 0);
+      const total = c.reduce((s, x) => s + x.price * x.qty, 0);
+
+      html +=
+        '<div class="ve-row' + (t.id === activeId ? ' active' : '') + '" data-id="' + t.id + '">' +
+          '<span class="ve-row-kbd">Alt+' + (i + 1) + '</span>' +
+          '<span class="ve-row-info">' +
+            '<span class="ve-row-name">' + esc(t.nombre) + (t.id === activeId ? ' · en pantalla' : '') + '</span>' +
+            '<span class="ve-row-meta">' + (items ? items + ' ítems · ' + money(total) : 'vacía') + '</span>' +
+          '</span>' +
+          '<button class="ve-row-x" data-id="' + t.id + '" title="Descartar"><i class="bi bi-x-lg"></i></button>' +
+        '</div>';
+    });
+
+    html += '</div><div class="ve-drop-foot">' +
+              '<button class="ve-foot-btn" id="veFootNueva"' + (tabs.length >= MAX_TABS ? ' disabled' : '') + '>' +
+                '<i class="bi bi-plus-circle"></i> Nueva venta en espera <kbd>F7</kbd>' +
+              '</button>' +
+            '</div>' +
+            '<div class="ve-hint">' +
+              '<b>F7</b> nueva · <b>F8</b> siguiente · <b>Alt+1…9</b> ir a una venta' +
+            '</div>';
+
+    d.innerHTML = html;
+  }
+
+  /* ─────────────── persistencia (anti corte de luz) ─────────────── */
+
+  let saveTimer = null;
+  function persistir() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), seq, activeId, tabs }));
+      } catch (e) { /* cuota llena: ignoramos */ }
+    }, 250);
+  }
+
+  function recuperar() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (!d || !Array.isArray(d.tabs) || !d.tabs.length) return;
+      if (Date.now() - (d.ts || 0) > TTL_MS) { localStorage.removeItem(LS_KEY); return; }
+      if (!d.tabs.some(t => (t.snap.cart || []).length)) { localStorage.removeItem(LS_KEY); return; }
+
+      tabs     = d.tabs;
+      seq      = d.seq || tabs.length;
+      activeId = tabs.some(t => t.id === d.activeId) ? d.activeId : tabs[0].id;
+
+      restaurarSnapshot(tabActiva().snap);
+      pintarChip();
+      if (typeof showToast === 'function') showToast(tabs.length + ' venta(s) recuperada(s)', 'info');
+    } catch (e) { /* json corrupto: seguimos limpios */ }
+  }
+
+  /* ─────────────── wrappers (cero ediciones al código original) ─────────────── */
+
+  const origUpdateTotals   = window.updateTotals;
+  const origSelCliente     = window.selClientePos;
+  const origLimpiarCliente = window.limpiarClientePos;
+
+  // Toda mutación del carrito termina llamando updateTotals → punto ideal para sincronizar
+  window.updateTotals = function () {
+    origUpdateTotals.apply(this, arguments);
+    sincronizar();
+  };
+
+  window.selClientePos = function (id, nombre, tel) {
+    clienteActual = { id: id, nombre: nombre, tel: tel };
+    origSelCliente.apply(this, arguments);
+    sincronizar();
+  };
+
+  window.limpiarClientePos = function () {
+    clienteActual = null;
+    origLimpiarCliente.apply(this, arguments);
+  };
+
+  // Se llama tras cobrar: la venta ya cumplió, se cierra y saltamos a la siguiente
+  window.nuevaVenta = function () {
+    const ov = $('exitoOverlay'); if (ov) ov.classList.remove('open');
+    if (typeof setComprobante === 'function') setComprobante('venta');
+    cerrar(activeId, true);
+  };
+
+  window.VentasEnEspera = { nueva, ir, cerrar, siguiente, listar: () => tabs.slice() };
+
+  /* ─────────────── atajos ─────────────── */
+
+  document.addEventListener('keydown', function (e) {
+    // No molestamos mientras está abierto el modal de cobro
+    const cobro = $('cobroOverlay');
+    if (cobro && cobro.classList.contains('open')) return;
+
+    if (e.key === 'Escape' && dropAbierto()) {
+      e.preventDefault(); e.stopPropagation(); cerrarDrop(); return;
+    }
+    if (e.key === 'F7') { e.preventDefault(); e.stopPropagation(); nueva(); return; }
+    if (e.key === 'F8') { e.preventDefault(); e.stopPropagation(); siguiente(); return; }
+
+    if (e.altKey && !e.ctrlKey && !e.shiftKey && e.key >= '1' && e.key <= '9') {
+      const i = parseInt(e.key, 10) - 1;
+      if (tabs[i]) { e.preventDefault(); e.stopPropagation(); ir(tabs[i].id); }
+    }
+  }, true);  // capture: corremos antes que los handlers del POS
+
+  /* ─────────────── init ─────────────── */
+
+  function init() {
+    montarChip();
+    seq      = 1;
+    tabs     = [{ id: 't0', num: 1, nombre: 'Venta 1', snap: snapshotVacio() }];
+    activeId = 't0';
+    pintarChip();
+
+    // Esperamos a que cargue el catálogo antes de recuperar borradores
+    let intentos = 0;
+    const t = setInterval(() => {
+      if (!((typeof allProducts !== 'undefined' && allProducts.length) || ++intentos > 20)) return;
+      clearInterval(t);
+      if (!cart.length) recuperar();
+    }, 250);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FIXES MOBILE  ·  v1
+     Solo actúa por debajo de 860px. No toca una línea del desktop.
+
+     0. El FAB vivía dentro de .pos-right (display:none en mobile) →
+        nunca se veía y el carrito era inalcanzable. Lo mudamos a <body>.
+     1. El teclado virtual se abría al tocar cualquier producto.
+     2. El TOTAL y "Finalizar Venta" quedaban al fondo del scroll.
+     3. Botones de cantidad / borrar / editar de 17-20px.
+     4. El toast se salía de pantalla (usaba --sidebar-width = 240px).
+     5. Banda 769–860px: el POS se metía debajo del sidebar.
+     6. Presupuesto: en celular no se imprime, se comparte.
+     ══════════════════════════════════════════════════════════════════ -->
+
+<style>
+  /* ─────────────────────────────────────────────────────────
+     5 · Banda 769–860px
+     styles.css esconde el sidebar recién en 768px, pero ventas.ejs
+     pone .main-content{margin-left:0} desde 860px. En el medio, el
+     POS quedaba tapado por el sidebar. Le devolvemos el margen.
+     ───────────────────────────────────────────────────────── */
+  @media (min-width:769px) and (max-width:860px){
+    .main-content{ margin-left: var(--sidebar-width); }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     4 · Toast — a pantalla completa cuando no hay sidebar
+     ───────────────────────────────────────────────────────── */
+  @media (max-width:768px){
+    .pos-toast{
+      left:12px; right:12px; bottom:12px;
+      min-width:0; font-size:13px;
+    }
+  }
+
+  @media (max-width:860px){
+
+    /* ───────── 0 · FAB reubicado ─────────
+       Ahora cuelga de <body>. Cuando el carrito está en pantalla lo
+       corremos arriba para que no tape "Finalizar Venta". */
+    .fab-cart{ z-index:300; }
+    body.cart-abierto .fab-cart{ bottom:auto; top:64px; }
+    body.cart-abierto .fab-btn{ width:46px; height:46px; font-size:18px; }
+    body.cart-abierto .fab-label{ display:none; }
+
+    /* ───────── 2 · Footer del carrito siempre visible ─────────
+       En desktop el flexbox lo ancla abajo porque .main-content tiene
+       altura fija. En mobile pasa a height:auto y el ancla se pierde.
+       sticky no funciona con un ancestro overflow:hidden → lo abrimos. */
+    .pos-right{ overflow: visible; }
+    .cart-list{ overflow: visible; max-height:none; }
+
+    .cart-footer{
+      position: sticky;
+      bottom: 0;
+      z-index: 60;
+      background: var(--bg-card);
+      border-top: 1.5px solid var(--border-color);
+      box-shadow: 0 -6px 20px rgba(0,0,0,.12);
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+    [data-theme="dark"] .cart-footer{
+      background:#12171d;
+      border-top-color: rgba(255,255,255,.10);
+      box-shadow: 0 -6px 20px rgba(0,0,0,.45);
+    }
+
+    /* ───────── 3 · Objetivos táctiles ─────────
+       Mínimo cómodo con el dedo: ~40px. El numpad (tocar la cantidad)
+       sigue siendo la vía rápida para cargar muchas unidades. */
+    .qty-ctrl{ border-radius:9px; }
+    .qty-btn{
+      width:40px; height:40px; font-size:17px;
+    }
+    .qty-val{
+      min-width:46px; height:40px; line-height:40px;
+      font-size:15px; padding:0 6px !important;
+    }
+    .btn-del{ width:38px; height:38px; font-size:16px; border-radius:8px; }
+    .btn-edit-price{
+      width:38px !important; height:38px !important;
+      font-size:15px !important; border-radius:8px !important;
+    }
+
+    /* La card del carrito respira y el nombre puede ir a dos líneas */
+    .cart-card{ padding:11px 12px; gap:8px; row-gap:6px; }
+    .cart-card-name{
+      font-size:15px; line-height:1.3;
+      white-space:normal; overflow:visible; text-overflow:clip;
+    }
+    .cart-card-unit{ font-size:13px; }
+    .cart-card-price{ font-size:19px; min-width:auto; }
+    .cart-card-bottom{ gap:8px; }
+    .cart-promo-tag{ right:auto; left:12px; top:-6px; }
+
+    /* Descuento y comprobante */
+    .disc-input{ width:74px; padding:8px 8px; font-size:15px; }
+    .disc-type-btn{ padding:8px 13px; font-size:13px; }
+    .comp-btn{ padding:10px 0; font-size:13px; }
+    .cart-cliente-inp{ padding:10px 10px 10px 30px; font-size:15px; }
+
+    /* Filas de producto: más altas y el nombre completo */
+    .prod-td, .prod-td-img{ padding:12px 10px; }
+    .prod-name{ white-space:normal; line-height:1.3; }
+    .prod-price{ font-size:15px; }
+
+    /* Botón principal, cómodo */
+    .btn-confirm{ min-height:52px; font-size:15px; }
+  }
+
+  @media (max-width:520px){
+    .cart-card-price{ font-size:17px; }
+    .prod-price{ font-size:14px; }
+    /* El chip "En espera" conserva el badge aunque se oculten los kbd */
+    .sc-chip.chip-espera .ve-badge{ display:none; }
+    .sc-chip.chip-espera.hay .ve-badge{ display:flex; }
+  }
+
+  /* Botón compartir presupuesto (solo se inyecta en táctil) */
+  .btn-share-pres{
+    padding:12px; border-radius:9px; border:none;
+    background:#25D366; color:#fff;
+    font-size:14px; font-weight:700; cursor:pointer;
+    font-family:var(--font-body);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-share-pres:active{ opacity:.85; }
+</style>
+
+<script>
+'use strict';
+(function () {
+
+  // Un celular o tablet: puntero grueso (dedo), no mouse.
+  const TACTIL = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  const $ = id => document.getElementById(id);
+
+  /* ═══════════════════════════════════════════════════════
+     0 · Sacar el FAB de .pos-right y colgarlo del <body>
+     Un position:fixed dentro de un padre display:none no existe.
+     ═══════════════════════════════════════════════════════ */
+  function liberarFab() {
+    const fab = $('fabCart');
+    if (fab && fab.parentElement !== document.body) document.body.appendChild(fab);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     0b · Marcar en <body> si el carrito está en pantalla,
+          para poder correr el FAB por CSS.
+     ═══════════════════════════════════════════════════════ */
+  function sincronizarClaseCarrito() {
+    const right = $('posRight');
+    document.body.classList.toggle('cart-abierto',
+      !!right && right.classList.contains('panel-visible'));
+  }
+
+  function envolverTogglePanel() {
+    const origToggle = window.togglePanelMobile;
+    if (typeof origToggle === 'function') {
+      window.togglePanelMobile = function () {
+        origToggle.apply(this, arguments);
+        sincronizarClaseCarrito();
+      };
+    }
+    const origReset = window._resetMobilePanel;
+    if (typeof origReset === 'function') {
+      window._resetMobilePanel = function () {
+        origReset.apply(this, arguments);
+        sincronizarClaseCarrito();
+      };
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     1 · El teclado virtual ya no salta solo
+
+     El POS re-enfoca #barcodeInput con cada click fuera de un
+     control, y las cards de producto son <div>. Resultado: tocar
+     un producto abría el teclado.
+
+     No podemos desregistrar ese listener (es anónimo), pero sí
+     podemos hacer que el foco no levante el teclado:
+     inputmode="none" permite foco y entrada por hardware (lectores
+     de código bluetooth) sin mostrar el teclado en pantalla.
+
+     Cuando el cajero toca el input a propósito, lo volvemos a "text".
+     ═══════════════════════════════════════════════════════ */
+  function domarTeclado() {
+    if (!TACTIL) return;
+    const inp = $('barcodeInput');
+    if (!inp) return;
+
+    const apagar   = () => inp.setAttribute('inputmode', 'none');
+    const encender = () => inp.setAttribute('inputmode', 'text');
+
+    apagar();
+
+    // pointerdown ocurre ANTES del foco: llegamos a tiempo a que el
+    // navegador decida mostrar el teclado.
+    inp.addEventListener('pointerdown', () => {
+      const yaEnfocado = document.activeElement === inp;
+      encender();
+      if (yaEnfocado) {
+        // Ya tenía el foco: hay que reciclarlo para que aparezca el teclado.
+        inp.blur();
+        setTimeout(() => inp.focus(), 0);
+      }
+    });
+
+    inp.addEventListener('blur', apagar);
+
+    // El autofocus del <input> y el focus() del window.load
+    // no deben abrir el teclado al entrar a la pantalla.
+    setTimeout(() => { if (document.activeElement === inp) apagar(); }, 100);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     6 · Presupuesto por celular: compartir, no imprimir
+
+     imprimirPresupuestoTermico() hace window.open('') y escribe HTML.
+     Chrome/Safari mobile lo bloquean, y no hay térmica conectada al
+     teléfono. En su lugar mandamos el link con la API nativa de
+     compartir (WhatsApp, mail, lo que el cliente tenga).
+     ═══════════════════════════════════════════════════════ */
+  async function compartirPresupuesto(pres) {
+    if (!pres || !pres.id) return;
+    const url = window.location.origin + '/presupuestos/ver/' + pres.id;
+    let totalTxt = '';
+    try {
+      const t = (typeof calcularTotalPres === 'function') ? calcularTotalPres(pres) : null;
+      if (t != null) totalTxt = '\nTotal: ' + ((typeof fmt === 'function') ? fmt(t) : t);
+    } catch (e) { /* sin total, mandamos igual */ }
+
+    const titulo = 'Presupuesto ' + (pres.numero || '');
+    const texto  = titulo
+                 + (pres.cliente_nombre ? '\nCliente: ' + pres.cliente_nombre : '')
+                 + totalTxt + '\n' + url;
+
+    // navigator.share exige HTTPS (o localhost). Si no está, vamos a wa.me.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: titulo, text: texto, url: url });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;   // el usuario canceló
+      }
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+  }
+  window.compartirPresupuesto = compartirPresupuesto;
+
+  function envolverModalPresupuesto() {
+    const orig = window.mostrarModalPresupuestoOk;
+    if (typeof orig !== 'function') return;
+
+    window.mostrarModalPresupuestoOk = function (pres) {
+      orig.apply(this, arguments);
+      if (!TACTIL) return;
+
+      const ov = $('modalPresOk');
+      if (!ov) return;
+      const botones = ov.querySelectorAll('button');
+      if (!botones.length) return;
+
+      const termico = botones[0];          // "Imprimir ticket" — inútil en celular
+      const cont    = termico.parentElement;
+      termico.style.display = 'none';
+
+      const share = document.createElement('button');
+      share.className = 'btn-share-pres';
+      share.innerHTML = '<i class="bi bi-share-fill"></i> Compartir presupuesto';
+      share.addEventListener('click', () => compartirPresupuesto(pres));
+      cont.insertBefore(share, cont.firstChild);
+    };
+  }
+
+  /* ═══════════════════════════════════════════════════════ */
+
+  function init() {
+    liberarFab();
+    envolverTogglePanel();
+    envolverModalPresupuesto();
+    domarTeclado();
+    sincronizarClaseCarrito();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+})();
+</script>

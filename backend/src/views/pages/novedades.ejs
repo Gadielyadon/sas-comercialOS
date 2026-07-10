@@ -1,0 +1,167 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+.nv-wrap    { padding: 28px 24px 60px; max-width: 780px; margin: 0 auto; }
+
+.nv-hero    { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+.nv-hero-ico{ width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+              background: linear-gradient(135deg, #1B4FD8, #6366f1); color: #fff;
+              display: flex; align-items: center; justify-content: center; font-size: 24px;
+              box-shadow: 0 8px 24px rgba(27,79,216,.28); }
+.nv-h1      { font-size: 27px; font-weight: 900; color: var(--text-primary); line-height: 1.15; margin: 2px 0 6px; letter-spacing: -.01em; }
+.nv-sub     { font-size: 14px; color: var(--text-secondary); line-height: 1.55; }
+
+.nv-bar     { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+              flex-wrap: wrap; margin: 22px 0 26px; padding-bottom: 18px; border-bottom: 1px solid var(--border-color); }
+.nv-count   { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
+.nv-count b { color: var(--color-primary); }
+.nv-btn     { padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+              font-family: var(--font-body); display: inline-flex; align-items: center; gap: 7px; transition: opacity .15s, background .15s; }
+.nv-btn-primary { background: linear-gradient(135deg,#1B4FD8,#6366f1); color: #fff; border: none; }
+.nv-btn-primary:hover { opacity: .9; }
+.nv-btn-primary:disabled { opacity: .45; cursor: default; }
+.nv-btn-ghost   { background: none; color: var(--text-secondary); border: 1.5px solid var(--border-color); }
+.nv-btn-ghost:hover { background: var(--bg-surface-2); }
+
+/* Línea de tiempo */
+.nv-item    { position: relative; padding: 0 0 30px 34px; }
+.nv-item::before { content: ''; position: absolute; left: 9px; top: 24px; bottom: -6px; width: 2px; background: var(--border-color); }
+.nv-item:last-child::before { display: none; }
+.nv-dot     { position: absolute; left: 0; top: 6px; width: 20px; height: 20px; border-radius: 50%;
+              display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; }
+
+.nv-card    { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px 22px; transition: border-color .15s; }
+.nv-card.nueva { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27,79,216,.07); }
+
+.nv-meta    { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 9px; }
+.nv-ver     { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; padding: 3px 9px; border-radius: 20px;
+              background: var(--bg-surface-2); color: var(--text-secondary); border: 1px solid var(--border-color); }
+.nv-fecha   { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+.nv-nuevo   { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 3px 9px; border-radius: 20px; color: #fff; }
+
+.nv-titulo  { font-size: 19px; font-weight: 800; color: var(--text-primary); line-height: 1.3; margin-bottom: 9px; letter-spacing: -.005em; }
+.nv-detalle { font-size: 14.5px; color: var(--text-secondary); line-height: 1.65; }
+.nv-img     { width: 100%; border-radius: 12px; margin-top: 16px; border: 1px solid var(--border-color); display: block; }
+.nv-link    { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 13.5px; font-weight: 700;
+              color: var(--color-primary); text-decoration: none; }
+.nv-link:hover { text-decoration: underline; }
+
+.nv-empty   { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.nv-empty i { font-size: 34px; display: block; margin-bottom: 12px; opacity: .5; }
+
+@media (max-width: 640px) {
+  .nv-wrap  { padding: 20px 14px 48px; }
+  .nv-h1    { font-size: 22px; }
+  .nv-item  { padding-left: 28px; }
+  .nv-titulo{ font-size: 17px; }
+}
+</style>
+
+<%- include('../partials/header') %>
+<%- include('../partials/sidebar') %>
+
+<div class="main-content">
+  <div class="nv-wrap">
+
+    <div class="nv-hero">
+      <div class="nv-hero-ico"><i class="bi bi-stars"></i></div>
+      <div>
+        <div class="nv-h1">Novedades del sistema</div>
+        <div class="nv-sub">Todo lo que fuimos agregando y mejorando, de lo más nuevo a lo más viejo.</div>
+      </div>
+    </div>
+
+    <div class="nv-bar">
+      <div class="nv-count" id="nvCount"></div>
+      <div style="display:flex;gap:9px;">
+        <button class="nv-btn nv-btn-ghost" onclick="history.length > 1 ? history.back() : location.href='/'">
+          <i class="bi bi-arrow-left"></i> Volver
+        </button>
+        <button class="nv-btn nv-btn-primary" id="nvBtnLeer" onclick="marcarTodasLeidas()">
+          <i class="bi bi-check-lg"></i> Marcar todas como leídas
+        </button>
+      </div>
+    </div>
+
+    <% if (!novedades || !novedades.length) { %>
+      <div class="nv-empty">
+        <i class="bi bi-inbox"></i>
+        Todavía no hay novedades para mostrar.
+      </div>
+    <% } else { %>
+      <% novedades.forEach(function(n) { %>
+        <div class="nv-item" data-id="novedad_<%= n.id %>">
+          <div class="nv-dot" style="background:<%= n.color || '#6366f1' %>;">
+            <i class="bi <%= n.icono || 'bi-stars' %>"></i>
+          </div>
+          <div class="nv-card">
+            <div class="nv-meta">
+              <span class="nv-ver">v<%= n.version %></span>
+              <span class="nv-fecha"><%= n.fecha %></span>
+              <span class="nv-nuevo" style="background:<%= n.color || '#6366f1' %>;display:none;">NUEVO</span>
+            </div>
+            <div class="nv-titulo"><%= n.titulo %></div>
+            <div class="nv-detalle"><%= n.detalle %></div>
+            <% if (n.imagen) { %>
+              <img class="nv-img" src="<%= n.imagen %>" alt="" onerror="this.style.display='none'">
+            <% } %>
+            <% if (n.link && n.link !== '#') { %>
+              <a class="nv-link" href="<%= n.link %>">Ver en el sistema <i class="bi bi-arrow-right"></i></a>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    <% } %>
+
+  </div>
+</div>
+
+<script>
+/* Usa la misma clave que la campanita, así el contador se sincroniza */
+const NV_KEY = 'axNotifLeidas';
+
+function nvLeidas() {
+  try { return new Set(JSON.parse(localStorage.getItem(NV_KEY) || '[]')); }
+  catch (e) { return new Set(); }
+}
+
+function nvPintar() {
+  const leidas = nvLeidas();
+  const items = document.querySelectorAll('.nv-item');
+  let nuevas = 0;
+
+  items.forEach(it => {
+    const esNueva = !leidas.has(it.dataset.id);
+    it.querySelector('.nv-card').classList.toggle('nueva', esNueva);
+    it.querySelector('.nv-nuevo').style.display = esNueva ? 'inline-block' : 'none';
+    if (esNueva) nuevas++;
+  });
+
+  const cont = document.getElementById('nvCount');
+  const btn  = document.getElementById('nvBtnLeer');
+  if (!items.length) { cont.textContent = ''; btn.style.display = 'none'; return; }
+
+  cont.innerHTML = nuevas > 0
+    ? `Tenés <b>${nuevas}</b> novedad${nuevas === 1 ? '' : 'es'} sin leer`
+    : `Estás al día — ${items.length} novedad${items.length === 1 ? '' : 'es'} en total`;
+
+  btn.disabled = nuevas === 0;
+  btn.innerHTML = nuevas === 0
+    ? '<i class="bi bi-check-all"></i> Todo leído'
+    : '<i class="bi bi-check-lg"></i> Marcar todas como leídas';
+}
+
+function marcarTodasLeidas() {
+  const leidas = nvLeidas();
+  document.querySelectorAll('.nv-item').forEach(it => leidas.add(it.dataset.id));
+  localStorage.setItem(NV_KEY, JSON.stringify([...leidas]));
+  nvPintar();
+  // Refresca la campanita sin recargar la página
+  if (window.axNotif && window.axNotif.recargar) window.axNotif.recargar();
+}
+
+document.addEventListener('DOMContentLoaded', nvPintar);
+</script>
+
+<%- include('../partials/scripts') %>
+<%- include('../partials/footer') %>

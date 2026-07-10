@@ -537,6 +537,139 @@ router.get('/api/reportes/ventas', (req, res) => {
   }
 });
 
+// ── Página de Novedades del sistema ───────────────────────────
+// Sin requirePermiso: todos los usuarios pueden leer qué cambió.
+router.get('/novedades', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  let novedades = [];
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const p = path.join(__dirname, '../../../changelog.json');
+    if (fs.existsSync(p)) {
+      novedades = JSON.parse(fs.readFileSync(p, 'utf8')).novedades || [];
+    }
+  } catch(e) { console.error('changelog:', e.message); }
+
+  res.render('pages/novedades', {
+    title: 'Novedades', user, active: 'novedades', module: 'Novedades',
+    empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'),
+    novedades,
+    sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' }
+  });
+});
+
+// ── Reporte de descuentos y precios modificados ───────────────
+// (se muestra como pestaña dentro de /reportes/ventas)
+
+// API: datos JSON del reporte de descuentos
+router.get('/api/reportes/descuentos', (req, res) => {
+  try {
+    const desde = String(req.query.desde || '').trim();
+    const hasta = String(req.query.hasta || '').trim();
+    if (!desde || !hasta) return res.status(400).json({ ok: false, error: 'Fechas requeridas' });
+
+    const sucursal_id = res.locals?.sucursal_filtro ?? null;
+    const sWhere = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+
+    // Una fila por venta, con su subtotal real y lo resignado en precios editados a mano
+    const ventas = all(
+      `SELECT
+         s.id, s.created_at, s.total,
+         COALESCE(s.usuario, '') AS usuario,
+         COALESCE(s.discount_pct, 0)   AS discount_pct,
+         COALESCE(s.discount_fixed, 0) AS discount_fixed,
+         (SELECT COALESCE(SUM(COALESCE(si.subtotal, si.price * si.qty)), 0)
+            FROM sale_items si WHERE si.sale_id = s.id) AS subtotal,
+         (SELECT COALESCE(SUM((COALESCE(si.price_original, si.price) - si.price) * si.qty), 0)
+            FROM sale_items si WHERE si.sale_id = s.id AND COALESCE(si.precio_editado,0) = 1) AS ajuste_manual,
+         (SELECT COUNT(*)
+            FROM sale_items si WHERE si.sale_id = s.id AND COALESCE(si.precio_editado,0) = 1) AS precios_editados
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+       ORDER BY s.id DESC`,
+      [desde, hasta]
+    );
+
+    const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+
+    // El descuento general puede ser % o monto fijo: lo llevamos a pesos
+    const detalle = ventas.map(v => {
+      const subtotal = r2(v.subtotal);
+      let descuento_monto = 0;
+      if (Number(v.discount_pct) > 0)        descuento_monto = subtotal * (Math.min(Number(v.discount_pct), 100) / 100);
+      else if (Number(v.discount_fixed) > 0) descuento_monto = Math.min(Number(v.discount_fixed), subtotal);
+
+      return {
+        id: v.id,
+        created_at: v.created_at,
+        usuario: v.usuario || null,
+        total: r2(v.total),
+        subtotal,
+        discount_pct: Number(v.discount_pct) || 0,
+        discount_fixed: r2(v.discount_fixed),
+        descuento_monto: r2(descuento_monto),
+        ajuste_manual: r2(v.ajuste_manual),
+        precios_editados: Number(v.precios_editados) || 0,
+        resignado_total: r2(descuento_monto + r2(v.ajuste_manual)),
+      };
+    });
+
+    // Solo las ventas que efectivamente tuvieron descuento o precio tocado
+    const conDescuento = detalle.filter(d => d.descuento_monto > 0 || d.precios_editados > 0);
+
+    // Agrupado por vendedor, para ver quién descuenta más
+    const porVendedorMap = new Map();
+    for (const d of conDescuento) {
+      const k = d.usuario || 'Sin registrar';
+      const acc = porVendedorMap.get(k) || {
+        usuario: k, ventas: 0, descuento_general: 0, ajuste_manual: 0, total_resignado: 0, precios_editados: 0,
+      };
+      acc.ventas            += 1;
+      acc.descuento_general += d.descuento_monto;
+      acc.ajuste_manual     += d.ajuste_manual;
+      acc.total_resignado   += d.resignado_total;
+      acc.precios_editados  += d.precios_editados;
+      porVendedorMap.set(k, acc);
+    }
+    const porVendedor = [...porVendedorMap.values()]
+      .map(a => ({
+        ...a,
+        descuento_general: r2(a.descuento_general),
+        ajuste_manual: r2(a.ajuste_manual),
+        total_resignado: r2(a.total_resignado),
+      }))
+      .sort((a, b) => b.total_resignado - a.total_resignado);
+
+    const sum = (arr, f) => r2(arr.reduce((s, x) => s + f(x), 0));
+    const totalVendido = sum(detalle, d => d.total);
+    const totalDesc    = sum(detalle, d => d.descuento_monto);
+    const totalAjuste  = sum(detalle, d => d.ajuste_manual);
+    const totalResign  = r2(totalDesc + totalAjuste);
+
+    res.json({
+      ok: true,
+      desde, hasta,
+      resumen: {
+        ventas_total: detalle.length,
+        ventas_con_descuento: conDescuento.length,
+        total_vendido: totalVendido,
+        descuento_general: totalDesc,
+        ajuste_manual: totalAjuste,
+        total_resignado: totalResign,
+        // Cuánto se resignó respecto de lo que se podría haber facturado
+        pct_sobre_vendido: totalVendido > 0 ? r2((totalResign / (totalVendido + totalResign)) * 100) : 0,
+      },
+      por_vendedor: porVendedor,
+      ventas: conDescuento,
+    });
+  } catch(e) {
+    console.error('API reporte descuentos:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // API: exportar Excel
 router.get('/api/reportes/ventas/export', (req, res) => {
   try {

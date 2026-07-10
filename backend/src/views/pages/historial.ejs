@@ -161,14 +161,16 @@
                 <th class="hist-th">Fecha</th>
                 <th class="hist-th hist-col-hora">Hora</th>
                 <th class="hist-th hist-col-metodo">Método</th>
+                <th class="hist-th">Vendedor</th>
                 <th class="hist-th">Factura</th>
                 <th class="hist-th">Estado</th>
+                <th class="hist-th" style="text-align:right;">Descuento</th>
                 <th class="hist-th" style="text-align:right;">Total</th>
                 <th class="hist-th" style="width:44px;"></th>
               </tr>
             </thead>
             <tbody id="histTbody">
-              <tr><td colspan="9" style="padding:48px;text-align:center;color:var(--text-secondary);">
+              <tr><td colspan="11" style="padding:48px;text-align:center;color:var(--text-secondary);">
                 <span style="display:inline-block;width:18px;height:18px;border:2.5px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
               </td></tr>
             </tbody>
@@ -261,7 +263,7 @@ function parseFecha(v) { return v ? new Date(String(v).replace(' ','T')) : new D
 
 // ── Inicializar con HOY por defecto ──
 window.addEventListener('DOMContentLoaded', () => {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = window.hoyLocal();
   document.getElementById('filtroDesde').value = hoy;
   document.getElementById('filtroHasta').value = hoy;
   buscar(1);
@@ -285,7 +287,7 @@ function debounceSearch() {
 }
 
 function limpiar() {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = window.hoyLocal();
   document.getElementById('filtroDesde').value = hoy;
   document.getElementById('filtroHasta').value = hoy;
   document.getElementById('filtroHasta').value = hoy;
@@ -300,7 +302,7 @@ function limpiar() {
 async function buscar(page = 1) {
   _paginaActual = page;
   const tbody = document.getElementById('histTbody');
-  tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;">
+  tbody.innerHTML = `<tr><td colspan="11" style="padding:40px;text-align:center;">
     <span style="display:inline-block;width:18px;height:18px;border:2.5px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></span>
   </td></tr>`;
   document.getElementById('histResumen').style.display = 'none';
@@ -323,7 +325,7 @@ async function buscar(page = 1) {
     _ventas    = data.ventas || [];
 
     if (!_ventas.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="padding:48px;text-align:center;color:var(--text-secondary);">
+      tbody.innerHTML = `<tr><td colspan="11" style="padding:48px;text-align:center;color:var(--text-secondary);">
         <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:10px;opacity:.2;"></i>
         No hay ventas para ese filtro
       </td></tr>`;
@@ -356,7 +358,7 @@ async function buscar(page = 1) {
     }
 
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="9" style="padding:32px;text-align:center;color:#ef4444;">Error al cargar: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="padding:32px;text-align:center;color:#ef4444;">Error al cargar: ${e.message}</td></tr>`;
   }
 }
 
@@ -388,19 +390,61 @@ function renderTabla(ventas) {
       ? `text-decoration:line-through;color:var(--text-muted);`
       : `font-weight:800;color:var(--text-primary);`;
 
-    // Items del detalle
-    const itemsHtml = (v.items||[]).map(it =>
-      `<tr>
+    // ── Descuento general + ajuste manual de precios ──────────────
+    const descMonto  = Number(v.descuento_monto || 0);
+    const ajusteMan  = Number(v.ajuste_manual || 0);   // plata resignada al editar precios a mano
+    const nEditados  = Number(v.precios_editados || 0);
+    const tieneDesc  = descMonto > 0;
+
+    // Etiqueta de descuento general (muestra el % si fue por porcentaje)
+    const chipDesc = tieneDesc
+      ? `<span title="Descuento aplicado sobre el total de la venta" style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:800;background:rgba(239,68,68,.10);color:#dc2626;white-space:nowrap;">
+           −${fmt(descMonto)}${Number(v.discount_pct) > 0 ? ` <span style="font-weight:600;opacity:.85;">(${Number(v.discount_pct)}%)</span>` : ''}
+         </span>`
+      : `<span style="font-size:12px;color:var(--text-muted);">—</span>`;
+
+    // Etiqueta de precios modificados a mano
+    const chipEdit = nEditados > 0
+      ? `<div style="margin-top:3px;">
+           <span title="${nEditados} producto(s) con el precio modificado a mano${ajusteMan > 0 ? ` · ${fmt(ajusteMan)} menos que el precio de lista` : ''}"
+                 style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">
+             ✎ ${nEditados} precio${nEditados > 1 ? 's' : ''} editado${nEditados > 1 ? 's' : ''}${ajusteMan > 0 ? ` · −${fmt(ajusteMan)}` : ''}
+           </span>
+         </div>`
+      : '';
+
+    const chipVendedor = v.usuario
+      ? `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;background:var(--bg-surface-2);color:var(--text-secondary);white-space:nowrap;">
+           <i class="bi bi-person" style="font-size:10px;"></i> ${v.usuario}
+         </span>`
+      : `<span style="font-size:11px;color:var(--text-muted);" title="Esta venta es anterior al registro de vendedor">—</span>`;
+
+    // Items del detalle (marcando los que tuvieron el precio cambiado a mano)
+    const itemsHtml = (v.items||[]).map(it => {
+      const editado = Number(it.precio_editado) === 1 && it.price_original != null;
+      const precioCol = editado
+        ? `<span style="font-size:11.5px;color:var(--text-muted);text-decoration:line-through;">${fmt(it.price_original)}</span>
+           <span style="font-size:12px;font-weight:800;color:#b45309;"> → ${fmt(it.price)}</span>
+           <span title="Precio modificado a mano" style="color:#b45309;font-weight:800;">✎</span>`
+        : `<span style="font-size:12px;color:var(--text-secondary);">${fmt(it.price)}</span>`;
+      return `<tr>
         <td style="padding:4px 8px 4px 0;font-size:13px;color:var(--text-primary);">${it.name}</td>
         <td style="padding:4px 8px;font-size:12px;color:var(--text-secondary);white-space:nowrap;">× ${it.qty}</td>
+        <td style="padding:4px 8px;white-space:nowrap;">${precioCol}</td>
         <td style="padding:4px 0;font-size:13px;text-align:right;font-weight:600;">$${Number(it.subtotal||it.price*it.qty).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     const esMixto = v.payment_method && v.payment_method.includes(' + ');
     const metodos = esMixto ? v.payment_method.split(' + ') : null;
     const tieneMontosDetalle = esMixto && v.monto_mixto2 != null && v.cash_received != null;
 
     const extraInfo = [
+      v.usuario ? `Vendedor: <strong>${v.usuario}</strong>` : null,
+      tieneDesc ? `Subtotal: <strong>${fmt(v.subtotal||0)}</strong>` : null,
+      tieneDesc ? `<span style="color:#dc2626;">Descuento${Number(v.discount_pct)>0?` (${Number(v.discount_pct)}%)`:' ($)'}: <strong>−${fmt(descMonto)}</strong></span>` : null,
+      nEditados > 0 ? `<span style="color:#b45309;">Precios editados: <strong>${nEditados}</strong>${ajusteMan>0?` · resignado <strong>−${fmt(ajusteMan)}</strong>`:''}</span>` : null,
+      Number(v.recargo_pct) > 0 ? `Recargo: <strong>+${Number(v.recargo_pct)}%</strong>` : null,
       esMixto && tieneMontosDetalle
         ? `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
              <span style="font-size:11.5px;font-weight:700;color:#059669;">${metodos[0]}: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
@@ -430,13 +474,15 @@ function renderTabla(ventas) {
             : `<span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span>`
           }
         </td>
+        <td class="hist-td">${chipVendedor}</td>
         <td class="hist-td">${badgeFact}</td>
         <td class="hist-td">${badgeEstado}</td>
+        <td class="hist-td" style="text-align:right;">${chipDesc}${chipEdit}</td>
         <td class="hist-td" style="text-align:right;font-size:14px;${totalStyle}">${fmt(v.total)}</td>
         <td class="hist-td" style="text-align:center;">${btnAnular}</td>
       </tr>
       <tr class="hist-detalle" id="hdet-${v.id}">
-        <td colspan="9" style="padding:0;">
+        <td colspan="11" style="padding:0;">
           <div class="hist-detalle-inner">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;">Items de la venta</div>

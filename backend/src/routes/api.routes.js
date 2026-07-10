@@ -146,6 +146,10 @@ router.get('/ventas/buscar', (req, res) => {
       SELECT DISTINCT
         s.id, s.total, s.payment_method, s.created_at,
         s.cash_received, s.change_amount,
+        COALESCE(s.discount_pct, 0)   AS discount_pct,
+        COALESCE(s.discount_fixed, 0) AS discount_fixed,
+        COALESCE(s.recargo_pct, 0)    AS recargo_pct,
+        s.usuario,
         COALESCE(s.monto_mixto2, NULL) AS monto_mixto2,
         COALESCE(s.status,'completada') AS status,
         s.anulacion_motivo, s.anulada_at, s.anulada_by,
@@ -167,7 +171,31 @@ router.get('/ventas/buscar', (req, res) => {
     const ventasConItems = ventas.map(v => {
       const items = all(`SELECT * FROM sale_items WHERE sale_id = ?`, [v.id]);
       const tipoLetra = ({1:'A',6:'B',11:'C'})[Number(v.factura_tipo_cbte)] || null;
-      return { ...v, facturada: !!v.factura_id, factura_tipo_letra: tipoLetra, items };
+
+      // Subtotal antes del descuento general
+      const subtotal = items.reduce((s, i) => s + Number(i.subtotal || (i.price * i.qty) || 0), 0);
+
+      // Monto del descuento general de la venta (sea % o $ fijo)
+      let descuento_monto = 0;
+      if (Number(v.discount_pct) > 0)        descuento_monto = subtotal * (Math.min(Number(v.discount_pct), 100) / 100);
+      else if (Number(v.discount_fixed) > 0) descuento_monto = Math.min(Number(v.discount_fixed), subtotal);
+      descuento_monto = Math.round(descuento_monto * 100) / 100;
+
+      // Items cuyo precio se tocó a mano + cuánta plata se resignó en ellos
+      const itemsEditados = items.filter(i => Number(i.precio_editado) === 1);
+      const ajuste_manual = Math.round(itemsEditados.reduce((s, i) =>
+        s + ((Number(i.price_original) || 0) - Number(i.price || 0)) * Number(i.qty || 0), 0) * 100) / 100;
+
+      return {
+        ...v,
+        facturada: !!v.factura_id,
+        factura_tipo_letra: tipoLetra,
+        subtotal: Math.round(subtotal * 100) / 100,
+        descuento_monto,
+        precios_editados: itemsEditados.length,
+        ajuste_manual,
+        items
+      };
     });
 
     res.json({ ventas: ventasConItems, total, page: Number(page), limit });
@@ -1019,7 +1047,9 @@ router.get('/notificaciones', (req, res) => {
       if (fs.existsSync(changelogPath)) {
         const changelog = JSON.parse(fs.readFileSync(changelogPath, 'utf8'));
         const novedades = changelog.novedades || [];
-        novedades.forEach(n => {
+        // unshift() invierte el orden, así que recorremos al revés
+        // para que la novedad más reciente quede arriba de todo.
+        [...novedades].reverse().forEach(n => {
           notifs.unshift({
             tipo: 'novedad',
             icono: n.icono || 'bi-stars',

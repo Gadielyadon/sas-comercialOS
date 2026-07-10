@@ -790,7 +790,7 @@ async function verPagosProveedor(id, nombre, saldo) {
   _pagoCtrlSaldo = 0; // se recalcula desde movimientos
   document.getElementById('pagosCtrlNombre').textContent = nombre;
   document.getElementById('pagoCtrlMonto').value  = '';
-  document.getElementById('pagoCtrlFecha').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('pagoCtrlFecha').value  = window.hoyLocal();
   document.getElementById('pagoCtrlDesc').value   = '';
   document.getElementById('pagoCtrlError').style.display = 'none';
   const metodoEl = document.getElementById('pagoCtrlMetodo');

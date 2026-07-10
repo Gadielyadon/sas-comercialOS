@@ -44,3 +44,89 @@ document.addEventListener('focusin', function(e) {
   inp.select();
 });
 </script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     TABLAS EN CELULAR · wrapper de scroll horizontal
+     Envuelve cada <table> en un contenedor scrolleable, marca las
+     tablas anchas para fijar la primera columna y avisa al usuario
+     cuando hay columnas fuera de pantalla.
+     Convive con /css/mobile.css. Nada de esto corre en escritorio.
+     ══════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+  var MOBILE = '(max-width: 768px)';
+
+  function esMobile() {
+    return window.matchMedia && window.matchMedia(MOBILE).matches;
+  }
+
+  // ¿Algún ancestro cercano ya scrollea de costado? No duplicamos.
+  function yaScrollea(t) {
+    var n = t.parentElement, saltos = 0;
+    while (n && saltos < 3) {
+      if (n.classList && n.classList.contains('tbl-scroll')) return n;
+      var ox = getComputedStyle(n).overflowX;
+      if (ox === 'auto' || ox === 'scroll') { n.classList.add('tbl-scroll'); return n; }
+      n = n.parentElement; saltos++;
+    }
+    return null;
+  }
+
+  function envolver(t) {
+    var existente = yaScrollea(t);
+    if (existente) return existente;
+    var w = document.createElement('div');
+    w.className = 'tbl-scroll';
+    t.parentNode.insertBefore(w, t);
+    w.appendChild(t);
+    return w;
+  }
+
+  function marcar(w, t) {
+    // Primera columna fija solo si la tabla es realmente ancha
+    var cab = t.tHead && t.tHead.rows[0];
+    if (cab && cab.cells.length >= 6) w.classList.add('col-fija');
+
+    // Aviso de "hay más a la derecha"
+    var desborda = t.scrollWidth > w.clientWidth + 4;
+    var hint = w.previousElementSibling;
+    if (!hint || !hint.classList.contains('tbl-hint')) {
+      if (!desborda) return;
+      hint = document.createElement('div');
+      hint.className = 'tbl-hint';
+      hint.innerHTML = '<i class="bi bi-arrow-left-right"></i> Deslizá la tabla para ver todas las columnas';
+      w.parentNode.insertBefore(hint, w);
+    }
+    hint.classList.toggle('oculto', !desborda);
+  }
+
+  function aplicar() {
+    if (!esMobile()) return;
+    var tablas = document.querySelectorAll('main table, .page-body table, .rv-table-wrap table, .ax-card table');
+    Array.prototype.forEach.call(tablas, function (t) {
+      if (t.closest('.ticket') || t.hasAttribute('data-sin-scroll')) return;
+      marcar(envolver(t), t);
+    });
+  }
+
+  // Muchas pantallas repintan el <tbody> por AJAX; el ancho cambia después.
+  var pendiente = null;
+  function reAplicar() {
+    clearTimeout(pendiente);
+    pendiente = setTimeout(aplicar, 120);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar);
+  else aplicar();
+
+  window.addEventListener('resize', reAplicar);
+  window.addEventListener('load', reAplicar);
+  document.addEventListener('DOMContentLoaded', function () {
+    var main = document.querySelector('main') || document.body;
+    new MutationObserver(reAplicar).observe(main, { childList: true, subtree: true });
+  });
+
+  window.wrapTablasMobile = aplicar;
+})();
+</script>

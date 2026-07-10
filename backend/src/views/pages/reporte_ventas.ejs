@@ -128,6 +128,9 @@
           <button class="stab" onclick="showTab('departamentos')">
             <i class="bi bi-grid-1x2"></i> Por departamento
           </button>
+          <button class="stab" onclick="showTab('descuentos')">
+            <i class="bi bi-percent"></i> Descuentos
+          </button>
         </div>
 
         <!-- Tab: Productos -->
@@ -203,6 +206,69 @@
           </div>
         </div>
 
+        <!-- Tab: Descuentos -->
+        <div id="tabDescuentos" style="display:none;">
+
+          <!-- Totales del período -->
+          <div id="descStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:18px;">
+            <div class="rv-stat">
+              <div class="rv-stat-label">Descuentos aplicados</div>
+              <div class="rv-stat-val" id="dsDesc" style="color:#dc2626;">$0</div>
+              <div class="rv-stat-sub" id="dsDescVentas">en 0 ventas</div>
+            </div>
+            <div class="rv-stat">
+              <div class="rv-stat-label">Precios modificados</div>
+              <div class="rv-stat-val" id="dsAjuste" style="color:#b45309;">$0</div>
+              <div class="rv-stat-sub">resignado al editar precios</div>
+            </div>
+            <div class="rv-stat">
+              <div class="rv-stat-label">Total resignado</div>
+              <div class="rv-stat-val" id="dsResign" style="color:#dc2626;">$0</div>
+              <div class="rv-stat-sub" id="dsPct">0% de lo facturable</div>
+            </div>
+          </div>
+
+          <!-- Por vendedor -->
+          <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin:6px 0 8px;">
+            <i class="bi bi-people"></i> Por vendedor
+          </div>
+          <div class="rv-table-wrap" style="margin-bottom:20px;">
+            <table class="rv-table">
+              <thead><tr>
+                <th>Vendedor</th>
+                <th>Ventas</th>
+                <th>Descuento general</th>
+                <th>Precios editados</th>
+                <th>Total resignado</th>
+              </tr></thead>
+              <tbody id="tbodyDescVendedor">
+                <tr><td colspan="5" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Detalle venta por venta -->
+          <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin:6px 0 8px;">
+            <i class="bi bi-receipt"></i> Ventas con descuento o precio modificado
+          </div>
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>N°</th>
+                <th>Fecha</th>
+                <th>Vendedor</th>
+                <th>Subtotal</th>
+                <th>Descuento</th>
+                <th>Precios editados</th>
+                <th>Total cobrado</th>
+              </tr></thead>
+              <tbody id="tbodyDescDetalle">
+                <tr><td colspan="7" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -221,13 +287,12 @@ const fmtNum   = n => Number(n).toLocaleString('es-AR');
 let _datosActuales = null;
 
 function hoyStr() {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
+  return window.hoyLocal();
 }
 function addDays(str, n) {
   const d = new Date(str + 'T00:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
+  return window.ymdLocal(d);
 }
 
 function setRango(tipo) {
@@ -241,14 +306,14 @@ function setRango(tipo) {
     set(a, a);
   } else if (tipo === 'semana') {
     const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
-    set(d.toISOString().split('T')[0], hoy);
+    set(window.ymdLocal(d), hoy);
   } else if (tipo === 'mes') {
     const d = new Date(); d.setDate(1);
-    set(d.toISOString().split('T')[0], hoy);
+    set(window.ymdLocal(d), hoy);
   } else if (tipo === 'mes_ant') {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
     const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    set(d.toISOString().split('T')[0], fin.toISOString().split('T')[0]);
+    set(window.ymdLocal(d), window.ymdLocal(fin));
   }
   buscar();
 }
@@ -259,11 +324,11 @@ function set(desde, hasta) {
 }
 
 function showTab(tab) {
-  ['Productos','Categorias','Metodos','Departamentos'].forEach(t => {
+  ['Productos','Categorias','Metodos','Departamentos','Descuentos'].forEach(t => {
     document.getElementById('tab'+t).style.display = t.toLowerCase() === tab ? '' : 'none';
   });
   document.querySelectorAll('.stab').forEach((b, i) => {
-    b.classList.toggle('on', ['productos','categorias','metodos','departamentos'][i] === tab);
+    b.classList.toggle('on', ['productos','categorias','metodos','departamentos','descuentos'][i] === tab);
   });
 }
 
@@ -293,10 +358,81 @@ async function buscar() {
     renderResumen(data);
     document.getElementById('secResumen').style.display = '';
     document.getElementById('btnExport').style.display = '';
+
+    // Descuentos: se carga aparte, con el mismo rango de fechas
+    cargarDescuentos(desde, hasta);
   } catch(e) {
     sp.style.display = 'none';
     alert('Error de conexión');
   }
+}
+
+// ── Pestaña Descuentos ────────────────────────────────────────
+async function cargarDescuentos(desde, hasta) {
+  const tbV = document.getElementById('tbodyDescVendedor');
+  const tbD = document.getElementById('tbodyDescDetalle');
+  tbV.innerHTML = `<tr><td colspan="5" class="rv-empty">Cargando...</td></tr>`;
+  tbD.innerHTML = `<tr><td colspan="7" class="rv-empty">Cargando...</td></tr>`;
+
+  try {
+    const r = await fetch(`/api/reportes/descuentos?desde=${desde}&hasta=${hasta}`);
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Error');
+    renderDescuentos(d);
+  } catch (e) {
+    tbV.innerHTML = `<tr><td colspan="5" class="rv-empty">No se pudo cargar: ${e.message}</td></tr>`;
+    tbD.innerHTML = `<tr><td colspan="7" class="rv-empty">—</td></tr>`;
+  }
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderDescuentos(d) {
+  const res = d.resumen;
+  document.getElementById('dsDesc').textContent       = '−' + fmtPesos(res.descuento_general);
+  document.getElementById('dsDescVentas').textContent = `en ${res.ventas_con_descuento} venta${res.ventas_con_descuento === 1 ? '' : 's'}`;
+  document.getElementById('dsAjuste').textContent     = '−' + fmtPesos(res.ajuste_manual);
+  document.getElementById('dsResign').textContent     = '−' + fmtPesos(res.total_resignado);
+  document.getElementById('dsPct').textContent        = `${res.pct_sobre_vendido}% de lo facturable`;
+
+  const chipDesc = v => `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;background:rgba(239,68,68,.10);color:#dc2626;white-space:nowrap;">−${fmtPesos(v)}</span>`;
+  const chipUser = u => `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:var(--bg-surface-2);color:var(--text-secondary);white-space:nowrap;"><i class="bi bi-person"></i> ${escHtml(u)}</span>`;
+  const chipEdit = (n, monto) => `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">✎ ${n}${monto > 0 ? ' · −' + fmtPesos(monto) : ''}</span>`;
+  const guion = '<span style="color:var(--text-muted);">—</span>';
+
+  // Por vendedor
+  document.getElementById('tbodyDescVendedor').innerHTML = d.por_vendedor.length
+    ? d.por_vendedor.map(v => `
+        <tr>
+          <td>${chipUser(v.usuario)}</td>
+          <td>${v.ventas}</td>
+          <td>${v.descuento_general > 0 ? chipDesc(v.descuento_general) : guion}</td>
+          <td>${v.precios_editados > 0 ? chipEdit(v.precios_editados, v.ajuste_manual) : guion}</td>
+          <td style="font-weight:800;color:#dc2626;">−${fmtPesos(v.total_resignado)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="rv-empty">Sin descuentos en este período.</td></tr>`;
+
+  // Detalle venta por venta
+  document.getElementById('tbodyDescDetalle').innerHTML = d.ventas.length
+    ? d.ventas.map(v => {
+        const f = String(v.created_at || '').replace(' ', 'T');
+        const fecha = `${f.slice(8,10)}/${f.slice(5,7)}/${f.slice(0,4)} ${f.slice(11,16)}`;
+        return `
+        <tr>
+          <td style="color:var(--text-muted);">#${v.id}</td>
+          <td style="white-space:nowrap;">${fecha}</td>
+          <td>${v.usuario ? chipUser(v.usuario) : `<span style="color:var(--text-muted);" title="Venta anterior al registro de vendedor">—</span>`}</td>
+          <td>${fmtPesos(v.subtotal)}</td>
+          <td>${v.descuento_monto > 0
+              ? `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;background:rgba(239,68,68,.10);color:#dc2626;white-space:nowrap;">−${fmtPesos(v.descuento_monto)}${v.discount_pct > 0 ? ` (${v.discount_pct}%)` : ''}</span>`
+              : guion}</td>
+          <td>${v.precios_editados > 0 ? chipEdit(v.precios_editados, v.ajuste_manual) : guion}</td>
+          <td style="font-weight:800;">${fmtPesos(v.total)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="7" class="rv-empty">No hubo descuentos ni precios modificados en este período.</td></tr>`;
 }
 
 function renderResumen(data) {

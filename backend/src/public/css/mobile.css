@@ -1,0 +1,183 @@
+/* ══════════════════════════════════════════════════════════════════
+   AxSoft · CAPA MOBILE GLOBAL
+   Se carga DESPUÉS de styles.css. No modifica nada del escritorio:
+   todo vive dentro de @media (max-width:768px).
+
+   Trabaja junto a la función wrapTablasMobile() de partials/scripts.ejs,
+   que envuelve cada <table> en un <div class="tbl-scroll">.
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ─────────────────────────────────────────────────────────────
+     1 · DESHACER EL OCULTAMIENTO DE COLUMNAS
+
+     styles.css (línea ~1017) hace:
+         .sales-table th:nth-child(n+5), .sales-table td:nth-child(n+5)
+             { display: none; }
+
+     Eso esconde TODA columna de la 5 en adelante. En la práctica:
+       · inventario  → sin Precio, sin Stock, sin Acciones
+       · clientes    → sin Límite de crédito, sin Acciones
+       · Proveedores → sin Saldo, sin Acciones
+
+     Es decir: en el celular no se podía editar ni borrar nada.
+     Ahora las mostramos y dejamos que la tabla scrollee de costado.
+     ───────────────────────────────────────────────────────────── */
+  .sales-table th:nth-child(n+5),
+  .sales-table td:nth-child(n+5) { display: table-cell; }
+
+  /* Presupuestos: styles.css escondía la columna 5, que es el TOTAL. */
+  #presupuestosTable th:nth-child(5),
+  #presupuestosTable td:nth-child(5) { display: table-cell; }
+
+  /* En inventario sí conviene esconder Costo, Mayorista y Margen:
+     son datos de gestión, no de consulta rápida. Esa regla de
+     styles.css (#productsTable, ≤700px) la dejamos intacta. */
+
+
+  /* ─────────────────────────────────────────────────────────────
+     2 · SCROLL HORIZONTAL PARA CUALQUIER TABLA
+     ───────────────────────────────────────────────────────────── */
+  .tbl-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    border-radius: 10px;
+    max-width: 100%;
+  }
+  .tbl-scroll::-webkit-scrollbar { height: 0; }
+
+  .tbl-scroll > table {
+    min-width: max-content !important;
+    width: auto !important;
+  }
+
+  /* Aviso de que hay más columnas a la derecha */
+  .tbl-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 4px 2px 7px;
+    letter-spacing: .2px;
+  }
+  .tbl-hint i { font-size: 12px; }
+  .tbl-hint.oculto { display: none; }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     3 · PRIMERA COLUMNA FIJA
+     Solo en tablas anchas (≥6 columnas). Sin esto, al scrollear de
+     costado se pierde de vista a qué fila pertenece cada número.
+     ───────────────────────────────────────────────────────────── */
+  .tbl-scroll.col-fija > table th:first-child,
+  .tbl-scroll.col-fija > table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-surface);
+    box-shadow: 1px 0 0 var(--border-color);
+  }
+  .tbl-scroll.col-fija > table thead th:first-child {
+    z-index: 3;
+    background: var(--table-head-bg);
+    color: var(--table-head-color);
+  }
+  [data-theme="dark"] .tbl-scroll.col-fija > table td:first-child {
+    background: var(--bg-card);
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     4 · FILAS Y BOTONES CÓMODOS CON EL DEDO
+     ───────────────────────────────────────────────────────────── */
+  .tbl-scroll > table th,
+  .tbl-scroll > table td {
+    padding: 11px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Los botones de acción dentro de tablas: mínimo táctil ~38px */
+  .tbl-scroll > table td button,
+  .tbl-scroll > table td a.btn-action,
+  .tbl-scroll > table td .btn-icon {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+  .tbl-scroll > table td .acciones,
+  .tbl-scroll > table td .row-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     5 · iOS DEJA DE HACER ZOOM AL TOCAR UN CAMPO
+
+     Safari amplía la página automáticamente cuando un input tiene
+     font-size < 16px. Es la causa #1 de que un sistema "se vea mal"
+     en iPhone: tocás un filtro y la pantalla salta.
+
+     Lo acotamos al contenido de las páginas y a los modales, para no
+     tocar el punto de venta (que ya tiene sus propios tamaños).
+     ───────────────────────────────────────────────────────────── */
+  .page-body input:not([type="checkbox"]):not([type="radio"]),
+  .page-body select,
+  .page-body textarea,
+  .sale-overlay input:not([type="checkbox"]):not([type="radio"]),
+  .sale-overlay select,
+  .sale-overlay textarea {
+    font-size: 16px;
+  }
+
+  /* Y que se puedan tocar */
+  .page-body input:not([type="checkbox"]):not([type="radio"]),
+  .page-body select {
+    min-height: 42px;
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     6 · BARRAS DE FILTROS Y TOOLBARS APILADAS
+     ───────────────────────────────────────────────────────────── */
+  .page-toolbar,
+  .filtros-bar,
+  .toolbar,
+  .hist-filtros,
+  .stock-filtros {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .page-toolbar > *,
+  .filtros-bar > *,
+  .toolbar > * { width: 100%; }
+
+  .page-header { gap: 10px; }
+  .page-header .btn-action,
+  .page-header button { width: 100%; justify-content: center; }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     7 · TARJETAS DE MÉTRICAS
+     Dos por fila hasta 560px, una sola abajo de eso.
+     ───────────────────────────────────────────────────────────── */
+  .stat-card { min-width: 0; }
+  .stat-value { font-size: 20px; }
+}
+
+@media (max-width: 560px) {
+  main.page-body > div[style*="grid-template-columns:repeat(auto-fit"],
+  main.page-body > div[style*="grid-template-columns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+  .tbl-scroll > table th,
+  .tbl-scroll > table td { font-size: 12.5px; padding: 10px; }
+}

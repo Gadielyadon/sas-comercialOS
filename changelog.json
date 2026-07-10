@@ -1,6 +1,50 @@
 {
   "novedades": [
     {
+      "id": "v2-6-ventas-en-espera",
+      "version": "2.6",
+      "fecha": "2026-07-09",
+      "titulo": "Ventas en espera: atendé a varios clientes a la vez",
+      "detalle": "¿El cliente volvió a la góndola a buscar algo y atrás se te hace cola? Apretá F7: la venta cargada queda guardada y arrancás una nueva desde cero. Con Alt+1, Alt+2… volvés a cualquiera de las que dejaste esperando. Podés tener hasta 9 al mismo tiempo, cada una con su cliente, su descuento y su lista de precios. El chip 'En espera' de la barra superior se pone amarillo y te muestra cuántas hay pendientes, así no te olvidás ninguna. Si se corta la luz o se cierra el navegador, las ventas se recuperan al volver a entrar.",
+      "imagen": "",
+      "color": "#f59e0b",
+      "icono": "bi-pause-circle-fill",
+      "link": "/ventas"
+    },
+    {
+      "id": "v2-5-verificador-precios-f9",
+      "version": "2.5",
+      "fecha": "2026-07-09",
+      "titulo": "Consultá precios al instante con F9",
+      "detalle": "En el Punto de Venta apretá F9 y se abre el Verificador de Precios. Buscás por nombre o SKU y ves el precio al toque. Es solo para consultar: no agrega nada al carrito ni modifica la venta que estás haciendo. Volvés a apretar F9 (o cerrás) y seguís donde estabas.",
+      "imagen": "",
+      "color": "#1B4FD8",
+      "icono": "bi-tag-fill",
+      "link": "/ventas"
+    },
+    {
+      "id": "v2-4-reporte-descuentos",
+      "version": "2.4",
+      "fecha": "2026-07-09",
+      "titulo": "Control de descuentos y precios modificados",
+      "detalle": "En Reportes hay una pestaña nueva: Descuentos. Ahí ves cuánto se descontó en el período, qué precios se modificaron a mano en el punto de venta y qué vendedor lo hizo. En el Historial también aparecen las columnas Vendedor y Descuento.",
+      "imagen": "",
+      "color": "#dc2626",
+      "icono": "bi-percent",
+      "link": "/reportes/ventas"
+    },
+    {
+      "id": "v2-3-precios-por-cantidad",
+      "version": "2.3",
+      "fecha": "2026-07-09",
+      "titulo": "Precios por cantidad (escalones)",
+      "detalle": "Cargá varios escalones por producto: desde 5 unidades un precio, desde 9 otro más bajo. En el punto de venta se aplica solo según la cantidad y se marca como 'x Cantidad', diferenciado del precio mayorista. Los escalones tienen prioridad sobre el mayorista simple.",
+      "imagen": "",
+      "color": "#0f766e",
+      "icono": "bi-layers-fill",
+      "link": "/inventario"
+    },
+    {
       "id": "v2-edicion-precio-venta",
       "version": "2.2",
       "fecha": "2026-06-04",
@@ -10,28 +54,6 @@
       "color": "#f59e0b",
       "icono": "bi-pencil-fill",
       "link": "/ventas"
-    },
-    {
-      "id": "v2-historial-clientes",
-      "version": "2.1",
-      "fecha": "2026-06-04",
-      "titulo": "Historial de compras por cliente",
-      "detalle": "Ahora cada cliente tiene un registro de todas sus compras, sea en efectivo o fiado. Podés ver estadísticas, ticket promedio y el producto más comprado.",
-      "imagen": "",
-      "color": "#6366f1",
-      "icono": "bi-bag-check-fill",
-      "link": "/clientes"
-    },
-    {
-      "id": "v2-precios-presupuesto",
-      "version": "2.0",
-      "fecha": "2026-05-01",
-      "titulo": "Precio mayorista en presupuestos",
-      "detalle": "Los presupuestos ahora pueden usar el precio mayorista de cada producto. También se puede ajustar el IVA por defecto a todos los ítems de una sola vez.",
-      "imagen": "",
-      "color": "#0891b2",
-      "icono": "bi-file-earmark-text-fill",
-      "link": "/presupuestos"
     }
   ]
 }
