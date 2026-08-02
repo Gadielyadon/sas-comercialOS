@@ -85,13 +85,26 @@ function initAfipSchema() {
     )
   `);
 
-  // Migración: si la tabla 'facturas' ya existía sin estas columnas
-  // (esquema viejo), agregarlas — evita "no such column: f.cliente_nombre"
-  // en /api/ventas/buscar.
+  // Migración: si la tabla 'facturas' ya existía con un esquema viejo
+  // (de versiones anteriores del sistema), agregar las columnas que
+  // falten — evita errores de "no such column" en cualquier cliente
+  // que todavía no tenga el esquema actualizado.
   try {
     const cols = all(`PRAGMA table_info(facturas)`).map(c => c.name);
-    if (!cols.includes('cliente_cuit'))   run(`ALTER TABLE facturas ADD COLUMN cliente_cuit TEXT`);
-    if (!cols.includes('cliente_nombre')) run(`ALTER TABLE facturas ADD COLUMN cliente_nombre TEXT`);
+    const faltantes = {
+      cliente_cuit:    `ALTER TABLE facturas ADD COLUMN cliente_cuit TEXT`,
+      cliente_nombre:  `ALTER TABLE facturas ADD COLUMN cliente_nombre TEXT`,
+      importe_total:   `ALTER TABLE facturas ADD COLUMN importe_total REAL NOT NULL DEFAULT 0`,
+      importe_neto:    `ALTER TABLE facturas ADD COLUMN importe_neto REAL NOT NULL DEFAULT 0`,
+      importe_iva:     `ALTER TABLE facturas ADD COLUMN importe_iva REAL NOT NULL DEFAULT 0`,
+      concepto:        `ALTER TABLE facturas ADD COLUMN concepto INTEGER NOT NULL DEFAULT 1`,
+      fch_serv_desde:  `ALTER TABLE facturas ADD COLUMN fch_serv_desde TEXT`,
+      fch_serv_hasta:  `ALTER TABLE facturas ADD COLUMN fch_serv_hasta TEXT`,
+      fch_vto_pago:    `ALTER TABLE facturas ADD COLUMN fch_vto_pago TEXT`,
+    };
+    for (const [col, sql] of Object.entries(faltantes)) {
+      if (!cols.includes(col)) run(sql);
+    }
   } catch(e) { console.warn('[afip.service] Migración facturas:', e.message); }
 
   const defaults = [
@@ -141,6 +154,15 @@ function yyyymmddLocal(date = new Date()) {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   return `${yyyy}${mm}${dd}`;
+}
+
+// Acepta 'YYYY-MM-DD' (formato que manda un <input type="date">) o ya en
+// 'YYYYMMDD', y siempre devuelve 'YYYYMMDD' (el formato que pide AFIP).
+// Devuelve '' si la fecha no es válida.
+function normalizarFechaAfip(fecha) {
+  if (!fecha) return '';
+  const digits = String(fecha).replace(/\D/g, '');
+  return digits.length === 8 ? digits : '';
 }
 
 function fmtAfipDateTime(d) {
@@ -496,8 +518,9 @@ function calcularImportes(items, tipoCbte) {
 }
 
 function validarTipoSegunCondicionIVA(tipoLetra, condicionIvaEmisor, produccion) {
-  if (!produccion) return;
-
+  // Antes esto solo corría en producción; ahora se aplica siempre (también
+  // en homologación) para que el sistema jamás deje pasar un tipo de
+  // comprobante que no corresponde a la condición IVA configurada en Ajustes.
   const tipo = String(tipoLetra || '').toUpperCase();
   const cond = String(condicionIvaEmisor || '').trim().toLowerCase();
 
@@ -599,7 +622,7 @@ function validarDatosClienteParaTipo(tipoLetra, cliente, docInfo) {
   }
 }
 
-async function validarPuntoVenta(client, agent, Auth, puntoVenta) {
+async function validarPuntoVenta(client, agent, Auth, puntoVenta, produccion) {
   const [res] = await afipCall(() =>
     client.FEParamGetPtosVentaAsync({ Auth }, { httpsAgent: agent })
   );
@@ -609,6 +632,16 @@ async function validarPuntoVenta(client, agent, Auth, puntoVenta) {
 
   const existe = puntos.some((p) => Number(p?.PtoVta) === Number(puntoVenta));
   if (!existe) {
+    // En homologación, ARCA suele devolver la lista de puntos de venta
+    // vacía o desactualizada aunque el punto de venta exista y esté bien
+    // configurado — es una limitación conocida del ambiente de testing,
+    // no un error real. Solo bloqueamos en producción.
+    if (!produccion) {
+      console.warn(
+        `[afip] Punto de venta ${puntoVenta} no figura en FEParamGetPtosVenta (homologación) — se continúa igual, es normal en testing.`
+      );
+      return;
+    }
     throw new Error(
       `El punto de venta ${puntoVenta} no está habilitado en ARCA para esta CUIT`
     );
@@ -629,7 +662,7 @@ function extraerMensajesAfip(resp) {
   };
 }
 
-async function emitirFactura({ sale_id, tipo, cliente }) {
+async function emitirFactura({ sale_id, tipo, cliente, servicio }) {
   if (!facturacionHabilitada()) {
     throw new Error('La facturación electrónica está deshabilitada en Ajustes');
   }
@@ -676,7 +709,7 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
   const wsfeUrl = produccion ? URLS.prod.wsfe : URLS.homo.wsfe;
   const { client, agent } = await nuevoClienteAfip(wsfeUrl);
 
-  await validarPuntoVenta(client, agent, Auth, puntoVenta);
+  await validarPuntoVenta(client, agent, Auth, puntoVenta, produccion);
 
   const [ultimoRes] = await afipCall(() =>
     client.FECompUltimoAutorizadoAsync({
@@ -696,8 +729,11 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
   const hoy = yyyymmddLocal();
   const imp = calcularImportes(items, tipoCbte);
 
+  const srv = servicio || {};
+  const esServicio = !!srv.esServicio;
+
   const detalle = {
-    Concepto: 1,
+    Concepto: esServicio ? 2 : 1,
     DocTipo: docInfo.DocTipo,
     DocNro: docInfo.DocNro,
     CbteDesde: nroCbte,
@@ -713,6 +749,24 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
     MonCotiz: 1,
     CondicionIVAReceptorId: inferCondicionIVAReceptorId(tipoLetra, cliente || {}, docInfo),
   };
+
+  let fchServDesde = '';
+  let fchServHasta = '';
+  let fchVtoPago = '';
+
+  if (esServicio) {
+    fchServDesde = normalizarFechaAfip(srv.fchServDesde);
+    fchServHasta = normalizarFechaAfip(srv.fchServHasta);
+    fchVtoPago   = normalizarFechaAfip(srv.fchVtoPago) || hoy;
+
+    if (!fchServDesde || !fchServHasta) {
+      throw new Error('Para facturar un servicio hay que indicar el período facturado (fecha desde y hasta)');
+    }
+
+    detalle.FchServDesde = fchServDesde;
+    detalle.FchServHasta = fchServHasta;
+    detalle.FchVtoPago   = fchVtoPago;
+  }
 
   if (imp.discriminaIva && imp.ivaArray.length > 0) {
     detalle.Iva = { AlicIva: imp.ivaArray };
@@ -753,8 +807,9 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
     `
     INSERT INTO facturas
       (sale_id, tipo_cbte, punto_venta, nro_cbte, cae, cae_vto,
-       importe_total, importe_neto, importe_iva, cliente_cuit, cliente_nombre)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+       importe_total, importe_neto, importe_iva, cliente_cuit, cliente_nombre,
+       concepto, fch_serv_desde, fch_serv_hasta, fch_vto_pago)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `,
     [
       sale_id,
@@ -768,6 +823,10 @@ async function emitirFactura({ sale_id, tipo, cliente }) {
       imp.importeIva,
       cliente?.cuit ? String(cliente.cuit).replace(/\D/g, '') : null,
       cliente?.nombre || 'Consumidor Final',
+      esServicio ? 2 : 1,
+      esServicio ? fchServDesde : null,
+      esServicio ? fchServHasta : null,
+      esServicio ? fchVtoPago : null,
     ]
   );
 

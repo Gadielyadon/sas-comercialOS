@@ -37,7 +37,7 @@ exports.create = async (req, res) => {
       es_cuenta_corriente:  es_cuenta_corriente ? 1 : 0,
       monto_mixto2:         monto_mixto2 != null ? Number(monto_mixto2) : null,
       sucursal_id,
-      usuario:              req.session?.user?.name || req.session?.user?.username || null,
+      usuario:              req.session?.vendedorActivo?.nombre || req.session?.user?.name || req.session?.user?.username || null,
       items
     });
 

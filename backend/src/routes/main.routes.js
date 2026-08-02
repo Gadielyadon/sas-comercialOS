@@ -66,6 +66,27 @@ function getVentasPorMetodo(sucursal_id) {
   } catch(e) { return []; }
 }
 
+// ── Ventas por vendedor hoy: cuánto vendió cada uno, cuántas ventas,
+// y de qué hora a qué hora (primera y última venta del turno) ──
+function getVentasPorVendedor(sucursal_id) {
+  try {
+    const hoy   = fechaArg(0);
+    const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+    return all(`
+      SELECT
+        COALESCE(NULLIF(usuario,''), 'Sin asignar') AS vendedor,
+        COUNT(*) AS ventas,
+        COALESCE(SUM(total), 0) AS total,
+        MIN(created_at) AS desde,
+        MAX(created_at) AS hasta
+      FROM sales
+      WHERE DATE(created_at) = ? ${where}
+      GROUP BY vendedor
+      ORDER BY total DESC
+    `, [hoy]);
+  } catch(e) { return []; }
+}
+
 function getTopProductos(sucursal_id) {
   try {
     const where = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
@@ -151,6 +172,38 @@ function getDeudaProveedores() {
 
 function getStockCritico() {
   try { return require('../services/products.service').list().filter(p => p.stock <= 5 && p.stock > 0); } catch(e) { return []; }
+}
+
+// ── Productos estancados: tienen stock pero no se vendieron en los
+// últimos 45 días (o nunca se vendieron). Ordenados por lo que más
+// capital tienen inmovilizado (stock * precio), para priorizar qué
+// conviene liquidar o dejar de reponer primero.
+function getProductosEstancados(sucursal_id, dias = 45, limit = 8) {
+  try {
+    const whereP = sucursal_id ? `AND p.sucursal_id = ${Number(sucursal_id)}` : '';
+    const rows = all(`
+      SELECT p.id, p.name, p.stock, p.price,
+        (SELECT MAX(s.created_at) FROM sale_items si JOIN sales s ON s.id = si.sale_id
+          WHERE si.sku = p.sku AND COALESCE(s.status,'completada')!='anulada') AS ultima_venta
+      FROM products p
+      WHERE p.stock > 0 ${whereP}
+    `);
+    const limite = fechaArg(-dias);
+    return rows
+      .filter(p => !p.ultima_venta || String(p.ultima_venta).slice(0,10) < limite)
+      .map(p => ({ ...p, valor: (p.stock || 0) * (p.price || 0) }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, limit);
+  } catch (e) { return []; }
+}
+
+// ── Clientes con cuenta corriente / fiado pendiente de cobro ──
+function getClientesDeuda(limit = 8) {
+  try {
+    const clientes = all(`SELECT id, nombre, saldo FROM clientes WHERE saldo > 0 ORDER BY saldo DESC LIMIT ${Number(limit)}`);
+    const totalRow = get(`SELECT COALESCE(SUM(saldo),0) AS total, COUNT(*) AS n FROM clientes WHERE saldo > 0`) || {};
+    return { clientes, total: totalRow.total || 0, n: totalRow.n || 0 };
+  } catch (e) { return { clientes: [], total: 0, n: 0 }; }
 }
 
 // ── Resumen del mes: comparativo mes vs mes + ganancia estimada real ──
@@ -239,6 +292,9 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
   const ventasMes    = getVentasMes();
   const deudaProvs   = getDeudaProveedores();
   const stockCritico = getStockCritico();
+  const productosEstancados = getProductosEstancados(sucursal_id);
+  const clientesDeuda       = getClientesDeuda();
+  const ventasPorVendedor   = getVentasPorVendedor(sucursal_id);
   res.render('pages/dashboard', {
     title: 'Dashboard', user, active: 'dashboard', activeSub: null, module: 'Dashboard',
     empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'),
@@ -252,7 +308,8 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
     topGanancia:    getTopGanancia(sucursal_id),
     sucursal:       res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
     modulo_sucursales: false, recentSales: [],
-    gastosMes, ventasMes, deudaProvs, stockCritico
+    gastosMes, ventasMes, deudaProvs, stockCritico,
+    productosEstancados, clientesDeuda, ventasPorVendedor
   });
 });
 
@@ -278,6 +335,7 @@ router.get('/inventario', requirePermiso('inventario'), (req, res) => {
     sucursal_id,
     sucursal:     res.locals.sucursal        || { id: 1, nombre: 'Casa Central' },
     sucursales:   res.locals.sucursales_lista || [],
+    condIvaEmpresa: getConfigValue('empresa_cond_iva', ''),
   });
 });
 

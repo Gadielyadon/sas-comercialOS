@@ -11,17 +11,18 @@
 
   /* IZQUIERDA */
   .pos-left { width:62%;display:flex;flex-direction:column;background:var(--bg-body);border-right:2px solid var(--border-strong);overflow:hidden;min-height:0;flex-shrink:0; }
-  .pos-topbar { display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-color);background:var(--bg-card);flex-shrink:0; }  .scan-zone { flex:1;display:flex;align-items:center;gap:9px;background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:0 12px;height:42px;transition:border-color .15s,box-shadow .15s; }
+  .pos-topbar { display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-color);background:var(--bg-card);flex-shrink:0; }
+  .scan-zone { flex:1 1 100%;display:flex;align-items:center;gap:9px;background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:0 14px;height:46px;transition:border-color .15s,box-shadow .15s; }
   .scan-zone:focus-within { border-color:var(--color-action);box-shadow:0 0 0 3px rgba(0,180,216,.1); }
   .scan-dot { width:7px;height:7px;border-radius:50%;background:var(--color-action);flex-shrink:0;animation:pulseDot 2s ease-in-out infinite; }
   .scan-dot.scanner-mode { background:#10b981;animation:pulseDotGreen 1s ease-in-out infinite; }
   @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(0,180,216,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(0,180,216,0)}}
   @keyframes pulseDotGreen{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(16,185,129,0)}}
   @keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}
-  .scan-icon { font-size:16px;color:var(--color-action);flex-shrink:0; }
-  #barcodeInput { flex:1;border:none;background:transparent;font-family:var(--font-body);font-size:14px;font-weight:500;color:var(--text-primary);outline:none; }
-  #barcodeInput::placeholder { color:var(--text-secondary);font-weight:400;font-size:13px; }
-  .sc-chips { display:flex;gap:6px;flex-shrink:0; }
+  .scan-icon { font-size:17px;color:var(--color-action);flex-shrink:0; }
+  #barcodeInput { flex:1;border:none;background:transparent;font-family:var(--font-body);font-size:15px;font-weight:500;color:var(--text-primary);outline:none; }
+  #barcodeInput::placeholder { color:var(--text-secondary);font-weight:400;font-size:14px; }
+  .sc-chips { display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%; }
   .sc-chip {
     display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
     color:var(--text-secondary);background:var(--bg-card);
@@ -505,11 +506,11 @@
   .vuelto-display span:last-child  { font-family:var(--font-mono);font-size:16px;font-weight:800;color:#059669; }
 
   .btn-cobrar {
-    width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#10b981,#059669);
+    width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#159c7a,#0F6E56);
     color:#fff;font-family:var(--font-body);font-size:22px;font-weight:900;cursor:pointer;transition:all .18s;
-    display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 18px rgba(16,185,129,.30);
+    display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 18px rgba(15,110,86,.30);
   }
-  .btn-cobrar:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 10px 26px rgba(16,185,129,.40); }
+  .btn-cobrar:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,110,86,.40); }
   .btn-cobrar:disabled { opacity:.4;cursor:not-allowed; }
 
   .cobro-help {
@@ -953,7 +954,7 @@
   .pm-btn.on i,.pm-btn.on span{ color:var(--color-primary); }
   .btn-cobrar{
     border-radius:16px;
-    box-shadow:0 8px 20px rgba(16,185,129,.2);
+    box-shadow:0 8px 20px rgba(15,110,86,.2);
   }
 
   /* Modal éxito */
@@ -1249,13 +1250,49 @@
   .numpad-key.key-ok { background:var(--color-primary);color:#fff;font-size:16px; }
   .numpad-key.key-ok:hover { background:#1540b8; }
   @media (max-width:860px) { .numpad-overlay { padding:0; } }
+
+  /* ── Modo ventana (opcional, desde Ajustes → Apariencia) ── */
+  .main-content.pos-modo-ventana {
+    background: var(--bg-body);
+    padding: 22px;
+    position: relative;
+  }
+  .main-content.pos-modo-ventana .pos-wrapper {
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100%;
+  }
+  .pos-modo-ventana-logo {
+    position: absolute; bottom: 16px; right: 22px;
+    max-height: 40px; max-width: 130px; object-fit: contain;
+    opacity: .5; pointer-events: none;
+  }
+  @media (max-width:860px) {
+    .main-content.pos-modo-ventana { padding: 0; }
+    .main-content.pos-modo-ventana .pos-wrapper { max-width: 100%; border-radius: 0; border: none; }
+    .pos-modo-ventana-logo { display: none; }
+  }
 </style>
 
 
 <div class="app-wrapper">
   <%- include('../partials/sidebar', { active: 'ventas', user }) %>
-  <div class="main-content">
+  <script>
+    // En Ventas el menú lateral siempre arranca escondido (más lugar para
+    // el POS) — sin pisar la preferencia general guardada en localStorage,
+    // así el resto de las pantallas no se ve afectado.
+    if (window.innerWidth > 768) { document.body.classList.add('sidebar-collapsed'); }
+  </script>
+  <% const modoVentanaPos = true; %>
+  <div class="main-content<%= modoVentanaPos ? ' pos-modo-ventana' : '' %>">
     <%- include('../partials/header', { module: 'Punto de Venta', user }) %>
+    <% if (modoVentanaPos && config && config.empresa_logo) { %>
+      <img src="<%= config.empresa_logo %>" class="pos-modo-ventana-logo" alt="">
+    <% } %>
     <div class="pos-wrapper">
 
       <!-- IZQUIERDA -->
@@ -1269,7 +1306,7 @@
             <span id="qtyMultBadge" style="display:none;align-items:center;justify-content:center;background:var(--color-primary);color:#fff;font-weight:800;font-size:13px;border-radius:7px;padding:3px 9px;margin-left:6px;white-space:nowrap;">×1</span>
           </div>
           <div class="sc-chips">
-            <div class="sc-chip chip-cobrar" onclick="cart.length?openCobroModal():showToast('Carrito vacío','warn')" title="F10 — Cobrar"><kbd>F10</kbd> Cobrar</div>
+            <div class="sc-chip chip-cobrar" onclick="cart.length?openCobroModal():showToast('Carrito vacío','warn')" title="Enter (con el buscador vacío) o F10 — Cobrar"><kbd>Enter</kbd> Cobrar</div>
             <div class="sc-chip chip-deptos" id="chipDeptos" onclick="toggleDeptosChip(this)" title="F5 — Departamentos">
               <kbd>F5</kbd> Departamentos
             </div>
@@ -1280,6 +1317,135 @@
               <i class="bi bi-shop"></i> <%- sucursal.nombre %>
             </div>
             <% } %>
+            <!-- Vendedor activo — clic para cambiar con PIN, sin cerrar sesión -->
+            <div id="chipVendedor" onclick="abrirSelectorVendedor()" title="Cambiar quién está atendiendo"
+              style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(168,85,247,.35);background:rgba(168,85,247,.07);color:#a855f7;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;flex-shrink:0;">
+              <i class="bi bi-person-badge"></i> <span id="vendedorActivoNombre">…</span>
+            </div>
+
+            <div class="afip-overlay" id="vendedorOverlay" onclick="if(event.target===this)cerrarSelectorVendedor()">
+              <div style="width:100%;max-width:340px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-color);">
+                  <div style="font-size:14.5px;font-weight:700;color:var(--text-primary);"><i class="bi bi-person-badge" style="color:#a855f7;margin-right:6px;"></i>¿Quién está atendiendo?</div>
+                  <button onclick="cerrarSelectorVendedor()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;"><i class="bi bi-x-lg"></i></button>
+                </div>
+
+                <div id="vendedorListaWrap" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;">
+                  <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">Cargando...</div>
+                </div>
+
+                <div id="vendedorPinWrap" style="display:none;padding:18px 20px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <button onclick="volverListaVendedores()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:16px;padding:2px;"><i class="bi bi-arrow-left"></i></button>
+                    <span style="font-size:13.5px;font-weight:700;color:var(--text-primary);" id="vendedorPinNombre">—</span>
+                  </div>
+                  <input type="password" id="vendedorPinInput" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off"
+                    style="width:100%;padding:14px;border-radius:10px;font-size:22px;text-align:center;letter-spacing:6px;">
+                  <div id="vendedorPinError" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;color:#dc2626;font-size:12.5px;text-align:center;"></div>
+                  <button onclick="confirmarPinVendedor()" style="width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:#a855f7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Confirmar</button>
+                </div>
+              </div>
+            </div>
+
+            <script>
+              let _vendedorSeleccionado = null;
+
+              async function cargarVendedorActivo() {
+                try {
+                  const r = await fetch('/api/vendedor-activo');
+                  if (r.ok) {
+                    const v = await r.json();
+                    const el = document.getElementById('vendedorActivoNombre');
+                    if (el) el.textContent = v.nombre || '—';
+                  }
+                } catch(e) {}
+              }
+
+              async function abrirSelectorVendedor() {
+                const overlay = document.getElementById('vendedorOverlay');
+                const wrap = document.getElementById('vendedorListaWrap');
+                document.getElementById('vendedorPinWrap').style.display = 'none';
+                wrap.style.display = 'flex';
+                overlay.classList.add('open');
+                wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">Cargando...</div>';
+                try {
+                  const r = await fetch('/api/empleados-activos');
+                  const empleados = r.ok ? await r.json() : [];
+                  if (!empleados.length) {
+                    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">No hay empleados cargados en Ajustes.</div>';
+                    return;
+                  }
+                  wrap.innerHTML = '';
+                  empleados.forEach(emp => {
+                    const btn = document.createElement('button');
+                    btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);text-align:left;';
+                    btn.innerHTML = `<span>${emp.nombre}</span>` + (emp.tiene_pin ? '' : '<span style="font-size:11px;color:var(--text-muted);font-weight:500;">sin PIN</span>');
+                    btn.disabled = !emp.tiene_pin;
+                    if (!emp.tiene_pin) btn.style.opacity = '.5';
+                    btn.onclick = () => elegirVendedor(emp);
+                    wrap.appendChild(btn);
+                  });
+                } catch(e) {
+                  wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626;font-size:12.5px;">Error al cargar empleados.</div>';
+                }
+              }
+
+              function elegirVendedor(emp) {
+                _vendedorSeleccionado = emp;
+                document.getElementById('vendedorListaWrap').style.display = 'none';
+                document.getElementById('vendedorPinWrap').style.display = 'block';
+                document.getElementById('vendedorPinNombre').textContent = emp.nombre;
+                document.getElementById('vendedorPinError').style.display = 'none';
+                const inp = document.getElementById('vendedorPinInput');
+                inp.value = '';
+                setTimeout(() => inp.focus(), 60);
+              }
+
+              function volverListaVendedores() {
+                document.getElementById('vendedorPinWrap').style.display = 'none';
+                document.getElementById('vendedorListaWrap').style.display = 'flex';
+              }
+
+              async function confirmarPinVendedor() {
+                if (!_vendedorSeleccionado) return;
+                const pin = document.getElementById('vendedorPinInput').value.trim();
+                const errEl = document.getElementById('vendedorPinError');
+                errEl.style.display = 'none';
+                if (!pin) return;
+                try {
+                  const r = await fetch('/api/vendedor-activo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: _vendedorSeleccionado.id, pin }),
+                  });
+                  const data = await r.json();
+                  if (!r.ok) {
+                    errEl.textContent = data.error || 'PIN incorrecto';
+                    errEl.style.display = 'block';
+                    document.getElementById('vendedorPinInput').value = '';
+                    return;
+                  }
+                  document.getElementById('vendedorActivoNombre').textContent = data.nombre;
+                  cerrarSelectorVendedor();
+                  if (typeof showToast === 'function') showToast(`Atendiendo: ${data.nombre}`, 'success');
+                } catch(e) {
+                  errEl.textContent = 'Error de conexión';
+                  errEl.style.display = 'block';
+                }
+              }
+
+              function cerrarSelectorVendedor() {
+                document.getElementById('vendedorOverlay').classList.remove('open');
+                _vendedorSeleccionado = null;
+              }
+
+              document.getElementById('vendedorPinInput')?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); confirmarPinVendedor(); }
+              });
+
+              cargarVendedorActivo();
+            </script>
+
             <!-- Selector lista de precio — desplegable simple -->
             <div style="position:relative;flex-shrink:0;" id="listaWrap">
               <button id="btnLista" onclick="toggleDropLista()" title="F6 — Lista de precio"
@@ -1431,7 +1597,7 @@
 
           <!-- Botón vender -->
           <button class="btn-confirm" id="btnConfirm" disabled onclick="openCobroModal()">
-            <i class="bi bi-cash-coin"></i> Finalizar Venta <span class="kbd-hint">F10</span>
+            <i class="bi bi-cash-coin"></i> Finalizar Venta
           </button>
         </div>
       </div>
@@ -1606,23 +1772,28 @@
           </div>
 
           <!-- Opciones que aparecen al activar -->
+          <%
+            const condIvaEmisorRaw = String((config && config.empresa_cond_iva) || '').toLowerCase();
+            const tiposPermitidosMini = condIvaEmisorRaw.includes('inscripto') ? ['A','B'] : ['C'];
+            const tipoDefaultMini = tiposPermitidosMini[0];
+            const nombresTipo = { A: 'Resp. Inscripto', B: 'Consumidor Final', C: 'Monotributista' };
+          %>
           <div id="facturaOpciones" style="display:none;margin-top:14px;display:none;">
-            <!-- Tipo de factura -->
+            <!-- Tipo de factura: solo se muestran los tipos que tu condición IVA (Ajustes) te permite emitir -->
             <div style="margin-bottom:12px;">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">Tipo de comprobante</div>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                <button class="afip-tipo-mini on" id="tipoMiniA" onclick="selTipoMini('A')">
-                  <div style="font-size:22px;font-weight:900;line-height:1;">A</div>
-                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Resp. Inscripto</div>
-                </button>
-                <button class="afip-tipo-mini" id="tipoMiniB" onclick="selTipoMini('B')">
-                  <div style="font-size:22px;font-weight:900;line-height:1;">B</div>
-                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Consumidor Final</div>
-                </button>
-                <button class="afip-tipo-mini" id="tipoMiniC" onclick="selTipoMini('C')">
-                  <div style="font-size:22px;font-weight:900;line-height:1;">C</div>
-                  <div style="font-size:9px;margin-top:2px;opacity:.8;">Monotributista</div>
-                </button>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
+                Tipo de comprobante
+                <% if (tiposPermitidosMini.length === 1) { %>
+                  <span style="text-transform:none;font-weight:400;">(según tu condición IVA en Ajustes)</span>
+                <% } %>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(<%= tiposPermitidosMini.length %>,1fr);gap:8px;">
+                <% tiposPermitidosMini.forEach(function(t, i) { %>
+                  <button class="afip-tipo-mini <%= i === 0 ? 'on' : '' %>" id="tipoMini<%= t %>" onclick="selTipoMini('<%= t %>')">
+                    <div style="font-size:22px;font-weight:900;line-height:1;"><%= t %></div>
+                    <div style="font-size:9px;margin-top:2px;opacity:.8;"><%= nombresTipo[t] %></div>
+                  </button>
+                <% }); %>
               </div>
             </div>
 
@@ -1634,13 +1805,39 @@
             </div>
 
             <!-- Nombre receptor -->
-            <div>
+            <div style="margin-bottom:12px;">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Nombre / Razón social</div>
               <input type="text" id="receptorMiniNombre" placeholder="Consumidor Final"
                 style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
             </div>
+
+            <!-- ¿Es un servicio? (habilita período facturado, como en la web de ARCA) -->
+            <div style="margin-bottom:10px;padding-top:10px;border-top:1px dashed var(--border-color, rgba(255,255,255,.1));">
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="servicioMiniChk" onchange="toggleServicioMini(this.checked)">
+                <span style="font-size:12px;color:var(--text-secondary);">Es un servicio (habilita período facturado)</span>
+              </label>
+            </div>
+
+            <div id="servicioMiniWrap" style="display:none;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div>
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período desde</div>
+                  <input type="date" id="servDesdeMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período hasta</div>
+                  <input type="date" id="servHastaMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                </div>
+              </div>
+              <div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Fecha de vto. para el pago (opcional, por defecto hoy)</div>
+                <input type="date" id="servVtoPagoMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+              </div>
+            </div>
           </div>
         </div>
+        <script>const TIPO_COMPROBANTE_DEFAULT = <%- JSON.stringify(tipoDefaultMini) %>;</script>
 
         <button class="btn-cobrar" id="btnCobrar" onclick="confirmSale()">
           <i class="bi bi-check-circle-fill"></i>
@@ -1655,7 +1852,7 @@
         </button>
         <% } %>
 
-        <div class="cobro-help">Flechas para moverte entre medios de pago · Enter para seleccionar · F10 para cobrar</div>
+        <div class="cobro-help">Flechas para moverte entre medios de pago · Enter para seleccionar · Enter de nuevo para cobrar</div>
       </div>
 
       <!-- DERECHA -->
@@ -2594,7 +2791,7 @@ function setComprobante(tipo) {
     btnConfirm.innerHTML = '<i class="bi bi-file-earmark-text"></i> Generar Presupuesto';
     btnConfirm.onclick = () => generarPresupuestoDesdeCarrito();
   } else {
-    btnConfirm.innerHTML = '<i class="bi bi-cash-coin"></i> Finalizar Venta <span class="kbd-hint">F10</span>';
+    btnConfirm.innerHTML = '<i class="bi bi-cash-coin"></i> Finalizar Venta';
     btnConfirm.onclick = () => openCobroModal();
   }
   updateTotals();
@@ -4336,6 +4533,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
   });
 });
 
+let _cobroLastEnterAt = 0;
+
 document.addEventListener('keydown',e=>{
   const overlayOpen = document.getElementById('cobroOverlay').classList.contains('open');
 
@@ -4345,6 +4544,17 @@ document.addEventListener('keydown',e=>{
     const activeEl = document.activeElement;
     const inEditable = ['INPUT','TEXTAREA','SELECT'].includes(activeTag);
     const inNumericInputs = ['cashReceived','mixtoMonto1','mixtoMonto2','recargoCustom'].includes(activeId);
+
+    if(e.key === 'Enter'){
+      const ahora = Date.now();
+      const esDobleEnter = (ahora - _cobroLastEnterAt) < 700;
+      _cobroLastEnterAt = esDobleEnter ? 0 : ahora;
+      if(esDobleEnter){
+        e.preventDefault();
+        confirmSale();
+        return;
+      }
+    }
 
     if(!inEditable || !inNumericInputs){
       if(e.key === 'ArrowRight'){
@@ -4379,12 +4589,6 @@ document.addEventListener('keydown',e=>{
           return;
         }
       }
-    }
-
-    if(e.key==='F10'){
-      e.preventDefault();
-      confirmSale();
-      return;
     }
 
     if(e.key==='Escape'){
@@ -4514,7 +4718,13 @@ let afipSaleId           = null;
 let afipEmitido          = false;
 let afipFacturaExistente = null;
 let facturarEnCobro      = false;
-let tipoMiniSel          = 'B';
+// El default lo define el server según config.empresa_cond_iva (ver ventas.ejs)
+let tipoMiniSel          = (typeof TIPO_COMPROBANTE_DEFAULT !== 'undefined' && TIPO_COMPROBANTE_DEFAULT) || 'C';
+
+function toggleServicioMini(activo) {
+  const wrap = document.getElementById('servicioMiniWrap');
+  if (wrap) wrap.style.display = activo ? 'block' : 'none';
+}
 
 /* ── Toggle facturación dentro del modal de cobro ── */
 function toggleFacturacionEnCobro(activo) {
@@ -4546,7 +4756,14 @@ function selTipoMini(tipo) {
 function resetFacturacionToggle() {
   const tgl = document.getElementById('facturaTgl');
   if (tgl) { tgl.checked = false; toggleFacturacionEnCobro(false); }
-  selTipoMini('B');
+  selTipoMini(tipoMiniSel);
+
+  const servChk = document.getElementById('servicioMiniChk');
+  if (servChk) { servChk.checked = false; toggleServicioMini(false); }
+  ['servDesdeMini','servHastaMini','servVtoPagoMini'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
 }
 
 /* ── Después de confirmar venta, si tenía facturación activada → emitir ── */
@@ -4596,6 +4813,17 @@ async function emitirFacturaPosCobro(saleId) {
   const cuit   = (document.getElementById('cuitMiniInp')?.value||'').trim();
   const nombre = (document.getElementById('receptorMiniNombre')?.value||'').trim()||'Consumidor Final';
 
+  const esServicio  = !!document.getElementById('servicioMiniChk')?.checked;
+  const servDesde   = (document.getElementById('servDesdeMini')?.value||'').trim();
+  const servHasta   = (document.getElementById('servHastaMini')?.value||'').trim();
+  const servVtoPago = (document.getElementById('servVtoPagoMini')?.value||'').trim();
+
+  if (esServicio && (!servDesde || !servHasta)) {
+    const estadoEl0 = document.getElementById('exitoFacturaEstado');
+    if (estadoEl0) estadoEl0.innerHTML = '<span style="font-size:12px;color:#f59e0b;">⚠️ Completá el período facturado (desde/hasta) para facturar un servicio.</span>';
+    return;
+  }
+
   const estadoEl = document.getElementById('exitoFacturaEstado');
   if (estadoEl) estadoEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Emitiendo factura con AFIP...</span>';
 
@@ -4603,7 +4831,17 @@ async function emitirFacturaPosCobro(saleId) {
     const r = await fetch('/afip/emitir', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ sale_id: saleId, tipo: tipoMiniSel, cliente: { cuit: cuit||null, nombre } })
+      body: JSON.stringify({
+        sale_id: saleId,
+        tipo: tipoMiniSel,
+        cliente: { cuit: cuit||null, nombre },
+        servicio: esServicio ? {
+          esServicio: true,
+          fchServDesde: servDesde,
+          fchServHasta: servHasta,
+          fchVtoPago: servVtoPago || undefined,
+        } : { esServicio: false },
+      })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Error AFIP');

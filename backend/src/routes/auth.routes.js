@@ -115,4 +115,36 @@ router.delete('/api/users/:id', requireAuth, requireAdmin, (req, res) => {
   }
 });
 
+/* ────────────────────────────────────────
+   VENDEDOR ACTIVO — cambio rápido de "quién está
+   atendiendo" en el POS, sin cerrar sesión ni pedir
+   usuario/contraseña completos. Usa PIN corto.
+──────────────────────────────────────── */
+
+// Lista liviana de empleados para el selector (sin datos sensibles)
+router.get('/api/empleados-activos', requireAuth, (req, res) => {
+  const sucursal_id = req.session.user?.sucursal_id;
+  res.json(authSvc.listEmpleadosActivos(req.session.user?.role === 'admin' ? null : sucursal_id));
+});
+
+// Quién es el vendedor activo ahora mismo (si no eligieron a nadie,
+// es el usuario logueado)
+router.get('/api/vendedor-activo', requireAuth, (req, res) => {
+  const activo = req.session.vendedorActivo || {
+    id: req.session.user.id,
+    nombre: req.session.user.nombre || req.session.user.username,
+  };
+  res.json(activo);
+});
+
+// Cambiar el vendedor activo verificando su PIN
+router.post('/api/vendedor-activo', requireAuth, (req, res) => {
+  const { user_id, pin } = req.body;
+  if (!user_id || !pin) return res.status(400).json({ error: 'Elegí un empleado e ingresá el PIN' });
+  const user = authSvc.verificarPin(Number(user_id), pin);
+  if (!user) return res.status(401).json({ error: 'PIN incorrecto' });
+  req.session.vendedorActivo = { id: user.id, nombre: user.nombre };
+  res.json(req.session.vendedorActivo);
+});
+
 module.exports = router;

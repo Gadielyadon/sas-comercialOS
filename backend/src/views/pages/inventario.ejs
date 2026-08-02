@@ -1,3 +1,6 @@
+<%
+  const esRI = String(condIvaEmpresa || '').toLowerCase().includes('inscripto');
+%>
 <%- include('../partials/head', { title }) %>
 
 <div class="app-wrapper">
@@ -31,6 +34,11 @@
           <button type="button" onclick="abrirActualizarPrecios()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(234,179,8,.35);background:rgba(234,179,8,.07);color:#ca8a04;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;" title="Actualizar precios masivamente">
             <i class="bi bi-currency-dollar"></i> Actualizar precios
           </button>
+          <% if (String(condIvaEmpresa || '').toLowerCase().includes('inscripto')) { %>
+          <button type="button" onclick="abrirIvaMasivo()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.35);background:rgba(27,79,216,.07);color:var(--color-primary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;" title="Asignar una alícuota de IVA a varios productos de una vez">
+            <i class="bi bi-percent"></i> Asignar IVA masivo
+          </button>
+          <% } %>
         </div>
       </div>
 
@@ -84,15 +92,15 @@
         .btn-filtro-stock.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
         .btn-filtro-stock.active .dot-stock { border-color: rgba(255,255,255,.6); }
         .dot-stock { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid transparent; display: inline-block; }
-        .dot-stock.rojo    { background: #ef4444; }
-        .dot-stock.naranja { background: #f59e0b; }
+        .dot-stock.rojo    { background: #dc2626; }
+        .dot-stock.naranja { background: #eab308; }
         .stock-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 800; font-family: var(--font-mono); min-width: 60px; justify-content: center; }
-        .stock-badge.ok     { background: #10b981; color: #fff; border: none; }
-        .stock-badge.bajo   { background: #f59e0b; color: #fff; border: none; }
-        .stock-badge.vacio  { background: #ef4444; color: #fff; border: none; }
+        .stock-badge.ok     { background: #22c55e; color: #fff; border: none; }
+        .stock-badge.bajo   { background: #eab308; color: #422006; border: none; }
+        .stock-badge.vacio  { background: #dc2626; color: #fff; border: none; }
         .stock-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .stock-dot.ok     { background: rgba(255,255,255,.7); box-shadow: 0 0 5px rgba(255,255,255,.5); animation: stockPulse 2s infinite; }
-        .stock-dot.bajo   { background: rgba(255,255,255,.7); }
+        .stock-dot.bajo   { background: rgba(66,32,6,.5); }
         .stock-dot.vacio  { background: rgba(255,255,255,.7); }
         @keyframes stockPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         .stock-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
@@ -144,6 +152,7 @@
                 <th>Categoría</th>
                 <th id="thCosto">Costo</th>
                 <th id="thPrecio">Precio Minorista</th>
+                <% if (esRI) { %><th id="thIva" style="text-align:right;">IVA</th><% } %>
                 <th id="thMayorista">Mayorista</th>
                 <th id="thMargen">Margen</th>
                 <th id="thPromo">Promo</th>
@@ -164,6 +173,14 @@
                   <td style="color:var(--text-secondary);font-size:12.5px"><%= p.category || '—' %></td>
                   <td style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)"><%= p.price_cost ? '$' + Number(p.price_cost).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
                   <td><strong style="font-family:var(--font-mono);">$<%= Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}) %></strong></td>
+                  <% if (esRI) { %>
+                    <% const ivaPct = Number(p.iva) || 0; %>
+                    <% const ivaMonto = ivaPct > 0 ? (Number(p.price) - Number(p.price) / (1 + ivaPct/100)) : 0; %>
+                    <td style="text-align:right;">
+                      <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(27,79,216,.08);color:var(--color-primary);"><%= ivaPct %>%</span>
+                      <% if (ivaPct > 0) { %><div style="font-size:10px;color:var(--text-secondary);margin-top:2px;font-family:var(--font-mono);">$<%= ivaMonto.toLocaleString('es-AR',{minimumFractionDigits:2}) %></div><% } %>
+                    </td>
+                  <% } %>
                   <td>
                     <% if (p.price_mayorista && p.qty_mayorista) { %>
                       <div><span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;background:rgba(99,102,241,.12);color:#6366f1;">🏪 MAYOR</span>
@@ -287,11 +304,28 @@
           <div style="position:relative;width:40px;height:22px;flex-shrink:0;"><input type="checkbox" id="m_venta_sin_stock" style="opacity:0;width:0;height:0;position:absolute;" onchange="toggleVentaSinStock(this)"><label for="m_venta_sin_stock" id="m_vss_track" style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;"><span id="m_vss_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span></label></div>
         </div>
         <div style="border-top:1px solid var(--border-color);padding-top:12px;">
-          <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="bi bi-percent" style="margin-right:4px;"></i>IVA (opcional)</div>
-          <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
-            <label style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;"><input type="checkbox" id="m_iva_check" onchange="toggleIva(this)" style="width:14px;height:14px;accent-color:var(--color-primary);cursor:pointer;">IVA <span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);" id="m_iva_badge">0%</span></label>
-            <div style="display:flex;align-items:center;gap:5px;flex:1;"><input type="number" id="m_iva" value="21" min="0" max="100" step="0.01" disabled style="width:100%;padding:6px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-secondary);font-size:12.5px;outline:none;" oninput="actualizarBadge('m_iva','m_iva_badge','m_iva_check')"><span style="font-size:12px;color:var(--text-secondary);">%</span></div>
-          </div>
+          <% if (esRI) { %>
+            <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="bi bi-percent" style="margin-right:4px;"></i>IVA (obligatorio) <span style="color:#dc2626;">*</span></div>
+            <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
+              <select id="m_iva" required onchange="actualizarBadge('m_iva','m_iva_badge','m_iva_check')"
+                style="width:100%;padding:8px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:12.5px;outline:none;">
+                <option value="21">21% (general)</option>
+                <option value="10.5">10.5%</option>
+                <option value="27">27%</option>
+                <option value="5">5%</option>
+                <option value="2.5">2.5%</option>
+                <option value="0">0% (exento)</option>
+              </select>
+            </div>
+            <input type="checkbox" id="m_iva_check" checked style="display:none;">
+            <span id="m_iva_badge" style="display:none;">21%</span>
+          <% } else { %>
+            <div style="font-size:10.5px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="bi bi-percent" style="margin-right:4px;"></i>IVA (opcional)</div>
+            <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:12px;">
+              <label style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;"><input type="checkbox" id="m_iva_check" onchange="toggleIva(this)" style="width:14px;height:14px;accent-color:var(--color-primary);cursor:pointer;">IVA <span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);" id="m_iva_badge">0%</span></label>
+              <div style="display:flex;align-items:center;gap:5px;flex:1;"><input type="number" id="m_iva" value="21" min="0" max="100" step="0.01" disabled style="width:100%;padding:6px 9px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-secondary);font-size:12.5px;outline:none;" oninput="actualizarBadge('m_iva','m_iva_badge','m_iva_check')"><span style="font-size:12px;color:var(--text-secondary);">%</span></div>
+            </div>
+          <% } %>
           <input type="checkbox" id="m_ieps_check" style="display:none;" value="0">
           <input type="number" id="m_ieps" value="0" style="display:none;">
           <span id="m_ieps_badge" style="display:none;"></span>
@@ -446,15 +480,99 @@ function renderTable(list) {
       precioCell = `<strong style="font-family:var(--font-mono);">${_fmt(p.price)}</strong>`;
     }
     const costoTd  = esMini ? `<td style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)">${p.price_cost?_fmt(p.price_cost):'—'}</td>` : '';
+    let ivaTd = '';
+    if (typeof ES_RI !== 'undefined' && ES_RI) {
+      const ivaPct = Number(p.iva) || 0;
+      const ivaMonto = ivaPct > 0 ? (Number(p.price) - Number(p.price) / (1 + ivaPct / 100)) : 0;
+      ivaTd = `<td style="text-align:right;"><span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(27,79,216,.08);color:var(--color-primary);">${ivaPct}%</span>${ivaPct > 0 ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;font-family:var(--font-mono);">${_fmt(ivaMonto)}</div>` : ''}</td>`;
+    }
     const mayorTd  = esMini ? `<td>${mayorCell}</td>` : '';
     const margenTd = esMini ? `<td>${margenCell}</td>` : '';
     const promoTd  = esMini ? `<td>${promoCell}</td>` : '';
-    return `<tr data-sku="${p.sku}"><td class="sale-id">${p.id}</td><td class="sale-id">${p.sku}</td><td><strong>${p.name}</strong>${pesableBadge}${descHTML}</td><td style="color:var(--text-secondary);font-size:12.5px">${p.category||'—'}</td>${costoTd}<td>${precioCell}</td>${mayorTd}${margenTd}${promoTd}<td data-stock="${p.stock}">${stockCell}</td><td><div style="display:flex;gap:6px;align-items:center"><button type="button" class="btn-action btn-action-outline btn-sm" onclick='abrirEditar(${pEsc})' title="Editar producto" style="color:var(--color-primary);border-color:rgba(27,79,216,.3);"><i class="bi bi-pencil"></i></button>${window.__VARIAS_SUC__?`<button type="button" class="btn-action btn-action-outline btn-sm btn-mover" data-sku="${p.sku}" data-name="${(p.name||'').replace(/"/g,'&quot;')}" title="Mover stock a otra sucursal" style="color:#0891b2;border-color:rgba(8,145,178,.3);"><i class="bi bi-arrow-left-right"></i></button>`:''}<button type="button" class="btn-action btn-action-ghost btn-sm" onclick="removeProduct('${p.sku}')" title="Eliminar"><i class="bi bi-trash3"></i></button></div></td></tr>`;
+    return `<tr data-sku="${p.sku}"><td class="sale-id">${p.id}</td><td class="sale-id">${p.sku}</td><td><strong>${p.name}</strong>${pesableBadge}${descHTML}</td><td style="color:var(--text-secondary);font-size:12.5px">${p.category||'—'}</td>${costoTd}<td>${precioCell}</td>${ivaTd}${mayorTd}${margenTd}${promoTd}<td data-stock="${p.stock}">${stockCell}</td><td><div style="display:flex;gap:6px;align-items:center"><button type="button" class="btn-action btn-action-outline btn-sm" onclick='abrirEditar(${pEsc})' title="Editar producto" style="color:var(--color-primary);border-color:rgba(27,79,216,.3);"><i class="bi bi-pencil"></i></button>${window.__VARIAS_SUC__?`<button type="button" class="btn-action btn-action-outline btn-sm btn-mover" data-sku="${p.sku}" data-name="${(p.name||'').replace(/"/g,'&quot;')}" title="Mover stock a otra sucursal" style="color:#0891b2;border-color:rgba(8,145,178,.3);"><i class="bi bi-arrow-left-right"></i></button>`:''}<button type="button" class="btn-action btn-action-ghost btn-sm" onclick="removeProduct('${p.sku}')" title="Eliminar"><i class="bi bi-trash3"></i></button></div></td></tr>`;
   }).join('');
+}
+
+let _ivmAlcance = 'sinIva';
+
+function abrirIvaMasivo() {
+  const cats = [...new Set(_allProducts.map(p => p.category).filter(Boolean))].sort();
+  const sel = document.getElementById('ivm_categoria');
+  sel.innerHTML = `<option value="">Todas las categorías (${_allProducts.length})</option>`;
+  cats.forEach(c => { const n = _allProducts.filter(p => p.category === c).length; sel.innerHTML += `<option value="${c}">${c} (${n})</option>`; });
+  document.getElementById('ivm_alicuota').value = '21';
+  document.getElementById('ivm_error').style.display = 'none';
+  ivmSetAlcance('sinIva');
+  document.getElementById('modalIvaMasivo').classList.add('open');
+}
+function cerrarIvaMasivo() { document.getElementById('modalIvaMasivo').classList.remove('open'); }
+function ivmSetAlcance(alcance) {
+  _ivmAlcance = alcance;
+  ['sinIva', 'todos'].forEach(a => {
+    const btn = document.getElementById('ivm_alcance_' + a);
+    if (!btn) return;
+    const activo = a === alcance;
+    btn.style.border = activo ? '2px solid var(--color-primary)' : '1.5px solid var(--border-color)';
+    btn.style.background = activo ? 'rgba(27,79,216,.1)' : 'transparent';
+    btn.style.color = activo ? 'var(--color-primary)' : 'var(--text-secondary)';
+    btn.style.fontWeight = activo ? '700' : '600';
+  });
+  ivmActualizarPreview();
+}
+function ivmGetProductos() {
+  const categoria = document.getElementById('ivm_categoria')?.value || '';
+  return _allProducts.filter(p =>
+    (!categoria || p.category === categoria) &&
+    (_ivmAlcance === 'todos' || !(Number(p.iva) > 0))
+  );
+}
+function ivmActualizarPreview() {
+  const n = ivmGetProductos().length;
+  const el = document.getElementById('ivm_preview_count');
+  if (el) el.textContent = `${n} producto${n !== 1 ? 's' : ''}`;
+}
+async function ivmAplicar() {
+  const valor = parseFloat(document.getElementById('ivm_alicuota').value);
+  const errEl = document.getElementById('ivm_error');
+  const btn = document.getElementById('ivm_btn_aplicar');
+  const label = document.getElementById('ivm_btn_label');
+  errEl.style.display = 'none';
+
+  const productos = ivmGetProductos();
+  if (!productos.length) {
+    errEl.textContent = 'No hay productos para actualizar con ese criterio.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!confirm(`¿Asignar IVA ${valor}% a ${productos.length} producto(s)?`)) return;
+
+  btn.disabled = true; label.textContent = 'Aplicando…';
+  let ok = 0, err = 0;
+  for (const p of productos) {
+    try {
+      const r = await fetch(`/api/products/${encodeURIComponent(p.sku)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iva: valor }),
+      });
+      if (r.ok) {
+        const updated = await r.json();
+        const idx = _allProducts.findIndex(x => x.sku === p.sku);
+        if (idx !== -1) _allProducts[idx] = updated;
+        ok++;
+      } else { err++; }
+    } catch (e) { err++; }
+  }
+  btn.disabled = false; label.textContent = 'Aplicar cambios';
+  cerrarIvaMasivo();
+  renderTable(_allProducts);
+  if (err > 0) alert(`✅ ${ok} productos actualizados\n❌ ${err} errores`);
+  else if (typeof showToast === 'function') showToast(`✅ IVA ${valor}% asignado a ${ok} producto${ok !== 1 ? 's' : ''}`, 'success');
 }
 
 function toggleIva(cb) {
   const input = document.getElementById('m_iva');
+  if (typeof ES_RI !== 'undefined' && ES_RI) { actualizarBadge('m_iva', 'm_iva_badge', 'm_iva_check'); return; }
   input.disabled = !cb.checked;
   input.style.color = cb.checked ? 'var(--text-primary)' : 'var(--text-secondary)';
   input.style.background = cb.checked ? 'var(--bg-body)' : 'var(--bg-card)';
@@ -610,6 +728,7 @@ function abrirModal(prefillSku = '') {
   if (document.getElementById('m_descripcion')) document.getElementById('m_descripcion').value = '';
   document.getElementById('margenIndicador').style.display = 'none';
   document.getElementById('m_iva_check').checked  = false;
+  document.getElementById('m_iva').value = '21';
   document.getElementById('m_ieps_check').checked = false;
   document.getElementById('m_pesable').checked    = false;
   toggleIva(document.getElementById('m_iva_check'));
@@ -650,7 +769,7 @@ function abrirEditar(p) {
   mostrarIndicadorMargen();
   const ivaCheck = p.iva > 0;
   document.getElementById('m_iva_check').checked = ivaCheck;
-  document.getElementById('m_iva').value = p.iva || 16;
+  document.getElementById('m_iva').value = p.iva || 21;
   toggleIva(document.getElementById('m_iva_check'));
   const iepsCheck = p.ieps > 0;
   document.getElementById('m_ieps_check').checked = iepsCheck;
@@ -1363,6 +1482,45 @@ function filterRows(){ renderTable(_allProducts); }
   </div>
 </div>
 
+<div class="sale-overlay" id="modalIvaMasivo" onclick="if(event.target===this)cerrarIvaMasivo()">
+  <div style="width:100%;max-width:460px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalPop .16s ease;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(27,79,216,.12);display:flex;align-items:center;justify-content:center;color:var(--color-primary);font-size:16px;"><i class="bi bi-percent"></i></div><div><div style="font-size:15px;font-weight:700;color:var(--text-primary);">Asignar IVA masivo</div><div style="font-size:11px;color:var(--text-secondary);">Aplicá una alícuota a varios productos de una vez</div></div></div>
+      <button onclick="cerrarIvaMasivo()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:18px;padding:4px;line-height:1;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:8px;">1 — Alícuota a asignar</div>
+        <select id="ivm_alicuota" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;font-family:var(--font-body);">
+          <option value="21">21% (general)</option>
+          <option value="10.5">10.5%</option>
+          <option value="27">27%</option>
+          <option value="5">5%</option>
+          <option value="2.5">2.5%</option>
+          <option value="0">0% (exento)</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:8px;">2 — Aplicar a</div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="ivm_alcance_sinIva" onclick="ivmSetAlcance('sinIva')" style="flex:1;padding:10px 8px;border-radius:10px;border:2px solid var(--color-primary);background:rgba(27,79,216,.1);color:var(--color-primary);font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;">Solo sin IVA cargado</button>
+          <button type="button" id="ivm_alcance_todos" onclick="ivmSetAlcance('todos')" style="flex:1;padding:10px 8px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .15s;">Todos los productos</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:8px;">3 — Filtrar por categoría (opcional)</div>
+        <select id="ivm_categoria" onchange="ivmActualizarPreview()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;font-family:var(--font-body);"><option value="">Todas las categorías</option></select>
+      </div>
+      <div id="ivm_preview" style="background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.18);border-radius:10px;padding:13px 15px;font-size:12.5px;color:var(--text-secondary);">Se actualizarán <strong id="ivm_preview_count" style="color:var(--text-primary);">0 productos</strong></div>
+      <div id="ivm_error" style="display:none;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);font-size:13px;color:#dc2626;"></div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid var(--border-color);display:flex;gap:10px;flex-shrink:0;">
+      <button onclick="cerrarIvaMasivo()" style="padding:11px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">Cancelar</button>
+      <button id="ivm_btn_aplicar" onclick="ivmAplicar()" style="flex:1;padding:11px;border-radius:10px;border:none;background:var(--color-primary);color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);transition:opacity .15s;"><i class="bi bi-check-circle-fill"></i><span id="ivm_btn_label">Aplicar cambios</span></button>
+    </div>
+  </div>
+</div>
+
 <script>
 let _apBase = 'minorista';
 let _apDest = 'tarjeta';
@@ -1571,11 +1729,13 @@ s
   </div>
 </div>
 <script>
+const ES_RI = <%- JSON.stringify(String(condIvaEmpresa || '').toLowerCase().includes('inscripto')) %>;
 (function(){
   var SUCS = <%- JSON.stringify(sucursales || []) %>;
   var ACT  = <%= sucursal_id || 1 %>;
   window.__VARIAS_SUC__ = SUCS.length > 1;
   var _sku = null;
+
 
   function opt(su, sel, excl){
     var dep = su.tipo === 'deposito' ? ' (depósito)' : '';

@@ -128,7 +128,7 @@ router.post('/emitir', async (req, res) => {
       });
     }
 
-    const { sale_id, tipo, cliente } = req.body;
+    const { sale_id, tipo, cliente, servicio } = req.body;
 
     if (!sale_id) {
       return res.status(400).json({ error: 'sale_id requerido' });
@@ -142,6 +142,7 @@ router.post('/emitir', async (req, res) => {
       sale_id: Number(sale_id),
       tipo: String(tipo).trim().toUpperCase(),
       cliente: cliente || {},
+      servicio: servicio || {},
     });
 
     res.json(resultado);
@@ -269,82 +270,116 @@ router.get('/pdf/:sale_id', async (req, res) => {
 
     doc.pipe(res);
 
-    // Encabezado emisor
-    doc
-      .fontSize(22)
-      .font('Helvetica-Bold')
-      .text(cfg.empresa_nombre || 'Mi Comercio', 50, 50);
+    // Encabezado emisor — layout dinámico: si el nombre de la empresa es
+    // largo, se ajusta el tamaño de letra y se reparte en varias líneas
+    // en vez de superponerse con la caja de tipo de comprobante.
+    const nombreEmpresa = cfg.empresa_nombre || 'Mi Comercio';
+    const nombreFontSize = nombreEmpresa.length > 45 ? 12 : nombreEmpresa.length > 28 ? 15 : 20;
+    const anchoNombre = 230;
 
-    doc
-      .fontSize(10)
-      .font('Helvetica')
-      .text(cfg.empresa_direccion || '', 50, 80)
-      .text(`Tel: ${cfg.empresa_telefono || ''}`, 50, 93)
-      .text(`Email: ${cfg.empresa_email || ''}`, 50, 106)
-      .text(`CUIT: ${cfg.afip_cuit || ''}`, 50, 119)
-      .text(`Cond. IVA: ${cfg.empresa_cond_iva || 'Responsable Inscripto'}`, 50, 132);
+    doc.fontSize(nombreFontSize).font('Helvetica-Bold');
+    const altoNombre = doc.heightOfString(nombreEmpresa, { width: anchoNombre });
+    doc.text(nombreEmpresa, 50, 50, { width: anchoNombre });
 
-    // Caja tipo factura
-    doc.rect(270, 45, 60, 60).stroke();
+    let yEmisor = 50 + altoNombre + 8;
+    doc.fontSize(10).font('Helvetica');
+    for (const linea of [
+      cfg.empresa_direccion || '',
+      `Tel: ${cfg.empresa_telefono || ''}`,
+      `Email: ${cfg.empresa_email || ''}`,
+      `CUIT: ${cfg.afip_cuit || ''}`,
+      `Cond. IVA: ${cfg.empresa_cond_iva || 'Responsable Inscripto'}`,
+    ]) {
+      doc.text(linea, 50, yEmisor, { width: anchoNombre });
+      yEmisor += 13;
+    }
+
+    // Caja tipo factura — posición fija a la derecha, no depende del nombre
+    doc.rect(300, 45, 55, 55).stroke();
     doc
-      .fontSize(36)
+      .fontSize(32)
       .font('Helvetica-Bold')
-      .text(tipoLetra, 270, 55, { width: 60, align: 'center' });
+      .text(tipoLetra, 300, 54, { width: 55, align: 'center' });
 
     doc
       .fontSize(9)
       .font('Helvetica')
-      .text(`Cod: ${factura.tipo_cbte}`, 270, 93, { width: 60, align: 'center' });
+      .text(`Cod: ${factura.tipo_cbte}`, 300, 90, { width: 55, align: 'center' });
 
     // Datos comprobante
     doc
       .fontSize(10)
       .font('Helvetica-Bold')
-      .text(`Punto de Venta: ${String(factura.punto_venta).padStart(4, '0')}`, 345, 50)
-      .text(`Nro: ${String(factura.nro_cbte).padStart(8, '0')}`, 345, 65);
+      .text(`Punto de Venta: ${String(factura.punto_venta).padStart(4, '0')}`, 370, 50)
+      .text(`Nro: ${String(factura.nro_cbte).padStart(8, '0')}`, 370, 65);
 
     doc
       .font('Helvetica')
       .text(
         `Fecha: ${new Date(factura.created_at).toLocaleDateString('es-AR')}`,
-        345,
+        370,
         80
       );
 
-    doc.moveTo(50, 155).lineTo(545, 155).stroke();
+    const ySepEncabezado = Math.max(yEmisor + 4, 112);
+    doc.moveTo(50, ySepEncabezado).lineTo(545, ySepEncabezado).stroke();
 
     // Receptor
+    let yReceptor = ySepEncabezado + 12;
     doc
       .fontSize(10)
       .font('Helvetica-Bold')
-      .text('Datos del Receptor', 50, 165);
+      .text('Datos del Receptor', 50, yReceptor);
+    yReceptor += 15;
 
     doc
       .font('Helvetica')
       .text(
         `Apellido y Nombre / Razón Social: ${factura.cliente_nombre || 'Consumidor Final'}`,
         50,
-        180
-      )
-      .text(`CUIT/DNI: ${factura.cliente_cuit || '-'}`, 50, 195);
+        yReceptor
+      );
+    yReceptor += 15;
 
-    doc.moveTo(50, 215).lineTo(545, 215).stroke();
+    doc.text(`CUIT/DNI: ${factura.cliente_cuit || '-'}`, 50, yReceptor);
+    yReceptor += 15;
+
+    // Período facturado — solo aparece si el comprobante es de Servicios
+    // (Concepto 2), igual que en la factura que emite la web de ARCA.
+    if (Number(factura.concepto) === 2) {
+      const fmtFecha = (f) =>
+        f ? `${String(f).slice(6, 8)}/${String(f).slice(4, 6)}/${String(f).slice(0, 4)}` : '-';
+
+      doc.text(
+        `Período facturado: ${fmtFecha(factura.fch_serv_desde)} al ${fmtFecha(factura.fch_serv_hasta)}`,
+        50,
+        yReceptor
+      );
+      yReceptor += 15;
+
+      doc.text(`Fecha de Vto. para el pago: ${fmtFecha(factura.fch_vto_pago)}`, 50, yReceptor);
+      yReceptor += 15;
+    }
+
+    yReceptor += 6;
+    doc.moveTo(50, yReceptor).lineTo(545, yReceptor).stroke();
 
     // Tabla items
+    const yTablaHeader = yReceptor + 10;
     const colX = [50, 65, 300, 380, 470];
 
     doc
       .fontSize(9)
       .font('Helvetica-Bold')
-      .text('Cant.', colX[0], 225)
-      .text('Descripción', colX[1], 225)
-      .text('Precio unit.', colX[2], 225, { width: 70, align: 'right' })
-      .text('% IVA', colX[3], 225, { width: 45, align: 'right' })
-      .text('Subtotal', colX[4], 225, { width: 60, align: 'right' });
+      .text('Cant.', colX[0], yTablaHeader)
+      .text('Descripción', colX[1], yTablaHeader)
+      .text('Precio unit.', colX[2], yTablaHeader, { width: 70, align: 'right' })
+      .text('% IVA', colX[3], yTablaHeader, { width: 45, align: 'right' })
+      .text('Subtotal', colX[4], yTablaHeader, { width: 60, align: 'right' });
 
-    doc.moveTo(50, 237).lineTo(545, 237).dash(2).stroke().undash();
+    doc.moveTo(50, yTablaHeader + 12).lineTo(545, yTablaHeader + 12).dash(2).stroke().undash();
 
-    let y = 245;
+    let y = yTablaHeader + 20;
     doc.font('Helvetica').fontSize(9);
 
     for (const item of items) {

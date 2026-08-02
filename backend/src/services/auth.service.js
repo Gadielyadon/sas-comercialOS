@@ -30,6 +30,7 @@ function initUsersTable() {
   // Migraciones
   try { run(`ALTER TABLE users ADD COLUMN permisos    TEXT    DEFAULT NULL`); } catch(e) {}
   try { run(`ALTER TABLE users ADD COLUMN sucursal_id INTEGER DEFAULT 1`);   } catch(e) {}
+  try { run(`ALTER TABLE users ADD COLUMN pin         TEXT    DEFAULT NULL`); } catch(e) {}
 
   // Insertar admin inicial solo si no existe ningún usuario
   const existe = get('SELECT id FROM users LIMIT 1');
@@ -77,7 +78,7 @@ function findById(id) {
   return get('SELECT id, username, nombre, role, activo, permisos, sucursal_id FROM users WHERE id = ?', [id]);
 }
 
-function createUser({ username, password, nombre, role, permisos, sucursal_id }) {
+function createUser({ username, password, nombre, role, permisos, sucursal_id, pin }) {
   const existing = get('SELECT id FROM users WHERE username = ?', [username.trim().toLowerCase()]);
   if (existing) throw new Error('El nombre de usuario ya existe');
   const hash = bcrypt.hashSync(password, SALT_ROUNDS);
@@ -85,26 +86,29 @@ function createUser({ username, password, nombre, role, permisos, sucursal_id })
     ? JSON.stringify(permisos)
     : null;
   const sucId = sucursal_id ? Number(sucursal_id) : 1;
+  const pinLimpio = normalizarPin(pin);
   const r = run(
-    'INSERT INTO users (username, password, nombre, role, permisos, sucursal_id) VALUES (?, ?, ?, ?, ?, ?)',
-    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON, sucId]
+    'INSERT INTO users (username, password, nombre, role, permisos, sucursal_id, pin) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON, sucId, pinLimpio]
   );
   return findById(r.lastInsertRowid);
 }
 
-function updateUser(id, { nombre, role, activo, permisos, sucursal_id }) {
+function updateUser(id, { nombre, role, activo, permisos, sucursal_id, pin }) {
   const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
     ? JSON.stringify(permisos)
     : (role === 'admin' ? null : undefined);
 
   const sucId = sucursal_id !== undefined ? Number(sucursal_id) : null;
+  const pinLimpio = pin !== undefined ? normalizarPin(pin) : undefined;
   run(
     `UPDATE users SET
       nombre       = COALESCE(?, nombre),
       role         = COALESCE(?, role),
       activo       = COALESCE(?, activo),
       sucursal_id  = COALESCE(?, sucursal_id),
-      permisos = CASE WHEN ? IS NOT NULL THEN ? ELSE permisos END
+      permisos = CASE WHEN ? IS NOT NULL THEN ? ELSE permisos END,
+      pin = CASE WHEN ? = 1 THEN ? ELSE pin END
     WHERE id = ?`,
     [
       nombre ?? null,
@@ -113,10 +117,41 @@ function updateUser(id, { nombre, role, activo, permisos, sucursal_id }) {
       sucId,
       permisosJSON !== undefined ? permisosJSON : null,
       permisosJSON !== undefined ? permisosJSON : null,
+      pinLimpio !== undefined ? 1 : 0,
+      pinLimpio !== undefined ? pinLimpio : null,
       id
     ]
   );
   return findById(id);
+}
+
+// Deja solo dígitos, entre 4 y 6 números. Si no cumple, no se guarda (null).
+function normalizarPin(pin) {
+  if (pin === undefined || pin === null || pin === '') return null;
+  const limpio = String(pin).replace(/\D/g, '');
+  return (limpio.length >= 4 && limpio.length <= 6) ? limpio : null;
+}
+
+// ── Empleados activos, para el selector rápido "¿quién está vendiendo?" ──
+// No devuelve nada sensible (ni password ni pin), solo lo necesario para
+// armar la lista de nombres a elegir.
+function listEmpleadosActivos(sucursal_id) {
+  const suc = sucursal_id ? Number(sucursal_id) : null;
+  const rows = suc
+    ? all(`SELECT id, nombre, role, sucursal_id, (pin IS NOT NULL) AS tiene_pin FROM users WHERE activo = 1 AND (sucursal_id = ? OR role = 'admin') ORDER BY role = 'admin', nombre`, [suc])
+    : all(`SELECT id, nombre, role, sucursal_id, (pin IS NOT NULL) AS tiene_pin FROM users WHERE activo = 1 ORDER BY role = 'admin', nombre`);
+  return rows;
+}
+
+// Verifica el PIN de un usuario puntual (para el cambio rápido de vendedor).
+// Si el usuario no tiene PIN cargado, no se puede elegir por este medio
+// (evita que cualquiera se "convierta" en un usuario sin querer poner PIN).
+function verificarPin(userId, pin) {
+  const user = get('SELECT id, nombre, role, pin FROM users WHERE id = ? AND activo = 1', [userId]);
+  if (!user || !user.pin) return null;
+  if (String(pin || '').trim() !== user.pin) return null;
+  const { pin: _, ...safe } = user;
+  return safe;
 }
 
 function changePassword(id, newPassword) {
@@ -136,5 +171,6 @@ function deleteUser(id) {
 module.exports = {
   initUsersTable, login, listUsers, findById,
   createUser, updateUser, changePassword, deleteUser,
-  parsePermisos, SECCIONES, PERMISOS_DEFAULT_EMPLEADO
+  parsePermisos, SECCIONES, PERMISOS_DEFAULT_EMPLEADO,
+  listEmpleadosActivos, verificarPin
 };

@@ -38,13 +38,23 @@
       .doc { box-shadow: none; padding: 0; max-width: 100%; }
       .toolbar { display: none; }
     }
+    .col-costo { display: none; }
+    .doc.mostrar-costos .col-costo { display: table-cell !important; }
+    .col-costo-row { display: none; }
+    .doc.mostrar-costos .col-costo-row { display: table-row !important; }
+    .toggle-costos { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #444; margin-right: auto; user-select: none; cursor: pointer; }
+    .toggle-costos input { width: 15px; height: 15px; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="toolbar">
+    <label class="toggle-costos">
+      <input type="checkbox" id="chkCostos" onchange="document.getElementById('doc').classList.toggle('mostrar-costos', this.checked)">
+      Incluir costos y total (solo para uso interno)
+    </label>
     <button class="btn-print" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir / Guardar PDF</button>
   </div>
-  <div class="doc">
+  <div class="doc" id="doc">
     <div class="afip-header">
       <div class="afip-col-empresa">
         <% if (config && config.empresa_logo) { %>
@@ -81,8 +91,8 @@
         <tr>
           <th>Producto</th>
           <th class="center" style="width:80px;">Cant.</th>
-          <th class="num" style="width:110px;">P. Costo</th>
-          <th class="num" style="width:110px;">Subtotal</th>
+          <th class="num col-costo" style="width:110px;">P. Costo</th>
+          <th class="num col-costo" style="width:110px;">Subtotal</th>
         </tr>
       </thead>
       <tbody>
@@ -98,14 +108,14 @@
             <% if (item.recibido) { %><span class="badge-recibido">✓ Recibido</span><% } %>
           </td>
           <td class="center"><%= item.cantidad %></td>
-          <td class="num"><%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
-          <td class="num"><%= sub > 0 ? '$' + sub.toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
+          <td class="num col-costo"><%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
+          <td class="num col-costo"><%= sub > 0 ? '$' + sub.toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %></td>
         </tr>
         <% }) %>
       </tbody>
       <% if (total > 0) { %>
       <tfoot>
-        <tr>
+        <tr class="col-costo-row">
           <td colspan="3" style="text-align:right;font-weight:800;border-bottom:none;">TOTAL ESTIMADO</td>
           <td class="num" style="font-weight:800;border-bottom:none;">$<%= total.toLocaleString('es-AR',{minimumFractionDigits:2}) %></td>
         </tr>
@@ -119,9 +129,8 @@
   </div>
 
   <script>
-    // Auto-abre el diálogo de impresión para que el usuario pueda
-    // "Guardar como PDF" directamente, tanto en PC como en celular.
-    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+    // Ya no se abre solo el diálogo de impresión: primero el usuario
+    // elige si quiere incluir costos/total, y después imprime con el botón.
   </script>
 </body>
 </html>

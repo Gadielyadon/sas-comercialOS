@@ -249,7 +249,7 @@
         </div>
       </div>
 
-      <!-- MÉTODOS + TOP PRODUCTOS + STOCK -->
+      <!-- MÉTODOS + PRODUCTOS ESTANCADOS + STOCK -->
       <div class="grid-3cols" style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;margin-bottom:16px;">
         <div class="dash-card fade-up" style="display:flex;flex-direction:column;animation-delay:.24s;">
           <div class="dash-card-header">
@@ -269,10 +269,32 @@
 
         <div class="dash-card fade-up" style="animation-delay:.28s;">
           <div class="dash-card-header">
-            <span class="dash-card-title"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Lo más vendido (últimos 30 días)</span>
-            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+            <span class="dash-card-title"><i class="bi bi-hourglass-split" style="color:#a855f7;"></i> Productos estancados (45+ días sin vender)</span>
+            <a href="/inventario" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver inventario →</a>
           </div>
-          <div style="padding:14px 18px;"><canvas id="chartProductos" height="170"></canvas></div>
+          <% if (!productosEstancados?.length) { %>
+          <div style="padding:28px;text-align:center;color:var(--text-secondary);">
+            <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:600;">Todo tu stock rota bien</div>
+            <div style="font-size:12px;margin-top:3px;">Ningún producto lleva más de 45 días sin venderse</div>
+          </div>
+          <% } else { %>
+          <div style="overflow-y:auto;max-height:260px;">
+            <% productosEstancados.forEach(p => { %>
+            <div class="stock-alert-item">
+              <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="<%=p.name%>">
+                <%=p.name.length>32?p.name.slice(0,30)+'…':p.name%>
+              </span>
+              <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">
+                <%=p.stock%> ud · <%= fmtPesos(p.valor) %>
+              </span>
+            </div>
+            <% }) %>
+          </div>
+          <div style="padding:10px 16px;border-top:1px solid var(--border-color);">
+            <div style="font-size:12px;color:var(--text-secondary);text-align:center;"><%=productosEstancados.length%> producto<%=productosEstancados.length!==1?'s':''%> sin rotar — evaluá liquidarlos o dejar de reponerlos</div>
+          </div>
+          <% } %>
         </div>
 
         <div class="dash-card fade-up" style="animation-delay:.32s;">
@@ -293,7 +315,7 @@
               <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="<%=p.name%>">
                 <%=p.name.length>22?p.name.slice(0,20)+'…':p.name%>
               </span>
-              <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=p.stock<=0?'rgba(239,68,68,.12)':'rgba(245,158,11,.12)'%>;color:<%=p.stock<=0?'#dc2626':'#d97706'%>;">
+              <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=p.stock<=0?'#dc2626':'#eab308'%>;color:<%=p.stock<=0?'#fff':'#422006'%>;">
                 <%=p.stock<=0?'Sin stock':p.stock+' ud'%>
               </span>
             </div>
@@ -306,34 +328,101 @@
         </div>
       </div>
 
-      <!-- LO QUE MÁS GANANCIA DEJA (últimos 30 días) -->
-      <% if (topGanancia && topGanancia.length) {
-           const maxGan = Math.max.apply(null, topGanancia.map(p => p.ganancia || 0)) || 1; %>
-      <div class="dash-card fade-up" style="margin-bottom:20px;animation-delay:.33s;">
+      <!-- VENTAS POR VENDEDOR HOY -->
+      <% if (ventasPorVendedor && ventasPorVendedor.length > 1) { %>
+      <div class="dash-card fade-up" style="margin-bottom:20px;animation-delay:.34s;">
         <div class="dash-card-header">
-          <span class="dash-card-title"><i class="bi bi-cash-coin" style="color:#10b981;"></i> Lo que más ganancia te deja (últimos 30 días)</span>
-          <span style="font-size:11px;color:var(--text-muted);">estimado con el costo de tus productos</span>
+          <span class="dash-card-title"><i class="bi bi-people" style="color:#6366f1;"></i> Ventas por vendedor hoy</span>
         </div>
-        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:11px;">
-          <% topGanancia.forEach(function(p, i){ const w = Math.round((p.ganancia/maxGan)*100); %>
-          <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:5px;">
-              <span style="font-size:13px;color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                <span style="color:var(--text-muted);font-weight:700;margin-right:6px;"><%= i+1 %>.</span><%= p.name %>
-              </span>
-              <span style="font-size:13px;font-weight:800;color:#10b981;font-family:var(--font-mono);white-space:nowrap;"><%= fmtPesos(p.ganancia) %></span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="flex:1;height:7px;border-radius:4px;background:var(--bg-hover);overflow:hidden;">
-                <div style="height:100%;width:<%= w %>%;border-radius:4px;background:#10b981;"></div>
-              </div>
-              <span style="font-size:11px;color:var(--text-secondary);white-space:nowrap;"><%= p.unidades %> u.</span>
-            </div>
-          </div>
-          <% }) %>
+        <div style="padding:6px 18px 14px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="text-align:left;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">
+                <th style="padding:8px 6px;">Vendedor</th>
+                <th style="padding:8px 6px;text-align:center;">Ventas</th>
+                <th style="padding:8px 6px;text-align:right;">Total</th>
+                <th style="padding:8px 6px;text-align:right;">Desde</th>
+                <th style="padding:8px 6px;text-align:right;">Hasta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ventasPorVendedor.forEach(v => { %>
+              <tr style="border-top:1px solid var(--border-color);">
+                <td style="padding:8px 6px;font-weight:600;color:var(--text-primary);"><%= v.vendedor %></td>
+                <td style="padding:8px 6px;text-align:center;color:var(--text-secondary);"><%= v.ventas %></td>
+                <td style="padding:8px 6px;text-align:right;font-weight:700;color:var(--text-primary);font-family:var(--font-mono);"><%= fmtPesos(v.total) %></td>
+                <td style="padding:8px 6px;text-align:right;color:var(--text-secondary);font-family:var(--font-mono);"><%= v.desde ? v.desde.slice(11,16) : '—' %></td>
+                <td style="padding:8px 6px;text-align:right;color:var(--text-secondary);font-family:var(--font-mono);"><%= v.hasta ? v.hasta.slice(11,16) : '—' %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
         </div>
       </div>
       <% } %>
+
+
+      <div class="dash-card fade-up" style="margin-bottom:20px;animation-delay:.33s;">
+        <div class="dash-card-header">
+          <span class="dash-card-title"><i class="bi bi-wallet2" style="color:#dc2626;"></i> Cuentas corrientes pendientes de cobro</span>
+          <a href="/clientes" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver clientes →</a>
+        </div>
+        <% if (!clientesDeuda?.n) { %>
+        <div style="padding:28px;text-align:center;color:var(--text-secondary);">
+          <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
+          <div style="font-size:13px;font-weight:600;">No tenés cuentas corrientes pendientes</div>
+          <div style="font-size:12px;margin-top:3px;">Todos tus clientes con saldo están al día</div>
+        </div>
+        <% } else { %>
+        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+          <% clientesDeuda.clientes.forEach(c => { %>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary);"><%= c.nombre %></span>
+            <span style="font-size:13px;font-weight:800;color:#dc2626;font-family:var(--font-mono);"><%= fmtPesos(c.saldo) %></span>
+          </div>
+          <% }) %>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12.5px;color:var(--text-secondary);font-weight:600;"><%= clientesDeuda.n %> cliente<%= clientesDeuda.n!==1?'s':'' %> con saldo pendiente</span>
+          <span style="font-size:13.5px;font-weight:800;color:#dc2626;font-family:var(--font-mono);">Total: <%= fmtPesos(clientesDeuda.total) %></span>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- LO MÁS VENDIDO + LO QUE MÁS GANANCIA DEJA — de referencia, más chicas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="dash-card fade-up" style="animation-delay:.36s;">
+          <div class="dash-card-header">
+            <span class="dash-card-title" style="font-size:12.5px;"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Lo más vendido (30 días)</span>
+            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+          </div>
+          <div style="padding:10px 14px;"><canvas id="chartProductos" height="110"></canvas></div>
+        </div>
+
+        <% if (topGanancia && topGanancia.length) {
+             const maxGan = Math.max.apply(null, topGanancia.map(p => p.ganancia || 0)) || 1; %>
+        <div class="dash-card fade-up" style="animation-delay:.38s;">
+          <div class="dash-card-header">
+            <span class="dash-card-title" style="font-size:12.5px;"><i class="bi bi-cash-coin" style="color:#10b981;"></i> Lo que más ganancia deja (30 días)</span>
+          </div>
+          <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">
+            <% topGanancia.slice(0,4).forEach(function(p, i){ const w = Math.round((p.ganancia/maxGan)*100); %>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px;">
+                <span style="font-size:12px;color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  <span style="color:var(--text-muted);font-weight:700;margin-right:5px;"><%= i+1 %>.</span><%= p.name %>
+                </span>
+                <span style="font-size:12px;font-weight:800;color:#10b981;font-family:var(--font-mono);white-space:nowrap;"><%= fmtPesos(p.ganancia) %></span>
+              </div>
+              <div style="height:5px;border-radius:3px;background:var(--bg-hover);overflow:hidden;">
+                <div style="height:100%;width:<%= w %>%;border-radius:3px;background:#10b981;"></div>
+              </div>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+        <% } %>
+      </div>
 
       <!-- ACTIVIDAD RECIENTE -->
       <div class="dash-card fade-up" style="animation-delay:.35s;">
