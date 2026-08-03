@@ -1302,7 +1302,7 @@
           <div class="scan-zone" id="scanZone">
             <span class="scan-dot" id="scanDot"></span>
             <i class="bi bi-upc-scan scan-icon"></i>
-            <input type="text" id="barcodeInput" placeholder="Escaneá código o buscá por nombre…" autocomplete="off" spellcheck="false" autofocus>
+            <input type="text" id="barcodeInput" name="ax-scan-<%= Date.now() %>" placeholder="Escaneá código o buscá por nombre…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" autofocus>
             <span id="qtyMultBadge" style="display:none;align-items:center;justify-content:center;background:var(--color-primary);color:#fff;font-weight:800;font-size:13px;border-radius:7px;padding:3px 9px;margin-left:6px;white-space:nowrap;">×1</span>
           </div>
           <div class="sc-chips">
@@ -4642,7 +4642,10 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-window.addEventListener('load',()=>document.getElementById('barcodeInput').focus());
+window.addEventListener('load',()=>{
+  const bc = document.getElementById('barcodeInput');
+  if (bc) { bc.value = ''; setTimeout(()=>{ bc.value=''; bc.focus(); }, 120); }
+});
 
 /* ══════════════════════════════════════════════
    NAVEGACIÓN CON FLECHAS EN EL FOOTER DEL POS
