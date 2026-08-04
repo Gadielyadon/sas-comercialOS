@@ -58,7 +58,7 @@
   .products-scroll { flex:1;overflow-y:auto;padding:0;min-height:0; }
 
   /* ── TABLA DE PRODUCTOS ── */
-  .products-grid { display:table;width:100%;border-collapse:collapse; }
+  .products-grid { display:table;width:100%;border-collapse:collapse;table-layout:fixed; }
 
   /* Header fijo de la tabla */
   .prod-table-head {
@@ -144,12 +144,12 @@
     color:var(--text-primary);
     line-height:1.3;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    max-width:none;
+    max-width:100%;
   }
   .prod-desc {
     font-size:11px;color:var(--text-secondary);
-    white-space:normal;overflow:visible;
-    max-width:none;margin-top:2px;line-height:1.4;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:100%;margin-top:2px;line-height:1.4;
   }
   .prod-badge-promo {
     display:inline-block;font-size:9px;font-weight:800;
