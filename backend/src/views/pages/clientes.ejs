@@ -276,7 +276,7 @@
         <div id="c_limite_off" style="font-size:11.5px;color:var(--text-secondary);font-style:italic;">Sin límite — puede fiarse sin restricción</div>
         <div id="c_limite_fields" style="display:none;">
           <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:5px;">Monto máximo de deuda ($)</label>
-          <input type="number" id="c_limite_credito" placeholder="Ej: 50000" min="0" step="100"
+          <input type="text" inputmode="decimal" id="c_limite_credito" class="fmt-precio" placeholder="Ej: 50000"
             style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:16px;font-weight:700;outline:none;transition:border .2s;"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='rgba(27,79,216,.3)'">
           <div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Si el cliente supera este monto, el sistema bloquea la venta.</div>
@@ -318,7 +318,7 @@
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Monto ($) *</label>
-        <input type="number" id="cargo_monto" min="0.01" step="0.01" placeholder="0.00"
+        <input type="text" inputmode="decimal" id="cargo_monto" class="fmt-precio" placeholder="0,00"
           style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
@@ -454,7 +454,7 @@
             Cobrar todo
           </button>
         </div>
-        <input type="number" id="p_monto" min="0.01" step="0.01" placeholder="0.00"
+        <input type="text" inputmode="decimal" id="p_monto" class="fmt-precio" placeholder="0,00"
           style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
           oninput="calcRestante()">
@@ -670,7 +670,7 @@ async function guardarCliente() {
   const email     = document.getElementById('c_email').value.trim();
   const direccion = document.getElementById('c_direccion').value.trim();
   const tieneLimit = document.getElementById('c_limite_check').checked;
-  const limite_credito = tieneLimit ? (parseFloat(document.getElementById('c_limite_credito').value) || null) : null;
+  const limite_credito = tieneLimit ? (parseFloat(document.getElementById('c_limite_credito').value.replace(/\./g,'').replace(',','.')) || null) : null;
   if (!nombre) { alert('El nombre es obligatorio'); return; }
   const categoria = document.getElementById('c_categoria')?.value || null;
   const url    = _editClienteId ? `/api/clientes/${_editClienteId}` : '/api/clientes';
@@ -703,7 +703,7 @@ function abrirCargo(id, nombre) {
 function cerrarModalCargo() { document.getElementById('modalCargo').classList.remove('open'); }
 
 async function confirmarCargo() {
-  const monto = parseFloat(document.getElementById('cargo_monto').value);
+  const monto = parseFloat(document.getElementById('cargo_monto').value.replace(/\./g,'').replace(',','.'));
   const desc  = document.getElementById('cargo_desc').value.trim();
   if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
   const r = await fetch(`/api/clientes/${_cargoClienteId}/cargo`, {
@@ -746,12 +746,12 @@ function abrirPago(id, nombre, saldo) {
 }
 
 function pagarTodo() {
-  document.getElementById('p_monto').value = _pagoSaldo.toFixed(2);
+  document.getElementById('p_monto').value = _pagoSaldo.toFixed(2).replace('.',',');
   calcRestante();
 }
 
 function calcRestante() {
-  const monto = parseFloat(document.getElementById('p_monto').value) || 0;
+  const monto = parseFloat(document.getElementById('p_monto').value.replace(/\./g,'').replace(',','.')) || 0;
   const wrap  = document.getElementById('restanteWrap');
   const label = document.getElementById('restanteLabel');
   const valor = document.getElementById('restanteValor');
@@ -785,7 +785,7 @@ function calcRestante() {
 function cerrarModalPago() { document.getElementById('modalPago').classList.remove('open'); }
 
 async function confirmarPago() {
-  const monto = parseFloat(document.getElementById('p_monto').value);
+  const monto = parseFloat(document.getElementById('p_monto').value.replace(/\./g,'').replace(',','.'));
   const desc  = document.getElementById('p_desc').value.trim();
   if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return; }
   const r = await fetch(`/api/clientes/${_pagoClienteId}/pago`, {

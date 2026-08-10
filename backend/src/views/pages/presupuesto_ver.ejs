@@ -164,6 +164,9 @@
             </form>
           <% } %>
           <a href="/presupuestos/editar/<%= presupuesto.id %>" class="btn-act"><i class="bi bi-pencil"></i> Editar</a>
+          <% if (presupuesto.estado === 'Aprobado') { %>
+            <a href="/remitos/desde-presupuesto/<%= presupuesto.id %>" class="btn-act success"><i class="bi bi-truck"></i> Generar remito</a>
+          <% } %>
           <button class="btn-act" onclick="imprimirTermica()"><i class="bi bi-receipt"></i> Térmica</button>
           <button class="btn-act primary" onclick="imprimirA4()"><i class="bi bi-printer-fill"></i> Imprimir A4</button>
         </div>

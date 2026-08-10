@@ -210,7 +210,7 @@
           <label>Monto inicial en efectivo</label>
           <div class="field-prefix">
             <span>$</span>
-            <input type="number" id="inp_monto" placeholder="0.00" min="0" step="0.01" value="0">
+            <input type="text" inputmode="decimal" id="inp_monto" class="fmt-precio" placeholder="0,00" value="0">
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -263,7 +263,7 @@
         </div>
         <div class="field">
           <label>Monto</label>
-          <div class="field-prefix"><span>$</span><input type="number" id="mov_monto" min="0" step="0.01" placeholder="0,00" required></div>
+          <div class="field-prefix"><span>$</span><input type="text" inputmode="decimal" id="mov_monto" class="fmt-precio" placeholder="0,00" required></div>
         </div>
         <div class="field">
           <label>Descripción <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></label>
@@ -321,7 +321,7 @@ function selTipoMov(tipo) {
 }
 
 async function confirmarMovimiento() {
-  const monto = parseFloat(document.getElementById('mov_monto').value) || 0;
+  const monto = parseFloat(document.getElementById('mov_monto').value.replace(/\./g,'').replace(',','.')) || 0;
   const desc  = document.getElementById('mov_descripcion').value.trim();
   const errEl = document.getElementById('movError');
   const btn   = document.getElementById('btnConfirmarMov');
@@ -374,7 +374,7 @@ async function confirmarMovimiento() {
 async function abrirCaja() {
   const btn = document.getElementById('btnAbrir');
   const errDiv = document.getElementById('errorMsg');
-  const montoInicial = parseFloat(document.getElementById('inp_monto').value) || 0;
+  const montoInicial = parseFloat(document.getElementById('inp_monto').value.replace(/\./g,'').replace(',','.')) || 0;
   const terminal = document.getElementById('inp_terminal').value.trim() || 'Caja Principal';
 
   btn.disabled = true;

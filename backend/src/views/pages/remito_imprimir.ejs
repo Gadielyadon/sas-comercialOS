@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remito - <%= remito.numero %></title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Arial', 'Helvetica Neue', sans-serif; color: #000; font-size: 14px; line-height: 1.5; margin: 0; padding: 24px; background: #f3f4f6; }
+    .doc { max-width: 800px; margin: 0 auto; background: #fff; padding: 32px 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .afip-header { display: grid; grid-template-columns: 1fr auto; gap: 0; border: 2px solid #000; margin-bottom: 18px; }
+    .afip-col-empresa { padding: 16px 18px; border-right: 2px solid #000; }
+    .afip-col-doc { padding: 16px 18px; text-align: right; min-width: 200px; }
+    .emp-logo { max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
+    .emp-nombre { font-size: 18px; font-weight: 800; margin-bottom: 4px; color: #000; }
+    .emp-dato { font-size: 12px; color: #000; line-height: 1.7; }
+    .doc-titulo { font-size: 19px; font-weight: 800; margin-bottom: 6px; color: #000; letter-spacing: .5px; }
+    .doc-nro { font-size: 24px; font-weight: 900; letter-spacing: .5px; color: #000; }
+    .doc-fecha-label { font-size: 10.5px; color: #000; text-transform: uppercase; letter-spacing: .5px; margin-top: 8px; font-weight: 700; }
+    .doc-fecha-val { font-size: 14px; font-weight: 800; color: #000; }
+    .estado-badge { display:inline-block; padding: 3px 12px; border-radius: 4px; font-size: 12px; font-weight: 800; margin-top: 6px; border: 1.5px solid #000; color: #000 !important; background: #fff !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+
+    .cliente-box { border: 2px solid #000; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; background: #fff; }
+    .cliente-box .titulo { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: #000; margin-bottom: 6px; font-weight: 700; }
+    .cliente-box .nombre { font-size: 16px; font-weight: 800; margin-bottom: 2px; color: #000; }
+    .cliente-box .dato { font-size: 13px; color: #000; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th { background: #fff; text-align: left; padding: 9px 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: #000; font-weight: 800; border-bottom: 2.5px solid #000; }
+    th.center, td.center { text-align: center; }
+    td { padding: 11px 10px; border-bottom: 1.5px solid #000; font-size: 16px; font-weight: 700; color: #000; }
+
+    .notas { font-size: 13px; color: #000; background: #fff; padding: 10px 14px; border-radius: 6px; border: 1.5px solid #000; margin-top: 8px; margin-bottom: 20px; font-weight: 600; }
+
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 46px; }
+    .firma-box { text-align: center; }
+    .firma-linea { border-top: 2px solid #000; padding-top: 8px; margin-top: 46px; }
+    .firma-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #000; }
+    .firma-sub { font-size: 11px; color: #000; margin-top: 3px; font-weight: 600; }
+
+    .toolbar { max-width: 800px; margin: 0 auto 14px; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-print { padding: 10px 20px; background: #1B4FD8; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .doc { box-shadow: none; padding: 0; max-width: 100%; }
+      .toolbar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  </div>
+  <div class="doc" id="doc">
+    <div class="afip-header">
+      <div class="afip-col-empresa">
+        <% if (config && config.empresa_logo) { %>
+          <img src="<%= config.empresa_logo %>" class="emp-logo" alt="Logo">
+        <% } %>
+        <div class="emp-nombre"><%= (config && config.empresa_nombre) || 'Mi Empresa' %></div>
+        <div class="emp-dato">
+          <% if (config && config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
+          <% if (config && config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
+          <% if (config && config.afip_cuit)         { %><div>CUIT: <%= config.afip_cuit %></div><% } %>
+        </div>
+      </div>
+      <div class="afip-col-doc">
+        <div class="doc-titulo">REMITO</div>
+        <div class="doc-nro"><%= remito.numero %></div>
+        <div class="doc-fecha-label">Fecha</div>
+        <div class="doc-fecha-val"><%= new Date(remito.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %></div>
+        <span class="estado-badge estado-<%= remito.estado %>"><%= remito.estado %></span>
+      </div>
+    </div>
+
+    <div class="cliente-box">
+      <div class="titulo">Entregar a</div>
+      <div class="nombre"><%= remito.cliente_nombre || 'Consumidor Final' %></div>
+      <% if (remito.cliente_cuit) { %><div class="dato">CUIT/DNI: <%= remito.cliente_cuit %></div><% } %>
+      <% if (remito.cliente_direccion) { %><div class="dato">Dirección: <%= remito.cliente_direccion %></div><% } %>
+      <% if (remito.cliente_tel) { %><div class="dato">Tel: <%= remito.cliente_tel %></div><% } %>
+      <% if (remito.presupuesto) { %><div class="dato">Presupuesto origen: <strong><%= remito.presupuesto.numero %></strong></div><% } %>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th class="center" style="width:110px;">Cantidad</th>
+          <th style="width:110px;">Unidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% remito.items.forEach(item => { %>
+        <tr>
+          <td><%= item.nombre %><% if (item.descripcion) { %><div style="font-size:12.5px;color:#000;font-weight:500;margin-top:2px;"><%= item.descripcion %></div><% } %></td>
+          <td class="center"><%= item.cantidad %></td>
+          <td><%= item.unidad || 'unidad' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <% if (remito.notas) { %>
+    <div class="notas">📝 <%= remito.notas %></div>
+    <% } %>
+
+    <div class="firmas">
+      <div class="firma-box">
+        <div class="firma-linea">
+          <div class="firma-label">Entregué conforme</div>
+          <div class="firma-sub">Firma y aclaración</div>
+        </div>
+      </div>
+      <div class="firma-box">
+        <div class="firma-linea">
+          <div class="firma-label">Recibí conforme</div>
+          <div class="firma-sub">Firma, aclaración y DNI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

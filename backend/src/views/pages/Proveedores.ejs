@@ -212,7 +212,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div>
           <label class="form-lbl">Monto ($) *</label>
-          <input type="number" id="f_monto" class="form-input" placeholder="0.00" min="0.01" step="0.01" style="font-size:18px;font-weight:700;">
+          <input type="text" inputmode="decimal" id="f_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size:18px;font-weight:700;">
         </div>
         <div>
           <label class="form-lbl">N° Factura</label>
@@ -256,7 +256,7 @@
           <label class="form-lbl" style="margin:0;">Monto a pagar ($)</label>
           <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 8px;cursor:pointer;">Pagar todo</button>
         </div>
-        <input type="number" id="pp_monto" class="form-input" placeholder="0.00" min="0.01" step="0.01" style="font-size:18px;font-weight:700;" oninput="calcResto()">
+        <input type="text" inputmode="decimal" id="pp_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size:18px;font-weight:700;" oninput="calcResto()">
       </div>
       <div id="restoWrap" style="display:none;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.08);">
         <span style="font-size:12px;font-weight:600;color:#d97706;" id="restoLabel">Saldo restante</span>
@@ -363,7 +363,7 @@
         <div>
           <label class="form-lbl">Monto</label>
           <div style="display:flex;gap:6px;">
-            <input type="number" id="pagoCtrlMonto" class="form-input" min="0" step="0.01" placeholder="0,00" style="flex:1;">
+            <input type="text" inputmode="decimal" id="pagoCtrlMonto" class="form-input fmt-precio" placeholder="0,00" style="flex:1;">
             <button onclick="pagarTodoCtrl()" style="padding:8px 12px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">Todo</button>
           </div>
         </div>
@@ -661,7 +661,7 @@ function abrirFactura(id,nombre){
   setTimeout(()=>document.getElementById('f_monto').focus(),80);
 }
 async function confirmarFactura(){
-  const monto=parseFloat(document.getElementById('f_monto').value);
+  const monto=parseFloat(document.getElementById('f_monto').value.replace(/\./g,'').replace(',','.'));
   if(!monto||monto<=0){alert('Ingresá un monto válido');return;}
   const r=await fetch(`/proveedores/api/${_factId}/factura`,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({monto,nro_factura:document.getElementById('f_nro').value.trim(),descripcion:document.getElementById('f_desc').value.trim()||'Factura'})});
@@ -681,9 +681,9 @@ function abrirPago(id,nombre,saldo){
   document.getElementById('modalPagoP').classList.add('open');
   setTimeout(()=>document.getElementById('pp_monto').focus(),80);
 }
-function pagarTodo(){ document.getElementById('pp_monto').value=_pagoSaldo.toFixed(2); calcResto(); }
+function pagarTodo(){ document.getElementById('pp_monto').value=_pagoSaldo.toFixed(2).replace('.',','); calcResto(); }
 function calcResto(){
-  const m=parseFloat(document.getElementById('pp_monto').value)||0;
+  const m=parseFloat(document.getElementById('pp_monto').value.replace(/\./g,'').replace(',','.'))||0;
   const resto=_pagoSaldo-m;
   const wrap=document.getElementById('restoWrap');
   if(m<=0){wrap.style.display='none';return;}
@@ -692,7 +692,7 @@ function calcResto(){
   else{document.getElementById('restoLabel').textContent='Saldo restante';document.getElementById('restoValor').textContent='$'+resto.toLocaleString('es-AR',{minimumFractionDigits:2});}
 }
 async function confirmarPago(){
-  const monto=parseFloat(document.getElementById('pp_monto').value);
+  const monto=parseFloat(document.getElementById('pp_monto').value.replace(/\./g,'').replace(',','.'));
   if(!monto||monto<=0){alert('Ingresá un monto válido');return;}
   const r=await fetch(`/proveedores/api/${_pagoId}/pago`,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({monto,descripcion:document.getElementById('pp_desc').value.trim()||'Pago'})});
@@ -838,13 +838,13 @@ async function verPagosProveedor(id, nombre, saldo) {
 function cerrarPagosCtrl() { document.getElementById('modalPagosCtrl').classList.remove('open'); }
 
 function pagarTodoCtrl() {
-  document.getElementById('pagoCtrlMonto').value = _pagoCtrlSaldo.toFixed(2);
+  document.getElementById('pagoCtrlMonto').value = _pagoCtrlSaldo.toFixed(2).replace('.',',');
 }
 
 async function confirmarPagoCtrl() {
   const errEl  = document.getElementById('pagoCtrlError');
   errEl.style.display = 'none';
-  const monto  = parseFloat(document.getElementById('pagoCtrlMonto').value);
+  const monto  = parseFloat(document.getElementById('pagoCtrlMonto').value.replace(/\./g,'').replace(',','.'));
   const fecha  = document.getElementById('pagoCtrlFecha').value;
   const desc   = document.getElementById('pagoCtrlDesc').value.trim();
   const metodo = document.getElementById('pagoCtrlMetodo') ? document.getElementById('pagoCtrlMetodo').value : '';

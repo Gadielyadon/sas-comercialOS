@@ -59,9 +59,18 @@
     </a>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('presupuestos')) { %>
-    <a href="/presupuestos" class="nav-item <%= (typeof active !== 'undefined' && active === 'presupuestos') ? 'active' : '' %>">
-      <i class="bi bi-file-earmark-text"></i><span class="nav-text">Presupuestos</span>
-    </a>
+    <% const presupSubAbierto = (typeof active !== 'undefined' && (active === 'presupuestos' || active === 'remitos')); %>
+    <div class="nav-group">
+      <a href="/presupuestos" class="nav-item <%= (typeof active !== 'undefined' && active === 'presupuestos') ? 'active' : '' %>">
+        <i class="bi bi-file-earmark-text"></i><span class="nav-text">Presupuestos</span>
+        <i class="bi bi-chevron-down nav-caret <%= presupSubAbierto ? 'open' : '' %>" onclick="event.preventDefault();event.stopPropagation();toggleNavSubmenu(this)"></i>
+      </a>
+      <div class="nav-submenu" style="<%= presupSubAbierto ? 'display:block;' : 'display:none;' %>">
+        <a href="/remitos" class="nav-item nav-subitem <%= (typeof active !== 'undefined' && active === 'remitos') ? 'active' : '' %>">
+          <i class="bi bi-truck"></i><span class="nav-text">Remitos</span>
+        </a>
+      </div>
+    </div>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('clientes')) { %>
     <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
@@ -166,6 +175,14 @@
 </style>
 
 <script>
+/* ── Submenús desplegables (ej: Presupuestos > Remitos) ── */
+function toggleNavSubmenu(caret) {
+  const submenu = caret.closest('.nav-group').querySelector('.nav-submenu');
+  const abierto = submenu.style.display === 'block';
+  submenu.style.display = abierto ? 'none' : 'block';
+  caret.classList.toggle('open', !abierto);
+}
+
 /* ── Sidebar ── */
 (function(){
   const sb=document.getElementById('sidebar'), ov=document.getElementById('sidebarOverlay');

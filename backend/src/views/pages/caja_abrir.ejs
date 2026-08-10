@@ -45,7 +45,7 @@
       <label>Monto inicial en efectivo</label>
       <div class="field-prefix">
         <span>$</span>
-        <input type="number" id="inp_monto" placeholder="0.00" min="0" step="0.01" value="0">
+        <input type="text" inputmode="decimal" id="inp_monto" class="fmt-precio" placeholder="0,00" value="0">
       </div>
     </div>
 
@@ -74,7 +74,7 @@
 async function abrirCaja() {
   const btn = document.getElementById('btnAbrir');
   const errDiv = document.getElementById('errorMsg');
-  const montoInicial = parseFloat(document.getElementById('inp_monto').value) || 0;
+  const montoInicial = parseFloat(document.getElementById('inp_monto').value.replace(/\./g,'').replace(',','.')) || 0;
   const terminal = document.getElementById('inp_terminal').value.trim() || 'Caja Principal';
 
   btn.disabled = true;

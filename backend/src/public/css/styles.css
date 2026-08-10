@@ -483,6 +483,18 @@ body.sidebar-collapsed .ax-topbar {
 }
 .nav-subitem { padding-left: 34px !important; font-size: 13px !important; opacity: 0.88; }
 
+.nav-group { position: relative; }
+.nav-group .nav-item { position: relative; }
+.nav-caret {
+  margin-left: auto; font-size: 11px; opacity: .6;
+  transition: transform .18s ease, opacity .15s;
+  padding: 4px; flex-shrink: 0;
+}
+.nav-caret:hover { opacity: 1; }
+.nav-caret.open { transform: rotate(180deg); }
+.nav-submenu { overflow: hidden; }
+.nav-submenu .nav-item { margin-top: 1px; }
+
 .sidebar-footer { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,0.10); flex-shrink: 0; }
 .user-mini { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--radius-sm); }
 .user-avatar-sm {

@@ -210,6 +210,13 @@ try {
   console.log('✅  Presupuestos schema OK');
 } catch(e) { console.log('⚠️   Error en presupuestos schema:', e.message); }
 
+// 7.1 Remitos
+try {
+  const remitosSvc = require('./services/remitos.service');
+  remitosSvc.initRemitosSchema();
+  console.log('✅  Remitos schema OK');
+} catch(e) { console.log('⚠️   Error en remitos schema:', e.message); }
+
 // 8. AFIP / Factura Electrónica
 try {
   const afipSvc = require('./services/afip.service');
@@ -314,6 +321,13 @@ try {
   app.use('/presupuestos', presupuestosRoutes);
   console.log('✅  Presupuestos routes OK');
 } catch(e) { console.log('⚠️   presupuestos.routes error:', e.message); }
+
+// Remitos
+try {
+  const remitosRoutes = require('./routes/remitos.routes');
+  app.use('/remitos', remitosRoutes);
+  console.log('✅  Remitos routes OK');
+} catch(e) { console.log('⚠️   remitos.routes error:', e.message); }
 
 // Pedidos y Faltantes
 try {

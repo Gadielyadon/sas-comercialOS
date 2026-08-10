@@ -1,7 +1,6 @@
-<%- include('../partials/head', { title: 'Presupuestos' }) %>
+<%- include('../partials/head', { title: 'Remitos' }) %>
 
 <style>
-  /* ── Solo lo que no está en el sistema global ── */
   .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--page-gap); }
   .stat-sub  { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
 
@@ -11,10 +10,8 @@
   .search-wrap input { padding: 9px 14px 9px 36px; width: 240px; }
   .search-wrap i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
 
-  /* card-table usa la clase ax-card del sistema */
   .card-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  /* Tabla — header azul via el sistema global */
   .data-table thead th {
     background: var(--table-head-bg) !important;
     color: var(--table-head-color) !important;
@@ -29,26 +26,16 @@
   .data-table tbody tr:last-child td { border-bottom: none; }
   .data-table tbody tr:hover td { background: var(--table-row-hover); }
 
-  /* Badges */
   .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
-  .badge-Borrador  { background: rgba(107,114,128,.1); color: #6b7280; }
-  .badge-Enviado   { background: rgba(59,130,246,.1);  color: #3b82f6; }
-  .badge-Aprobado  { background: rgba(16,185,129,.1);  color: #10b981; }
-  .badge-Rechazado { background: rgba(239,68,68,.1);   color: #ef4444; }
+  .badge-Emitido   { background: rgba(59,130,246,.1);  color: #3b82f6; }
+  .badge-Entregado { background: rgba(16,185,129,.1);  color: #10b981; }
+  .badge-Anulado   { background: rgba(239,68,68,.1);   color: #ef4444; }
 
-  /* Botones */
   .btn-accion { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; }
   .btn-accion:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.06); }
-  .btn-accion.danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.06); }
-  /* Colores por función: verde=ver/imprimir, amarillo=editar, violeta=remito, rojo=eliminar */
   .btn-accion.ver     { border-color: rgba(16,185,129,.35);  color: #10b981; background: rgba(16,185,129,.07); }
   .btn-accion.ver:hover     { border-color: #10b981; color: #10b981; background: rgba(16,185,129,.14); }
-  .btn-accion.editar  { border-color: rgba(234,179,8,.4);   color: #ca8a04; background: rgba(234,179,8,.08); }
-  .btn-accion.editar:hover  { border-color: #ca8a04; color: #ca8a04; background: rgba(234,179,8,.16); }
-  .btn-accion.remito  { border-color: rgba(139,92,246,.35); color: #8b5cf6; background: rgba(139,92,246,.07); }
-  .btn-accion.remito:hover  { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,.14); }
-  .badge-estado[onclick] { cursor: pointer; transition: filter .15s; }
-  .badge-estado[onclick]:hover { filter: brightness(1.15); }
+  .btn-accion.danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.06); }
   .acciones-cell { display: flex; gap: 5px; align-items: center; }
   .btn-nuevo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; }
   .btn-nuevo:hover { opacity: .88; color: #fff; }
@@ -61,44 +48,42 @@
   .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; opacity: .3; }
 
   @media (max-width: 700px) {
-    #tablaPresupuestos thead th:nth-child(4), #tablaPresupuestos thead th:nth-child(7),
-    #tablaPresupuestos tbody td:nth-child(4), #tablaPresupuestos tbody td:nth-child(7) { display: none; }
+    #tablaRemitos thead th:nth-child(3), #tablaRemitos thead th:nth-child(5),
+    #tablaRemitos tbody td:nth-child(3), #tablaRemitos tbody td:nth-child(5) { display: none; }
     .acciones-cell { gap: 3px; }
     .btn-accion { padding: 5px 8px; font-size: 13px; }
   }
 </style>
 
 <div class="app-wrapper">
-  <%- include('../partials/sidebar', { active: 'presupuestos', user }) %>
+  <%- include('../partials/sidebar', { active: 'remitos', user }) %>
   <div class="main-content">
-    <%- include('../partials/header', { module: 'Presupuestos', user }) %>
+    <%- include('../partials/header', { module: 'Remitos', user }) %>
     <div class="page-body">
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-label">Total presupuestos</div>
+          <div class="stat-label">Total remitos</div>
           <div class="stat-value"><%= stats.total %></div>
           <div class="stat-sub">en historial</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Aprobados</div>
-          <div class="stat-value" style="color:#10b981"><%= stats.aprobados %></div>
-          <div class="stat-sub">$<%= stats.montoAprobado.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
+          <div class="stat-label">Entregados</div>
+          <div class="stat-value" style="color:#10b981"><%= stats.entregados %></div>
+          <div class="stat-sub">mercadería ya entregada</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Enviados</div>
-          <div class="stat-value" style="color:#3b82f6"><%= stats.enviados %></div>
-          <div class="stat-sub">pendientes</div>
+          <div class="stat-label">Emitidos</div>
+          <div class="stat-value" style="color:#3b82f6"><%= stats.emitidos %></div>
+          <div class="stat-sub">pendientes de entregar</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Monto total</div>
-          <div class="stat-value" style="font-size:18px">$<%= stats.montoTotal.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
-          <div class="stat-sub">todos los estados</div>
+          <div class="stat-label">Anulados</div>
+          <div class="stat-value" style="color:#ef4444"><%= stats.anulados %></div>
+          <div class="stat-sub">sin efecto</div>
         </div>
       </div>
 
-      <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
           <div class="search-wrap">
@@ -107,73 +92,69 @@
           </div>
           <select class="filter-select" id="filtroEstado" onchange="filtrar()">
             <option value="">Todos los estados</option>
-            <option value="Borrador">Borrador</option>
-            <option value="Enviado">Enviado</option>
-            <option value="Aprobado">Aprobado</option>
-            <option value="Rechazado">Rechazado</option>
+            <option value="Emitido">Emitido</option>
+            <option value="Entregado">Entregado</option>
+            <option value="Anulado">Anulado</option>
           </select>
         </div>
-        <a href="/presupuestos/nuevo" class="btn-nuevo">
-          <i class="bi bi-plus-lg"></i> Nuevo presupuesto
+        <a href="/remitos/nuevo" class="btn-nuevo">
+          <i class="bi bi-plus-lg"></i> Nuevo remito
         </a>
       </div>
 
-      <!-- Tabla -->
       <div class="card-table ax-card">
         <% if (!lista.length) { %>
         <div class="empty-state">
-          <i class="bi bi-file-earmark-text"></i>
-          <strong style="display:block;font-size:16px;color:var(--text-primary);margin-bottom:6px;">Sin presupuestos todavía</strong>
-          <span>Creá tu primer presupuesto para comenzar</span><br>
-          <a href="/presupuestos/nuevo" class="btn-nuevo" style="margin-top:18px;display:inline-flex;">
-            <i class="bi bi-plus-lg"></i> Crear presupuesto
+          <i class="bi bi-truck"></i>
+          <strong style="display:block;font-size:16px;color:var(--text-primary);margin-bottom:6px;">Sin remitos todavía</strong>
+          <span>Generá uno desde un presupuesto aprobado, o cargá uno nuevo directamente</span><br>
+          <a href="/remitos/nuevo" class="btn-nuevo" style="margin-top:18px;display:inline-flex;">
+            <i class="bi bi-plus-lg"></i> Crear remito
           </a>
         </div>
         <% } else { %>
-        <table class="data-table" id="tablaPresupuestos">
+        <table class="data-table" id="tablaRemitos">
           <thead>
             <tr>
               <th>N°</th>
               <th>Cliente</th>
               <th>Fecha</th>
               <th>Ítems</th>
-              <th style="text-align:right">Total</th>
+              <th>Presupuesto origen</th>
               <th>Estado</th>
-              <th>Sucursal</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <% lista.forEach(p => { %>
-            <tr data-cliente="<%= (p.cliente_nombre||'').toLowerCase() %>" data-numero="<%= p.numero.toLowerCase() %>" data-estado="<%= p.estado %>">
-              <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary)"><%= p.numero %></td>
+            <% lista.forEach(r => { %>
+            <tr data-cliente="<%= (r.cliente_nombre||'').toLowerCase() %>" data-numero="<%= r.numero.toLowerCase() %>" data-estado="<%= r.estado %>">
+              <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary)"><%= r.numero %></td>
               <td>
-                <strong><%= p.cliente_nombre || 'Sin nombre' %></strong>
-                <% if (p.cliente_cuit) { %><div style="font-size:11.5px;color:var(--text-muted)">CUIT: <%= p.cliente_cuit %></div><% } %>
+                <strong><%= r.cliente_nombre || 'Sin nombre' %></strong>
+                <% if (r.cliente_cuit) { %><div style="font-size:11.5px;color:var(--text-muted)">CUIT: <%= r.cliente_cuit %></div><% } %>
               </td>
               <td style="color:var(--text-secondary);font-size:13px">
-                <%= new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) %>
+                <%= new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) %>
               </td>
-              <td style="color:var(--text-muted);font-size:13px"><%= p.cant_items %> ítem<%= p.cant_items !== 1 ? 's' : '' %></td>
-              <td style="text-align:right;font-family:var(--font-mono);font-weight:800;font-size:15px">
-                $<%= Number(p.total).toLocaleString('es-AR',{minimumFractionDigits:0}) %>
+              <td style="color:var(--text-muted);font-size:13px"><%= r.cant_items %> ítem<%= r.cant_items !== 1 ? 's' : '' %></td>
+              <td style="font-size:12.5px;color:var(--text-secondary)">
+                <% if (r.presupuesto_numero) { %>
+                  <a href="/presupuestos/ver/<%= r.presupuesto_id %>" style="color:var(--color-primary);text-decoration:none;font-weight:600;"><%= r.presupuesto_numero %></a>
+                <% } else { %>—<% } %>
               </td>
               <td>
-                <span class="badge-estado badge-<%= p.estado %>" onclick="abrirEstado(<%= p.id %>, '<%= p.estado %>')" title="Tocar para cambiar el estado">
-                  <% if(p.estado==='Aprobado'){%><i class="bi bi-check-circle-fill"></i><%}%>
-                  <% if(p.estado==='Enviado'){%><i class="bi bi-send-fill"></i><%}%>
-                  <% if(p.estado==='Borrador'){%><i class="bi bi-pencil-fill"></i><%}%>
-                  <% if(p.estado==='Rechazado'){%><i class="bi bi-x-circle-fill"></i><%}%>
-                  <%= p.estado %>
+                <span class="badge-estado badge-<%= r.estado %>">
+                  <% if(r.estado==='Entregado'){%><i class="bi bi-check-circle-fill"></i><%}%>
+                  <% if(r.estado==='Emitido'){%><i class="bi bi-send-fill"></i><%}%>
+                  <% if(r.estado==='Anulado'){%><i class="bi bi-x-circle-fill"></i><%}%>
+                  <%= r.estado %>
                 </span>
               </td>
-              <td style="font-size:12px;color:var(--text-muted)"><%= p.sucursal_nombre %></td>
               <td>
                 <div class="acciones-cell">
-                  <a href="/presupuestos/ver/<%= p.id %>" class="btn-accion ver" title="Ver / Imprimir"><i class="bi bi-eye"></i></a>
-                  <a href="/presupuestos/editar/<%= p.id %>" class="btn-accion editar" title="Editar"><i class="bi bi-pencil"></i></a>
-                  <a href="/remitos/desde-presupuesto/<%= p.id %>" class="btn-accion remito" title="Generar remito"><i class="bi bi-truck"></i></a>
-                  <form method="POST" action="/presupuestos/eliminar/<%= p.id %>" style="margin:0" onsubmit="return confirm('¿Eliminar este presupuesto?')">
+                  <a href="/remitos/ver/<%= r.id %>" class="btn-accion ver" title="Ver / Imprimir"><i class="bi bi-printer"></i></a>
+                  <button class="btn-accion" onclick="abrirEstado(<%= r.id %>, '<%= r.estado %>')" title="Cambiar estado"><i class="bi bi-arrow-repeat"></i></button>
+                  <form method="POST" action="/remitos/eliminar/<%= r.id %>" style="margin:0" onsubmit="return confirm('¿Eliminar este remito?')">
                     <button type="submit" class="btn-accion danger" title="Eliminar"><i class="bi bi-trash"></i></button>
                   </form>
                 </div>
@@ -200,10 +181,9 @@
       <div class="modal-body">
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;display:block;">Nuevo estado</label>
         <select name="estado" id="selectEstado" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;">
-          <option value="Borrador">📝 Borrador</option>
-          <option value="Enviado">📤 Enviado</option>
-          <option value="Aprobado">✅ Aprobado</option>
-          <option value="Rechazado">❌ Rechazado</option>
+          <option value="Emitido">📤 Emitido</option>
+          <option value="Entregado">✅ Entregado</option>
+          <option value="Anulado">❌ Anulado</option>
         </select>
       </div>
       <div class="modal-footer">
@@ -219,7 +199,7 @@
 function filtrar() {
   const q     = document.getElementById('buscador').value.toLowerCase();
   const est   = document.getElementById('filtroEstado').value;
-  document.querySelectorAll('#tablaPresupuestos tbody tr').forEach(tr => {
+  document.querySelectorAll('#tablaRemitos tbody tr').forEach(tr => {
     const cliente = tr.dataset.cliente || '';
     const numero  = tr.dataset.numero  || '';
     const estado  = tr.dataset.estado  || '';
@@ -230,7 +210,7 @@ function filtrar() {
 }
 
 function abrirEstado(id, estadoActual) {
-  document.getElementById('formEstado').action = `/presupuestos/estado/${id}`;
+  document.getElementById('formEstado').action = `/remitos/estado/${id}`;
   document.getElementById('selectEstado').value = estadoActual;
   document.getElementById('modalEstado').classList.add('active');
 }
