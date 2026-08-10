@@ -92,7 +92,7 @@ function registrarPago(proveedorId, monto, descripcion = 'Pago') {
   run(`UPDATE proveedores SET saldo=? WHERE id=?`, [nuevoSaldo, Number(proveedorId)]);
   run(
     `INSERT INTO proveedores_movimientos (proveedor_id,tipo,descripcion,monto,saldo_post) VALUES (?,?,?,?,?)`,
-    [Number(proveedorId), 'pago', descripcion, Number(monto), nuevoSaldo]
+    [Number(proveedorId), 'pago', descripcion, montoReal, nuevoSaldo]
   );
   return findById(proveedorId);
 }

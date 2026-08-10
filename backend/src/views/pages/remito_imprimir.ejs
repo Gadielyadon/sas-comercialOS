@@ -40,10 +40,14 @@
 
     .toolbar { max-width: 800px; margin: 0 auto 14px; display: flex; justify-content: flex-end; gap: 10px; }
     .btn-print { padding: 10px 20px; background: #1B4FD8; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    @page { size: A4; margin: 15mm; }
     @media print {
       body { background: #fff; padding: 0; }
       .doc { box-shadow: none; padding: 0; max-width: 100%; }
       .toolbar { display: none; }
+      td { padding: 13px 10px; }
+      .afip-header { margin-bottom: 24px; }
+      .cliente-box { margin-bottom: 22px; }
     }
   </style>
 </head>
@@ -61,7 +65,8 @@
         <div class="emp-dato">
           <% if (config && config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
           <% if (config && config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
-          <% if (config && config.afip_cuit)         { %><div>CUIT: <%= config.afip_cuit %></div><% } %>
+          <% const _cuit = (config && (config.empresa_cuit || config.afip_cuit)) || ''; %>
+          <% if (_cuit) { %><div>CUIT: <%= _cuit %></div><% } %>
         </div>
       </div>
       <div class="afip-col-doc">

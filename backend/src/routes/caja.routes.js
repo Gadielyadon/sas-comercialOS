@@ -57,7 +57,7 @@ function enviarResumenCaja(req, res) {
     const hasta = caja.closed_at || nowArgentina();
 
     const ventas = all(`
-      SELECT id, total, payment_method, created_at
+      SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
       FROM sales
       WHERE created_at >= ? AND created_at <= ?
       ${caja.sucursal_id ? 'AND sucursal_id = ?' : ''}
@@ -89,9 +89,19 @@ function enviarResumenCaja(req, res) {
 
     const totalVentas = ventas.reduce((s, v) => s + Number(v.total || 0), 0);
 
-    const totalEfectivo = ventas
-      .filter(v => (v.payment_method || '').toLowerCase() === 'efectivo')
-      .reduce((s, v) => s + Number(v.total || 0), 0);
+    const totalEfectivo = ventas.reduce((s, v) => {
+      const metodo = (v.payment_method || '').toLowerCase().trim();
+      if (metodo === 'efectivo') return s + Number(v.total || 0);
+      if (metodo.includes('+') && metodo.includes('efectivo')) {
+        // Pago mixto: el efectivo puede ser el método 1 (cash_received) o el
+        // método 2 (monto_mixto2) según cuál haya elegido el cajero como
+        // principal — hay que fijarse en qué posición aparece "efectivo".
+        const partes = metodo.split('+').map(p => p.trim());
+        if (partes[0] === 'efectivo') return s + Number(v.cash_received || 0);
+        if (partes[1] === 'efectivo') return s + Number(v.monto_mixto2 || 0);
+      }
+      return s;
+    }, 0);
 
     const ingresos = movimientos
       .filter(m => m.tipo === 'ingreso')

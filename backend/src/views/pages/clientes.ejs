@@ -654,7 +654,7 @@ function abrirEditar(c) {
   const tieneLimit = c.limite_credito != null;
   document.getElementById('c_limite_check').checked = tieneLimit;
   toggleLimiteCredito(document.getElementById('c_limite_check'));
-  if (tieneLimit) document.getElementById('c_limite_credito').value = c.limite_credito;
+  if (tieneLimit) document.getElementById('c_limite_credito').value = Number(c.limite_credito).toLocaleString('es-AR');
   const _catSelE = document.getElementById('c_categoria');
   if (_catSelE && c.categoria) _catSelE.value = c.categoria;
   document.getElementById('modalCliente').classList.add('open');
