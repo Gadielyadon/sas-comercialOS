@@ -285,6 +285,57 @@ function getTopGanancia(sucursal_id, limit = 6) {
 router.get('/', (req, res) => res.redirect('/dashboard'));
 
 // ── Dashboard ─────────────────────────────────────────────────
+// ── Dashboard · resumen por período (para el calendario chiquito) ──
+router.get('/api/dashboard/periodo', requirePermiso('dashboard'), (req, res) => {
+  try {
+    const desde = String(req.query.desde || '').trim();
+    const hasta = String(req.query.hasta || desde).trim();
+    if (!desde) return res.status(400).json({ ok: false, error: 'Falta la fecha' });
+
+    const sucursal_id = res.locals?.sucursal_filtro ?? null;
+    const sWhere = sucursal_id ? `AND s.sucursal_id = ${Number(sucursal_id)}` : '';
+
+    const v = get(
+      `SELECT COALESCE(SUM(s.total),0) AS total, COUNT(*) AS count
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
+      [desde, hasta]
+    );
+
+    const costo = get(
+      `SELECT COALESCE(SUM(COALESCE(si.price_cost, p.price_cost, 0) * si.qty), 0) AS costo,
+              COALESCE(SUM(si.subtotal), 0) AS ventaConCosto,
+              COALESCE(SUM(CASE WHEN si.price_cost IS NOT NULL OR p.price_cost IS NOT NULL THEN si.subtotal ELSE 0 END), 0) AS ventaCubierta
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
+      [desde, hasta]
+    );
+
+    const total = Number(v?.total || 0);
+    const count = Number(v?.count || 0);
+    const ticket = count > 0 ? total / count : 0;
+    const ganancia = Number(costo?.ventaCubierta || 0) - Number(costo?.costo || 0);
+    const cobertura = total > 0 ? Math.round((Number(costo?.ventaCubierta || 0) / total) * 100) : 0;
+
+    res.json({
+      ok: true,
+      total_vendido: Math.round(total * 100) / 100,
+      count_ventas: count,
+      ticket_promedio: Math.round(ticket * 100) / 100,
+      ganancia: Math.round(ganancia * 100) / 100,
+      hay_costos: Number(costo?.ventaCubierta || 0) > 0,
+      cobertura_pct: cobertura,
+    });
+  } catch (e) {
+    console.error('[dashboard/periodo]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
   const user        = req.session?.user || { name: 'Admin', role: 'admin' };
   const sucursal_id = res.locals?.sucursal_filtro ?? null;
@@ -316,7 +367,15 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
 // ── Historial ─────────────────────────────────────────────────
 router.get('/historial', requirePermiso('historial'), (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
-  res.render('pages/historial', { title: 'Historial de Ventas', module: 'Historial', active: 'historial', user });
+  let facturacionActiva = false;
+  try {
+    const configService = require('../services/config.service');
+    facturacionActiva = String(configService.getAll().facturacion_habilitada || '0') === '1';
+  } catch (e) { console.warn('[historial] config.service no disponible:', e.message); }
+  res.render('pages/historial', {
+    title: 'Historial de Ventas', module: 'Historial', active: 'historial', user,
+    facturacionHabilitada: facturacionActiva,
+  });
 });
 
 // ── Inventario ────────────────────────────────────────────────
@@ -337,6 +396,99 @@ router.get('/inventario', requirePermiso('inventario'), (req, res) => {
     sucursales:   res.locals.sucursales_lista || [],
     condIvaEmpresa: getConfigValue('empresa_cond_iva', ''),
   });
+});
+
+// ── Inventario · Etiquetado ─────────────────────────────────────
+// Pantalla para elegir productos (por categoría o búsqueda) y generar
+// etiquetas con código de barras para imprimir.
+router.get('/inventario/etiquetas', requirePermiso('inventario'), (req, res) => {
+  const user        = req.session?.user || { name: 'Admin' };
+  const sucursal_id = res.locals.sucursal_id || 1;
+  let products = [];
+  try       { products = productsService.list(sucursal_id); }
+  catch(e)  { products = productsService.list(); }
+
+  const categorias = [...new Set(
+    products.map(p => (p.category || '').trim()).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'es'));
+
+  res.render('pages/etiquetas', {
+    title: 'Etiquetado de productos', user, active: 'etiquetas', module: 'Inventario',
+    products, categorias,
+    ticketFormato: getConfigValue('ticket_formato', '58mm'),
+  });
+});
+
+// POST con los productos elegidos (+ cantidad de etiquetas c/u) → hoja de impresión
+router.post('/inventario/etiquetas/imprimir', requirePermiso('inventario'), (req, res) => {
+  let itemsRaw = [];
+  try { itemsRaw = JSON.parse(req.body.items_json || '[]'); } catch (e) { itemsRaw = []; }
+  const formato = ['A4', '58mm', '80mm'].includes(req.body.formato) ? req.body.formato : '58mm';
+
+  if (!Array.isArray(itemsRaw) || !itemsRaw.length) {
+    return res.redirect('/inventario/etiquetas');
+  }
+
+  // Traer nombre/precio/categoría frescos desde la base (no confiar en lo que
+  // quedó guardado en el navegador, por si el precio cambió mientras tanto).
+  const items = itemsRaw.map(it => {
+    const prod = productsService.findBySku(it.sku);
+    const cantidad = Math.max(1, parseInt(it.cantidad, 10) || 1);
+    if (!prod) return { sku: it.sku, nombre: it.nombre || it.sku, price: null, category: '', cantidad };
+    return { sku: prod.sku, nombre: prod.name, price: prod.precio_efectivo ?? prod.price, category: prod.category || '', cantidad };
+  });
+
+  res.render('pages/etiquetas_imprimir', {
+    title: 'Imprimir etiquetas',
+    items, formato,
+    empresaNombre: getConfigValue('empresa_nombre', ''),
+    empresaLogo:   getConfigValue('empresa_logo', ''),
+  });
+});
+
+// ── Inventario · Carga automática (IA) ──────────────────────────
+// Escanea una foto o PDF de una factura de proveedor, extrae los ítems
+// con IA y los matchea contra el catálogo existente antes de aplicarlos.
+router.get('/inventario/carga-automatica', requirePermiso('inventario'), (req, res) => {
+  const user = req.session?.user || { name: 'Admin' };
+  res.render('pages/carga_automatica', {
+    title: 'Carga automática', user, active: 'carga-automatica', module: 'Inventario',
+    sucursal_id: res.locals.sucursal_id || 1,
+  });
+});
+
+router.post('/inventario/carga-automatica/api/escanear', requirePermiso('inventario'), async (req, res) => {
+  try {
+    const { imagen_base64, media_type } = req.body || {};
+    const cargaSvc = require('../services/carga_automatica.service');
+    const items = await cargaSvc.extraerItemsDeFactura({ base64: imagen_base64, mediaType: media_type });
+    if (!items.length) {
+      return res.json({ ok: true, items: [], aviso: 'No se detectaron productos en el documento.' });
+    }
+    const sucursal_id = res.locals.sucursal_id || 1;
+    const matched = cargaSvc.matchearProductos(items, sucursal_id);
+    res.json({ ok: true, items: matched });
+  } catch (e) {
+    console.error('[carga-automatica/escanear]', e.message);
+    res.status(e.configFaltante ? 400 : 500).json({ ok: false, error: e.message });
+  }
+});
+
+router.post('/inventario/carga-automatica/api/confirmar', requirePermiso('inventario'), (req, res) => {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ ok: false, error: 'No hay ítems para cargar' });
+    }
+    const cargaSvc = require('../services/carga_automatica.service');
+    const sucursal_id = res.locals.sucursal_id || 1;
+    const usuario = req.session?.user?.name || null;
+    const resumen = cargaSvc.aplicarCarga({ items, sucursal_id, usuario });
+    res.json({ ok: true, ...resumen });
+  } catch (e) {
+    console.error('[carga-automatica/confirmar]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // ── Ventas ────────────────────────────────────────────────────
@@ -470,6 +622,107 @@ router.get('/ajustes', (req, res) => {
     empresa, metodosPago, usuarios, config,
     sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' }
   });
+});
+
+// ── Auditoría (solo admin) ─────────────────────────────────────
+router.get('/auditoria', (req, res) => {
+  const user = req.session?.user || { name: 'Admin', role: 'admin' };
+  if (user.role !== 'admin') return res.redirect('/dashboard');
+  res.render('pages/auditoria', {
+    title: 'Auditoría', user, active: 'auditoria', module: 'Auditoría',
+    sucursal_id: res.locals.sucursal_id || 1,
+  });
+});
+
+router.get('/auditoria/api/eventos', (req, res) => {
+  const user = req.session?.user || {};
+  if (user.role !== 'admin') return res.status(403).json({ ok: false, error: 'No autorizado' });
+  try {
+    const auditoriaSvc = require('../services/auditoria.service');
+    const { tipo, usuario, desde, hasta } = req.query;
+    const eventos = auditoriaSvc.listar({
+      sucursal_id: res.locals.sucursal_id || null,
+      tipo: tipo || null,
+      usuario: usuario || null,
+      desde: desde || null,
+      hasta: hasta || null,
+    });
+    res.json({ ok: true, eventos });
+  } catch (e) {
+    console.error('[auditoria/eventos]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+router.get('/auditoria/api/rentabilidad', (req, res) => {
+  const user = req.session?.user || {};
+  if (user.role !== 'admin') return res.status(403).json({ ok: false, error: 'No autorizado' });
+  try {
+    const auditoriaSvc = require('../services/auditoria.service');
+    const { desde, hasta } = req.query;
+    const data = auditoriaSvc.rentabilidadVentas({
+      sucursal_id: res.locals.sucursal_id || null,
+      desde: desde || null,
+      hasta: hasta || null,
+    });
+    res.json({ ok: true, ...data });
+  } catch (e) {
+    console.error('[auditoria/rentabilidad]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+router.get('/auditoria/api/rentabilidad/export', (req, res) => {
+  const user = req.session?.user || {};
+  if (user.role !== 'admin') return res.status(403).send('No autorizado');
+  try {
+    const auditoriaSvc = require('../services/auditoria.service');
+    const { desde, hasta } = req.query;
+    const data = auditoriaSvc.rentabilidadVentas({
+      sucursal_id: res.locals.sucursal_id || null,
+      desde: desde || null,
+      hasta: hasta || null,
+    });
+
+    const XLSX = require('xlsx');
+    const fmt = (n) => Number(n) || 0;
+
+    const filas = [
+      ['Rentabilidad por categoría — ventas realizadas'],
+      [`Período: ${desde || 'inicio'} a ${hasta || 'hoy'}`],
+      [],
+      ['Categoría', 'Unidades vendidas', 'Costo total', 'Venta total', 'Rentabilidad', 'Margen %'],
+      ...data.categorias.map(c => [c.categoria, c.unidades, fmt(c.costo_total), fmt(c.venta_total), fmt(c.rentabilidad), c.margen_pct / 100]),
+      ['TOTAL', data.totales.unidades, fmt(data.totales.costo_total), fmt(data.totales.venta_total), fmt(data.totales.rentabilidad), data.totales.margen_pct / 100],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(filas);
+    ws['!cols'] = [{ wch: 28 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }];
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
+
+    // Formato moneda y porcentaje en las columnas numéricas
+    const filaDesde = 5, filaHasta = filas.length; // filas 1-indexadas en notación A1
+    for (let r = filaDesde; r <= filaHasta; r++) {
+      ['C', 'D', 'E'].forEach(col => {
+        const cell = ws[`${col}${r}`];
+        if (cell) cell.z = '"$"#,##0.00';
+      });
+      const cellPct = ws[`F${r}`];
+      if (cellPct) cellPct.z = '0.0%';
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Rentabilidad');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const nombre = `rentabilidad${desde ? '_' + desde : ''}${hasta ? '_a_' + hasta : ''}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`);
+    res.send(buf);
+  } catch (e) {
+    console.error('[auditoria/rentabilidad/export]', e.message);
+    res.status(500).send('Error al generar el Excel: ' + e.message);
+  }
 });
 
 // ── Sucursales (solo admin) ───────────────────────────────────

@@ -59,13 +59,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--text-secondary);
     padding: 4px 2px 7px;
     letter-spacing: .2px;
   }
-  .tbl-hint i { font-size: 12px; }
+  .tbl-hint i { font-size: 13.5px; }
   .tbl-hint.oculto { display: none; }
 
 
@@ -98,7 +98,7 @@
   .tbl-scroll > table th,
   .tbl-scroll > table td {
     padding: 11px 12px;
-    font-size: 13px;
+    font-size: 15px;
     white-space: nowrap;
   }
 
@@ -134,7 +134,7 @@
   .sale-overlay input:not([type="checkbox"]):not([type="radio"]),
   .sale-overlay select,
   .sale-overlay textarea {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   /* Y que se puedan tocar */
@@ -170,7 +170,7 @@
      Dos por fila hasta 560px, una sola abajo de eso.
      ───────────────────────────────────────────────────────────── */
   .stat-card { min-width: 0; }
-  .stat-value { font-size: 20px; }
+  .stat-value { font-size: 23px; }
 }
 
 @media (max-width: 560px) {
@@ -179,5 +179,5 @@
     grid-template-columns: 1fr !important;
   }
   .tbl-scroll > table th,
-  .tbl-scroll > table td { font-size: 12.5px; padding: 10px; }
+  .tbl-scroll > table td { font-size: 14px; padding: 10px; }
 }

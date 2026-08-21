@@ -49,6 +49,8 @@ function initPedidosSchema() {
   sa(`ALTER TABLE pedidos ADD COLUMN pago_monto   REAL DEFAULT NULL`);
   sa(`ALTER TABLE pedidos ADD COLUMN pago_fecha   TEXT DEFAULT NULL`);
   sa(`ALTER TABLE pedidos ADD COLUMN pago_metodo  TEXT DEFAULT NULL`);
+  // Evita registrar la deuda dos veces si el pedido se reenvía
+  sa(`ALTER TABLE pedidos ADD COLUMN deuda_registrada INTEGER DEFAULT 0`);
 
   // Tabla de pagos parciales por pedido
   run(`CREATE TABLE IF NOT EXISTS pedido_pagos (
@@ -200,6 +202,17 @@ function enviarAProveedor(pedidoId, proveedorId) {
     `UPDATE pedidos SET proveedor_id=?, proveedor=?, estado_recepcion='enviado', updated_at=datetime('now','localtime') WHERE id=?`,
     [Number(proveedorId), prov.nombre, Number(pedidoId)]
   );
+
+  // Registrar la deuda en la cuenta corriente del proveedor (solo una vez por pedido)
+  if (!p.deuda_registrada) {
+    const items = getItems(pedidoId);
+    const total = items.reduce((s, i) => s + (Number(i.cantidad) * Number(i.precio_costo || 0)), 0);
+    if (total > 0) {
+      provSvc.registrarFactura(proveedorId, total, `Pedido #${pedidoId} — ${p.titulo || 'Pedido'}`, null);
+      run(`UPDATE pedidos SET deuda_registrada=1 WHERE id=?`, [Number(pedidoId)]);
+    }
+  }
+
   return findById(pedidoId);
 }
 
@@ -328,6 +341,14 @@ function registrarPagoPedido({ pedidoId, monto, fecha, metodo, nota }) {
     `UPDATE pedidos SET pago_estado=?, pago_monto=?, updated_at=datetime('now','localtime') WHERE id=?`,
     [estado, totalPagado, Number(pedidoId)]
   );
+
+  // Reflejar el pago en la cuenta corriente del proveedor
+  if (p.proveedor_id) {
+    try {
+      require('./proveedores.service').registrarPago(p.proveedor_id, Number(monto), `Pago pedido #${pedidoId}`);
+    } catch (e) { console.error('[registrarPagoPedido → proveedor]', e.message); }
+  }
+
   return { pagos: getPagosPedido(pedidoId), totalPagado, totalPedido, estado };
 }
 
@@ -345,6 +366,17 @@ function eliminarPagoPedido(pagoId) {
     `UPDATE pedidos SET pago_estado=?, pago_monto=?, updated_at=datetime('now','localtime') WHERE id=?`,
     [estado, totalPagado, Number(pg.pedido_id)]
   );
+
+  // Al borrar un pago, esa plata vuelve a quedar "debida" en el proveedor
+  const pedido = findById(pg.pedido_id);
+  if (pedido && pedido.proveedor_id) {
+    try {
+      require('./proveedores.service').registrarFactura(
+        pedido.proveedor_id, Number(pg.monto), `Pago eliminado — pedido #${pg.pedido_id}`, null
+      );
+    } catch (e) { console.error('[eliminarPagoPedido → proveedor]', e.message); }
+  }
+
   return { ok: true };
 }
 
@@ -353,9 +385,19 @@ function marcarPagoPedido({ pedidoId, pagado, pago_monto, pago_fecha, pago_metod
   if (pagado && pago_monto) {
     return registrarPagoPedido({ pedidoId, monto: pago_monto, fecha: pago_fecha, metodo: pago_metodo });
   } else {
-    // Desmarcar — eliminar todos los pagos
+    // Desmarcar — eliminar todos los pagos y devolver esa deuda al proveedor
+    const pedido = findById(pedidoId);
+    const pagosPrevios = getPagosPedido(pedidoId);
+    const totalPrevio = pagosPrevios.reduce((s, p) => s + Number(p.monto), 0);
     run(`DELETE FROM pedido_pagos WHERE pedido_id=?`, [Number(pedidoId)]);
     run(`UPDATE pedidos SET pago_estado=NULL, pago_monto=NULL WHERE id=?`, [Number(pedidoId)]);
+    if (pedido && pedido.proveedor_id && totalPrevio > 0) {
+      try {
+        require('./proveedores.service').registrarFactura(
+          pedido.proveedor_id, totalPrevio, `Pago desmarcado — pedido #${pedidoId}`, null
+        );
+      } catch (e) { console.error('[marcarPagoPedido → proveedor]', e.message); }
+    }
     return findById(pedidoId);
   }
 }

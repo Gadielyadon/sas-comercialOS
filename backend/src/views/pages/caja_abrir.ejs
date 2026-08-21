@@ -5,21 +5,39 @@
   .caja-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; box-shadow: var(--shadow-lg); padding: 44px 40px; width: 100%; max-width: 460px; }
   .caja-icon { width: 60px; height: 60px; border-radius: 16px; background: linear-gradient(135deg,#10b981,#059669); display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; margin: 0 auto 20px; box-shadow: 0 8px 24px rgba(16,185,129,.35); }
   .caja-title { font-size: 22px; font-weight: 800; color: var(--text-primary); text-align: center; margin-bottom: 6px; letter-spacing: -.4px; }
-  .caja-sub   { font-size: 13.5px; color: var(--text-secondary); text-align: center; margin-bottom: 32px; }
+  .caja-sub   { font-size: 15.5px; color: var(--text-secondary); text-align: center; margin-bottom: 32px; }
   .field { margin-bottom: 18px; }
-  .field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); margin-bottom: 7px; }
-  .field input { width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 15px; outline: none; transition: border .2s, box-shadow .2s; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-secondary); margin-bottom: 7px; }
+  .field input { width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 17px; outline: none; transition: border .2s, box-shadow .2s; }
   .field input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
   .field-prefix { position: relative; }
-  .field-prefix span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; font-weight: 700; color: var(--text-secondary); pointer-events: none; z-index: 2; }
-  .field-prefix input { padding-left: 38px; }
-  .btn-abrir { width: 100%; padding: 14px; border: none; border-radius: var(--radius-md); background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-size: 15px; font-weight: 700; font-family: var(--font-body); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; transition: all .15s; box-shadow: 0 6px 18px rgba(16,185,129,.35); margin-top: 8px; }
+  .field-prefix span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; font-weight: 700; color: var(--text-secondary); pointer-events: none; z-index: 2; }
+  .field-prefix input { padding-left: 46px; }
+  .btn-abrir { width: 100%; padding: 14px; border: none; border-radius: var(--radius-md); background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-size: 17px; font-weight: 700; font-family: var(--font-body); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; transition: all .15s; box-shadow: 0 6px 18px rgba(16,185,129,.35); margin-top: 8px; }
   .btn-abrir:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(16,185,129,.45); }
   .btn-abrir:disabled { opacity: .6; cursor: not-allowed; transform: none; }
   .turno-info { display: flex; align-items: center; gap: 10px; background: rgba(16,185,129,.07); border: 1px solid rgba(16,185,129,.2); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 24px; }
-  .turno-info i { font-size: 18px; color: #10b981; }
-  .turno-info span { font-size: 13px; color: var(--text-secondary); }
+  .turno-info i { font-size: 20.5px; color: #10b981; }
+  .turno-info span { font-size: 15px; color: var(--text-secondary); }
   .turno-info strong { color: var(--text-primary); }
+
+  .nota-caja { border: 1.5px dashed #f59e0b; background: rgba(245,158,11,.07); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 22px; }
+  .nota-caja-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .nota-caja-head i { color: #f59e0b; font-size: 17px; }
+  .nota-caja-head span { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #b45309; }
+  .nota-caja textarea {
+    width: 100%; min-height: 54px; padding: 9px 11px; border-radius: 8px; border: 1px solid rgba(245,158,11,.35);
+    background: var(--bg-body); color: var(--text-primary); font-family: var(--font-body); font-size: 15px;
+    resize: vertical; outline: none;
+  }
+  .nota-caja textarea:focus { border-color: #f59e0b; }
+  .nota-caja-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .nota-caja-fecha { font-size: 12px; color: var(--text-muted); }
+  .nota-caja-guardar {
+    border: none; background: #f59e0b; color: #fff; font-size: 13px; font-weight: 700; padding: 7px 14px;
+    border-radius: 7px; cursor: pointer; font-family: var(--font-body);
+  }
+  .nota-caja-guardar:hover { background: #d97706; }
 </style>
 
 <div class="caja-page">
@@ -34,6 +52,22 @@
       <span>Cajero: <strong><%= user.name %></strong></span>
     </div>
 
+    <!-- Nota de caja (editable) -->
+    <div class="nota-caja">
+      <div class="nota-caja-head"><i class="bi bi-sticky"></i><span>Nota de caja</span></div>
+      <textarea id="notaCajaTexto" placeholder="Ej: quedaron $40.000 guardados el viernes..."><%= nota.nota || '' %></textarea>
+      <div class="nota-caja-footer">
+        <div class="nota-caja-fecha" id="notaCajaFecha">
+          <% if (nota.actualizado_at) { %>
+            Editado el <%= new Date(nota.actualizado_at.replace(' ','T')).toLocaleDateString('es-AR') %> a las <%= new Date(nota.actualizado_at.replace(' ','T')).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) %><% if (nota.actualizado_by) { %> por <%= nota.actualizado_by %><% } %>
+          <% } else { %>
+            Sin notas todavía
+          <% } %>
+        </div>
+        <button type="button" class="nota-caja-guardar" onclick="guardarNotaCaja()">Guardar nota</button>
+      </div>
+    </div>
+
     <!-- Terminal -->
     <div class="field">
       <label>Terminal / Nombre de caja</label>
@@ -43,17 +77,14 @@
     <!-- Monto inicial -->
     <div class="field">
       <label>Monto inicial en efectivo</label>
-      <div class="field-prefix">
-        <span>$</span>
-        <input type="text" inputmode="decimal" id="inp_monto" class="fmt-precio" placeholder="0,00" value="0">
-      </div>
+      <input type="text" inputmode="decimal" id="inp_monto" class="fmt-precio" placeholder="0,00" value="0">
     </div>
 
     <!-- Teclas rápidas -->
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
       <% [0, 1000, 2000, 5000, 10000].forEach(v => { %>
         <button onclick="document.getElementById('inp_monto').value='<%= v %>'"
-          style="flex:1;min-width:60px;padding:7px 4px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-body);color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;"
+          style="flex:1;min-width:60px;padding:7px 4px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-body);color:var(--text-secondary);font-size: 14px;font-weight:600;cursor:pointer;transition:all .12s;"
           onmouseover="this.style.borderColor='#10b981';this.style.color='#10b981'"
           onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'">
           $<%= v.toLocaleString('es-AR') %>
@@ -65,7 +96,7 @@
       <i class="bi bi-unlock-fill"></i> Abrir Caja y Comenzar
     </button>
 
-    <div id="errorMsg" style="display:none;margin-top:14px;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+    <div id="errorMsg" style="display:none;margin-top:14px;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size: 15px;color:#dc2626;"></div>
   </div>
 </div>
 
@@ -104,5 +135,33 @@ async function abrirCaja() {
   }
 }
 document.getElementById('inp_monto').addEventListener('keydown', e => { if (e.key === 'Enter') abrirCaja(); });
+
+async function guardarNotaCaja() {
+  const btn = event.target;
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    const nota = document.getElementById('notaCajaTexto').value;
+    const r = await fetch('/caja/api/nota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nota }),
+    });
+    const data = await r.json();
+    if (data.ok && data.nota) {
+      const f = new Date(data.nota.actualizado_at.replace(' ', 'T'));
+      const fecha = f.toLocaleDateString('es-AR');
+      const hora = f.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('notaCajaFecha').textContent =
+        `Editado el ${fecha} a las ${hora}${data.nota.actualizado_by ? ' por ' + data.nota.actualizado_by : ''}`;
+    }
+  } catch (e) {
+    alert('No se pudo guardar la nota: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+}
 </script>
 <style>@keyframes spin { to { transform: rotate(360deg); } }</style>

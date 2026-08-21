@@ -19,12 +19,12 @@
   @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(0,180,216,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(0,180,216,0)}}
   @keyframes pulseDotGreen{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.4)}50%{opacity:.8;transform:scale(1.2);box-shadow:0 0 0 5px rgba(16,185,129,0)}}
   @keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}
-  .scan-icon { font-size:17px;color:var(--color-action);flex-shrink:0; }
-  #barcodeInput { flex:1;border:none;background:transparent;font-family:var(--font-body);font-size:15px;font-weight:500;color:var(--text-primary);outline:none; }
-  #barcodeInput::placeholder { color:var(--text-secondary);font-weight:400;font-size:14px; }
+  .scan-icon { font-size: 19.5px;color:var(--color-action);flex-shrink:0; }
+  #barcodeInput { flex:1;border:none;background:transparent;font-family:var(--font-body);font-size: 17px;font-weight:500;color:var(--text-primary);outline:none; }
+  #barcodeInput::placeholder { color:var(--text-secondary);font-weight:400;font-size: 16px; }
   .sc-chips { display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%; }
   .sc-chip {
-    display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+    display:flex;align-items:center;gap:5px;font-size: 12.5px;font-weight:600;
     color:var(--text-secondary);background:var(--bg-card);
     border:1.5px solid var(--border-color);border-radius:8px;
     padding:5px 10px;white-space:nowrap;cursor:pointer;
@@ -32,7 +32,7 @@
   }
   .sc-chip:hover { border-color:var(--color-action);color:var(--color-action);background:rgba(0,180,216,.05); }
   .sc-chip kbd {
-    font-family:var(--font-mono);font-size:10px;font-weight:800;
+    font-family:var(--font-mono);font-size: 11.5px;font-weight:800;
     background:var(--color-primary);color:#fff;
     border-radius:5px;padding:2px 6px;letter-spacing:.3px;
   }
@@ -69,7 +69,7 @@
   .prod-th {
     display:table-cell;
     padding:10px 14px;
-    font-size:10.5px;font-weight:600;
+    font-size: 12px;font-weight:600;
     text-transform:uppercase;letter-spacing:.07em;
     color:var(--table-head-color);
     white-space:nowrap;
@@ -135,24 +135,24 @@
     display:inline-flex;
     align-items:center;justify-content:center;
     color:var(--text-muted);
-    font-size:18px;
+    font-size: 20.5px;
   }
 
   /* Datos del producto */
   .prod-name {
-    font-size:13px;font-weight:700;
+    font-size: 15px;font-weight:700;
     color:var(--text-primary);
     line-height:1.3;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     max-width:100%;
   }
   .prod-desc {
-    font-size:11px;color:var(--text-secondary);
+    font-size: 12.5px;color:var(--text-secondary);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     max-width:100%;margin-top:2px;line-height:1.4;
   }
   .prod-badge-promo {
-    display:inline-block;font-size:9px;font-weight:800;
+    display:inline-block;font-size: 10.5px;font-weight:800;
     text-transform:uppercase;background:#f59e0b;color:#fff;
     padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;
   }
@@ -160,14 +160,14 @@
     display:inline-flex;align-items:center;justify-content:center;
     width:18px;height:18px;border-radius:50%;
     background:var(--color-primary);color:#fff;
-    font-size:9px;font-weight:800;margin-left:6px;vertical-align:middle;
+    font-size: 10.5px;font-weight:800;margin-left:6px;vertical-align:middle;
   }
 
   /* Stock badge */
   .prod-stock-badge {
     display:inline-flex;align-items:center;justify-content:center;
     min-width:52px;padding:3px 10px;border-radius:20px;
-    font-family:var(--font-mono);font-size:12px;font-weight:800;
+    font-family:var(--font-mono);font-size: 13.5px;font-weight:800;
   }
   .prod-stock-badge.ok   { background:#10b981;color:#fff; }
   .prod-stock-badge.low  { background:#f59e0b;color:#fff; }
@@ -175,16 +175,16 @@
 
   /* Precio */
   .prod-price {
-    font-family:var(--font-body);font-size:16px;font-weight:800;
+    font-family:var(--font-body);font-size: 18px;font-weight:800;
     color:var(--color-primary);text-align:right;white-space:nowrap;
   }
   .prod-price-old {
-    font-family:var(--font-body);font-size:11px;
+    font-family:var(--font-body);font-size: 12.5px;
     color:var(--text-muted);text-decoration:line-through;
     text-align:right;display:block;
   }
   .prod-sin-stock {
-    font-size:10px;font-weight:700;color:#ef4444;
+    font-size: 11.5px;font-weight:700;color:#ef4444;
     text-transform:uppercase;letter-spacing:.3px;display:block;
   }
 
@@ -193,24 +193,24 @@
     justify-content:center;padding:50px 20px;gap:10px;color:var(--text-secondary);
   }
   .products-empty i { font-size:42px;opacity:.18; }
-  .products-empty p { font-size:13px;opacity:.5; }
+  .products-empty p { font-size: 15px;opacity:.5; }
 
   /* DERECHA */
   .pos-right { width:38%;display:flex;flex-direction:column;background:var(--bg-card);overflow:hidden;min-height:0;flex-shrink:0;border-left:1px solid var(--border-color); }
   .cart-header { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-card);flex-shrink:0; }
   .cart-list { flex:1;overflow-y:auto;min-height:0;padding:10px 14px;background:var(--bg-body); }
   .cart-title-wrap { display:flex;align-items:center;gap:9px; }
-  .cart-title-icon { width:32px;height:32px;border-radius:8px;background:rgba(0,180,216,.1);display:flex;align-items:center;justify-content:center;color:var(--color-action);font-size:16px; }
-  .cart-title-txt  { font-size:15px;font-weight:700;color:var(--text-primary); }
-  .cart-count-badge { font-family:var(--font-mono);font-size:11px;font-weight:700;background:rgba(0,180,216,.12);color:var(--color-action);padding:2px 8px;border-radius:20px;margin-left:4px; }
-  .cart-sub { font-size:11px;color:var(--text-secondary);margin-top:1px; }
-  .btn-clear-sm { padding:5px 11px;border-radius:6px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;font-family:var(--font-body); }
+  .cart-title-icon { width:32px;height:32px;border-radius:8px;background:rgba(0,180,216,.1);display:flex;align-items:center;justify-content:center;color:var(--color-action);font-size: 18px; }
+  .cart-title-txt  { font-size: 17px;font-weight:700;color:var(--text-primary); }
+  .cart-count-badge { font-family:var(--font-mono);font-size: 12.5px;font-weight:700;background:rgba(0,180,216,.12);color:var(--color-action);padding:2px 8px;border-radius:20px;margin-left:4px; }
+  .cart-sub { font-size: 12.5px;color:var(--text-secondary);margin-top:1px; }
+  .btn-clear-sm { padding:5px 11px;border-radius:6px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;font-family:var(--font-body); }
   .btn-clear-sm:hover { border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.05); }
 
   .cart-items-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px; }
   .cart-empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-secondary);text-align:center;padding:40px 20px;height:100%; }
   .cart-empty-state i { font-size:48px;opacity:.15; }
-  .cart-empty-state p { font-size:13px;opacity:.5;line-height:1.5; }
+  .cart-empty-state p { font-size: 15px;opacity:.5;line-height:1.5; }
 
   /* CARRITO — estilo StartBiz: lista vertical, cada item con precio unitario y controles */
   .cart-items-grid { display:flex;flex-direction:column;gap:3px; }
@@ -234,57 +234,57 @@
 
   /* Fila superior: nombre + botón eliminar */
   .cart-card-top { display:flex;align-items:flex-start;justify-content:space-between;gap:8px; }
-  .cart-card-name { font-size:13px;font-weight:700;color:var(--text-primary);line-height:1.3;flex:1; }
+  .cart-card-name { font-size: 15px;font-weight:700;color:var(--text-primary);line-height:1.3;flex:1; }
 
   /* Precio unitario */
-  .cart-card-unit { font-size:11px;color:var(--text-secondary);font-weight:500; }
+  .cart-card-unit { font-size: 12.5px;color:var(--text-secondary);font-weight:500; }
   .cart-card-unit span { font-family:var(--font-body);font-weight:600;color:var(--text-secondary); }
 
   /* Fila inferior: qty controles + precio total */
   .cart-card-bottom { display:flex;align-items:center;justify-content:space-between;margin-top:2px; }
   .qty-ctrl { display:inline-flex;align-items:center;border:1.5px solid var(--border-color);border-radius:8px;overflow:hidden;background:var(--bg-body); }
-  .qty-btn  { width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;transition:all .1s;font-weight:700; }
+  .qty-btn  { width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size: 16px;cursor:pointer;transition:all .1s;font-weight:700; }
   .qty-btn:hover { background:rgba(0,180,216,.12);color:var(--color-action); }
-  .qty-val  { min-width:28px;text-align:center;font-family:var(--font-body);font-size:12px;font-weight:700;color:var(--text-primary);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);height:28px;line-height:28px; }
-  .cart-card-price { font-family:var(--font-body);font-size:17px;font-weight:800;color:var(--color-action); }
-  .cart-card-sub   { font-family:var(--font-body);font-size:11px;font-weight:600;color:var(--text-secondary);margin-top:1px; }
-  .btn-del  { width:26px;height:26px;border:none;background:transparent;color:var(--text-secondary);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .1s;flex-shrink:0; }
+  .qty-val  { min-width:28px;text-align:center;font-family:var(--font-body);font-size: 13.5px;font-weight:700;color:var(--text-primary);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);height:28px;line-height:28px; }
+  .cart-card-price { font-family:var(--font-body);font-size: 19.5px;font-weight:800;color:var(--color-action); }
+  .cart-card-sub   { font-family:var(--font-body);font-size: 12.5px;font-weight:600;color:var(--text-secondary);margin-top:1px; }
+  .btn-del  { width:26px;height:26px;border:none;background:transparent;color:var(--text-secondary);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size: 16px;transition:all .1s;flex-shrink:0; }
   .btn-del:hover { background:rgba(239,68,68,.1);color:#ef4444; }
-  .cart-promo-tag { position:absolute;top:5px;right:38px;font-size:8px;font-weight:800;background:#f59e0b;color:#fff;padding:1px 5px;border-radius:5px;text-transform:uppercase; }
+  .cart-promo-tag { position:absolute;top:5px;right:38px;font-size: 9px;font-weight:800;background:#f59e0b;color:#fff;padding:1px 5px;border-radius:5px;text-transform:uppercase; }
   /* pago mixto oculto por defecto, visible solo cuando se activa */
   .mixto-row { display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px; }
   .mixto-row.visible { display:flex; }
   .mixto-method { flex:1;min-width:120px; }
-  .mixto-method label { font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:4px; }
+  .mixto-method label { font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:4px; }
   .mixto-method input,
   .mixto-method select {
     width:100%;padding:10px 11px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-body);
-    color:var(--text-primary);font-family:var(--font-body);font-size:14px;outline:none;box-sizing:border-box;
+    color:var(--text-primary);font-family:var(--font-body);font-size: 16px;outline:none;box-sizing:border-box;
   }
   .mixto-method input { font-family:var(--font-mono);font-weight:800;font-size:22px;padding:12px 14px;letter-spacing:0.5px; }
   .mixto-method input:focus,
   .mixto-method select:focus { border-color:var(--color-action); }
-  .mixto-method select { font-size:15px;font-weight:700;padding:12px 11px; }
-  .mixto-method label { font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:6px; }
-  .mixto-resto { font-size:15px;font-weight:700;color:#10b981;text-align:left;padding:4px 0 0; }
+  .mixto-method select { font-size: 17px;font-weight:700;padding:12px 11px; }
+  .mixto-method label { font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:6px; }
+  .mixto-resto { font-size: 17px;font-weight:700;color:#10b981;text-align:left;padding:4px 0 0; }
   .mixto-resto.negativo { color:#ef4444; }
 
   .cart-footer { flex-shrink:0;border-top:1px solid var(--border-color);background:var(--bg-body);padding:8px 12px;display:flex;flex-direction:column;gap:6px; }
-  .field-label { font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px; }
+  .field-label { font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px; }
   .cart-cliente-wrap { position:relative; }
-  .cart-cliente-inp { width:100%;padding:7px 10px 7px 28px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13px;outline:none;transition:border-color .15s;box-sizing:border-box; }
+  .cart-cliente-inp { width:100%;padding:7px 10px 7px 28px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size: 15px;outline:none;transition:border-color .15s;box-sizing:border-box; }
   .cart-cliente-inp:focus { border-color:var(--color-action); }
-  .cart-cliente-ico { position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:13px;pointer-events:none; }
+  .cart-cliente-ico { position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size: 15px;pointer-events:none; }
   .cart-cliente-drop { display:none;position:absolute;bottom:calc(100%+4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);box-shadow:0 -8px 24px rgba(0,0,0,.1);z-index:60;max-height:140px;overflow-y:auto; }
   .cart-cliente-drop.visible { display:block; }
-  .cart-cliente-sel { display:none;margin-top:3px;padding:4px 9px;background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-sm);align-items:center;justify-content:space-between;font-size:11.5px; }
+  .cart-cliente-sel { display:none;margin-top:3px;padding:4px 9px;background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-sm);align-items:center;justify-content:space-between;font-size: 13px; }
   .disc-bar { display:flex;gap:5px;align-items:center;background:var(--bg-body);border-radius:var(--radius-sm);border:1px solid var(--border-color);padding:5px 9px; }
-  .disc-bar label { font-size:11px;color:var(--text-secondary);font-weight:600;flex-shrink:0; }
-  .disc-type-btn { padding:2px 7px;border-radius:4px;border:1.5px solid var(--border-color);background:var(--bg-card);font-size:11px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .1s; }
+  .disc-bar label { font-size: 12.5px;color:var(--text-secondary);font-weight:600;flex-shrink:0; }
+  .disc-type-btn { padding:2px 7px;border-radius:4px;border:1.5px solid var(--border-color);background:var(--bg-card);font-size: 12.5px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .1s; }
   .disc-type-btn.on { border-color:var(--color-action);background:rgba(0,180,216,.1);color:var(--color-action); }
-  .disc-input { flex:1;border:1.5px solid var(--border-color);background:var(--bg-body);border-radius:4px;padding:3px 6px;font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text-primary);outline:none;text-align:right;width:0; }
+  .disc-input { flex:1;border:1.5px solid var(--border-color);background:var(--bg-body);border-radius:4px;padding:3px 6px;font-family:var(--font-mono);font-size: 15px;font-weight:600;color:var(--text-primary);outline:none;text-align:right;width:0; }
   .disc-input:focus { border-color:var(--color-action); }
-  .disc-suffix { font-size:12px;font-weight:700;color:var(--text-secondary);flex-shrink:0; }
+  .disc-suffix { font-size: 13.5px;font-weight:700;color:var(--text-secondary);flex-shrink:0; }
   /* ── Panel cobro ── */
   .cart-footer {
     background: var(--bg-card) !important;
@@ -323,7 +323,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
+    font-size: 15px;
     padding: 9px 16px;
     background: rgba(0,0,0,.12);
     border-bottom: 1px solid rgba(255,255,255,.1);
@@ -344,7 +344,7 @@
   }
 
   .total-highlight-label {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: .8px;
@@ -365,17 +365,17 @@
     .total-highlight-value { font-size: 26px; }
   }
 
-  .btn-confirm { width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(239,68,68,.35); }
+  .btn-confirm { width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-family:var(--font-body);font-size: 16px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(239,68,68,.35); }
   .btn-confirm:hover:not(:disabled) { transform:translateY(-1px);box-shadow:0 6px 20px rgba(239,68,68,.5); }
   .btn-confirm:disabled { opacity:.35;cursor:not-allowed;box-shadow:none;transform:none; }
-  .kbd-hint { font-size:10px;opacity:.75;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-family:var(--font-mono); }
+  .kbd-hint { font-size: 11.5px;opacity:.75;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-family:var(--font-mono); }
 
-  .pos-toast { position:fixed;bottom:18px;left:calc(var(--sidebar-width)+18px);background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid var(--color-action);border-radius:var(--radius-sm);padding:9px 13px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text-primary);box-shadow:var(--shadow-lg);z-index:999;transform:translateY(80px);opacity:0;transition:transform .22s ease,opacity .22s ease;min-width:200px; }
+  .pos-toast { position:fixed;bottom:18px;left:calc(var(--sidebar-width)+18px);background:var(--bg-card);border:1px solid var(--border-color);border-left:3px solid var(--color-action);border-radius:var(--radius-sm);padding:9px 13px;display:flex;align-items:center;gap:8px;font-size: 15px;font-weight:500;color:var(--text-primary);box-shadow:var(--shadow-lg);z-index:999;transform:translateY(80px);opacity:0;transition:transform .22s ease,opacity .22s ease;min-width:200px; }
   .pos-toast.show { transform:translateY(0);opacity:1; }
   .pos-toast.toast-success { border-left-color:#10b981; }
   .pos-toast.toast-error   { border-left-color:#ef4444; }
   .pos-toast.toast-warn    { border-left-color:var(--color-alert); }
-  .pos-toast i { font-size:15px; }
+  .pos-toast i { font-size: 17px; }
   .pos-toast.toast-success i { color:#10b981; }
   .pos-toast.toast-error   i { color:#ef4444; }
   .pos-toast.toast-warn    i { color:var(--color-alert); }
@@ -399,8 +399,8 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:18px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;
   }
-  .cobro-title  { font-size:17px;font-weight:800;color:var(--text-primary); }
-  .cobro-close  { width:36px;height:36px;border:none;background:var(--bg-body);border-radius:10px;cursor:pointer;font-size:15px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center; }
+  .cobro-title  { font-size: 19.5px;font-weight:800;color:var(--text-primary); }
+  .cobro-close  { width:36px;height:36px;border:none;background:var(--bg-body);border-radius:10px;cursor:pointer;font-size: 17px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center; }
 
   .cobro-layout {
     display:grid;
@@ -426,7 +426,7 @@
     margin-bottom:16px;
   }
   .cobro-total-lbl {
-    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--color-action);
+    font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--color-action);
     margin-bottom:6px;
   }
   .cobro-total-amt {
@@ -437,7 +437,7 @@
     color:var(--text-primary);
     letter-spacing:-2px;
   }
-  .cobro-total-disc { font-size:12px;color:#10b981;margin-top:10px;font-weight:700; }
+  .cobro-total-disc { font-size: 13.5px;color:#10b981;margin-top:10px;font-weight:700; }
 
   .cobro-section {
     background:var(--bg-body);
@@ -447,7 +447,7 @@
     margin-bottom:14px;
   }
   .cobro-stitle {
-    font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);
+    font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);
     margin:0 0 12px;
   }
 
@@ -455,7 +455,7 @@
     display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;
   }
   .btn-mixto {
-    font-size:12px;font-weight:800;padding:8px 14px;border-radius:999px;border:1.5px solid var(--border-color);
+    font-size: 13.5px;font-weight:800;padding:8px 14px;border-radius:999px;border:1.5px solid var(--border-color);
     background:var(--bg-card);color:var(--text-secondary);cursor:pointer;transition:all .15s;font-family:var(--font-body);
   }
 
@@ -470,31 +470,31 @@
     background:var(--bg-card);cursor:pointer;transition:all .15s;font-family:var(--font-body);
   }
   .pm-btn i { font-size:24px;color:var(--text-secondary);transition:color .15s; }
-  .pm-btn span { font-size:15px;font-weight:700;color:var(--text-secondary);transition:color .15s;text-align:center; }
-  .pm-btn small { font-size:10px;font-weight:800;color:#d97706;background:rgba(245,158,11,.12);padding:2px 7px;border-radius:999px; }
+  .pm-btn span { font-size: 17px;font-weight:700;color:var(--text-secondary);transition:color .15s;text-align:center; }
+  .pm-btn small { font-size: 11.5px;font-weight:800;color:#d97706;background:rgba(245,158,11,.12);padding:2px 7px;border-radius:999px; }
   .pm-btn:hover { border-color:var(--color-action);background:rgba(0,180,216,.05);transform:translateY(-1px); }
   .pm-btn.on    { border-color:var(--color-action);background:rgba(0,180,216,.10);box-shadow:0 0 0 3px rgba(0,180,216,.12); }
   .pm-btn.on i,.pm-btn.on span { color:var(--color-action); }
   .pm-btn.kbd-focus { border-color:#0ea5e9 !important; box-shadow:0 0 0 3px rgba(14,165,233,.18) !important; transform:translateY(-1px); }
   .pm-btn:focus { outline:none; }
 
-  #recargoInfoBanner { display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;gap:8px; }
+  #recargoInfoBanner { display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size: 13.5px;color:#92400e;gap:8px; }
   #recargoInfoBanner.visible { display:flex; }
 
   .recargo-row { display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px;margin-bottom:14px; }
   .recargo-row.visible { display:block; }
-  .recargo-row label { font-size:12px;font-weight:700;color:#d97706;display:block;margin-bottom:8px; }
+  .recargo-row label { font-size: 13.5px;font-weight:700;color:#d97706;display:block;margin-bottom:8px; }
   .recargo-options { display:flex;gap:6px;flex-wrap:wrap; }
-  .recargo-chip { padding:6px 11px;border-radius:999px;border:1.5px solid rgba(245,158,11,.4);background:transparent;font-size:11px;font-weight:800;color:#d97706;cursor:pointer;transition:all .12s; }
+  .recargo-chip { padding:6px 11px;border-radius:999px;border:1.5px solid rgba(245,158,11,.4);background:transparent;font-size: 12.5px;font-weight:800;color:#d97706;cursor:pointer;transition:all .12s; }
   .recargo-chip.on { background:#d97706;color:#fff;border-color:#d97706; }
   .recargo-custom { display:flex;align-items:center;gap:8px;margin-top:10px; }
-  .recargo-custom input { width:88px;padding:8px 10px;border-radius:10px;border:1.5px solid rgba(245,158,11,.4);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;font-weight:700;outline:none;text-align:right; }
-  .recargo-custom span { font-size:12px;color:#d97706;font-weight:700; }
-  .recargo-result { font-size:13px;color:#d97706;font-weight:800;margin-top:10px; }
+  .recargo-custom input { width:88px;padding:8px 10px;border-radius:10px;border:1.5px solid rgba(245,158,11,.4);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size: 16px;font-weight:700;outline:none;text-align:right; }
+  .recargo-custom span { font-size: 13.5px;color:#d97706;font-weight:700; }
+  .recargo-result { font-size: 15px;color:#d97706;font-weight:800;margin-top:10px; }
 
   .efectivo-row { display:none;margin-bottom:14px; }
   .efectivo-row.visible { display:block; }
-  .efectivo-row label { font-size:12px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:8px; }
+  .efectivo-row label { font-size: 13.5px;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:8px; }
   .efectivo-row input {
     width:100%;padding:14px 14px;border-radius:14px;border:1.5px solid var(--border-color);
     background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);
@@ -502,8 +502,8 @@
   }
   .efectivo-row input:focus { border-color:var(--color-action); }
   .vuelto-display { display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;margin-top:10px;border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.08); }
-  .vuelto-display span:first-child { font-size:12px;font-weight:700;color:#059669; }
-  .vuelto-display span:last-child  { font-family:var(--font-mono);font-size:16px;font-weight:800;color:#059669; }
+  .vuelto-display span:first-child { font-size: 13.5px;font-weight:700;color:#059669; }
+  .vuelto-display span:last-child  { font-family:var(--font-mono);font-size: 18px;font-weight:800;color:#059669; }
 
   .btn-cobrar {
     width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#159c7a,#0F6E56);
@@ -512,21 +512,22 @@
   }
   .btn-cobrar:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,110,86,.40); }
   .btn-cobrar:disabled { opacity:.4;cursor:not-allowed; }
+  .btn-cobrar.kbd-focus { outline:none;box-shadow:0 0 0 3px rgba(14,165,233,.35),0 10px 26px rgba(15,110,86,.40) !important;transform:translateY(-2px); }
 
   .cobro-help {
-    font-size:12px;color:var(--text-secondary);margin-top:10px;text-align:center;
+    font-size: 13.5px;color:var(--text-secondary);margin-top:10px;text-align:center;
   }
 
   .exito-overlay { position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px); }
   .exito-overlay.open { display:flex; }
   .exito-modal { background:var(--bg-card);border-radius:20px;padding:28px 28px 24px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:modalIn .2s ease; }
   .exito-icon  { width:60px;height:60px;background:rgba(16,185,129,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#10b981;margin:0 auto 14px; }
-  .exito-modal h3 { font-size:18px;font-weight:700;margin-bottom:4px; }
+  .exito-modal h3 { font-size: 20.5px;font-weight:700;margin-bottom:4px; }
   .exito-total { font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--color-action);letter-spacing:-1px;margin:8px 0; }
-  .exito-modal p { font-size:12.5px;color:var(--text-secondary); }
-  .btn-nueva-venta { width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--color-action);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px; }
-  .exito-kbd-hint { display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);margin-top:5px; }
-  .exito-kbd-hint kbd { background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;color:var(--text-secondary); }
+  .exito-modal p { font-size: 14px;color:var(--text-secondary); }
+  .btn-nueva-venta { width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-sm);border:none;background:var(--color-action);color:#fff;font-family:var(--font-body);font-size: 16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px; }
+  .exito-kbd-hint { display:inline-flex;align-items:center;gap:4px;font-size: 11.5px;color:var(--text-muted);margin-top:5px; }
+  .exito-kbd-hint kbd { background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:3px;padding:1px 5px;font-size: 10.5px;font-weight:700;color:var(--text-secondary); }
 
   @media (max-width:860px) {
     .pos-wrapper { flex-direction:column; }
@@ -538,7 +539,7 @@
     .cobro-left { border-right:none;border-bottom:1px solid var(--border-color); }
     .cobro-total-amt { font-size:42px; }
     .pm-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .btn-cobrar { font-size:18px; }
+    .btn-cobrar { font-size: 20.5px; }
     .deptos-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
@@ -550,7 +551,7 @@
     padding: 10px 14px 12px;
   }
   .deptos-label {
-    font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+    font-size: 12px; font-weight: 800; text-transform: uppercase;
     letter-spacing: .6px; color: var(--text-secondary);
     margin-bottom: 9px; display: flex; align-items: center; gap: 6px;
   }
@@ -573,8 +574,8 @@
     box-shadow: var(--shadow-sm);
   }
   .depto-btn:active { transform: scale(.97); }
-  .depto-btn-icon { font-size: 20px; line-height: 1; }
-  .depto-btn-label { font-size: 11.5px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+  .depto-btn-icon { font-size: 23px; line-height: 1; }
+  .depto-btn-label { font-size: 13px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
   .depto-btn-edit { display: none; }
   .deptos-bar:hover .depto-btn-edit { display: inline-flex; }
 
@@ -583,7 +584,7 @@
     display: inline-flex; align-items: center; gap: 5px;
     padding: 4px 12px; border-radius: 20px;
     border: 1.5px solid var(--border-color); background: transparent;
-    color: var(--text-secondary); font-size: 11.5px; font-weight: 700;
+    color: var(--text-secondary); font-size: 13px; font-weight: 700;
     cursor: pointer; transition: all .15s; margin-left: 8px;
   }
   .btn-deptos-toggle.active { border-color: var(--color-primary); color: var(--color-primary); background: rgba(31,60,136,.07); }
@@ -608,9 +609,9 @@
     display: flex; align-items: center; gap: 12px;
   }
   .depto-price-icon { font-size: 28px; line-height: 1; }
-  .depto-price-name { font-size: 17px; font-weight: 800; color: var(--text-primary); }
+  .depto-price-name { font-size: 19.5px; font-weight: 800; color: var(--text-primary); }
   .depto-price-body { padding: 20px; }
-  .depto-price-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin-bottom: 10px; }
+  .depto-price-label { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin-bottom: 10px; }
   .depto-price-input-wrap { position: relative; margin-bottom: 14px; }
   .depto-price-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 22px; font-weight: 800; color: var(--text-secondary); }
   .depto-price-input {
@@ -622,25 +623,25 @@
   }
   .depto-price-input:focus { border-color: var(--color-action); }
   .depto-qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .depto-qty-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+  .depto-qty-label { font-size: 13.5px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
   .depto-qty-input {
     width: 80px; padding: 9px 10px; border: 2px solid var(--border-color);
     border-radius: 9px; background: var(--bg-body); color: var(--text-primary);
-    font-size: 16px; font-weight: 800; font-family: var(--font-mono);
+    font-size: 18px; font-weight: 800; font-family: var(--font-mono);
     text-align: center; outline: none; transition: border-color .15s;
   }
   .depto-qty-input:focus { border-color: var(--color-action); }
   .btn-depto-add {
     width: 100%; padding: 14px; border: none; border-radius: 12px;
     background: var(--color-primary); color: #fff;
-    font-size: 15px; font-weight: 800; cursor: pointer;
+    font-size: 17px; font-weight: 800; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: opacity .15s;
   }
   .btn-depto-add:hover { opacity: .88; }
   .btn-depto-add:disabled { opacity: .35; cursor: not-allowed; }
   .depto-price-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); background: var(--bg-body); display: flex; justify-content: flex-end; }
-  .btn-depto-cancel { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-depto-cancel { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 15px; font-weight: 600; cursor: pointer; }
 
   /* Modal gestión departamentos */
   .deptos-mgr-overlay {
@@ -708,15 +709,15 @@
   }
   .scan-icon{
     color:var(--color-primary);
-    font-size:18px;
+    font-size: 20.5px;
   }
   #barcodeInput{
-    font-size:15px;
+    font-size: 17px;
     font-weight:600;
   }
   #barcodeInput::placeholder{
     color:#94a3b8;
-    font-size:14px;
+    font-size: 16px;
   }
 
   /* Chips rápidos */
@@ -777,72 +778,72 @@
     display:flex;align-items:center;justify-content:space-between;
     flex-shrink:0;
   }
-  .cart-title-txt{ font-size:14px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px; }
-  .cart-count-badge{ background:var(--color-primary);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px; }
-  .cart-sub{ font-size:11px;color:var(--text-secondary);margin-top:2px; }
-  .btn-clear-sm{ padding:4px 10px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s;font-family:var(--font-body); }
+  .cart-title-txt{ font-size: 16px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px; }
+  .cart-count-badge{ background:var(--color-primary);color:#fff;font-size: 12.5px;font-weight:800;padding:2px 8px;border-radius:20px; }
+  .cart-sub{ font-size: 12.5px;color:var(--text-secondary);margin-top:2px; }
+  .btn-clear-sm{ padding:4px 10px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s;font-family:var(--font-body); }
   .btn-clear-sm:hover{ border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.05); }
 
   /* Bloque cliente + comprobante */
   .cart-cliente-bloque{ padding:8px 10px 6px;background:transparent;border-bottom:1px solid var(--border-color);flex-shrink:0; }
   .cart-field-row{ display:flex;flex-direction:column;gap:3px; }
-  .cart-field-lbl{ font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);display:flex;align-items:center;gap:4px; }
+  .cart-field-lbl{ font-size: 11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);display:flex;align-items:center;gap:4px; }
   .comprobante-toggle{ display:flex;gap:4px; }
-  .comp-btn{ flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--font-body);transition:all .15s; }
+  .comp-btn{ flex:1;padding:5px 0;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-body);color:var(--text-secondary);font-size: 13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--font-body);transition:all .15s; }
   .comp-btn.active{ background:var(--color-primary);border-color:var(--color-primary);color:#fff;box-shadow:0 2px 8px rgba(27,79,216,.25); }
 
   /* Lista carrito */
   .cart-list{ padding:5px 7px;background:transparent;display:flex;flex-direction:column;gap:3px; }
   .cart-empty-state{ border:2px dashed var(--border-color);border-radius:12px;background:var(--bg-card);min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin:4px 0; }
   .cart-empty-state i{ color:var(--text-muted);font-size:22px; }
-  .cart-empty-state p{ color:var(--text-muted);font-size:11.5px;text-align:center;line-height:1.4;margin:0; }
+  .cart-empty-state p{ color:var(--text-muted);font-size: 13px;text-align:center;line-height:1.4;margin:0; }
   .cart-items-grid{ display:flex;flex-direction:column;gap:3px; }
 
   /* Cart-card — fila única */
   .cart-card{ background:var(--bg-card);border:1px solid var(--border-color);border-radius:7px;padding:8px 10px;display:flex;flex-wrap:wrap;flex-direction:row;align-items:center;gap:5px;row-gap:3px;position:relative;transition:background .1s; }
   .cart-card:hover{ background:var(--bg-hover); }
   .cart-card-top{ flex:1;min-width:0;display:flex;align-items:center;order:1; }
-  .cart-card-name{ font-size:20px;font-weight:600;color:var(--text-primary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:none; }
-  .cart-card-unit{ display:block;order:3;flex-basis:100%;width:100%;font-size:12.5px;color:var(--text-secondary);font-weight:500;line-height:1.2; }
+  .cart-card-name{ font-size: 23px;font-weight:600;color:var(--text-primary);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:none; }
+  .cart-card-unit{ display:block;order:3;flex-basis:100%;width:100%;font-size: 14px;color:var(--text-secondary);font-weight:500;line-height:1.2; }
   .cart-card-bottom{ display:flex;align-items:center;gap:5px;flex-shrink:0;order:2; }
   .cart-card-price{ font-size:23px;font-weight:800;color:var(--color-primary);letter-spacing:-.3px;min-width:78px;text-align:right; }
   .qty-ctrl{ display:inline-flex;align-items:center;border:1px solid var(--border-color);border-radius:5px;overflow:hidden;background:var(--bg-body); }
-  .qty-btn{ width:19px;height:19px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:11px;cursor:pointer;font-weight:700; }
+  .qty-btn{ width:19px;height:19px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size: 12.5px;cursor:pointer;font-weight:700; }
   .qty-btn:hover{ background:rgba(27,79,216,.1);color:var(--color-primary); }
-  .qty-val{ min-width:19px;text-align:center;font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--text-primary);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);height:19px;line-height:19px; }
-  .btn-del{ width:17px;height:17px;border:none;background:transparent;color:var(--text-muted);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0; }
+  .qty-val{ min-width:19px;text-align:center;font-family:var(--font-body);font-size: 12.5px;font-weight:700;color:var(--text-primary);border-left:1px solid var(--border-color);border-right:1px solid var(--border-color);height:19px;line-height:19px; }
+  .btn-del{ width:17px;height:17px;border:none;background:transparent;color:var(--text-muted);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size: 12.5px;flex-shrink:0; }
   .btn-del:hover{ background:rgba(239,68,68,.1);color:#ef4444; }
-  .cart-promo-tag{ position:absolute;top:2px;right:28px;font-size:7px;font-weight:800;background:#f59e0b;color:#fff;padding:1px 4px;border-radius:4px;text-transform:uppercase; }
+  .cart-promo-tag{ position:absolute;top:2px;right:28px;font-size: 8px;font-weight:800;background:#f59e0b;color:#fff;padding:1px 4px;border-radius:4px;text-transform:uppercase; }
 
   /* Footer */
   .cart-footer{ flex-shrink:0;border-top:1px solid var(--border-color);background:transparent;padding:8px 10px;display:flex;flex-direction:column;gap:5px; }
 
   /* Descuento */
   .cart-disc-row{ display:flex;align-items:center;justify-content:space-between;gap:8px; }
-  .cart-disc-lbl{ font-size:10.5px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:4px;white-space:nowrap; }
+  .cart-disc-lbl{ font-size: 12px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:4px;white-space:nowrap; }
   .disc-bar{ display:flex;gap:4px;align-items:center; }
-  .disc-type-btn{ padding:2px 7px;border-radius:5px;border:1.5px solid var(--border-color);background:var(--bg-body);font-size:11px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .1s; }
+  .disc-type-btn{ padding:2px 7px;border-radius:5px;border:1.5px solid var(--border-color);background:var(--bg-body);font-size: 12.5px;font-weight:700;color:var(--text-secondary);cursor:pointer;transition:all .1s; }
   .disc-type-btn.on{ border-color:var(--color-primary);background:rgba(27,79,216,.08);color:var(--color-primary); }
-  .disc-input{ width:50px;border:1.5px solid var(--border-color);background:var(--bg-body);border-radius:5px;padding:2px 5px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-primary);outline:none;text-align:right; }
+  .disc-input{ width:50px;border:1.5px solid var(--border-color);background:var(--bg-body);border-radius:5px;padding:2px 5px;font-family:var(--font-mono);font-size: 13.5px;font-weight:600;color:var(--text-primary);outline:none;text-align:right; }
   .disc-input:focus{ border-color:var(--color-primary); }
-  .disc-suffix{ font-size:11px;font-weight:700;color:var(--text-secondary);flex-shrink:0; }
+  .disc-suffix{ font-size: 12.5px;font-weight:700;color:var(--text-secondary);flex-shrink:0; }
 
   /* Resumen numérico */
   .cart-resumen{ background:var(--bg-body);border:1px solid var(--border-color);border-radius:9px;overflow:hidden; }
-  .res-row{ display:flex;justify-content:space-between;align-items:center;padding:5px 11px;font-size:12px;border-bottom:1px solid var(--border-color); }
+  .res-row{ display:flex;justify-content:space-between;align-items:center;padding:5px 11px;font-size: 13.5px;border-bottom:1px solid var(--border-color); }
   .res-row span:first-child{ color:var(--text-secondary);font-weight:500; }
   .res-row span:last-child{ font-family:var(--font-body);font-weight:700;color:var(--text-primary); }
   .res-total{ display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--color-primary); }
-  #subtotalVal{ font-size:19px !important; font-weight:800 !important; }
+  #subtotalVal{ font-size: 21.5px !important; font-weight:800 !important; }
   .res-row:has(#subtotalVal){ padding-top:8px; padding-bottom:8px; }
-  .res-total span:first-child{ font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.85); }
+  .res-total span:first-child{ font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.85); }
   .res-total span:last-child{ font-family:var(--font-body);font-size:24px;font-weight:900;color:#fff;letter-spacing:-.5px; }
 
   /* Botón */
-  .btn-confirm{ width:100%;padding:11px;border-radius:9px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(27,79,216,.3); }
+  .btn-confirm{ width:100%;padding:11px;border-radius:9px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size: 16px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(27,79,216,.3); }
   .btn-confirm:hover:not(:disabled){ transform:translateY(-1px);box-shadow:0 5px 18px rgba(27,79,216,.45); }
   .btn-confirm:disabled{ opacity:.35;cursor:not-allowed;box-shadow:none;transform:none; }
-  .kbd-hint{ font-size:10px;opacity:.75;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-family:var(--font-mono); }
+  .kbd-hint{ font-size: 11.5px;opacity:.75;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-family:var(--font-mono); }
 
   }
 
@@ -856,7 +857,7 @@
   .tot-row{
     padding:11px 16px;
     background:rgba(0,0,0,.10);
-    font-size:14px;
+    font-size: 16px;
   }
   .tot-row span:first-child{
     color:rgba(255,255,255,.86);
@@ -864,7 +865,7 @@
   }
   .tot-row span:last-child{
     color:#fff;
-    font-size:15px;
+    font-size: 17px;
     font-weight:800;
   }
   .total-highlight{
@@ -872,7 +873,7 @@
     align-items:flex-end;
   }
   .total-highlight-label{
-    font-size:14px;
+    font-size: 16px;
     font-weight:900;
     letter-spacing:1px;
   }
@@ -887,7 +888,7 @@
     border-radius:16px;
     background:var(--color-primary);
     box-shadow:0 10px 24px rgba(27,79,216,.25);
-    font-size:16px;
+    font-size: 18px;
     font-weight:800;
   }
   .btn-confirm:hover:not(:disabled){
@@ -907,7 +908,7 @@
     border-bottom:1px solid var(--border-color);
   }
   .cobro-title{
-    font-size:19px;
+    font-size: 21.5px;
     font-weight:900;
     color:var(--text-primary);
   }
@@ -1022,7 +1023,7 @@
     display: block;
   }
   .prod-zoom-name {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-primary);
     text-align: center;
@@ -1038,7 +1039,7 @@
     border: none;
     background: #ef4444;
     color: #fff;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     cursor: pointer;
     display: flex;
@@ -1097,7 +1098,7 @@
       flex:1;
       justify-content:center;
       min-width:90px;
-      font-size:12px;
+      font-size: 13.5px;
     }
     /* Ocultar columnas no críticas */
     .prod-desc { display:none; }
@@ -1155,7 +1156,7 @@
     border-radius: 50%;
     background: #ef4444;
     color: #fff;
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -1163,7 +1164,7 @@
     border: 2px solid #fff;
   }
   .fab-label {
-    font-size: 10px;
+    font-size: 11.5px;
     font-weight: 700;
     color: var(--text-secondary);
     margin-top: 4px;
@@ -1240,14 +1241,14 @@
   .numpad-modal { background:var(--bg-card);border-radius:20px 20px 0 0;width:100%;max-width:320px;overflow:hidden;box-shadow:0 -8px 32px rgba(0,0,0,.25);animation:numpadIn .2s ease; }
   @keyframes numpadIn { from{transform:translateY(100%)} to{transform:translateY(0)} }
   .numpad-header { padding:12px 16px 8px;border-bottom:1px solid var(--border-color); }
-  .numpad-product { font-size:12px;color:var(--text-secondary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px; }
+  .numpad-product { font-size: 13.5px;color:var(--text-secondary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px; }
   .numpad-display { font-size:36px;font-weight:900;color:var(--text-primary);font-family:var(--font-mono);text-align:right;letter-spacing:-1px;min-height:44px;line-height:44px; }
   .numpad-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-color); }
-  .numpad-key { padding:16px 8px;border:none;background:var(--bg-card);color:var(--text-primary);font-size:20px;font-weight:700;cursor:pointer;font-family:var(--font-mono);transition:background .1s;text-align:center; }
+  .numpad-key { padding:16px 8px;border:none;background:var(--bg-card);color:var(--text-primary);font-size: 23px;font-weight:700;cursor:pointer;font-family:var(--font-mono);transition:background .1s;text-align:center; }
   .numpad-key:hover { background:var(--bg-hover); }
   .numpad-key:active { background:rgba(27,79,216,.12); }
-  .numpad-key.key-del { font-size:14px;font-weight:800;color:var(--text-secondary); }
-  .numpad-key.key-ok { background:var(--color-primary);color:#fff;font-size:16px; }
+  .numpad-key.key-del { font-size: 16px;font-weight:800;color:var(--text-secondary); }
+  .numpad-key.key-ok { background:var(--color-primary);color:#fff;font-size: 18px; }
   .numpad-key.key-ok:hover { background:#1540b8; }
   @media (max-width:860px) { .numpad-overlay { padding:0; } }
 
@@ -1303,7 +1304,7 @@
             <span class="scan-dot" id="scanDot"></span>
             <i class="bi bi-upc-scan scan-icon"></i>
             <input type="text" id="barcodeInput" name="ax-scan-<%= Date.now() %>" placeholder="Escaneá código o buscá por nombre…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" autofocus>
-            <span id="qtyMultBadge" style="display:none;align-items:center;justify-content:center;background:var(--color-primary);color:#fff;font-weight:800;font-size:13px;border-radius:7px;padding:3px 9px;margin-left:6px;white-space:nowrap;">×1</span>
+            <span id="qtyMultBadge" style="display:none;align-items:center;justify-content:center;background:var(--color-primary);color:#fff;font-weight:800;font-size: 15px;border-radius:7px;padding:3px 9px;margin-left:6px;white-space:nowrap;">×1</span>
           </div>
           <div class="sc-chips">
             <div class="sc-chip chip-cobrar" onclick="cart.length?openCobroModal():showToast('Carrito vacío','warn')" title="Enter (con el buscador vacío) o F10 — Cobrar"><kbd>Enter</kbd> Cobrar</div>
@@ -1311,7 +1312,7 @@
               <kbd>F5</kbd> Departamentos
             </div>
             <% if (typeof sucursal !== 'undefined' && sucursal && sucursal.nombre && sucursal.nombre !== 'Casa Central') { %>
-            <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+            <div style="display:inline-flex;align-items:center;gap:5px;font-size: 12.5px;font-weight:700;
               color:var(--color-primary);background:rgba(27,79,216,.08);border:1.5px solid rgba(27,79,216,.25);
               border-radius:8px;padding:5px 10px;white-space:nowrap;flex-shrink:0;">
               <i class="bi bi-shop"></i> <%- sucursal.nombre %>
@@ -1319,30 +1320,31 @@
             <% } %>
             <!-- Vendedor activo — clic para cambiar con PIN, sin cerrar sesión -->
             <div id="chipVendedor" onclick="abrirSelectorVendedor()" title="Cambiar quién está atendiendo"
-              style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(168,85,247,.35);background:rgba(168,85,247,.07);color:#a855f7;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;flex-shrink:0;">
+              style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(168,85,247,.35);background:rgba(168,85,247,.07);color:#a855f7;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;flex-shrink:0;">
               <i class="bi bi-person-badge"></i> <span id="vendedorActivoNombre">…</span>
             </div>
 
             <div class="afip-overlay" id="vendedorOverlay" onclick="if(event.target===this)cerrarSelectorVendedor()">
               <div style="width:100%;max-width:340px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-color);">
-                  <div style="font-size:14.5px;font-weight:700;color:var(--text-primary);"><i class="bi bi-person-badge" style="color:#a855f7;margin-right:6px;"></i>¿Quién está atendiendo?</div>
-                  <button onclick="cerrarSelectorVendedor()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;"><i class="bi bi-x-lg"></i></button>
+                  <div style="font-size: 16.5px;font-weight:700;color:var(--text-primary);"><i class="bi bi-person-badge" style="color:#a855f7;margin-right:6px;"></i>¿Quién está atendiendo?</div>
+                  <button onclick="cerrarSelectorVendedor()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 19.5px;"><i class="bi bi-x-lg"></i></button>
                 </div>
 
                 <div id="vendedorListaWrap" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;">
-                  <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">Cargando...</div>
+                  <div style="text-align:center;padding:20px;color:var(--text-muted);font-size: 14px;">Cargando...</div>
                 </div>
 
                 <div id="vendedorPinWrap" style="display:none;padding:18px 20px;">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                    <button onclick="volverListaVendedores()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:16px;padding:2px;"><i class="bi bi-arrow-left"></i></button>
-                    <span style="font-size:13.5px;font-weight:700;color:var(--text-primary);" id="vendedorPinNombre">—</span>
+                    <button onclick="volverListaVendedores()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 18px;padding:2px;"><i class="bi bi-arrow-left"></i></button>
+                    <span style="font-size: 15.5px;font-weight:700;color:var(--text-primary);" id="vendedorPinNombre">—</span>
                   </div>
-                  <input type="password" id="vendedorPinInput" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off"
-                    style="width:100%;padding:14px;border-radius:10px;font-size:22px;text-align:center;letter-spacing:6px;">
-                  <div id="vendedorPinError" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;color:#dc2626;font-size:12.5px;text-align:center;"></div>
-                  <button onclick="confirmarPinVendedor()" style="width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:#a855f7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Confirmar</button>
+                  <input type="text" id="vendedorPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="PIN"
+                    autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"
+                    style="width:100%;padding:14px;border-radius:10px;font-size:22px;text-align:center;letter-spacing:6px;-webkit-text-security:disc;text-security:disc;">
+                  <div id="vendedorPinError" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;color:#dc2626;font-size: 14px;text-align:center;"></div>
+                  <button onclick="confirmarPinVendedor()" style="width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:#a855f7;color:#fff;font-size: 16px;font-weight:700;cursor:pointer;">Confirmar</button>
                 </div>
               </div>
             </div>
@@ -1367,26 +1369,26 @@
                 document.getElementById('vendedorPinWrap').style.display = 'none';
                 wrap.style.display = 'flex';
                 overlay.classList.add('open');
-                wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">Cargando...</div>';
+                wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size: 14px;">Cargando...</div>';
                 try {
                   const r = await fetch('/api/empleados-activos');
                   const empleados = r.ok ? await r.json() : [];
                   if (!empleados.length) {
-                    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12.5px;">No hay empleados cargados en Ajustes.</div>';
+                    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size: 14px;">No hay empleados cargados en Ajustes.</div>';
                     return;
                   }
                   wrap.innerHTML = '';
                   empleados.forEach(emp => {
                     const btn = document.createElement('button');
-                    btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);text-align:left;';
-                    btn.innerHTML = `<span>${emp.nombre}</span>` + (emp.tiene_pin ? '' : '<span style="font-size:11px;color:var(--text-muted);font-weight:500;">sin PIN</span>');
+                    btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);text-align:left;';
+                    btn.innerHTML = `<span>${emp.nombre}</span>` + (emp.tiene_pin ? '' : '<span style="font-size: 12.5px;color:var(--text-muted);font-weight:500;">sin PIN</span>');
                     btn.disabled = !emp.tiene_pin;
                     if (!emp.tiene_pin) btn.style.opacity = '.5';
                     btn.onclick = () => elegirVendedor(emp);
                     wrap.appendChild(btn);
                   });
                 } catch(e) {
-                  wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626;font-size:12.5px;">Error al cargar empleados.</div>';
+                  wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626;font-size: 14px;">Error al cargar empleados.</div>';
                 }
               }
 
@@ -1449,27 +1451,27 @@
             <!-- Selector lista de precio — desplegable simple -->
             <div style="position:relative;flex-shrink:0;" id="listaWrap">
               <button id="btnLista" onclick="toggleDropLista()" title="F6 — Lista de precio"
-                style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.35);background:rgba(16,185,129,.06);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;white-space:nowrap;">
-                <kbd style="background:#10b981;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.3px;">F6</kbd>
+                style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.35);background:rgba(16,185,129,.06);color:#059669;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;white-space:nowrap;">
+                <kbd style="background:#10b981;color:#fff;font-size: 10.5px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:.3px;">F6</kbd>
                 <i class="bi bi-tags" id="listaIcon"></i>
                 <span id="listaNombre">Minorista</span>
-                <i class="bi bi-chevron-down" style="font-size:10px;opacity:.7;"></i>
+                <i class="bi bi-chevron-down" style="font-size: 11.5px;opacity:.7;"></i>
               </button>
               <div id="dropLista"
                 style="display:none;position:absolute;top:calc(100% + 5px);right:0;min-width:160px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;overflow:hidden;">
                 <div style="padding:5px;">
                   <button onclick="selLista(0)" id="listaOpt0"
-                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size: 15px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
                     onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
                     <i class="bi bi-person" style="color:#10b981;width:14px;"></i> Minorista
                   </button>
                   <button onclick="selLista(1)" id="listaOpt1"
-                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size: 15px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
                     onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
                     <i class="bi bi-building" style="color:#6366f1;width:14px;"></i> Mayorista
                   </button>
                   <button onclick="selLista(2)" id="listaOpt2"
-                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
+                    style="width:100%;padding:8px 12px;border:none;background:transparent;text-align:left;font-size: 15px;font-weight:600;cursor:pointer;border-radius:7px;display:flex;align-items:center;gap:8px;font-family:var(--font-body);color:var(--text-primary);transition:background .1s;"
                     onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
                     <i class="bi bi-credit-card" style="color:#f59e0b;width:14px;"></i> Tarjeta
                   </button>
@@ -1527,24 +1529,22 @@
               <div style="flex:1;position:relative;">
                 <i class="bi bi-person cart-cliente-ico"></i>
                 <input type="text" class="cart-cliente-inp" id="posClienteSearch"
-                  placeholder="Consumidor Final" autocomplete="off"
-                  oninput="buscarClientePos(this.value)"
-                  onfocus="mostrarTodosClientes()"
-                  onblur="setTimeout(cerrarDropCliente,200)">
+                  placeholder="Consumidor Final" autocomplete="off" readonly
+                  onclick="abrirSelectorClientes()" onfocus="this.blur();abrirSelectorClientes()">
                 <div class="cart-cliente-drop" id="posClienteResultados"></div>
                 <div class="cart-cliente-sel" id="posClienteSeleccionado">
                   <span id="posClienteNombre" style="font-weight:600;color:var(--text-primary)"></span>
-                  <span style="font-size:10px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 6px;border-radius:10px">✓</span>
+                  <span style="font-size: 11.5px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 6px;border-radius:10px">✓</span>
                 </div>
               </div>
               <button onclick="abrirCrearClienteRapido('')" title="Nuevo cliente"
-                style="flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.08);color:var(--color-primary);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1;"
+                style="flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.08);color:var(--color-primary);font-size: 20.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1;"
                 onmouseover="this.style.background='rgba(27,79,216,.18)'"
                 onmouseout="this.style.background='rgba(27,79,216,.08)'">+</button>
             </div>
           </div>
 
-          <div id="posClienteSaldo" style="display:none;margin:2px 0 6px;padding:7px 11px;border-radius:8px;font-size:12px;font-weight:600;line-height:1.35;"></div>
+          <div id="posClienteSaldo" style="display:none;margin:2px 0 6px;padding:7px 11px;border-radius:8px;font-size: 13.5px;font-weight:600;line-height:1.35;"></div>
 
           <!-- ── TIPO COMPROBANTE ── -->
           <div class="cart-field-row" style="margin-top:6px;">
@@ -1614,7 +1614,7 @@
     <div class="depto-price-header">
       <div class="depto-price-icon" id="deptoPriceIcon">🛒</div>
       <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Ingreso manual</div>
+        <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Ingreso manual</div>
         <div class="depto-price-name" id="deptoPriceName">Departamento</div>
       </div>
     </div>
@@ -1649,37 +1649,37 @@
 <div class="deptos-mgr-overlay" id="deptosMgrOverlay" onclick="if(event.target===this)cerrarGestorDeptos()">
   <div class="deptos-mgr-modal">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
-      <div style="font-size:15px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+      <div style="font-size: 17px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
         <i class="bi bi-grid-3x3-gap-fill" style="color:var(--color-primary);"></i> Gestionar departamentos
       </div>
-      <button onclick="cerrarGestorDeptos()" style="background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;">✕</button>
+      <button onclick="cerrarGestorDeptos()" style="background:none;border:none;font-size: 20.5px;color:var(--text-muted);cursor:pointer;">✕</button>
     </div>
     <div style="padding:16px 20px;overflow-y:auto;flex:1;">
       <div id="deptosMgrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
       <div style="background:var(--bg-body);border:1.5px dashed var(--border-color);border-radius:12px;padding:14px;">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:10px;">Agregar departamento</div>
+        <div style="font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:10px;">Agregar departamento</div>
         <div style="display:grid;grid-template-columns:60px 1fr;gap:8px;margin-bottom:8px;">
           <div>
-            <div style="font-size:10px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Ícono</div>
+            <div style="font-size: 11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Ícono</div>
             <input type="text" id="newDeptoIcon" maxlength="2" placeholder="🛒"
-              style="width:100%;padding:8px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:20px;text-align:center;outline:none;">
+              style="width:100%;padding:8px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size: 23px;text-align:center;outline:none;">
           </div>
           <div>
-            <div style="font-size:10px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Nombre</div>
+            <div style="font-size: 11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Nombre</div>
             <input type="text" id="newDeptoName" placeholder="Ej: Panadería, Fiambrería..."
-              style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:13.5px;outline:none;"
+              style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size: 15.5px;outline:none;"
               onkeydown="if(event.key==='Enter') agregarNuevoDepto()">
           </div>
         </div>
         <button onclick="agregarNuevoDepto()"
-          style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;">
+          style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:9px;font-size: 15px;font-weight:700;cursor:pointer;">
           <i class="bi bi-plus-lg"></i> Agregar
         </button>
       </div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border-color);background:var(--bg-body);">
       <button onclick="cerrarGestorDeptos()"
-        style="width:100%;padding:10px;border:1.5px solid var(--border-color);border-radius:9px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;">
+        style="width:100%;padding:10px;border:1.5px solid var(--border-color);border-radius:9px;background:transparent;color:var(--text-secondary);font-size: 15px;font-weight:700;cursor:pointer;">
         Listo
       </button>
     </div>
@@ -1759,11 +1759,11 @@
         <div class="cobro-section" id="facturacionSection" style="margin-bottom:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
             <div style="display:flex;align-items:center;gap:8px;">
-              <i class="bi bi-file-earmark-text" style="font-size:15px;color:var(--color-primary);"></i>
+              <i class="bi bi-file-earmark-text" style="font-size: 17px;color:var(--color-primary);"></i>
               <span class="cobro-stitle" style="margin:0;">Factura electrónica AFIP</span>
             </div>
             <label class="afip-toggle-wrap" style="cursor:pointer;display:flex;align-items:center;gap:8px;">
-              <span style="font-size:12px;color:var(--text-secondary);" id="facturaTglLabel">No emitir</span>
+              <span style="font-size: 13.5px;color:var(--text-secondary);" id="facturaTglLabel">No emitir</span>
               <div class="afip-tgl-switch">
                 <input type="checkbox" id="facturaTgl" onchange="toggleFacturacionEnCobro(this.checked)" style="display:none;">
                 <div class="afip-tgl-slider" id="facturaTglSlider"></div>
@@ -1781,7 +1781,7 @@
           <div id="facturaOpciones" style="display:none;margin-top:14px;display:none;">
             <!-- Tipo de factura: solo se muestran los tipos que tu condición IVA (Ajustes) te permite emitir -->
             <div style="margin-bottom:12px;">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
+              <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
                 Tipo de comprobante
                 <% if (tiposPermitidosMini.length === 1) { %>
                   <span style="text-transform:none;font-weight:400;">(según tu condición IVA en Ajustes)</span>
@@ -1791,7 +1791,7 @@
                 <% tiposPermitidosMini.forEach(function(t, i) { %>
                   <button class="afip-tipo-mini <%= i === 0 ? 'on' : '' %>" id="tipoMini<%= t %>" onclick="selTipoMini('<%= t %>')">
                     <div style="font-size:22px;font-weight:900;line-height:1;"><%= t %></div>
-                    <div style="font-size:9px;margin-top:2px;opacity:.8;"><%= nombresTipo[t] %></div>
+                    <div style="font-size: 10.5px;margin-top:2px;opacity:.8;"><%= nombresTipo[t] %></div>
                   </button>
                 <% }); %>
               </div>
@@ -1799,40 +1799,40 @@
 
             <!-- CUIT (solo Factura A) -->
             <div id="cuitMiniWrap" style="display:none;margin-bottom:10px;">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">CUIT del receptor</div>
+              <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">CUIT del receptor</div>
               <input type="text" id="cuitMiniInp" placeholder="20-12345678-9" maxlength="13"
-                style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                style="width:100%;padding:9px 12px;border-radius:8px;font-size: 15px;">
             </div>
 
             <!-- Nombre receptor -->
             <div style="margin-bottom:12px;">
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Nombre / Razón social</div>
+              <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Nombre / Razón social</div>
               <input type="text" id="receptorMiniNombre" placeholder="Consumidor Final"
-                style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                style="width:100%;padding:9px 12px;border-radius:8px;font-size: 15px;">
             </div>
 
             <!-- ¿Es un servicio? (habilita período facturado, como en la web de ARCA) -->
             <div style="margin-bottom:10px;padding-top:10px;border-top:1px dashed var(--border-color, rgba(255,255,255,.1));">
               <label style="cursor:pointer;display:flex;align-items:center;gap:8px;">
                 <input type="checkbox" id="servicioMiniChk" onchange="toggleServicioMini(this.checked)">
-                <span style="font-size:12px;color:var(--text-secondary);">Es un servicio (habilita período facturado)</span>
+                <span style="font-size: 13.5px;color:var(--text-secondary);">Es un servicio (habilita período facturado)</span>
               </label>
             </div>
 
             <div id="servicioMiniWrap" style="display:none;">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
                 <div>
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período desde</div>
-                  <input type="date" id="servDesdeMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                  <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período desde</div>
+                  <input type="date" id="servDesdeMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size: 15px;">
                 </div>
                 <div>
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período hasta</div>
-                  <input type="date" id="servHastaMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                  <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Período hasta</div>
+                  <input type="date" id="servHastaMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size: 15px;">
                 </div>
               </div>
               <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Fecha de vto. para el pago (opcional, por defecto hoy)</div>
-                <input type="date" id="servVtoPagoMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size:13px;">
+                <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;">Fecha de vto. para el pago (opcional, por defecto hoy)</div>
+                <input type="date" id="servVtoPagoMini" style="width:100%;padding:9px 12px;border-radius:8px;font-size: 15px;">
               </div>
             </div>
           </div>
@@ -1844,15 +1844,7 @@
           <span id="btnCobrarTxt">Cobrar $0,00</span>
         </button>
 
-        <% if (config && String(config.mp_habilitado) === '1') { %>
-        <button class="btn-cobrar" id="btnMPPoint" onclick="cobrarConMPPoint()"
-          style="background:linear-gradient(135deg,#009ee3,#007eb5);margin-top:8px;font-size:16px;box-shadow:0 6px 18px rgba(0,158,227,.3);">
-          <i class="bi bi-phone"></i>
-          <span>Cobrar con Point</span>
-        </button>
-        <% } %>
-
-        <div class="cobro-help">Flechas para moverte entre medios de pago · Enter para seleccionar · Enter de nuevo para cobrar</div>
+        <div class="cobro-help">Flechas para moverte entre medios de pago · Enter para elegir uno y saltar a Cobrar · Enter de nuevo para confirmar</div>
       </div>
 
       <!-- DERECHA -->
@@ -1879,9 +1871,9 @@
 
     <button
       onclick="imprimirTicket()"
-      style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+      style="width:100%;margin-top:12px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size: 15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
       <i class="bi bi-printer"></i> Imprimir ticket
-      <kbd style="margin-left:auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;color:var(--text-secondary);">F5</kbd>
+      <kbd style="margin-left:auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size: 10.5px;font-weight:800;color:var(--text-secondary);">F5</kbd>
     </button>
 
     <!-- Modal copia de ticket -->
@@ -1890,15 +1882,15 @@
         <div style="width:52px;height:52px;border-radius:50%;background:rgba(99,102,241,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
           <i class="bi bi-printer" style="font-size:22px;color:#6366f1;"></i>
         </div>
-        <div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Imprimir copia?</div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">
+        <div style="font-size: 18px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Imprimir copia?</div>
+        <div style="font-size: 15px;color:var(--text-secondary);margin-bottom:20px;">
           El ticket del cliente ya se envio a imprimir.<br>Queres imprimir tambien la copia local?
         </div>
         <div style="display:flex;gap:10px;">
-          <button onclick="imprimirCopiaTicket()" style="flex:1;padding:11px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;">
+          <button onclick="imprimirCopiaTicket()" style="flex:1;padding:11px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size: 15.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;">
             <i class="bi bi-files"></i> Si, imprimir copia
           </button>
-          <button onclick="cerrarModalCopia()" style="flex:1;padding:11px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <button onclick="cerrarModalCopia()" style="flex:1;padding:11px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             No, gracias
           </button>
         </div>
@@ -1908,29 +1900,29 @@
     <button
       onclick="abrirPdfFacturaExistente()"
       id="btnVerFacturaAfip"
-      style="display:none;width:100%;margin-top:8px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;">
+      style="display:none;width:100%;margin-top:8px;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size: 15.5px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;">
       <i class="bi bi-download"></i> Ver factura emitida
     </button>
 
     <button class="btn-nueva-venta" onclick="nuevaVenta()">
       <i class="bi bi-plus-circle"></i> Nueva Venta
-      <kbd style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:800;">Enter</kbd>
+      <kbd style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:1px 6px;font-size: 10.5px;font-weight:800;">Enter</kbd>
     </button>
 
     <!-- ── Envío por email ── -->
     <div id="emailComprobanteWrap" style="margin-top:14px;border-top:1px solid var(--border-color);padding-top:14px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
+      <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">
         <i class="bi bi-envelope" style="margin-right:4px;"></i>Enviar comprobante por email
       </div>
       <div style="display:flex;gap:8px;">
         <input type="email" id="emailDestinoInput" placeholder="cliente@email.com"
-          style="flex:1;padding:9px 12px;border-radius:8px;font-size:13px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);outline:none;font-family:var(--font-body);">
+          style="flex:1;padding:9px 12px;border-radius:8px;font-size: 15px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);outline:none;font-family:var(--font-body);">
         <button onclick="enviarComprobantePorEmail()"
-          style="padding:9px 14px;border-radius:8px;border:none;background:var(--color-primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s;">
+          style="padding:9px 14px;border-radius:8px;border:none;background:var(--color-primary);color:#fff;font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s;">
           <i class="bi bi-send"></i> Enviar
         </button>
       </div>
-      <div id="emailEnvioResult" style="font-size:12px;font-weight:600;margin-top:6px;min-height:18px;"></div>
+      <div id="emailEnvioResult" style="font-size: 13.5px;font-weight:600;margin-top:6px;min-height:18px;"></div>
     </div>
   </div>
 </div>
@@ -1942,30 +1934,30 @@
   .afip-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
   .afip-overlay.open{opacity:1;pointer-events:all;}
   .afip-modal{background:var(--bg-card);border-radius:var(--radius-xl);padding:28px;width:420px;max-width:95vw;box-shadow:var(--shadow-xl);animation:modalIn .2s ease;}
-  .afip-modal h3{font-size:17px;font-weight:700;color:var(--text-primary);margin:0 0 4px;}
-  .afip-modal .afip-sub{font-size:12px;color:var(--text-secondary);margin-bottom:20px;}
+  .afip-modal h3{font-size: 19.5px;font-weight:700;color:var(--text-primary);margin:0 0 4px;}
+  .afip-modal .afip-sub{font-size: 13.5px;color:var(--text-secondary);margin-bottom:20px;}
   .afip-tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
   .afip-tipo-btn{padding:14px 8px;border-radius:12px;border:2px solid var(--border-color);background:var(--bg-surface-2);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);}
   .afip-tipo-btn:hover{border-color:var(--color-primary);background:rgba(27,79,216,.05);}
   .afip-tipo-btn.sel{border-color:var(--color-primary);background:rgba(27,79,216,.08);}
   .afip-tipo-letra{font-size:28px;font-weight:800;color:var(--color-primary);line-height:1;}
-  .afip-tipo-desc{font-size:10px;color:var(--text-secondary);margin-top:4px;line-height:1.3;}
+  .afip-tipo-desc{font-size: 11.5px;color:var(--text-secondary);margin-top:4px;line-height:1.3;}
   .afip-field{margin-bottom:14px;}
-  .afip-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:5px;}
-  .afip-field input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;box-sizing:border-box;transition:border-color .15s;}
+  .afip-field label{display:block;font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:5px;}
+  .afip-field input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size: 15.5px;outline:none;box-sizing:border-box;transition:border-color .15s;}
   .afip-field input:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,216,.12);}
   .afip-actions{display:flex;gap:10px;margin-top:20px;}
-  .btn-afip-emit{flex:1;padding:12px;border-radius:10px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+  .btn-afip-emit{flex:1;padding:12px;border-radius:10px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size: 16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
   .btn-afip-emit:hover{background:#1540b8;}
   .btn-afip-emit:disabled{opacity:.5;cursor:not-allowed;}
-  .btn-afip-cancel{padding:12px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-afip-cancel{padding:12px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size: 16px;font-weight:600;cursor:pointer;transition:all .15s;}
   .btn-afip-cancel:hover{border-color:var(--text-secondary);color:var(--text-primary);}
   .afip-result{display:none;text-align:center;padding:10px 0;}
   .afip-result.show{display:block;}
-  .afip-cae-box{background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:12px;padding:14px;margin-top:12px;font-family:var(--font-mono);font-size:13px;word-break:break-all;}
-  .afip-cae-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;}
-  .afip-cae-val{font-size:15px;font-weight:800;color:var(--color-primary);}
-  .afip-spinner{display:none;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:8px 0;}
+  .afip-cae-box{background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:12px;padding:14px;margin-top:12px;font-family:var(--font-mono);font-size: 15px;word-break:break-all;}
+  .afip-cae-label{font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;}
+  .afip-cae-val{font-size: 17px;font-weight:800;color:var(--color-primary);}
+  .afip-spinner{display:none;align-items:center;justify-content:center;gap:8px;font-size: 15px;color:var(--text-secondary);margin:8px 0;}
   .afip-spinner.show{display:flex;}
   .afip-spin-icon{width:18px;height:18px;border:2px solid var(--color-primary);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;}
 
@@ -1982,8 +1974,8 @@
   .afip-tipo-mini.on{border-color:var(--color-primary);background:rgba(27,79,216,.10);color:var(--color-primary);}
 
   /* Badge factura en modal de éxito */
-  .fact-badge-ok{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(27,79,216,.10);color:var(--color-primary);font-size:12.5px;font-weight:700;margin-top:8px;}
-  .fact-badge-pend{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size:12.5px;font-weight:700;margin-top:8px;}
+  .fact-badge-ok{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(27,79,216,.10);color:var(--color-primary);font-size: 14px;font-weight:700;margin-top:8px;}
+  .fact-badge-pend{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size: 14px;font-weight:700;margin-top:8px;}
 </style>
 
 <div class="afip-overlay" id="afipOverlay">
@@ -2021,16 +2013,16 @@
 
     <div class="afip-result" id="afipResult">
       <div style="font-size:40px;">✅</div>
-      <div style="font-size:15px;font-weight:700;margin-top:6px;color:var(--text-primary);">¡Factura emitida con éxito!</div>
+      <div style="font-size: 17px;font-weight:700;margin-top:6px;color:var(--text-primary);">¡Factura emitida con éxito!</div>
       <div class="afip-cae-box">
         <div class="afip-cae-label">CAE</div>
         <div class="afip-cae-val" id="afipCaeVal">—</div>
         <div class="afip-cae-label" style="margin-top:8px;">Vencimiento CAE</div>
-        <div id="afipCaeVto" style="font-size:13px;font-weight:600;color:var(--text-primary);">—</div>
+        <div id="afipCaeVto" style="font-size: 15px;font-weight:600;color:var(--text-primary);">—</div>
         <div class="afip-cae-label" style="margin-top:8px;">Nro. Comprobante</div>
-        <div id="afipNroCbte" style="font-size:13px;font-weight:600;color:var(--text-primary);">—</div>
+        <div id="afipNroCbte" style="font-size: 15px;font-weight:600;color:var(--text-primary);">—</div>
       </div>
-      <button onclick="descargarPdfFactura()" style="width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+      <button onclick="descargarPdfFactura()" style="width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
         <i class="bi bi-download"></i> Descargar PDF
       </button>
     </div>
@@ -2055,20 +2047,60 @@
   </div>
 </div>
 
+<!-- MODAL: Selector de cliente (POS) — reemplaza el dropdown chico -->
+<style>
+.sel-cliente-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-surface);cursor:pointer;transition:all .12s;margin-bottom:8px;}
+.sel-cliente-card:hover{border-color:var(--color-primary);background:rgba(27,79,216,.04);transform:translateY(-1px);}
+.sel-cliente-avatar{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19px;flex-shrink:0;}
+.sel-cliente-info{flex:1;min-width:0;}
+.sel-cliente-nombre{font-size: 16px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sel-cliente-sub{font-size: 13px;color:var(--text-secondary);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sel-cliente-cat{font-size: 11px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366f1;}
+.sel-cliente-saldo{flex-shrink:0;font-size: 13px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+</style>
+<div class="sale-overlay" id="modalSelectorClientes" onclick="if(event.target.id==='modalSelectorClientes')cerrarSelectorClientes()">
+  <div style="width:100%;max-width:560px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.25);animation:modalPop .16s ease;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header + buscador -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size: 18px;font-weight:700;color:var(--text-primary);"><i class="bi bi-people-fill" style="color:var(--color-primary);margin-right:7px;"></i>Elegir cliente</div>
+        <button onclick="cerrarSelectorClientes()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 22px;line-height:1;"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="position:relative;flex:1;">
+          <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size: 15px;"></i>
+          <input type="text" id="selClienteBuscar" placeholder="Buscar por nombre, DNI/CUIT o teléfono…" autocomplete="off"
+            oninput="buscarEnSelectorClientes(this.value)"
+            style="width:100%;padding:11px 14px 11px 36px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size: 16px;outline:none;box-sizing:border-box;transition:border-color .15s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+        <button onclick="abrirCrearClienteRapido(document.getElementById('selClienteBuscar').value.trim())" title="Crear cliente nuevo"
+          style="flex-shrink:0;width:44px;border-radius:10px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.08);color:var(--color-primary);font-size: 22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;">+</button>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div style="flex:1;overflow-y:auto;padding:14px 20px 20px;" id="selClienteResultados">
+      <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Crear cliente rápido desde el POS -->
 <div class="sale-overlay" id="modalCrearClienteRapido" onclick="if(event.target.id==='modalCrearClienteRapido')cerrarCrearClienteRapido()">
   <div class="sale-modal" style="max-width:420px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#1540b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#1540b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19.5px;">
           <i class="bi bi-person-plus-fill"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Nuevo cliente</div>
-          <div style="font-size:11px;color:var(--text-secondary);">Creación rápida desde el POS</div>
+          <div style="font-size: 17px;font-weight:800;color:var(--text-primary);">Nuevo cliente</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);">Creación rápida desde el POS</div>
         </div>
       </div>
-      <button onclick="cerrarCrearClienteRapido()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarCrearClienteRapido()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
@@ -2076,18 +2108,18 @@
         <input type="text" id="ccrNombre" class="form-input" placeholder="Nombre del cliente">
       </div>
       <div>
-        <label class="form-lbl">DNI / CUIT <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <label class="form-lbl">DNI / CUIT <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
         <input type="text" id="ccrDni" class="form-input" placeholder="Ej: 20450801373">
       </div>
       <div>
-        <label class="form-lbl">Teléfono <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+        <label class="form-lbl">Teléfono <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
         <input type="text" id="ccrTel" class="form-input" placeholder="Ej: 3834123456">
       </div>
     </div>
-    <div id="ccrError" style="display:none;margin-top:10px;font-size:12.5px;color:#dc2626;"></div>
+    <div id="ccrError" style="display:none;margin-top:10px;font-size: 14px;color:#dc2626;"></div>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button onclick="confirmarCrearClienteRapido()"
-        style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#1540b8);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#1540b8);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
         <i class="bi bi-person-check-fill"></i> Crear y seleccionar
       </button>
       <button onclick="cerrarCrearClienteRapido()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
@@ -2098,6 +2130,7 @@
 <script>
 function abrirCrearClienteRapido(nombreSugerido) {
   cerrarDropCliente();
+  if (document.getElementById('modalSelectorClientes')?.classList.contains('open')) cerrarSelectorClientes();
   document.getElementById('ccrNombre').value = nombreSugerido || '';
   document.getElementById('ccrDni').value    = '';
   document.getElementById('ccrTel').value    = '';
@@ -2444,12 +2477,12 @@ function buildProductCard(p) {
   const promoOld = esPromo
     ? `<span class="prod-price-old">${fmt(p.price)}</span>`
     : tienePrecioEspecial
-      ? `<span class="prod-price-old" style="font-size:9px;">${fmt(precioBase)}</span>`
+      ? `<span class="prod-price-old" style="font-size: 10.5px;">${fmt(precioBase)}</span>`
       : '';
   const promoBadge = esPromo
     ? '<span class="prod-badge-promo">Promo</span>'
     : tienePrecioEspecial
-      ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size:8px;">${lista.label}</span>`
+      ? `<span class="prod-badge-promo" style="background:${_listaIdx===1?'#6366f1':'#f59e0b'};font-size: 9px;">${lista.label}</span>`
       : '';
   const stock = Number(p.stock ?? 0);
   const esLibre = p.pesable || p.venta_sin_stock;
@@ -2468,11 +2501,11 @@ function buildProductCard(p) {
   let mayorHint = '';
   if (_listaIdx === 0 && _tiersGrid && _tiersGrid.length) {
     const txt = _tiersGrid.map(t => `≥${t.min}u ${fmt(t.price)}`).join(' · ');
-    mayorHint = `<div class="prod-mayor-hint" style="font-size:10px;color:#0f766e;font-weight:700;margin-top:2px;line-height:1.3;">${txt}</div>`;
+    mayorHint = `<div class="prod-mayor-hint" style="font-size: 11.5px;color:#0f766e;font-weight:700;margin-top:2px;line-height:1.3;">${txt}</div>`;
   } else {
     const tieneMayor = _listaIdx === 0 && p.price_mayorista && Number(p.price_mayorista) > 0 && p.qty_mayorista && Number(p.qty_mayorista) > 1;
     mayorHint = tieneMayor
-      ? `<div class="prod-mayor-hint" style="font-size:10px;color:#6366f1;font-weight:700;margin-top:2px;white-space:nowrap;">≥${Number(p.qty_mayorista)}u · ${fmt(Number(p.price_mayorista))} c/u</div>`
+      ? `<div class="prod-mayor-hint" style="font-size: 11.5px;color:#6366f1;font-weight:700;margin-top:2px;white-space:nowrap;">≥${Number(p.qty_mayorista)}u · ${fmt(Number(p.price_mayorista))} c/u</div>`
       : '';
   }
   const thumbCell = p.imagen
@@ -2655,15 +2688,15 @@ function renderCartList(){
         <div class="cart-card-name">${item.name}</div>
         <button class="btn-del" onclick="removeItem('${item.sku}')"><i class="bi bi-trash3"></i></button>
       </div>
-      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isTier ? ' <span style="color:#0f766e;font-size:10px;font-weight:700;">c/u</span> <span style="color:#0f766e;font-size:9px;font-weight:800;">x CANTIDAD</span>' : (item.isMayorista ? ' <span style="color:#6366f1;font-size:10px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size:9px;font-weight:800;">MAYOR</span>' : '')}${item.precioEditado ? ' <span style="color:#f59e0b;font-size:9px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
+      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isTier ? ' <span style="color:#0f766e;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#0f766e;font-size: 10.5px;font-weight:800;">x CANTIDAD</span>' : (item.isMayorista ? ' <span style="color:#6366f1;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size: 10.5px;font-weight:800;">MAYOR</span>' : '')}${item.precioEditado ? ' <span style="color:#f59e0b;font-size: 10.5px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
       <div class="cart-card-bottom">
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="chgQty('${item.sku}',-1)"><i class="bi bi-dash"></i></button>
           <span class="qty-val" onclick="abrirTecladoCantidad('${item.sku}',${item.qty})" title="Tocá para cambiar cantidad" style="cursor:pointer;background:var(--color-primary);color:#fff;border-radius:4px;padding:0 4px;">${item.qty}</span>
           <button class="qty-btn" onclick="chgQty('${item.sku}',1)"><i class="bi bi-plus"></i></button>
         </div>
-        <div class="cart-card-price">${fmt(item.price * item.qty)}${item.precioEditado ? '<span style="color:#f59e0b;font-size:9px;font-weight:800;margin-left:3px;" title="Precio modificado">✎</span>' : ''}</div>
-        <button class="btn-edit-price" data-sku="${item.sku.replace(/"/g,'&quot;')}" data-price="${item.price}" title="Editar precio unitario" style="width:20px;height:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;padding:0;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'"><i class="bi bi-pencil"></i></button>
+        <div class="cart-card-price">${fmt(item.price * item.qty)}${item.precioEditado ? '<span style="color:#f59e0b;font-size: 10.5px;font-weight:800;margin-left:3px;" title="Precio modificado">✎</span>' : ''}</div>
+        <button class="btn-edit-price" data-sku="${item.sku.replace(/"/g,'&quot;')}" data-price="${item.price}" title="Editar precio unitario" style="width:20px;height:20px;border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size: 12.5px;flex-shrink:0;padding:0;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'"><i class="bi bi-pencil"></i></button>
       </div>`;
   });
 
@@ -2705,7 +2738,7 @@ function editarPrecioItem(sku, precioActual) {
   inp.min = '0';
   inp.step = '1';
   inp.value = precioActual;
-  inp.style.cssText = 'width:90px;padding:2px 6px;border-radius:5px;border:2px solid var(--color-primary);background:var(--bg-surface);color:var(--text-primary);font-size:14px;font-weight:700;font-family:var(--font-mono);text-align:right;outline:none;';
+  inp.style.cssText = 'width:90px;padding:2px 6px;border-radius:5px;border:2px solid var(--color-primary);background:var(--bg-surface);color:var(--text-primary);font-size: 16px;font-weight:700;font-family:var(--font-mono);text-align:right;outline:none;';
 
   // Guardar contenido original
   const contenidoOriginal = precioDiv.innerHTML;
@@ -2843,7 +2876,11 @@ function updateTotals(){
 
 /* Navegación teclado métodos de pago */
 function getPmButtons(){ return [...document.querySelectorAll('#pmGrid .pm-btn')]; }
-function clearPmFocus(){ getPmButtons().forEach(b => b.classList.remove('kbd-focus')); }
+function clearPmFocus(){
+  getPmButtons().forEach(b => b.classList.remove('kbd-focus'));
+  document.getElementById('btnCobrar')?.classList.remove('kbd-focus');
+  document.getElementById('btnMPPoint')?.classList.remove('kbd-focus');
+}
 function focusPmButton(index){
   const buttons = getPmButtons();
   if(!buttons.length) return;
@@ -2876,8 +2913,28 @@ function movePmFocusVertical(deltaRows){
   const cols = 2;
   let next = pmFocusIdx + (deltaRows * cols);
   if(next < 0) next = pmFocusIdx;
-  if(next >= buttons.length) next = pmFocusIdx;
+  if(next >= buttons.length){
+    // Bajando desde la última fila de medios de pago → saltar al botón Cobrar
+    if(deltaRows > 0){ focusCobrarButton(); return; }
+    next = pmFocusIdx;
+  }
   focusPmButton(next);
+}
+function focusCobrarButton(){
+  clearPmFocus();
+  const btn = document.getElementById('btnCobrar');
+  if(!btn || btn.disabled) return;
+  btn.classList.add('kbd-focus');
+  btn.focus({ preventScroll:true });
+  btn.scrollIntoView({ block:'nearest' });
+}
+function focusMPPointButton(){
+  const mp = document.getElementById('btnMPPoint');
+  if(!mp){ focusCobrarButton(); return; } // no está habilitado Point → se queda en Cobrar
+  document.getElementById('btnCobrar')?.classList.remove('kbd-focus');
+  mp.classList.add('kbd-focus');
+  mp.focus({ preventScroll:true });
+  mp.scrollIntoView({ block:'nearest' });
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2940,13 +2997,13 @@ function mostrarModalPresupuestoOk(pres) {
   overlay.innerHTML = `
     <div style="background:var(--bg-card);border-radius:16px;padding:26px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);">
       <div style="width:54px;height:54px;border-radius:50%;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><i class="bi bi-file-earmark-check" style="font-size:26px;color:#10b981;"></i></div>
-      <div style="font-size:18px;font-weight:800;color:var(--text-primary);">Presupuesto generado</div>
-      <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${pres.numero || ''} \u00b7 ${escapeHtml(pres.cliente_nombre || 'Sin nombre')}</div>
+      <div style="font-size: 20.5px;font-weight:800;color:var(--text-primary);">Presupuesto generado</div>
+      <div style="font-size: 15px;color:var(--text-secondary);margin-top:2px;">${pres.numero || ''} \u00b7 ${escapeHtml(pres.cliente_nombre || 'Sin nombre')}</div>
       <div style="font-size:26px;font-weight:900;color:var(--color-action);margin:10px 0 18px;">${fmt(total)}</div>
       <div style="display:flex;flex-direction:column;gap:9px;">
-        <button onclick="imprimirPresupuestoTermico()" style="padding:12px;border-radius:9px;background:var(--color-primary);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;"><i class="bi bi-receipt"></i> Imprimir ticket</button>
-        <button onclick="window.open('/presupuestos/ver/${pres.id}','_blank')" style="padding:11px;border-radius:9px;background:var(--bg-surface-2);color:var(--text-primary);border:1px solid var(--border-color);font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-printer"></i> Ver / Imprimir A4</button>
-        <button onclick="cerrarModalPresOk(true)" style="padding:11px;border-radius:9px;background:transparent;color:var(--text-secondary);border:none;font-size:13px;font-weight:600;cursor:pointer;">Seguir vendiendo</button>
+        <button onclick="imprimirPresupuestoTermico()" style="padding:12px;border-radius:9px;background:var(--color-primary);color:#fff;border:none;font-size: 16px;font-weight:700;cursor:pointer;"><i class="bi bi-receipt"></i> Imprimir ticket</button>
+        <button onclick="window.open('/presupuestos/ver/${pres.id}','_blank')" style="padding:11px;border-radius:9px;background:var(--bg-surface-2);color:var(--text-primary);border:1px solid var(--border-color);font-size: 15px;font-weight:600;cursor:pointer;"><i class="bi bi-printer"></i> Ver / Imprimir A4</button>
+        <button onclick="cerrarModalPresOk(true)" style="padding:11px;border-radius:9px;background:transparent;color:var(--text-secondary);border:none;font-size: 15px;font-weight:600;cursor:pointer;">Seguir vendiendo</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -3295,7 +3352,14 @@ function selectPayMethod(btn){
   document.getElementById('efectivoRow').classList.toggle('visible',isEfectivo);
   updateCobroTotals();
   calcVuelto();
-  focusPmButton(pmFocusIdx);
+  if(isEfectivo){
+    // Efectivo: mantenemos el foco en el medio de pago y saltamos al monto recibido
+    focusPmButton(pmFocusIdx);
+    setTimeout(()=>document.getElementById('cashReceived')?.focus(), 80);
+  } else {
+    // Cualquier otro medio: saltar directo al botón Cobrar
+    focusCobrarButton();
+  }
 
   if(mixtoActivo){
     document.getElementById('mixtoMetodo1Nombre').textContent = payMethod;
@@ -3314,9 +3378,9 @@ function renderClienteDrop(list, query){
     // Sin resultados — mostrar botón crear cliente
     if (q && q.length > 0) {
       drop.innerHTML = `<div style="padding:10px 12px;">
-        <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;">Sin resultados para "<strong>${q}</strong>"</div>
+        <div style="font-size: 13px;color:var(--text-secondary);margin-bottom:8px;">Sin resultados para "<strong>${q}</strong>"</div>
         <button onmousedown="abrirCrearClienteRapido('${q.replace(/'/g,"\\'")}');"
-          style="width:100%;padding:8px 12px;background:rgba(27,79,216,.1);color:var(--color-primary);border:1.5px solid rgba(27,79,216,.3);border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+          style="width:100%;padding:8px 12px;background:rgba(27,79,216,.1);color:var(--color-primary);border:1.5px solid rgba(27,79,216,.3);border-radius:8px;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
           <i class="bi bi-person-plus-fill"></i> Crear cliente "${q}"
         </button>
       </div>`;
@@ -3328,15 +3392,15 @@ function renderClienteDrop(list, query){
   }
   drop.innerHTML=list.map(c=>{
     const nom=c.nombre||'',tel=c.telefono||'',saldo=Number(c.saldo||0);
-    const sTag=saldo>0?`<span style="font-size:10px;font-weight:700;color:#dc2626;background:rgba(239,68,68,.1);padding:1px 5px;border-radius:8px">Debe ${fmt(saldo)}</span>`:'';
-    const dTag=c.id===1?`<span style="font-size:10px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 5px;border-radius:8px;margin-left:4px">Default</span>`:'';
-    return `<div style="padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border-color);font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s" onmouseenter="this.style.background='rgba(0,180,216,.06)'" onmouseleave="this.style.background=''" onmousedown="selClientePos(${c.id},'${nom.replace(/'/g,"\\'")}','${tel.replace(/'/g,"\\'")}')"><div><strong>${nom}</strong>${dTag}${tel?`<span style="color:var(--text-secondary);font-size:10.5px;margin-left:5px">${tel}</span>`:''}</div>${sTag}</div>`;
+    const sTag=saldo>0?`<span style="font-size: 11.5px;font-weight:700;color:#dc2626;background:rgba(239,68,68,.1);padding:1px 5px;border-radius:8px">Debe ${fmt(saldo)}</span>`:'';
+    const dTag=c.id===1?`<span style="font-size: 11.5px;font-weight:700;color:var(--color-action);background:rgba(0,180,216,.1);padding:1px 5px;border-radius:8px;margin-left:4px">Default</span>`:'';
+    return `<div style="padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border-color);font-size: 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s" onmouseenter="this.style.background='rgba(0,180,216,.06)'" onmouseleave="this.style.background=''" onmousedown="selClientePos(${c.id},'${nom.replace(/'/g,"\\'")}','${tel.replace(/'/g,"\\'")}')"><div><strong>${nom}</strong>${dTag}${tel?`<span style="color:var(--text-secondary);font-size: 12px;margin-left:5px">${tel}</span>`:''}</div>${sTag}</div>`;
   }).join('');
   // Agregar opción de crear nuevo al final si hay búsqueda activa
   if (q && q.length > 1) {
     drop.innerHTML += `<div style="padding:7px 11px;border-top:1px solid var(--border-color);">
       <button onmousedown="abrirCrearClienteRapido('${q.replace(/'/g,"\\'")}');"
-        style="width:100%;padding:6px 10px;background:transparent;color:var(--color-primary);border:1px dashed rgba(27,79,216,.4);border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:5px;">
+        style="width:100%;padding:6px 10px;background:transparent;color:var(--color-primary);border:1px dashed rgba(27,79,216,.4);border-radius:6px;font-size: 13px;font-weight:600;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:5px;">
         <i class="bi bi-person-plus"></i> Crear nuevo cliente
       </button>
     </div>`;
@@ -3355,6 +3419,87 @@ function buscarClientePos(q){
     }catch(e){}
   },200);
 }
+
+/* ════════════════════════════════════
+   SELECTOR DE CLIENTE — modal grande (POS)
+════════════════════════════════════ */
+let _selClienteDebounce = null;
+
+function abrirSelectorClientes(){
+  document.getElementById('modalSelectorClientes').classList.add('open');
+  const buscar = document.getElementById('selClienteBuscar');
+  buscar.value = '';
+  setTimeout(() => buscar.focus(), 80);
+  cargarClientesSelector('');
+}
+
+function cerrarSelectorClientes(){
+  document.getElementById('modalSelectorClientes').classList.remove('open');
+}
+
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('modalSelectorClientes')?.classList.contains('open')) {
+    cerrarSelectorClientes();
+  }
+});
+
+function buscarEnSelectorClientes(q){
+  clearTimeout(_selClienteDebounce);
+  _selClienteDebounce = setTimeout(() => cargarClientesSelector(q), 200);
+}
+
+async function cargarClientesSelector(q){
+  const cont = document.getElementById('selClienteResultados');
+  cont.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Buscando…</p>';
+  try{
+    const query = (q || '').trim();
+    const url = query ? '/api/clientes?q=' + encodeURIComponent(query) : '/api/clientes';
+    const r = await fetch(url);
+    const list = r.ok ? await r.json() : [];
+    renderSelectorClientesCards(list, query);
+  }catch(e){
+    cont.innerHTML = '<p style="color:#ef4444;text-align:center;padding:32px 0;">Error al buscar clientes</p>';
+  }
+}
+
+function renderSelectorClientesCards(list, q){
+  const cont = document.getElementById('selClienteResultados');
+  if(!list || !list.length){
+    cont.innerHTML = `
+      <div style="text-align:center;padding:32px 10px;">
+        <i class="bi bi-person-x" style="font-size:38px;opacity:.2;display:block;margin-bottom:10px;"></i>
+        <div style="font-size: 15px;font-weight:700;color:var(--text-primary);">Sin resultados${q ? ` para "${q}"` : ''}</div>
+        ${q ? `<button onmousedown="abrirCrearClienteRapido('${q.replace(/'/g,"\\'")}');"
+          style="margin-top:14px;padding:9px 18px;background:rgba(27,79,216,.1);color:var(--color-primary);border:1.5px solid rgba(27,79,216,.3);border-radius:8px;font-size: 14.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:7px;">
+          <i class="bi bi-person-plus-fill"></i> Crear cliente "${q}"</button>` : ''}
+      </div>`;
+    return;
+  }
+  cont.innerHTML = list.map(c => {
+    const nom   = c.nombre || '';
+    const tel   = c.telefono || '';
+    const saldo = Number(c.saldo || 0);
+    let saldoTag = '';
+    if (saldo > 0)      saldoTag = `<span class="sel-cliente-saldo" style="background:rgba(239,68,68,.1);color:#dc2626;">Debe ${fmt(saldo)}</span>`;
+    else if (saldo < 0) saldoTag = `<span class="sel-cliente-saldo" style="background:rgba(16,185,129,.1);color:#059669;">A favor ${fmt(Math.abs(saldo))}</span>`;
+    const catTag = c.categoria ? `<span class="sel-cliente-cat">${c.categoria}</span>` : '';
+    const defTag = c.id === 1 ? `<span class="sel-cliente-cat" style="background:rgba(0,180,216,.1);color:var(--color-action);">Default</span>` : '';
+    return `<div class="sel-cliente-card" onmousedown="elegirClienteDesdeModal(${c.id}, '${nom.replace(/'/g,"\\'")}', '${tel.replace(/'/g,"\\'")}')">
+      <div class="sel-cliente-avatar"><i class="bi bi-person-fill"></i></div>
+      <div class="sel-cliente-info">
+        <div class="sel-cliente-nombre">${nom}</div>
+        <div class="sel-cliente-sub">${tel ? `<i class="bi bi-telephone"></i> ${tel}` : ''}${catTag}${defTag}</div>
+      </div>
+      ${saldoTag}
+    </div>`;
+  }).join('');
+}
+
+function elegirClienteDesdeModal(id, nombre, tel){
+  selClientePos(id, nombre, tel);
+  cerrarSelectorClientes();
+}
+
 function selClientePos(id,nombre,tel){
   clienteId=id;
   document.getElementById('posClienteSearch').value=nombre;
@@ -4123,9 +4268,9 @@ function renderDeptosGrid() {
     container.innerHTML = `
       <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-secondary);">
         <div style="font-size:32px;margin-bottom:8px;">🏪</div>
-        <div style="font-size:13px;font-weight:600;">Sin departamentos</div>
-        <div style="font-size:12px;margin-top:4px;opacity:.7;">Agregá uno con el botón +</div>
-        <button onclick="abrirGestorDeptos()" style="margin-top:12px;padding:7px 16px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+        <div style="font-size: 15px;font-weight:600;">Sin departamentos</div>
+        <div style="font-size: 13.5px;margin-top:4px;opacity:.7;">Agregá uno con el botón +</div>
+        <button onclick="abrirGestorDeptos()" style="margin-top:12px;padding:7px 16px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size: 13.5px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
           + Agregar departamento
         </button>
       </div>`;
@@ -4136,10 +4281,10 @@ function renderDeptosGrid() {
     const fkey = i < 11 ? 'F'+(i+1) : '';
     return `
     <button class="depto-btn" onclick="abrirDeptoPrecio('${d.id}','${escapeHtml(d.nombre)}','${d.icono||'🏷️'}')" title="${fkey ? fkey+' — ' : ''}${escapeHtml(d.nombre)}">
-      ${fkey ? `<kbd style="position:absolute;top:4px;left:5px;font-size:8px;font-weight:800;background:rgba(27,79,216,.15);color:var(--color-primary);border:1px solid rgba(27,79,216,.25);border-radius:3px;padding:1px 4px;line-height:1.4;">${fkey}</kbd>` : ''}
+      ${fkey ? `<kbd style="position:absolute;top:4px;left:5px;font-size: 9px;font-weight:800;background:rgba(27,79,216,.15);color:var(--color-primary);border:1px solid rgba(27,79,216,.25);border-radius:3px;padding:1px 4px;line-height:1.4;">${fkey}</kbd>` : ''}
       <span class="depto-btn-icon" style="margin-top:${fkey?'6px':'0'}">${d.icono || '🏷️'}</span>
       <span class="depto-btn-label">${escapeHtml(d.nombre)}</span>
-      <button class="depto-btn-edit" onclick="event.stopPropagation();eliminarDepto('${d.id}')" title="Eliminar" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button class="depto-btn-edit" onclick="event.stopPropagation();eliminarDepto('${d.id}')" title="Eliminar" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size: 11.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
     </button>`;
   }).join('') + `
     <button class="depto-btn" onclick="abrirGestorDeptos()" style="border-style:dashed;opacity:.6;">
@@ -4225,14 +4370,14 @@ function renderDeptosMgrList() {
   const deptos = _getDeptos();
   if (!list) return;
   if (!deptos.length) {
-    list.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);text-align:center;">Sin departamentos</p>';
+    list.innerHTML = '<p style="font-size: 13.5px;color:var(--text-secondary);text-align:center;">Sin departamentos</p>';
     return;
   }
   list.innerHTML = deptos.map(d => `
     <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-body);border-radius:8px;border:1px solid var(--border-color);">
-      <span style="font-size:20px;">${d.icono || '🏷️'}</span>
-      <span style="flex:1;font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(d.nombre)}</span>
-      <button onclick="eliminarDepto('${d.id}')" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444;font-size:11px;cursor:pointer;">Eliminar</button>
+      <span style="font-size: 23px;">${d.icono || '🏷️'}</span>
+      <span style="flex:1;font-size: 15px;font-weight:600;color:var(--text-primary);">${escapeHtml(d.nombre)}</span>
+      <button onclick="eliminarDepto('${d.id}')" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444;font-size: 12.5px;cursor:pointer;">Eliminar</button>
     </div>`).join('');
 }
 
@@ -4311,16 +4456,16 @@ function _mostrarBloqueoLimite(check, montoVenta) {
         <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:26px;color:#ef4444;margin:0 auto 14px;">
           <i class="bi bi-shield-x"></i>
         </div>
-        <div style="font-size:17px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Límite de crédito superado</div>
-        <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:18px;">No se puede registrar esta venta como cuenta corriente.</div>
+        <div style="font-size: 19.5px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Límite de crédito superado</div>
+        <div style="font-size: 14px;color:var(--text-secondary);margin-bottom:18px;">No se puede registrar esta venta como cuenta corriente.</div>
         <div style="background:var(--bg-body);border:1px solid var(--border-color);border-radius:10px;padding:12px 16px;text-align:left;margin-bottom:18px;display:flex;flex-direction:column;gap:6px;" id="bloqueoLimiteDetalle"></div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <button onclick="document.getElementById('bloqueoLimiteOverlay').remove()"
-            style="width:100%;padding:11px;border-radius:9px;border:none;background:#ef4444;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            style="width:100%;padding:11px;border-radius:9px;border:none;background:#ef4444;color:#fff;font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-x-circle"></i> Entendido — no procesar
           </button>
           <button onclick="document.getElementById('bloqueoLimiteOverlay').remove();closeCobroModal();"
-            style="width:100%;padding:9px;border-radius:9px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+            style="width:100%;padding:9px;border-radius:9px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 15px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
             Cancelar venta
           </button>
         </div>
@@ -4331,10 +4476,10 @@ function _mostrarBloqueoLimite(check, montoVenta) {
   const det = document.getElementById('bloqueoLimiteDetalle');
   if (det) {
     det.innerHTML = `
-      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Deuda actual</span><span style="font-family:var(--font-mono);font-weight:700;color:#ef4444;">${fmtN(check.saldo)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Esta venta</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">+${fmtN(montoVenta)}</span></div>
-      <div style="border-top:1px solid var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Límite configurado</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtN(check.limite)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Excede en</span><span style="font-family:var(--font-mono);font-weight:800;color:#ef4444;">${fmtN(Math.abs(check.disponible - montoVenta))}</span></div>`;
+      <div style="display:flex;justify-content:space-between;font-size: 13.5px;"><span style="color:var(--text-secondary);">Deuda actual</span><span style="font-family:var(--font-mono);font-weight:700;color:#ef4444;">${fmtN(check.saldo)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size: 13.5px;"><span style="color:var(--text-secondary);">Esta venta</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">+${fmtN(montoVenta)}</span></div>
+      <div style="border-top:1px solid var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size: 13.5px;"><span style="color:var(--text-secondary);">Límite configurado</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtN(check.limite)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size: 13.5px;"><span style="color:var(--text-secondary);">Excede en</span><span style="font-family:var(--font-mono);font-weight:800;color:#ef4444;">${fmtN(Math.abs(check.disponible - montoVenta))}</span></div>`;
   }
 }
 
@@ -4533,8 +4678,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
   });
 });
 
-let _cobroLastEnterAt = 0;
-
 document.addEventListener('keydown',e=>{
   const overlayOpen = document.getElementById('cobroOverlay').classList.contains('open');
 
@@ -4544,17 +4687,6 @@ document.addEventListener('keydown',e=>{
     const activeEl = document.activeElement;
     const inEditable = ['INPUT','TEXTAREA','SELECT'].includes(activeTag);
     const inNumericInputs = ['cashReceived','mixtoMonto1','mixtoMonto2','recargoCustom'].includes(activeId);
-
-    if(e.key === 'Enter'){
-      const ahora = Date.now();
-      const esDobleEnter = (ahora - _cobroLastEnterAt) < 700;
-      _cobroLastEnterAt = esDobleEnter ? 0 : ahora;
-      if(esDobleEnter){
-        e.preventDefault();
-        confirmSale();
-        return;
-      }
-    }
 
     if(!inEditable || !inNumericInputs){
       if(e.key === 'ArrowRight'){
@@ -4570,12 +4702,16 @@ document.addEventListener('keydown',e=>{
       if(e.key === 'ArrowDown'){
         if(activeEl && ['cashReceived','mixtoMonto1','mixtoMonto2','recargoCustom'].includes(activeEl.id)) return;
         e.preventDefault();
+        if(activeEl && activeEl.id === 'btnCobrar'){ focusMPPointButton(); return; }
+        if(activeEl && activeEl.id === 'btnMPPoint'){ return; }
         movePmFocusVertical(1);
         return;
       }
       if(e.key === 'ArrowUp'){
         if(activeEl && ['cashReceived','mixtoMonto1','mixtoMonto2','recargoCustom'].includes(activeEl.id)) return;
         e.preventDefault();
+        if(activeEl && activeEl.id === 'btnMPPoint'){ focusCobrarButton(); return; }
+        if(activeEl && activeEl.id === 'btnCobrar'){ focusPmButton(pmFocusIdx); return; }
         movePmFocusVertical(-1);
         return;
       }
@@ -4583,9 +4719,6 @@ document.addEventListener('keydown',e=>{
         if(activeEl && activeEl.classList && activeEl.classList.contains('pm-btn')){
           e.preventDefault();
           activeEl.click();
-          if(payMethod.toLowerCase() === 'efectivo'){
-            setTimeout(()=>document.getElementById('cashReceived')?.focus(),80);
-          }
           return;
         }
       }
@@ -4823,12 +4956,12 @@ async function emitirFacturaPosCobro(saleId) {
 
   if (esServicio && (!servDesde || !servHasta)) {
     const estadoEl0 = document.getElementById('exitoFacturaEstado');
-    if (estadoEl0) estadoEl0.innerHTML = '<span style="font-size:12px;color:#f59e0b;">⚠️ Completá el período facturado (desde/hasta) para facturar un servicio.</span>';
+    if (estadoEl0) estadoEl0.innerHTML = '<span style="font-size: 13.5px;color:#f59e0b;">⚠️ Completá el período facturado (desde/hasta) para facturar un servicio.</span>';
     return;
   }
 
   const estadoEl = document.getElementById('exitoFacturaEstado');
-  if (estadoEl) estadoEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Emitiendo factura con AFIP...</span>';
+  if (estadoEl) estadoEl.innerHTML = '<span style="font-size: 13.5px;color:var(--text-muted);">Emitiendo factura con AFIP...</span>';
 
   try {
     const r = await fetch('/afip/emitir', {
@@ -5108,18 +5241,18 @@ document.addEventListener('keydown', function(e) {
   .mp-modal{background:var(--bg-card);border-radius:22px;width:min(380px,94vw);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.35);animation:modalIn .2s ease;}
   .mp-header{background:linear-gradient(135deg,#009ee3,#007eb5);padding:20px 22px 18px;display:flex;align-items:center;gap:14px;}
   .mp-header-icon{width:48px;height:48px;background:rgba(255,255,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex-shrink:0;}
-  .mp-header-txt h3{font-size:17px;font-weight:800;color:#fff;margin:0 0 3px;}
-  .mp-header-txt p{font-size:12px;color:rgba(255,255,255,.85);margin:0;}
+  .mp-header-txt h3{font-size: 19.5px;font-weight:800;color:#fff;margin:0 0 3px;}
+  .mp-header-txt p{font-size: 13.5px;color:rgba(255,255,255,.85);margin:0;}
   .mp-body{padding:22px;}
   .mp-amount{text-align:center;margin-bottom:20px;}
-  .mp-amount-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:6px;}
+  .mp-amount-lbl{font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:6px;}
   .mp-amount-val{font-size:42px;font-weight:900;font-family:var(--font-mono);color:var(--text-primary);letter-spacing:-2px;}
   .mp-status-box{background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:14px;padding:20px;text-align:center;margin-bottom:18px;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
   .mp-status-icon{font-size:36px;}
-  .mp-status-txt{font-size:14px;font-weight:700;color:var(--text-primary);}
-  .mp-status-sub{font-size:12px;color:var(--text-secondary);}
+  .mp-status-txt{font-size: 16px;font-weight:700;color:var(--text-primary);}
+  .mp-status-sub{font-size: 13.5px;color:var(--text-secondary);}
   .mp-spinner{width:36px;height:36px;border:3px solid rgba(0,158,227,.2);border-top-color:#009ee3;border-radius:50%;animation:spin .8s linear infinite;}
-  .mp-btn-cancel{width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .mp-btn-cancel{width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size: 15px;font-weight:700;cursor:pointer;transition:all .15s;}
   .mp-btn-cancel:hover{border-color:#ef4444;color:#ef4444;}
 </style>
 
@@ -5296,17 +5429,17 @@ document.addEventListener('keydown', function(e) {
     <div style="background:var(--bg-card);border-radius:16px;width:min(520px,95vw);box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;">
       <div style="background:linear-gradient(135deg,var(--color-primary),#4f46e5);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:10px;color:#fff;">
-          <i class="bi bi-tag-fill" style="font-size:18px;"></i>
-          <span style="font-weight:800;font-size:15px;">Verificador de Precios</span>
-          <kbd style="background:rgba(255,255,255,.2);border:none;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:800;color:#fff;">F9</kbd>
+          <i class="bi bi-tag-fill" style="font-size: 20.5px;"></i>
+          <span style="font-weight:800;font-size: 17px;">Verificador de Precios</span>
+          <kbd style="background:rgba(255,255,255,.2);border:none;border-radius:4px;padding:2px 7px;font-size: 11.5px;font-weight:800;color:#fff;">F9</kbd>
         </div>
-        <button onclick="cerrarVerificador()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">&times;</button>
+        <button onclick="cerrarVerificador()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size: 18px;display:flex;align-items:center;justify-content:center;">&times;</button>
       </div>
       <div style="padding:16px;">
         <input type="text" id="verificadorInput"
           placeholder="Buscá por nombre o SKU..."
           autocomplete="off"
-          style="width:100%;padding:10px 14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:14px;outline:none;box-sizing:border-box;font-family:var(--font-body);"
+          style="width:100%;padding:10px 14px;border-radius:10px;border:2px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 16px;outline:none;box-sizing:border-box;font-family:var(--font-body);"
           oninput="buscarVerificador(this.value)">
       </div>
       <div id="verificadorResultados" style="max-height:340px;overflow-y:auto;padding:0 16px 16px;"></div>
@@ -5333,7 +5466,7 @@ function toggleVerificadorPrecios() {
     const inp = document.getElementById('verificadorInput');
     if (inp) { inp.value = ''; inp.focus(); }
     document.getElementById('verificadorResultados').innerHTML = `
-      <div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">
+      <div style="text-align:center;padding:24px;color:var(--text-secondary);font-size: 15px;">
         <i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>
         Escribí para buscar un producto
       </div>`;
@@ -5350,7 +5483,7 @@ function buscarVerificador(q) {
   if (!res) return;
   const term = (q || '').trim().toLowerCase();
   if (!term) {
-    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;"><i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>Escribí para buscar un producto</div>`;
+    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size: 15px;"><i class="bi bi-search" style="font-size:28px;display:block;margin-bottom:8px;opacity:.4;"></i>Escribí para buscar un producto</div>`;
     return;
   }
   const productos = (typeof allProducts !== 'undefined' ? allProducts : [])
@@ -5358,7 +5491,7 @@ function buscarVerificador(q) {
     .slice(0, 12);
 
   if (!productos.length) {
-    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">Sin resultados para "<strong>${q}</strong>"</div>`;
+    res.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size: 15px;">Sin resultados para "<strong>${q}</strong>"</div>`;
     return;
   }
 
@@ -5369,12 +5502,12 @@ function buscarVerificador(q) {
     return `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--bg-surface);margin-bottom:6px;gap:12px;">
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">SKU: ${p.sku||'—'} &nbsp;·&nbsp; <span style="color:${stockColor};font-weight:700;">${stockTxt}</span></div>
+        <div style="font-weight:700;font-size: 15px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;">SKU: ${p.sku||'—'} &nbsp;·&nbsp; <span style="color:${stockColor};font-weight:700;">${stockTxt}</span></div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:17px;font-weight:900;color:var(--color-primary);">$${fmt(p.price)}</div>
-        ${p.price_tarjeta && p.price_tarjeta !== p.price ? `<div style="font-size:11px;color:var(--text-secondary);">Tarjeta: $${fmt(p.price_tarjeta)}</div>` : ''}
+        <div style="font-size: 19.5px;font-weight:900;color:var(--color-primary);">$${fmt(p.price)}</div>
+        ${p.price_tarjeta && p.price_tarjeta !== p.price ? `<div style="font-size: 12.5px;color:var(--text-secondary);">Tarjeta: $${fmt(p.price_tarjeta)}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -5454,7 +5587,7 @@ function buscarVerificador(q) {
   .ve-badge{
     min-width:16px; height:16px; padding:0 4px; border-radius:8px;
     background:#f59e0b; color:#fff;
-    font-family:var(--font-mono,monospace); font-size:9.5px; font-weight:800;
+    font-family:var(--font-mono,monospace); font-size: 11px; font-weight:800;
     display:none; align-items:center; justify-content:center; line-height:1;
   }
   .sc-chip.chip-espera.hay .ve-badge{ display:flex; }
@@ -5473,7 +5606,7 @@ function buscarVerificador(q) {
   [data-theme="dark"] .ve-drop{ background:#1b2029; border-color:rgba(255,255,255,.10); }
 
   .ve-drop-head{
-    padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:.6px;
+    padding:8px 12px; font-size: 11.5px; font-weight:800; letter-spacing:.6px;
     text-transform:uppercase; color:var(--text-secondary);
     border-bottom:1px solid var(--border-color);
     display:flex; align-items:center; gap:6px;
@@ -5491,7 +5624,7 @@ function buscarVerificador(q) {
   [data-theme="dark"] .ve-row.active{ background:rgba(59,130,246,.14); }
 
   .ve-row-kbd{
-    font-family:var(--font-mono,monospace); font-size:9px; font-weight:800;
+    font-family:var(--font-mono,monospace); font-size: 10.5px; font-weight:800;
     background:var(--border-color); color:var(--text-secondary);
     border-radius:5px; padding:3px 5px; flex-shrink:0; letter-spacing:.2px;
   }
@@ -5499,19 +5632,19 @@ function buscarVerificador(q) {
 
   .ve-row-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; text-align:left; }
   .ve-row-name{
-    font-size:13px; font-weight:700; color:var(--text-primary);
+    font-size: 15px; font-weight:700; color:var(--text-primary);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .ve-row.active .ve-row-name{ color:var(--color-primary); }
   [data-theme="dark"] .ve-row.active .ve-row-name{ color:#93c5fd; }
   .ve-row-meta{
-    font-size:10.5px; font-weight:600; color:var(--text-secondary);
+    font-size: 12px; font-weight:600; color:var(--text-secondary);
     font-family:var(--font-mono,monospace);
   }
 
   .ve-row-x{
     width:22px; height:22px; flex-shrink:0; border:0; border-radius:6px;
-    background:transparent; color:var(--text-secondary); font-size:11px;
+    background:transparent; color:var(--text-secondary); font-size: 12.5px;
     cursor:pointer; opacity:.4; transition:all .12s;
     display:flex; align-items:center; justify-content:center;
   }
@@ -5524,19 +5657,19 @@ function buscarVerificador(q) {
   .ve-foot-btn{
     display:flex; align-items:center; gap:8px; width:100%;
     padding:8px 9px; border:0; border-radius:8px; background:transparent;
-    cursor:pointer; font-family:var(--font-body); font-size:12.5px; font-weight:700;
+    cursor:pointer; font-family:var(--font-body); font-size: 14px; font-weight:700;
     color:var(--color-primary); transition:background .1s; text-align:left;
   }
   .ve-foot-btn:hover{ background:rgba(27,79,216,.08); }
   .ve-foot-btn:disabled{ opacity:.35; cursor:not-allowed; }
   .ve-foot-btn kbd{
-    margin-left:auto; font-family:var(--font-mono,monospace); font-size:9px; font-weight:800;
+    margin-left:auto; font-family:var(--font-mono,monospace); font-size: 10.5px; font-weight:800;
     background:var(--color-primary); color:#fff; border-radius:5px; padding:2px 6px;
   }
   .ve-foot-btn:disabled kbd{ background:var(--text-secondary); }
 
   .ve-hint{
-    padding:6px 12px 8px; font-size:10px; color:var(--text-secondary);
+    padding:6px 12px 8px; font-size: 11.5px; color:var(--text-secondary);
     border-top:1px dashed var(--border-color); line-height:1.6;
   }
   .ve-hint b{ font-family:var(--font-mono,monospace); color:var(--text-primary); font-weight:800; }
@@ -5734,7 +5867,7 @@ function buscarVerificador(q) {
       '<div class="sc-chip chip-espera" id="chipEspera" title="F7 — Ventas en espera">' +
         '<kbd>F7</kbd> En espera' +
         '<span class="ve-badge" id="veBadge">0</span>' +
-        '<i class="bi bi-chevron-down" style="font-size:9px;opacity:.6;"></i>' +
+        '<i class="bi bi-chevron-down" style="font-size: 10.5px;opacity:.6;"></i>' +
       '</div>' +
       '<div class="ve-drop" id="veDrop"></div>';
 
@@ -5953,7 +6086,7 @@ function buscarVerificador(q) {
   @media (max-width:768px){
     .pos-toast{
       left:12px; right:12px; bottom:12px;
-      min-width:0; font-size:13px;
+      min-width:0; font-size: 15px;
     }
   }
 
@@ -5964,7 +6097,7 @@ function buscarVerificador(q) {
        corremos arriba para que no tape "Finalizar Venta". */
     .fab-cart{ z-index:300; }
     body.cart-abierto .fab-cart{ bottom:auto; top:64px; }
-    body.cart-abierto .fab-btn{ width:46px; height:46px; font-size:18px; }
+    body.cart-abierto .fab-btn{ width:46px; height:46px; font-size: 20.5px; }
     body.cart-abierto .fab-label{ display:none; }
 
     /* ───────── 2 · Footer del carrito siempre visible ─────────
@@ -5994,47 +6127,47 @@ function buscarVerificador(q) {
        sigue siendo la vía rápida para cargar muchas unidades. */
     .qty-ctrl{ border-radius:9px; }
     .qty-btn{
-      width:40px; height:40px; font-size:17px;
+      width:40px; height:40px; font-size: 19.5px;
     }
     .qty-val{
       min-width:46px; height:40px; line-height:40px;
-      font-size:15px; padding:0 6px !important;
+      font-size: 17px; padding:0 6px !important;
     }
-    .btn-del{ width:38px; height:38px; font-size:16px; border-radius:8px; }
+    .btn-del{ width:38px; height:38px; font-size: 18px; border-radius:8px; }
     .btn-edit-price{
       width:38px !important; height:38px !important;
-      font-size:15px !important; border-radius:8px !important;
+      font-size: 17px !important; border-radius:8px !important;
     }
 
     /* La card del carrito respira y el nombre puede ir a dos líneas */
     .cart-card{ padding:11px 12px; gap:8px; row-gap:6px; }
     .cart-card-name{
-      font-size:15px; line-height:1.3;
+      font-size: 17px; line-height:1.3;
       white-space:normal; overflow:visible; text-overflow:clip;
     }
-    .cart-card-unit{ font-size:13px; }
-    .cart-card-price{ font-size:19px; min-width:auto; }
+    .cart-card-unit{ font-size: 15px; }
+    .cart-card-price{ font-size: 21.5px; min-width:auto; }
     .cart-card-bottom{ gap:8px; }
     .cart-promo-tag{ right:auto; left:12px; top:-6px; }
 
     /* Descuento y comprobante */
-    .disc-input{ width:74px; padding:8px 8px; font-size:15px; }
-    .disc-type-btn{ padding:8px 13px; font-size:13px; }
-    .comp-btn{ padding:10px 0; font-size:13px; }
-    .cart-cliente-inp{ padding:10px 10px 10px 30px; font-size:15px; }
+    .disc-input{ width:74px; padding:8px 8px; font-size: 17px; }
+    .disc-type-btn{ padding:8px 13px; font-size: 15px; }
+    .comp-btn{ padding:10px 0; font-size: 15px; }
+    .cart-cliente-inp{ padding:10px 10px 10px 30px; font-size: 17px; }
 
     /* Filas de producto: más altas y el nombre completo */
     .prod-td, .prod-td-img{ padding:12px 10px; }
     .prod-name{ white-space:normal; line-height:1.3; }
-    .prod-price{ font-size:15px; }
+    .prod-price{ font-size: 17px; }
 
     /* Botón principal, cómodo */
-    .btn-confirm{ min-height:52px; font-size:15px; }
+    .btn-confirm{ min-height:52px; font-size: 17px; }
   }
 
   @media (max-width:520px){
-    .cart-card-price{ font-size:17px; }
-    .prod-price{ font-size:14px; }
+    .cart-card-price{ font-size: 19.5px; }
+    .prod-price{ font-size: 16px; }
     /* El chip "En espera" conserva el badge aunque se oculten los kbd */
     .sc-chip.chip-espera .ve-badge{ display:none; }
     .sc-chip.chip-espera.hay .ve-badge{ display:flex; }
@@ -6044,7 +6177,7 @@ function buscarVerificador(q) {
   .btn-share-pres{
     padding:12px; border-radius:9px; border:none;
     background:#25D366; color:#fff;
-    font-size:14px; font-weight:700; cursor:pointer;
+    font-size: 16px; font-weight:700; cursor:pointer;
     font-family:var(--font-body);
     display:flex; align-items:center; justify-content:center; gap:8px;
   }

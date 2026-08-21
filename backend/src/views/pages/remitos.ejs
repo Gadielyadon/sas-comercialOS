@@ -2,7 +2,7 @@
 
 <style>
   .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--page-gap); }
-  .stat-sub  { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+  .stat-sub  { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .toolbar-left { display: flex; align-items: center; gap: 10px; }
@@ -15,33 +15,33 @@
   .data-table thead th {
     background: var(--table-head-bg) !important;
     color: var(--table-head-color) !important;
-    font-size: 11px; font-weight: 600;
+    font-size: 12.5px; font-weight: 600;
     text-transform: uppercase; letter-spacing: .07em;
     padding: 11px 16px; border-bottom: none;
     text-align: left;
   }
   .data-table thead th:first-child { border-radius: 8px 0 0 8px; }
   .data-table thead th:last-child  { border-radius: 0 8px 8px 0; }
-  .data-table tbody td { padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; transition: background .12s; }
+  .data-table tbody td { padding: 13px 16px; font-size: 15.5px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; transition: background .12s; }
   .data-table tbody tr:last-child td { border-bottom: none; }
   .data-table tbody tr:hover td { background: var(--table-row-hover); }
 
-  .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
+  .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 13px; font-weight: 700; }
   .badge-Emitido   { background: rgba(59,130,246,.1);  color: #3b82f6; }
   .badge-Entregado { background: rgba(16,185,129,.1);  color: #10b981; }
   .badge-Anulado   { background: rgba(239,68,68,.1);   color: #ef4444; }
 
-  .btn-accion { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; }
+  .btn-accion { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; }
   .btn-accion:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.06); }
   .btn-accion.ver     { border-color: rgba(16,185,129,.35);  color: #10b981; background: rgba(16,185,129,.07); }
   .btn-accion.ver:hover     { border-color: #10b981; color: #10b981; background: rgba(16,185,129,.14); }
   .btn-accion.danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.06); }
   .acciones-cell { display: flex; gap: 5px; align-items: center; }
-  .btn-nuevo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; }
+  .btn-nuevo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15.5px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; }
   .btn-nuevo:hover { opacity: .88; color: #fff; }
 
-  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; justify-content: flex-end; }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -51,7 +51,7 @@
     #tablaRemitos thead th:nth-child(3), #tablaRemitos thead th:nth-child(5),
     #tablaRemitos tbody td:nth-child(3), #tablaRemitos tbody td:nth-child(5) { display: none; }
     .acciones-cell { gap: 3px; }
-    .btn-accion { padding: 5px 8px; font-size: 13px; }
+    .btn-accion { padding: 5px 8px; font-size: 15px; }
   }
 </style>
 
@@ -106,7 +106,7 @@
         <% if (!lista.length) { %>
         <div class="empty-state">
           <i class="bi bi-truck"></i>
-          <strong style="display:block;font-size:16px;color:var(--text-primary);margin-bottom:6px;">Sin remitos todavía</strong>
+          <strong style="display:block;font-size: 18px;color:var(--text-primary);margin-bottom:6px;">Sin remitos todavía</strong>
           <span>Generá uno desde un presupuesto aprobado, o cargá uno nuevo directamente</span><br>
           <a href="/remitos/nuevo" class="btn-nuevo" style="margin-top:18px;display:inline-flex;">
             <i class="bi bi-plus-lg"></i> Crear remito
@@ -131,13 +131,13 @@
               <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary)"><%= r.numero %></td>
               <td>
                 <strong><%= r.cliente_nombre || 'Sin nombre' %></strong>
-                <% if (r.cliente_cuit) { %><div style="font-size:11.5px;color:var(--text-muted)">CUIT: <%= r.cliente_cuit %></div><% } %>
+                <% if (r.cliente_cuit) { %><div style="font-size: 13px;color:var(--text-muted)">CUIT: <%= r.cliente_cuit %></div><% } %>
               </td>
-              <td style="color:var(--text-secondary);font-size:13px">
+              <td style="color:var(--text-secondary);font-size: 15px">
                 <%= new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) %>
               </td>
-              <td style="color:var(--text-muted);font-size:13px"><%= r.cant_items %> ítem<%= r.cant_items !== 1 ? 's' : '' %></td>
-              <td style="font-size:12.5px;color:var(--text-secondary)">
+              <td style="color:var(--text-muted);font-size: 15px"><%= r.cant_items %> ítem<%= r.cant_items !== 1 ? 's' : '' %></td>
+              <td style="font-size: 14px;color:var(--text-secondary)">
                 <% if (r.presupuesto_numero) { %>
                   <a href="/presupuestos/ver/<%= r.presupuesto_id %>" style="color:var(--color-primary);text-decoration:none;font-weight:600;"><%= r.presupuesto_numero %></a>
                 <% } else { %>—<% } %>
@@ -179,8 +179,8 @@
     </div>
     <form method="POST" id="formEstado">
       <div class="modal-body">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;display:block;">Nuevo estado</label>
-        <select name="estado" id="selectEstado" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;">
+        <label style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;display:block;">Nuevo estado</label>
+        <select name="estado" id="selectEstado" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size: 16px;outline:none;">
           <option value="Emitido">📤 Emitido</option>
           <option value="Entregado">✅ Entregado</option>
           <option value="Anulado">❌ Anulado</option>

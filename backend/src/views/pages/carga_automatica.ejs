@@ -1,0 +1,420 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+  .ca-drop {
+    border: 2px dashed var(--border-color); border-radius: 14px; padding: 36px 20px;
+    text-align: center; background: var(--bg-surface-2); transition: all .15s; cursor: pointer;
+  }
+  .ca-drop:hover, .ca-drop.dragover { border-color: var(--color-primary); background: rgba(27,79,216,.05); }
+  .ca-drop i { font-size: 34px; color: var(--color-primary); }
+  .ca-drop-title { font-size: 17px; font-weight: 700; color: var(--text-primary); margin: 10px 0 4px; }
+  .ca-drop-sub { font-size: 14px; color: var(--text-muted); }
+
+  .ca-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);
+    font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font-body); transition: all .15s; }
+  .ca-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .ca-btn-primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  .ca-btn-primary:hover { opacity: .9; color: #fff; }
+  .ca-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+  .ca-btn-ghost { border-color: transparent; background: none; color: var(--text-muted); }
+  .ca-btn-ghost:hover { color: #ef4444; }
+
+  .ca-preview { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--border-color);
+    border-radius: 12px; background: var(--bg-surface); }
+  .ca-preview img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
+  .ca-preview .ca-pdf-ico { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
+    background: rgba(239,68,68,.08); border-radius: 8px; color: #ef4444; font-size: 26px; }
+  .ca-preview-name { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .ca-preview-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .ca-loading { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 20px; }
+  .ca-spinner { width: 34px; height: 34px; border: 3px solid var(--border-color); border-top-color: var(--color-primary);
+    border-radius: 50%; animation: caSpin .8s linear infinite; }
+  @keyframes caSpin { to { transform: rotate(360deg); } }
+
+  .ca-error { display: flex; gap: 12px; padding: 14px 16px; border-radius: 10px; background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25); color: #ef4444; font-size: 15px; }
+
+  .ca-table-wrap { border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+  .ca-table { width: 100%; border-collapse: collapse; }
+  .ca-table thead th { background: var(--table-head-bg); color: var(--table-head-color); font-size: 12px;
+    text-transform: uppercase; letter-spacing: .06em; font-weight: 700; padding: 10px; text-align: left; }
+  .ca-table tbody td { padding: 8px 10px; font-size: 15px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+  .ca-table tbody tr:last-child td { border-bottom: none; }
+  .ca-table tbody tr.ca-row-off { opacity: .4; }
+  .ca-table input[type=text], .ca-table input[type=number] {
+    width: 100%; padding: 6px 8px; font-size: 14px; border-radius: 6px; border: 1px solid var(--border-color);
+    background: var(--bg-surface); color: var(--text-primary);
+  }
+  .ca-table input[type=number] { text-align: right; }
+  .ca-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .ca-badge-existe { background: rgba(16,185,129,.12); color: #10b981; }
+  .ca-badge-nuevo { background: rgba(234,179,8,.14); color: #ca8a04; }
+  .ca-note { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .ca-note label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+
+  .ca-summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 12px; }
+  .ca-summary .ca-sum-card { padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-surface-2); text-align: center; }
+  .ca-summary .ca-sum-n { font-size: 26px; font-weight: 900; color: var(--text-primary); }
+  .ca-summary .ca-sum-l { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Inventario · Carga automática', user }) %>
+    <div class="page-body">
+
+      <div class="page-header" style="margin-bottom:16px;">
+        <div class="page-header-title">
+          <h2>Carga automática</h2>
+          <p>Sacá una foto o subí el PDF de una factura de proveedor y la IA te arma la carga.</p>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.2);border-radius:10px;margin-bottom:16px;">
+        <i class="bi bi-info-circle" style="color:var(--color-primary);font-size: 20.5px;margin-top:1px;"></i>
+        <div style="font-size: 15px;color:var(--text-secondary);">
+          La IA lee la factura y te arma una lista editable con código, descripción, cantidad y precio de costo de cada producto.
+          Los que ya tenés cargados se marcan como <strong>"Ya existe"</strong> (y podés actualizar precio o stock); los que no reconoce quedan como <strong>"Producto nuevo"</strong>.
+          Nada se guarda hasta que vos confirmes.
+        </div>
+      </div>
+
+      <!-- Paso 1: elegir archivo -->
+      <div id="caPasoArchivo">
+        <div class="ca-drop" id="caDropZone">
+          <i class="bi bi-camera"></i>
+          <div class="ca-drop-title">Sacá una foto o elegí un archivo</div>
+          <div class="ca-drop-sub">Foto de la factura, o un PDF · también podés arrastrarlo acá</div>
+          <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button type="button" class="ca-btn ca-btn-primary" onclick="event.stopPropagation();document.getElementById('caInputCamara').click()">
+              <i class="bi bi-camera-fill"></i> Tomar foto
+            </button>
+            <button type="button" class="ca-btn" onclick="event.stopPropagation();document.getElementById('caInputArchivo').click()">
+              <i class="bi bi-upload"></i> Elegir archivo
+            </button>
+          </div>
+        </div>
+        <input type="file" id="caInputCamara" accept="image/*" capture="environment" style="display:none;">
+        <input type="file" id="caInputArchivo" accept="image/*,application/pdf" style="display:none;">
+      </div>
+
+      <!-- Paso 2: preview + escanear -->
+      <div id="caPasoPreview" style="display:none;margin-top:14px;">
+        <div class="ca-preview">
+          <div id="caPreviewThumb"></div>
+          <div style="flex:1;">
+            <div class="ca-preview-name" id="caPreviewNombre">—</div>
+            <div class="ca-preview-sub" id="caPreviewSub">—</div>
+          </div>
+          <button type="button" class="ca-btn ca-btn-ghost" onclick="caReset()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div style="margin-top:12px;">
+          <button type="button" class="ca-btn ca-btn-primary" id="caBtnEscanear" onclick="caEscanear()">
+            <i class="bi bi-stars"></i> Escanear con IA
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="caLoading" style="display:none;">
+        <div class="ca-loading">
+          <div class="ca-spinner"></div>
+          <div style="font-size: 15.5px;color:var(--text-secondary);font-weight:600;">Leyendo la factura, puede tardar unos segundos…</div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="caErrorBox" style="display:none;margin-top:14px;"></div>
+
+      <!-- Resultados -->
+      <div id="caResultados" style="display:none;margin-top:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+          <div style="font-size: 15.5px;color:var(--text-secondary);">
+            <span id="caCantDetectados">0</span> productos detectados — revisá y corregí antes de confirmar.
+          </div>
+          <button type="button" class="ca-btn" onclick="caReset()"><i class="bi bi-arrow-repeat"></i> Escanear otra</button>
+        </div>
+
+        <div class="ca-table-wrap">
+          <table class="ca-table">
+            <thead>
+              <tr>
+                <th style="width:30px;"></th>
+                <th style="width:110px;">Código / SKU</th>
+                <th>Descripción</th>
+                <th style="width:80px;">Cant.</th>
+                <th style="width:110px;">Precio costo</th>
+                <th style="width:110px;">Precio venta</th>
+                <th style="width:150px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="caTbody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button type="button" class="ca-btn ca-btn-primary" id="caBtnConfirmar" onclick="caConfirmar()">
+            <i class="bi bi-check-lg"></i> Confirmar carga (<span id="caCantConfirmar">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen final -->
+      <div id="caResumen" style="display:none;margin-top:18px;">
+        <div class="ca-summary">
+          <div class="ca-sum-card"><div class="ca-sum-n" id="caSumCreados" style="color:#10b981;">0</div><div class="ca-sum-l">Productos nuevos creados</div></div>
+          <div class="ca-sum-card"><div class="ca-sum-n" id="caSumActualizados" style="color:var(--color-primary);">0</div><div class="ca-sum-l">Productos actualizados</div></div>
+          <div class="ca-sum-card"><div class="ca-sum-n" id="caSumErrores" style="color:#ef4444;">0</div><div class="ca-sum-l">Con error</div></div>
+        </div>
+        <div id="caResumenErroresBox" style="margin-top:12px;"></div>
+        <div style="margin-top:16px;">
+          <button type="button" class="ca-btn ca-btn-primary" onclick="caReset()"><i class="bi bi-camera"></i> Escanear otra factura</button>
+          <a href="/inventario" class="ca-btn" style="margin-left:8px;text-decoration:none;"><i class="bi bi-box-seam"></i> Ir a Inventario</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+let caArchivo = null;      // { base64, mediaType, nombre, esPdf }
+let caItems   = [];        // items devueltos por el escaneo (editables en el DOM)
+
+function caToast(msg, tipo) {
+  const box = document.createElement('div');
+  box.textContent = msg;
+  box.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 18px;border-radius:10px;
+    font-size: 15px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25);
+    background:${tipo==='error' ? '#ef4444' : '#10b981'};`;
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3500);
+}
+
+// ── Drag & drop + click ──
+const caDropZone = document.getElementById('caDropZone');
+caDropZone.addEventListener('click', () => document.getElementById('caInputArchivo').click());
+['dragover','dragenter'].forEach(ev => caDropZone.addEventListener(ev, e => { e.preventDefault(); caDropZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => caDropZone.addEventListener(ev, e => { e.preventDefault(); caDropZone.classList.remove('dragover'); }));
+caDropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) caCargarArchivo(f);
+});
+
+document.getElementById('caInputCamara').addEventListener('change', e => {
+  if (e.target.files[0]) caCargarArchivo(e.target.files[0]);
+});
+document.getElementById('caInputArchivo').addEventListener('change', e => {
+  if (e.target.files[0]) caCargarArchivo(e.target.files[0]);
+});
+
+function caCargarArchivo(file) {
+  const esPdf = file.type === 'application/pdf';
+  if (!esPdf && !file.type.startsWith('image/')) {
+    caToast('Elegí una foto o un PDF', 'error');
+    return;
+  }
+
+  if (esPdf) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      caArchivo = { base64, mediaType: 'application/pdf', nombre: file.name, esPdf: true };
+      caMostrarPreview();
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  // Imagen: la re-escalamos con canvas para no mandar fotos gigantes
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const MAX = 1600;
+    let w = img.width, h = img.height;
+    if (w > MAX || h > MAX) {
+      const ratio = Math.min(MAX / w, MAX / h);
+      w = Math.round(w * ratio); h = Math.round(h * ratio);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    URL.revokeObjectURL(url);
+    caArchivo = { base64: dataUrl.split(',')[1], mediaType: 'image/jpeg', nombre: file.name, esPdf: false, preview: dataUrl };
+    caMostrarPreview();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); caToast('No se pudo leer la imagen', 'error'); };
+  img.src = url;
+}
+
+function caMostrarPreview() {
+  document.getElementById('caPasoArchivo').style.display = 'none';
+  document.getElementById('caPasoPreview').style.display = 'block';
+  document.getElementById('caErrorBox').style.display = 'none';
+  document.getElementById('caPreviewNombre').textContent = caArchivo.nombre;
+  document.getElementById('caPreviewSub').textContent = caArchivo.esPdf ? 'Documento PDF' : 'Imagen lista para escanear';
+  const thumb = document.getElementById('caPreviewThumb');
+  thumb.innerHTML = caArchivo.esPdf
+    ? '<div class="ca-pdf-ico"><i class="bi bi-file-earmark-pdf"></i></div>'
+    : `<img src="${caArchivo.preview}">`;
+}
+
+function caReset() {
+  caArchivo = null; caItems = [];
+  document.getElementById('caInputCamara').value = '';
+  document.getElementById('caInputArchivo').value = '';
+  document.getElementById('caPasoArchivo').style.display = 'block';
+  document.getElementById('caPasoPreview').style.display = 'none';
+  document.getElementById('caLoading').style.display = 'none';
+  document.getElementById('caErrorBox').style.display = 'none';
+  document.getElementById('caResultados').style.display = 'none';
+  document.getElementById('caResumen').style.display = 'none';
+}
+
+async function caEscanear() {
+  if (!caArchivo) return;
+  document.getElementById('caPasoPreview').style.display = 'none';
+  document.getElementById('caLoading').style.display = 'block';
+  document.getElementById('caErrorBox').style.display = 'none';
+
+  try {
+    const r = await fetch('/inventario/carga-automatica/api/escanear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagen_base64: caArchivo.base64, media_type: caArchivo.mediaType }),
+    });
+    const data = await r.json();
+    document.getElementById('caLoading').style.display = 'none';
+
+    if (!data.ok) {
+      caMostrarError(data.error || 'No se pudo escanear el documento');
+      document.getElementById('caPasoPreview').style.display = 'block';
+      return;
+    }
+    if (!data.items || !data.items.length) {
+      caMostrarError(data.aviso || 'No se detectaron productos en el documento. Probá con una foto más nítida.');
+      document.getElementById('caPasoPreview').style.display = 'block';
+      return;
+    }
+
+    caItems = data.items;
+    caRenderTabla();
+    document.getElementById('caResultados').style.display = 'block';
+  } catch (e) {
+    document.getElementById('caLoading').style.display = 'none';
+    document.getElementById('caPasoPreview').style.display = 'block';
+    caMostrarError('Error de conexión: ' + e.message);
+  }
+}
+
+function caMostrarError(msg) {
+  const box = document.getElementById('caErrorBox');
+  box.style.display = 'block';
+  box.innerHTML = `<div class="ca-error"><i class="bi bi-exclamation-triangle-fill" style="font-size: 18px;"></i><div>${msg}</div></div>`;
+}
+
+function caFmtMoney(n) {
+  return (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function caRenderTabla() {
+  const tbody = document.getElementById('caTbody');
+  tbody.innerHTML = caItems.map((it, i) => {
+    const badge = it.es_nuevo
+      ? `<span class="ca-badge ca-badge-nuevo"><i class="bi bi-stars"></i> Producto nuevo</span>`
+      : `<span class="ca-badge ca-badge-existe"><i class="bi bi-check-circle"></i> Ya existe</span>`;
+
+    let nota = '';
+    if (!it.es_nuevo) {
+      const partes = [];
+      if (it.price_cost_actual != null && Number(it.price_cost_actual) !== Number(it.precio_costo)) {
+        partes.push(`<label><input type="checkbox" checked onchange="caItems[${i}].actualizar_costo=this.checked"> Actualizar costo (hoy $${caFmtMoney(it.price_cost_actual)})</label>`);
+      }
+      if (it.stock_actual != null) partes.push(`Stock actual: ${it.stock_actual}`);
+      if (partes.length) nota = `<div class="ca-note">${partes.join(' · ')}</div>`;
+      caItems[i].actualizar_costo = it.price_cost_actual != null && Number(it.price_cost_actual) !== Number(it.precio_costo);
+    }
+
+    caItems[i].incluir = true;
+    caItems[i].precio_venta = it.precio_venta_sugerido || 0;
+    caItems[i].actualizar_precio = !!it.es_nuevo ? false : false;
+
+    return `
+      <tr id="caRow${i}">
+        <td><input type="checkbox" checked onchange="caToggleFila(${i}, this.checked)"></td>
+        <td><input type="text" value="${(it.codigo||'').replace(/"/g,'&quot;')}" oninput="caItems[${i}].codigo=this.value"></td>
+        <td>
+          <input type="text" value="${(it.descripcion||'').replace(/"/g,'&quot;')}" oninput="caItems[${i}].descripcion=this.value">
+          ${badge}${nota}
+        </td>
+        <td><input type="number" min="0" step="1" value="${it.cantidad}" oninput="caItems[${i}].cantidad=this.value"></td>
+        <td><input type="number" min="0" step="0.01" value="${it.precio_costo}" oninput="caItems[${i}].precio_costo=this.value"></td>
+        <td><input type="number" min="0" step="0.01" value="${caItems[i].precio_venta}" oninput="caItems[${i}].precio_venta=this.value;caItems[${i}].actualizar_precio=true"></td>
+        <td>${it.es_nuevo ? '' : (it.match_confianza < 100 ? `<span class="ca-note">Coincidencia ${it.match_confianza}% — revisá</span>` : '')}</td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('caCantDetectados').textContent = caItems.length;
+  caActualizarContador();
+}
+
+function caToggleFila(i, checked) {
+  caItems[i].incluir = checked;
+  document.getElementById('caRow' + i).classList.toggle('ca-row-off', !checked);
+  caActualizarContador();
+}
+
+function caActualizarContador() {
+  const n = caItems.filter(it => it.incluir).length;
+  document.getElementById('caCantConfirmar').textContent = n;
+  document.getElementById('caBtnConfirmar').disabled = n === 0;
+}
+
+async function caConfirmar() {
+  const items = caItems.filter(it => it.incluir);
+  if (!items.length) return;
+
+  const btn = document.getElementById('caBtnConfirmar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cargando…';
+
+  try {
+    const r = await fetch('/inventario/carga-automatica/api/confirmar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    const data = await r.json();
+    if (!data.ok) {
+      caToast(data.error || 'No se pudo cargar', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check-lg"></i> Confirmar carga (<span id="caCantConfirmar">' + items.length + '</span>)';
+      return;
+    }
+
+    document.getElementById('caResultados').style.display = 'none';
+    document.getElementById('caResumen').style.display = 'block';
+    document.getElementById('caSumCreados').textContent = data.creados || 0;
+    document.getElementById('caSumActualizados').textContent = data.actualizados || 0;
+    document.getElementById('caSumErrores').textContent = (data.errores || []).length;
+
+    const erroresBox = document.getElementById('caResumenErroresBox');
+    if (data.errores && data.errores.length) {
+      erroresBox.innerHTML = `<div class="ca-error"><i class="bi bi-exclamation-triangle-fill"></i>
+        <div>${data.errores.map(e => `${e.item}: ${e.error}`).join('<br>')}</div></div>`;
+    } else {
+      erroresBox.innerHTML = '';
+    }
+    caToast('Carga aplicada correctamente');
+  } catch (e) {
+    caToast('Error de conexión: ' + e.message, 'error');
+    btn.disabled = false;
+  }
+}
+</script>

@@ -1,10 +1,10 @@
 <%- include('../partials/head', { title: 'Proveedores' }) %>
 <style>
-.filtro-chip { padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body); }
+.filtro-chip { padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--text-secondary);font-size: 14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body); }
 .filtro-chip:hover { background:var(--bg-body);color:var(--text-primary); }
 .filtro-chip.on    { background:var(--color-action);color:#fff; }
-.form-lbl { font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px; }
-.form-input { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
+.form-lbl { font-size: 12.5px;font-weight:600;color:var(--text-secondary);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:5px; }
+.form-input { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;font-family:var(--font-body); }
 .form-input:focus { border-color:var(--color-action); }
 </style>
 
@@ -31,25 +31,25 @@
         <div class="stat-card" style="border-top:3px solid var(--color-primary);">
           <div class="stat-label">Total proveedores</div>
           <div class="stat-value" style="color:var(--color-primary);"><%= metricas?.totalProveedores || proveedores.length %></div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;"><%= metricas?.alDia || 0 %> al día · <%= metricas?.conDeuda || 0 %> con deuda</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;"><%= metricas?.alDia || 0 %> al día · <%= metricas?.conDeuda || 0 %> con deuda</div>
         </div>
 
         <div class="stat-card" style="border-top:3px solid var(--color-danger,#ef4444);">
           <div class="stat-label">Deuda total</div>
           <div class="stat-value" style="color:#ef4444;"><%= fmt(metricas?.totalDeuda) %></div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;"><%= metricas?.conDeuda || 0 %> proveedor<%= (metricas?.conDeuda||0) !== 1 ? 'es' : '' %></div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;"><%= metricas?.conDeuda || 0 %> proveedor<%= (metricas?.conDeuda||0) !== 1 ? 'es' : '' %></div>
         </div>
 
         <div class="stat-card" style="border-top:3px solid #f59e0b;">
           <div class="stat-label">Facturado (30 días)</div>
           <div class="stat-value" style="color:#d97706;"><%= fmt(metricas?.facturado30) %></div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Últimos 30 días</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;">Últimos 30 días</div>
         </div>
 
         <div class="stat-card" style="border-top:3px solid #10b981;">
           <div class="stat-label">Pagado (30 días)</div>
           <div class="stat-value" style="color:#10b981;"><%= fmt(metricas?.pagado30) %></div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Últimos 30 días</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;">Últimos 30 días</div>
         </div>
 
       </div>
@@ -65,12 +65,12 @@
           <button class="filtro-chip"    data-f="deudores" onclick="setFiltro(this)"><i class="bi bi-exclamation-circle" style="color:#ef4444;margin-right:4px;"></i>Con deuda</button>
           <button class="filtro-chip"    data-f="ok"       onclick="setFiltro(this)"><i class="bi bi-check-circle" style="color:#10b981;margin-right:4px;"></i>Al día</button>
         </div>
-        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size: 14px;">
           <option value="nombre">Ordenar: A → Z</option>
           <option value="mayor-deuda">Mayor deuda primero</option>
         </select>
         <div style="display:flex;gap:6px;margin-left:auto;">
-          <button onclick="exportarCSV()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <button onclick="exportarCSV()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-filetype-csv"></i> CSV
           </button>
         </div>
@@ -93,7 +93,7 @@
             <tbody>
               <% (proveedores||[]).forEach(p => { %>
               <tr data-id="<%= p.id %>">
-                <td><strong><%= p.nombre %></strong><% if(p.notas){%><div style="font-size:11px;color:var(--text-secondary);margin-top:1px;"><%= p.notas.slice(0,40) %></div><%}%></td>
+                <td><strong><%= p.nombre %></strong><% if(p.notas){%><div style="font-size: 12.5px;color:var(--text-secondary);margin-top:1px;"><%= p.notas.slice(0,40) %></div><%}%></td>
                 <td style="font-family:var(--font-mono);color:var(--text-secondary);"><%= p.cuit||'—' %></td>
                 <td style="color:var(--text-secondary);"><%= p.rubro||'—' %></td>
                 <td style="color:var(--text-secondary);"><%= p.telefono||'—' %></td>
@@ -118,7 +118,7 @@
                       style="color:#059669;border-color:rgba(16,185,129,.3);position:relative;">
                       <i class="bi bi-journal-check"></i> Pedidos
                       <% if (pedsProv.length) { %>
-                      <span style="position:absolute;top:-6px;right:-6px;background:#6366f1;color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;"><%= pedsProv.length %></span>
+                      <span style="position:absolute;top:-6px;right:-6px;background:#6366f1;color:#fff;font-size: 10.5px;font-weight:800;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;"><%= pedsProv.length %></span>
                       <% } %>
                     </button>
                     <!-- Pagar si hay deuda -->
@@ -152,13 +152,13 @@
   <div class="sale-modal" style="max-width:520px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-truck"></i></div>
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 17px;"><i class="bi bi-truck"></i></div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalProvTitulo">Nuevo Proveedor</div>
-          <div style="font-size:11px;color:var(--text-secondary);">Datos del proveedor</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);" id="modalProvTitulo">Nuevo Proveedor</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);">Datos del proveedor</div>
         </div>
       </div>
-      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div style="grid-column:1/-1">
@@ -200,19 +200,19 @@
   <div class="sale-modal" style="max-width:420px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-receipt"></i></div>
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 17px;"><i class="bi bi-receipt"></i></div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Registrar Factura</div>
-          <div style="font-size:11px;color:var(--text-secondary);" id="facturaProvNombre">—</div>
+          <div style="font-size: 16px;font-weight:700;color:var(--text-primary);">Registrar Factura</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);" id="facturaProvNombre">—</div>
         </div>
       </div>
-      <button onclick="document.getElementById('modalFactura').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="document.getElementById('modalFactura').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div>
           <label class="form-lbl">Monto ($) *</label>
-          <input type="text" inputmode="decimal" id="f_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size:18px;font-weight:700;">
+          <input type="text" inputmode="decimal" id="f_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size: 20.5px;font-weight:700;">
         </div>
         <div>
           <label class="form-lbl">N° Factura</label>
@@ -225,7 +225,7 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button onclick="confirmarFactura()" style="flex:1;padding:10px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+      <button onclick="confirmarFactura()" style="flex:1;padding:10px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size: 15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
         <i class="bi bi-receipt"></i> Registrar factura
       </button>
       <button onclick="document.getElementById('modalFactura').classList.remove('open')" class="btn-action btn-action-outline" style="padding:10px 16px;">Cancelar</button>
@@ -238,29 +238,29 @@
   <div class="sale-modal" style="max-width:380px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-cash-stack"></i></div>
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 17px;"><i class="bi bi-cash-stack"></i></div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Registrar Pago</div>
-          <div style="font-size:11px;color:var(--text-secondary);" id="pagoProvNombre">—</div>
+          <div style="font-size: 16px;font-weight:700;color:var(--text-primary);">Registrar Pago</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);" id="pagoProvNombre">—</div>
         </div>
       </div>
-      <button onclick="document.getElementById('modalPagoP').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="document.getElementById('modalPagoP').classList.remove('open')" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;">
-      <span style="font-size:12px;color:#dc2626;font-weight:600;">Deuda actual</span>
-      <span style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:#dc2626;" id="pagoProvSaldo">$0</span>
+      <span style="font-size: 13.5px;color:#dc2626;font-weight:600;">Deuda actual</span>
+      <span style="font-family:var(--font-mono);font-size: 19.5px;font-weight:800;color:#dc2626;" id="pagoProvSaldo">$0</span>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
           <label class="form-lbl" style="margin:0;">Monto a pagar ($)</label>
-          <button onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 8px;cursor:pointer;">Pagar todo</button>
+          <button onclick="pagarTodo()" style="font-size: 12.5px;font-weight:600;color:var(--color-action);background:rgba(0,180,216,.1);border:none;border-radius:5px;padding:2px 8px;cursor:pointer;">Pagar todo</button>
         </div>
-        <input type="text" inputmode="decimal" id="pp_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size:18px;font-weight:700;" oninput="calcResto()">
+        <input type="text" inputmode="decimal" id="pp_monto" class="form-input fmt-precio" placeholder="0,00" style="font-size: 20.5px;font-weight:700;" oninput="calcResto()">
       </div>
       <div id="restoWrap" style="display:none;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.08);">
-        <span style="font-size:12px;font-weight:600;color:#d97706;" id="restoLabel">Saldo restante</span>
-        <span style="float:right;font-family:var(--font-mono);font-size:14px;font-weight:700;color:#d97706;" id="restoValor">$0</span>
+        <span style="font-size: 13.5px;font-weight:600;color:#d97706;" id="restoLabel">Saldo restante</span>
+        <span style="float:right;font-family:var(--font-mono);font-size: 16px;font-weight:700;color:#d97706;" id="restoValor">$0</span>
       </div>
       <div>
         <label class="form-lbl">Descripción</label>
@@ -268,7 +268,7 @@
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button onclick="confirmarPago()" style="flex:1;padding:10px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+      <button onclick="confirmarPago()" style="flex:1;padding:10px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size: 15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
         <i class="bi bi-check-circle-fill"></i> Confirmar pago
       </button>
       <button onclick="document.getElementById('modalPagoP').classList.remove('open')" class="btn-action btn-action-outline" style="padding:10px 16px;">Cancelar</button>
@@ -281,34 +281,34 @@
   <div style="width:100%;max-width:860px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;"><i class="bi bi-truck"></i></div>
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-action),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 17px;"><i class="bi bi-truck"></i></div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Cuenta Corriente — Proveedor</div>
-          <div style="font-size:12px;color:var(--text-secondary);" id="cuentaPNombre">—</div>
+          <div style="font-size: 16px;font-weight:700;color:var(--text-primary);">Cuenta Corriente — Proveedor</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);" id="cuentaPNombre">—</div>
         </div>
       </div>
-      <button onclick="cerrarCuenta()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarCuenta()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:grid;grid-template-columns:240px 1fr;flex:1;overflow:hidden;">
       <div style="padding:16px;border-right:1px solid var(--border-color);overflow-y:auto;background:var(--bg-body);display:flex;flex-direction:column;gap:12px;">
         <div id="cuentaPBanner" style="border-radius:var(--radius-md);padding:14px;text-align:center;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="cuentaPLabel">Deuda</div>
+          <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="cuentaPLabel">Deuda</div>
           <div style="font-size:30px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;" id="cuentaPValor">$0</div>
         </div>
         <div id="cuentaPStats"></div>
         <div style="margin-top:auto;display:flex;flex-direction:column;gap:7px;">
-          <button onclick="cerrarCuenta();setTimeout(()=>abrirFactura(_cPId,_cPNombre),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
+          <button onclick="cerrarCuenta();setTimeout(()=>abrirFactura(_cPId,_cPNombre),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size: 14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
             <i class="bi bi-receipt"></i> Cargar factura
           </button>
-          <button id="cuentaPBtnPagar" onclick="cerrarCuenta();setTimeout(()=>abrirPago(_cPId,_cPNombre,_cPSaldo),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
+          <button id="cuentaPBtnPagar" onclick="cerrarCuenta();setTimeout(()=>abrirPago(_cPId,_cPNombre,_cPSaldo),80)" style="width:100%;padding:9px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size: 14px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;font-family:var(--font-body);">
             <i class="bi bi-cash-stack"></i> Registrar pago
           </button>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;overflow:hidden;">
         <div style="padding:10px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial</span>
-          <span style="font-size:11.5px;color:var(--text-secondary);" id="cuentaPTotal">—</span>
+          <span style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial</span>
+          <span style="font-size: 13px;color:var(--text-secondary);" id="cuentaPTotal">—</span>
         </div>
         <div style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;" id="cuentaPListado">
           <p style="color:var(--text-secondary);text-align:center;padding:32px;">Cargando…</p>
@@ -323,12 +323,12 @@
   <div class="sale-modal" style="max-width:620px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19.5px;">
           <i class="bi bi-cash-stack"></i>
         </div>
         <div>
-          <div style="font-size:16px;font-weight:800;color:var(--text-primary);" id="pagosCtrlNombre">—</div>
-          <div style="font-size:12px;color:var(--text-secondary);">Cuenta corriente del proveedor</div>
+          <div style="font-size: 18px;font-weight:800;color:var(--text-primary);" id="pagosCtrlNombre">—</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);">Cuenta corriente del proveedor</div>
         </div>
       </div>
       <button onclick="cerrarPagosCtrl()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
@@ -337,34 +337,34 @@
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
       <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#dc2626;margin-bottom:6px;">Deuda actual</div>
+        <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#dc2626;margin-bottom:6px;">Deuda actual</div>
         <div style="font-size:22px;font-weight:900;color:#dc2626;font-family:var(--font-mono);" id="pagosCtrlDeuda">$0,00</div>
       </div>
       <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:6px;">Total facturado</div>
+        <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:6px;">Total facturado</div>
         <div style="font-size:22px;font-weight:900;color:#d97706;font-family:var(--font-mono);" id="pagosCtrlFacturado">$0,00</div>
       </div>
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;margin-bottom:6px;">Total pagado</div>
+        <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;margin-bottom:6px;">Total pagado</div>
         <div style="font-size:22px;font-weight:900;color:#059669;font-family:var(--font-mono);" id="pagosCtrlPagado">$0,00</div>
       </div>
     </div>
 
     <!-- Historial -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Historial de movimientos</div>
+    <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Historial de movimientos</div>
     <div id="pagosCtrlHistorial" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
       <p style="color:var(--text-secondary);text-align:center;padding:20px;">Cargando…</p>
     </div>
 
     <!-- Formulario registrar pago — siempre visible -->
     <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:10px;padding:14px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Registrar nuevo pago</div>
+      <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Registrar nuevo pago</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
           <label class="form-lbl">Monto</label>
           <div style="display:flex;gap:6px;">
             <input type="text" inputmode="decimal" id="pagoCtrlMonto" class="form-input fmt-precio" placeholder="0,00" style="flex:1;">
-            <button onclick="pagarTodoCtrl()" style="padding:8px 12px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">Todo</button>
+            <button onclick="pagarTodoCtrl()" style="padding:8px 12px;background:rgba(16,185,129,.1);color:#059669;border:1.5px solid rgba(16,185,129,.3);border-radius:var(--radius-sm);font-size: 13.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">Todo</button>
           </div>
         </div>
         <div>
@@ -374,7 +374,7 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
         <div>
-          <label class="form-lbl">Forma de pago <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <label class="form-lbl">Forma de pago <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
           <select id="pagoCtrlMetodo" class="form-input" style="cursor:pointer;">
             <option value="">— Sin especificar —</option>
             <option value="Efectivo">Efectivo</option>
@@ -385,13 +385,13 @@
           </select>
         </div>
         <div>
-          <label class="form-lbl">Nota <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <label class="form-lbl">Nota <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
           <input type="text" id="pagoCtrlDesc" class="form-input" placeholder="Ej: seña, cuota 1…">
         </div>
       </div>
-      <div id="pagoCtrlError" style="display:none;margin-bottom:8px;font-size:12.5px;color:#dc2626;"></div>
+      <div id="pagoCtrlError" style="display:none;margin-bottom:8px;font-size: 14px;color:#dc2626;"></div>
       <button onclick="confirmarPagoCtrl()"
-        style="width:100%;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
+        style="width:100%;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:6px;">
         <i class="bi bi-check-circle-fill"></i> Confirmar pago
       </button>
     </div>
@@ -400,20 +400,20 @@
 
 <!-- ═══════════ MODAL PEDIDOS DEL PROVEEDOR ═══════════════════ -->
 <div class="sale-overlay" id="modalPedidosProv" onclick="if(event.target.id==='modalPedidosProv')cerrarPedidosProv()">
-  <div class="sale-modal" style="max-width:900px;text-align:left;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+  <div class="sale-modal" style="max-width:900px;text-align:left;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19.5px;">
           <i class="bi bi-journal-check"></i>
         </div>
         <div>
-          <div style="font-size:16px;font-weight:800;color:var(--text-primary);">Pedidos enviados</div>
-          <div style="font-size:12px;color:var(--text-secondary);" id="pedProvNombre">—</div>
+          <div style="font-size: 18px;font-weight:800;color:var(--text-primary);">Pedidos enviados</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);" id="pedProvNombre">—</div>
         </div>
       </div>
       <button onclick="cerrarPedidosProv()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <div id="pedProvListado">
+    <div id="pedProvListado" style="overflow-y:auto;flex:1;padding:20px 24px;">
       <p style="color:var(--text-secondary);text-align:center;padding:32px;">Cargando…</p>
     </div>
   </div>
@@ -428,7 +428,7 @@
 
     <!-- Header fijo -->
     <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:16px;font-weight:800;color:var(--text-primary);">Recepcionar pedido</div>
+      <div style="font-size: 18px;font-weight:800;color:var(--text-primary);">Recepcionar pedido</div>
       <button onclick="cerrarConfRecepcion()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
@@ -439,14 +439,14 @@
 
     <!-- Footer fijo: botones -->
     <div style="padding:14px 24px 20px;border-top:1px solid var(--border-color);flex-shrink:0;">
-      <div id="confRecepError" style="display:none;margin-bottom:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+      <div id="confRecepError" style="display:none;margin-bottom:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size: 15px;color:#dc2626;"></div>
       <div style="display:flex;gap:8px;">
         <button onclick="recibirTodo()"
-          style="flex:1;padding:11px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:8px;">
+          style="flex:1;padding:11px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:8px;">
           <i class="bi bi-check-circle-fill"></i> Llegó todo
         </button>
         <button onclick="confirmarRecepcionParcial()"
-          style="flex:1;padding:11px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:8px;">
+          style="flex:1;padding:11px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:8px;">
           <i class="bi bi-check-square"></i> Confirmar lo seleccionado
         </button>
         <button onclick="cerrarConfRecepcion()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
@@ -464,12 +464,12 @@
     <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19.5px;flex-shrink:0;">
             <i class="bi bi-box-arrow-in-down"></i>
           </div>
           <div>
-            <div style="font-size:16px;font-weight:800;color:var(--text-primary);">Recepción de mercadería</div>
-            <div style="font-size:12px;color:var(--text-secondary);" id="recepProvNombre">—</div>
+            <div style="font-size: 18px;font-weight:800;color:var(--text-primary);">Recepción de mercadería</div>
+            <div style="font-size: 13.5px;color:var(--text-secondary);" id="recepProvNombre">—</div>
           </div>
         </div>
         <button onclick="cerrarRecepcion()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;line-height:1;"><i class="bi bi-x-lg"></i></button>
@@ -478,11 +478,11 @@
       <!-- Datos de la factura -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div>
-          <label class="form-lbl">N° Factura <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <label class="form-lbl">N° Factura <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
           <input type="text" id="rec_nro" class="form-input" placeholder="Ej: A-0001234">
         </div>
         <div>
-          <label class="form-lbl">Descripción <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+          <label class="form-lbl">Descripción <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
           <input type="text" id="rec_desc" class="form-input" placeholder="Ej: Mercadería semana 1">
         </div>
       </div>
@@ -508,20 +508,20 @@
     <!-- Tabla de ítems — scrolleable -->
     <div style="flex:1;overflow-y:auto;padding:0 24px;">
       <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;margin:16px 0;">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <table style="width:100%;border-collapse:collapse;font-size: 15px;">
           <thead style="position:sticky;top:0;z-index:1;">
             <tr style="background:var(--bg-surface-2);">
-              <th style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Producto</th>
-              <th style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:90px;">Cantidad</th>
-              <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:140px;">Precio costo</th>
-              <th style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:100px;" title="Actualizar precio de costo en inventario">Act. costo</th>
-              <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">Subtotal</th>
+              <th style="padding:9px 14px;text-align:left;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Producto</th>
+              <th style="padding:9px 14px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:90px;">Cantidad</th>
+              <th style="padding:9px 14px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:140px;">Precio costo</th>
+              <th style="padding:9px 14px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:100px;" title="Actualizar precio de costo en inventario">Act. costo</th>
+              <th style="padding:9px 14px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">Subtotal</th>
               <th style="width:36px;"></th>
             </tr>
           </thead>
           <tbody id="recItemsTbody">
             <tr id="recItemsVacio">
-              <td colspan="6" style="padding:28px;text-align:center;color:var(--text-secondary);font-size:13px;">
+              <td colspan="6" style="padding:28px;text-align:center;color:var(--text-secondary);font-size: 15px;">
                 <i class="bi bi-box-seam" style="font-size:24px;display:block;margin-bottom:8px;opacity:.4;"></i>
                 Buscá un producto para agregarlo
               </td>
@@ -533,17 +533,17 @@
 
     <!-- Footer fijo: total + botones -->
     <div style="padding:14px 24px 20px;border-top:1px solid var(--border-color);flex-shrink:0;">
-      <div id="recError" style="display:none;margin-bottom:10px;padding:9px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+      <div id="recError" style="display:none;margin-bottom:10px;padding:9px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size: 15px;color:#dc2626;"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
         <div style="display:flex;align-items:baseline;gap:10px;">
-          <span style="font-size:13px;color:var(--text-secondary);">Total factura:</span>
+          <span style="font-size: 15px;color:var(--text-secondary);">Total factura:</span>
           <span style="font-family:var(--font-mono);font-size:24px;font-weight:900;color:#6366f1;" id="recTotal">$0,00</span>
         </div>
         <div style="display:flex;gap:8px;">
           <button onclick="cerrarRecepcion()" class="btn-action btn-action-outline" style="padding:10px 18px;">Cancelar</button>
           <button onclick="confirmarRecepcion()"
             style="padding:10px 22px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;
-                   border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;
+                   border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;
                    display:flex;align-items:center;gap:7px;font-family:var(--font-body);">
             <i class="bi bi-check-circle-fill"></i> Confirmar recepción
           </button>
@@ -569,8 +569,8 @@ let _filtroActivo='todos';
   const el = document.getElementById('resumenProveedores');
   if(!el) return;
   const s=(icon,label,val,color)=>`<div style="display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
-    <i class="bi ${icon}" style="font-size:18px;color:${color};"></i>
-    <div><div style="font-size:11px;color:var(--text-secondary);">${label}</div><div style="font-size:14px;font-weight:700;color:var(--text-primary);">${val}</div></div></div>`;
+    <i class="bi ${icon}" style="font-size: 20.5px;color:${color};"></i>
+    <div><div style="font-size: 12.5px;color:var(--text-secondary);">${label}</div><div style="font-size: 16px;font-weight:700;color:var(--text-primary);">${val}</div></div></div>`;
   el.innerHTML =
     s('bi-truck','Total proveedores',proveedores.length,'var(--color-action)')+
     s('bi-exclamation-circle','Con deuda',conDeuda.length,'#ef4444')+
@@ -733,8 +733,8 @@ async function verCuenta(id,nombre,saldo){
   const pagos=movs.filter(m=>m.tipo==='pago').reduce((a,m)=>a+Number(m.monto),0);
   document.getElementById('cuentaPStats').innerHTML=`
     <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
-      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
-      <div style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;">
+      <div style="font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size: 14px;">
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Facturas</span><span style="font-family:var(--font-mono);font-weight:700;color:#dc2626;">+$${facturas.toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Pagos</span><span style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-$${pagos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>
         <div style="border-top:1px dashed var(--border-color);padding-top:5px;display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Movimientos</span><span style="font-weight:700;">${movs.length}</span></div>
@@ -760,18 +760,18 @@ async function verCuenta(id,nombre,saldo){
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:${bg};border-radius:10px;border:1px solid ${borde};">
       <i class="bi ${icono}" style="font-size:22px;color:${color};flex-shrink:0;"></i>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}${m.nro_factura?` <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);">#${m.nro_factura}</span>`:''}</div>
+        <div style="font-size: 15.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}${m.nro_factura?` <span style="font-size: 12.5px;font-family:var(--font-mono);color:var(--text-secondary);">#${m.nro_factura}</span>`:''}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:11.5px;color:var(--text-secondary);"><i class="bi bi-calendar3" style="font-size:10px;"></i> ${fp}</span>
-          <span style="font-size:11.5px;color:var(--text-secondary);"><i class="bi bi-clock" style="font-size:10px;"></i> ${hp}</span>
-          <span style="font-size:11px;font-weight:600;color:${Number(m.saldo_post)>0?'#dc2626':'#10b981'};background:${Number(m.saldo_post)>0?'rgba(239,68,68,.1)':'rgba(16,185,129,.1)'};padding:1px 7px;border-radius:20px;">
+          <span style="font-size: 13px;color:var(--text-secondary);"><i class="bi bi-calendar3" style="font-size: 11.5px;"></i> ${fp}</span>
+          <span style="font-size: 13px;color:var(--text-secondary);"><i class="bi bi-clock" style="font-size: 11.5px;"></i> ${hp}</span>
+          <span style="font-size: 12.5px;font-weight:600;color:${Number(m.saldo_post)>0?'#dc2626':'#10b981'};background:${Number(m.saldo_post)>0?'rgba(239,68,68,.1)':'rgba(16,185,129,.1)'};padding:1px 7px;border-radius:20px;">
             Saldo $${Number(m.saldo_post).toLocaleString('es-AR',{minimumFractionDigits:2})}
           </span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:1px;">${m.tipo}</div>
+        <div style="font-family:var(--font-mono);font-size: 19.5px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+        <div style="font-size: 12px;color:var(--text-secondary);margin-top:1px;">${m.tipo}</div>
       </div>
     </div>`;
   }).join('');
@@ -822,12 +822,12 @@ async function verPagosProveedor(id, nombre, saldo) {
       const fecha  = (m.created_at||'').slice(0,10).split('-').reverse().join('/');
       const saldoPost = Math.max(0, Number(m.saldo_post));
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${bg};border-radius:8px;border:1px solid ${borde};">
-        <i class="bi ${icono}" style="font-size:18px;color:${color};flex-shrink:0;"></i>
+        <i class="bi ${icono}" style="font-size: 20.5px;color:${color};flex-shrink:0;"></i>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${m.descripcion||m.tipo}${m.nro_factura?' <span style="font-size:10.5px;font-family:var(--font-mono);color:var(--text-secondary);">#'+m.nro_factura+'</span>':''}</div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:1px;">${fecha} · Saldo: ${fmtCtrl(saldoPost)}</div>
+          <div style="font-size: 15px;font-weight:700;color:var(--text-primary);">${m.descripcion||m.tipo}${m.nro_factura?' <span style="font-size: 12px;font-family:var(--font-mono);color:var(--text-secondary);">#'+m.nro_factura+'</span>':''}</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:1px;">${fecha} · Saldo: ${fmtCtrl(saldoPost)}</div>
         </div>
-        <div style="font-family:var(--font-mono);font-size:16px;font-weight:900;color:${color};flex-shrink:0;">${signo}${fmtCtrl(m.monto)}</div>
+        <div style="font-family:var(--font-mono);font-size: 18px;font-weight:900;color:${color};flex-shrink:0;">${signo}${fmtCtrl(m.monto)}</div>
       </div>`;
     }).join('');
   } catch(e) {
@@ -911,49 +911,63 @@ function renderPedidosProv(pedidos) {
     return `
     <div style="border:1px solid var(--border-color);border-radius:12px;overflow:hidden;margin-bottom:14px;">
 
-      <!-- ── Cabecera del pedido ── -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);flex-wrap:wrap;gap:8px;">
-        <div>
-          <div style="font-weight:800;font-size:14px;color:var(--text-primary);">${p.titulo}</div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${new Date(p.created_at).toLocaleDateString('es-AR')} · ${p.items.length} producto${p.items.length!==1?'s':''}</div>
+      <!-- ── Cabecera del pedido (clickeable: abre/cierra la tabla) ── -->
+      <div onclick="togglePedidoProv(${pid})" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span id="pedProvChevron-${pid}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:var(--text-secondary);transition:transform .18s;flex-shrink:0;"><i class="bi bi-chevron-right"></i></span>
+          <div style="min-width:0;">
+            <div style="font-weight:800;font-size: 16px;color:var(--text-primary);">${p.titulo}</div>
+            <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:2px;">${new Date(p.created_at).toLocaleDateString('es-AR')} · ${p.items.length} producto${p.items.length!==1?'s':''}</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           ${sinCosto
-            ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;display:inline-flex;align-items:center;gap:4px;"><i class=\"bi bi-exclamation-triangle\"></i> Sin precio de costo</span>'
-            : '<span style="font-size:13px;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);">' + totalFmt + '</span>'
+            ? '<span style="font-size: 12.5px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;display:inline-flex;align-items:center;gap:4px;"><i class=\"bi bi-exclamation-triangle\"></i> Sin precio de costo</span>'
+            : '<span style="font-size: 15px;font-weight:800;color:var(--text-primary);font-family:var(--font-mono);">' + totalFmt + '</span>'
           }
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366f1;">${badgeTxt}</span>
-          <button onclick="abrirConfRecepcion(${JSON.stringify(p).replace(/"/g,'&quot;')})"
-            style="padding:6px 11px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <span style="font-size: 12.5px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(99,102,241,.1);color:#6366f1;">${badgeTxt}</span>
+          <button onclick="event.stopPropagation();abrirConfRecepcion(${JSON.stringify(p).replace(/"/g,'&quot;')})"
+            style="padding:6px 11px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-box-arrow-in-down"></i> Recepcionar
           </button>
         </div>
       </div>
 
-      <!-- ── Tabla de productos ── -->
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
-        <thead><tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
-          <th style="padding:7px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Producto</th>
-          <th style="padding:7px 14px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:80px;">Pedido</th>
-          <th style="padding:7px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Costo</th>
-          <th style="padding:7px 14px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:90px;">Estado</th>
+      <!-- ── Tabla de productos (colapsada por defecto) ── -->
+      <div id="pedProvItems-${pid}" style="display:none;max-height:340px;overflow-y:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size: 14px;">
+        <thead><tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);position:sticky;top:0;">
+          <th style="padding:7px 14px;text-align:left;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Producto</th>
+          <th style="padding:7px 14px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:80px;">Pedido</th>
+          <th style="padding:7px 14px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Costo</th>
+          <th style="padding:7px 14px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:90px;">Estado</th>
         </tr></thead>
         <tbody>${p.items.map(i => `
           <tr style="border-bottom:1px solid var(--border-color);background:var(--bg-surface);">
-            <td style="padding:8px 14px;font-weight:600;color:var(--text-primary);">${i.nombre}${i.es_manual?'<span style="font-size:10px;background:rgba(245,158,11,.12);color:#d97706;padding:1px 5px;border-radius:4px;margin-left:6px;">Manual</span>':''}</td>
+            <td style="padding:8px 14px;font-weight:600;color:var(--text-primary);">${i.nombre}${i.es_manual?'<span style="font-size: 11.5px;background:rgba(245,158,11,.12);color:#d97706;padding:1px 5px;border-radius:4px;margin-left:6px;">Manual</span>':''}</td>
             <td style="padding:8px 14px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">${i.cantidad}</td>
             <td style="padding:8px 14px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">${i.precio_costo>0?fmtPP(i.precio_costo):'—'}</td>
             <td style="padding:8px 14px;text-align:center;">${i.recibido
-              ?'<span style="font-size:11px;font-weight:700;color:#059669;background:rgba(16,185,129,.1);padding:2px 8px;border-radius:20px;">✓ Recibido</span>'
-              :'<span style="font-size:11px;font-weight:700;color:#d97706;background:rgba(245,158,11,.1);padding:2px 8px;border-radius:20px;">Pendiente</span>'}
+              ?'<span style="font-size: 12.5px;font-weight:700;color:#059669;background:rgba(16,185,129,.1);padding:2px 8px;border-radius:20px;">✓ Recibido</span>'
+              :'<span style="font-size: 12.5px;font-weight:700;color:#d97706;background:rgba(245,158,11,.1);padding:2px 8px;border-radius:20px;">Pendiente</span>'}
             </td>
           </tr>`).join('')}
         </tbody>
       </table>
+      </div>
 
     </div>`; // fin tarjeta pedido
   }).join('');
   document.getElementById('pedProvListado').innerHTML = html;
+}
+
+function togglePedidoProv(pid) {
+  const tabla    = document.getElementById('pedProvItems-' + pid);
+  const chevron  = document.getElementById('pedProvChevron-' + pid);
+  if (!tabla) return;
+  const abierto = tabla.style.display !== 'none';
+  tabla.style.display = abierto ? 'none' : 'block';
+  if (chevron) chevron.style.transform = abierto ? 'rotate(0deg)' : 'rotate(90deg)';
 }
 
 function cerrarPedidosProv() { document.getElementById('modalPedidosProv').classList.remove('open'); }
@@ -963,16 +977,16 @@ function abrirConfRecepcion(pedido) {
   document.getElementById('confRecepError').style.display = 'none';
   const itemsPend = pedido.items.filter(i => !i.recibido);
   const html = `
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Pedido: <strong>${pedido.titulo}</strong></div>
+    <div style="font-size: 15px;color:var(--text-secondary);margin-bottom:12px;">Pedido: <strong>${pedido.titulo}</strong></div>
     <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <table style="width:100%;border-collapse:collapse;font-size: 15px;">
       <thead><tr style="background:var(--bg-surface-2);">
-        <th style="padding:9px 12px;text-align:center;width:40px;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">✓</th>
-        <th style="padding:9px 12px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Producto</th>
-        <th style="padding:9px 12px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:75px;">Pedido</th>
-        <th style="padding:9px 12px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:90px;">Recibido</th>
-        <th style="padding:9px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Costo</th>
-        <th style="padding:9px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Venta</th>
+        <th style="padding:9px 12px;text-align:center;width:40px;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">✓</th>
+        <th style="padding:9px 12px;text-align:left;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Producto</th>
+        <th style="padding:9px 12px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:75px;">Pedido</th>
+        <th style="padding:9px 12px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:90px;">Recibido</th>
+        <th style="padding:9px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Costo</th>
+        <th style="padding:9px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Venta</th>
       </tr></thead>
       <tbody>${itemsPend.map(i => `
         <tr style="border-bottom:1px solid var(--border-color);background:var(--bg-surface);" id="recRow-${i.id}">
@@ -983,31 +997,31 @@ function abrirConfRecepcion(pedido) {
           <td style="padding:8px 12px;">
             <div style="font-weight:700;color:var(--text-primary);">${i.nombre}</div>
             ${i.sku
-              ?'<div style="font-size:10.5px;color:var(--text-secondary);">SKU: '+i.sku+'</div>'
-              :'<div style="font-size:10.5px;color:#d97706;">🖊 Manual — podés crearlo en inventario</div>'
+              ?'<div style="font-size: 12px;color:var(--text-secondary);">SKU: '+i.sku+'</div>'
+              :'<div style="font-size: 12px;color:#d97706;">🖊 Manual — podés crearlo en inventario</div>'
                 +'<div style="margin-top:6px;padding:8px;background:rgba(99,102,241,.08);border-radius:6px;border:1px dashed rgba(99,102,241,.25);">'
-                +'<div style="font-size:11px;font-weight:700;color:#6366f1;margin-bottom:6px;">Crear en inventario (opcional):</div>'
+                +'<div style="font-size: 12.5px;font-weight:700;color:#6366f1;margin-bottom:6px;">Crear en inventario (opcional):</div>'
                 +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">'
-                +'<input type="text" id="sku-'+i.id+'" placeholder="SKU *" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size:12px;outline:none;">'
-                +'<input type="number" id="pventa-'+i.id+'" placeholder="P. venta" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size:12px;outline:none;">'
-                +'<input type="text" id="cat-'+i.id+'" placeholder="Categoría" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size:12px;outline:none;">'
+                +'<input type="text" id="sku-'+i.id+'" placeholder="SKU *" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
+                +'<input type="number" id="pventa-'+i.id+'" placeholder="P. venta" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
+                +'<input type="text" id="cat-'+i.id+'" placeholder="Categoría" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
                 +'</div></div>'
             }
           </td>
           <td style="padding:8px 12px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);">${i.cantidad}</td>
           <td style="padding:8px 12px;text-align:center;">
             <input type="number" id="recCant-${i.id}" value="${i.cantidad}" min="0" step="0.001"
-              style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;outline:none;"
+              style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:center;outline:none;"
               onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
           </td>
           <td style="padding:8px 12px;text-align:right;">
             <input type="number" id="recCosto-${i.id}" value="${i.precio_costo||0}" min="0" step="0.01"
-              style="width:88px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;text-align:right;outline:none;"
+              style="width:88px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;text-align:right;outline:none;"
               onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
           </td>
           <td style="padding:8px 12px;text-align:right;">
             <input type="number" id="recVenta-${i.id}" value="${i.precio_venta||i.precio_costo||0}" min="0" step="0.01"
-              style="width:88px;padding:5px 7px;border:1.5px solid rgba(99,102,241,.3);border-radius:6px;background:var(--bg-body);color:#6366f1;font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:right;outline:none;"
+              style="width:88px;padding:5px 7px;border:1.5px solid rgba(99,102,241,.3);border-radius:6px;background:var(--bg-body);color:#6366f1;font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:right;outline:none;"
               title="Precio de venta al público"
               onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,.3)'">
           </td>
@@ -1155,12 +1169,12 @@ function buscarProdRecepcion(q) {
           style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;"
           onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
           <div>
-            <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${p.name}</div>
-            <div style="font-size:11px;color:var(--text-secondary);">SKU: ${p.sku}</div>
+            <div style="font-weight:700;font-size: 15px;color:var(--text-primary);">${p.name}</div>
+            <div style="font-size: 12.5px;color:var(--text-secondary);">SKU: ${p.sku}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:11.5px;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">${fmtRec(p.price_cost)}</div>
-            <div style="font-size:10.5px;color:var(--text-secondary);">Stock: ${p.stock}</div>
+            <div style="font-size: 13px;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">${fmtRec(p.price_cost)}</div>
+            <div style="font-size: 12px;color:var(--text-secondary);">Stock: ${p.stock}</div>
           </div>
         </div>`).join('');
       drop.style.display = 'block';
@@ -1203,24 +1217,24 @@ function renderRecItems() {
     return `
     <tr style="border-bottom:1px solid var(--border-color);">
       <td style="padding:9px 14px;">
-        <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${item.nombre}</div>
-        <div style="font-size:11px;color:var(--text-secondary);">SKU: ${item.sku}</div>
+        <div style="font-weight:700;font-size: 15px;color:var(--text-primary);">${item.nombre}</div>
+        <div style="font-size: 12.5px;color:var(--text-secondary);">SKU: ${item.sku}</div>
       </td>
       <td style="padding:6px 8px;text-align:center;">
         <input type="number" value="${item.cantidad}" min="0.001" step="0.001"
           style="width:76px;padding:6px 8px;border:1.5px solid var(--border-color);border-radius:6px;
                  background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);
-                 font-size:13px;font-weight:700;text-align:center;outline:none;"
+                 font-size: 15px;font-weight:700;text-align:center;outline:none;"
           oninput="updateRecItem(${idx},'cantidad',this.value)"
           onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border-color)'">
       </td>
       <td style="padding:6px 8px;">
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
-          <span style="color:var(--text-secondary);font-size:13px;">$</span>
+          <span style="color:var(--text-secondary);font-size: 15px;">$</span>
           <input type="number" value="${item.precio_costo}" min="0" step="0.01"
             style="width:100px;padding:6px 8px;border:1.5px solid var(--border-color);border-radius:6px;
                    background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);
-                   font-size:13px;font-weight:700;text-align:right;outline:none;"
+                   font-size: 15px;font-weight:700;text-align:right;outline:none;"
             oninput="updateRecItem(${idx},'precio_costo',this.value)"
             onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border-color)'">
         </div>
@@ -1230,15 +1244,15 @@ function renderRecItems() {
           <input type="checkbox" ${item.actualizar_costo?'checked':''}
             onchange="updateRecItem(${idx},'actualizar_costo',this.checked)"
             style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
-          <span style="font-size:10.5px;color:var(--text-secondary);">Actualizar</span>
+          <span style="font-size: 12px;color:var(--text-secondary);">Actualizar</span>
         </label>
       </td>
-      <td style="padding:9px 14px;text-align:right;font-family:var(--font-mono);font-size:14px;font-weight:800;color:#6366f1;">
+      <td style="padding:9px 14px;text-align:right;font-family:var(--font-mono);font-size: 16px;font-weight:800;color:#6366f1;">
         ${fmtRec(sub)}
       </td>
       <td style="padding:4px 6px;text-align:center;">
         <button onclick="quitarItemRecepcion(${idx})"
-          style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;padding:4px;border-radius:6px;transition:.15s;"
+          style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 19.5px;padding:4px;border-radius:6px;transition:.15s;"
           onmouseover="this.style.color=&quot;#ef4444&quot;" onmouseout="this.style.color=&quot;var(--text-secondary)&quot;">
           <i class="bi bi-x-circle"></i>
         </button>

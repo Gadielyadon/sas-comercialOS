@@ -13,6 +13,8 @@ function initCajaSchema() {
   try { run(`ALTER TABLE caja ADD COLUMN sucursal_id INTEGER NOT NULL DEFAULT 1`); } catch(e) {}
   try { run(`ALTER TABLE caja ADD COLUMN monto_inicial REAL DEFAULT 0`); } catch(e) {}
   try { run(`ALTER TABLE caja ADD COLUMN monto_final REAL DEFAULT 0`); } catch(e) {}
+  try { run(`ALTER TABLE caja ADD COLUMN monto_contado REAL`); } catch(e) {}
+  try { run(`ALTER TABLE caja ADD COLUMN diferencia REAL`); } catch(e) {}
 
   // ── Tabla de movimientos manuales (ingresos/retiros) ──────────
   run(`CREATE TABLE IF NOT EXISTS caja_movimientos (
@@ -24,6 +26,32 @@ function initCajaSchema() {
     created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (caja_id) REFERENCES caja(id)
   )`);
+
+  // ── Nota persistente de caja (una por sucursal) ───────────────
+  // Para dejar aviso de "quedaron $40.000 en la caja" entre turnos,
+  // fines de semana, etc. No depende de que la caja esté abierta.
+  run(`CREATE TABLE IF NOT EXISTS caja_nota (
+    sucursal_id   INTEGER PRIMARY KEY,
+    nota          TEXT,
+    actualizado_at TEXT,
+    actualizado_by TEXT
+  )`);
+}
+
+function getNota(sucursal_id = 1) {
+  const row = get(`SELECT * FROM caja_nota WHERE sucursal_id = ?`, [Number(sucursal_id)]);
+  return row || { sucursal_id: Number(sucursal_id), nota: '', actualizado_at: null, actualizado_by: null };
+}
+
+function setNota(sucursal_id = 1, nota = '', usuario = null) {
+  const fecha = nowArgentina();
+  run(
+    `INSERT INTO caja_nota (sucursal_id, nota, actualizado_at, actualizado_by)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(sucursal_id) DO UPDATE SET nota = excluded.nota, actualizado_at = excluded.actualizado_at, actualizado_by = excluded.actualizado_by`,
+    [Number(sucursal_id), String(nota || ''), fecha, usuario]
+  );
+  return getNota(sucursal_id);
 }
 
 // ── Hora Argentina — funciona en VPS con cualquier timezone ──
@@ -121,7 +149,7 @@ function open(user, sucursal_id = 1, monto_inicial = 0) {
   return { ok: true, caja_id: res.lastInsertRowid };
 }
 
-function close(user, sucursal_id = 1) {
+function close(user, sucursal_id = 1, monto_contado = null) {
   const cajaAbierta = get(
     `SELECT * FROM caja WHERE closed_at IS NULL AND sucursal_id = ?`,
     [Number(sucursal_id)]
@@ -132,6 +160,7 @@ function close(user, sucursal_id = 1) {
   }
 
   let totalVentas = 0;
+  let totalEfectivo = 0;
 
   try {
     const hasta = nowArgentina();
@@ -144,20 +173,42 @@ function close(user, sucursal_id = 1) {
          AND created_at <= ?`,
       [Number(sucursal_id), cajaAbierta.opened_at, hasta]
     );
-
     totalVentas = Number(r?.total || 0);
+
+    const rEf = get(
+      `SELECT COALESCE(SUM(total), 0) AS total
+       FROM sales
+       WHERE sucursal_id = ?
+         AND created_at >= ?
+         AND created_at <= ?
+         AND payment_method LIKE '%fectivo%'
+         AND COALESCE(status,'completada') != 'anulada'`,
+      [Number(sucursal_id), cajaAbierta.opened_at, hasta]
+    );
+    totalEfectivo = Number(rEf?.total || 0);
   } catch (e) {
     totalVentas = 0;
   }
 
+  // Ingresos/retiros manuales de caja durante el turno
+  let movsCaja = 0;
+  try {
+    const movs = all(`SELECT tipo, monto FROM caja_movimientos WHERE caja_id = ?`, [cajaAbierta.id]);
+    movsCaja = movs.reduce((s, m) => s + (m.tipo === 'ingreso' ? Number(m.monto) : -Number(m.monto)), 0);
+  } catch (e) {}
+
+  const efectivoEsperado = Number(cajaAbierta.monto_inicial || 0) + totalEfectivo + movsCaja;
+  const contado = monto_contado != null && monto_contado !== '' ? Number(monto_contado) : null;
+  const diferencia = contado != null ? Math.round((contado - efectivoEsperado) * 100) / 100 : null;
+
   run(
     `UPDATE caja
-     SET closed_at = ?, closed_by = ?, total_sales = ?, status = 'cerrada'
+     SET closed_at = ?, closed_by = ?, total_sales = ?, status = 'cerrada', monto_final = ?, monto_contado = ?, diferencia = ?
      WHERE id = ?`,
-    [nowArgentina(), user, totalVentas, cajaAbierta.id]
+    [nowArgentina(), user, totalVentas, efectivoEsperado, contado, diferencia, cajaAbierta.id]
   );
 
-  return { ok: true };
+  return { ok: true, efectivoEsperado, contado, diferencia };
 }
 
 function getMovimientos(caja_id) {
@@ -190,6 +241,8 @@ function getHistorial(sucursal_id = null, limit = 50) {
 
 module.exports = {
   initCajaSchema,
+  getNota,
+  setNota,
   getCurrentCaja,
   getLastClosedCaja,
   getLowStockProducts,

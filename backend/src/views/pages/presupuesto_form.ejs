@@ -25,13 +25,13 @@
   }
   .totales-bar-nums { display: flex; gap: 20px; align-items: center; flex: 1; flex-wrap: wrap; }
   .totales-bar-item { display: flex; flex-direction: column; }
-  .totales-bar-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
-  .totales-bar-val   { font-size: 16px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+  .totales-bar-label { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .totales-bar-val   { font-size: 18px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
   .totales-bar-total { font-size: 22px; font-weight: 900; color: var(--color-primary); }
   .totales-bar-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
   .btn-guardar-bar {
     padding: 12px 28px; border: none; border-radius: var(--radius-sm);
-    background: var(--color-primary); color: #fff; font-size: 14px;
+    background: var(--color-primary); color: #fff; font-size: 16px;
     font-weight: 700; cursor: pointer; display: flex; align-items: center;
     gap: 8px; transition: opacity .15s; white-space: nowrap;
   }
@@ -39,7 +39,7 @@
   .btn-desc-toggle {
     padding: 9px 14px; border: 1.5px solid var(--border-color);
     border-radius: var(--radius-sm); background: transparent;
-    color: var(--text-secondary); font-size: 12.5px; font-weight: 600;
+    color: var(--text-secondary); font-size: 14px; font-weight: 600;
     cursor: pointer; white-space: nowrap; transition: all .15s;
   }
   .btn-desc-toggle:hover { border-color: var(--color-action); color: var(--color-action); }
@@ -57,36 +57,36 @@
   /* Secciones */
   .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 18px; }
   .section-head { padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-  .section-title { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
   .section-body { padding: 20px; }
 
   /* Campos */
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   .field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
   .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .field label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
   .field input, .field select, .field textarea {
     padding: 9px 12px; border: 1.5px solid var(--border-color);
     border-radius: var(--radius-sm); background: var(--bg-body);
-    color: var(--text-primary); font-size: 13.5px; outline: none;
+    color: var(--text-primary); font-size: 15.5px; outline: none;
     font-family: var(--font-body); transition: border-color .15s;
   }
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--color-action); }
 
   /* Buscador dropdown */
   .prod-search-wrap { position: relative; margin-bottom: 12px; }
-  .prod-search-wrap input { width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-body); color: var(--text-primary); font-size: 14px; outline: none; transition: border-color .15s; }
+  .prod-search-wrap input { width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-body); color: var(--text-primary); font-size: 16px; outline: none; transition: border-color .15s; }
   .prod-search-wrap input:focus { border-color: var(--color-action); }
-  .prod-search-wrap i.search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; }
+  .prod-search-wrap i.search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 17px; }
   .prod-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 50; max-height: 280px; overflow-y: auto; display: none; }
   .prod-dropdown.open { display: block; }
   .prod-item { padding: 11px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background .1s; }
   .prod-item:last-child { border-bottom: none; }
   .prod-item:hover { background: var(--bg-body); }
-  .prod-item-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-  .prod-item-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
-  .prod-item-precio { font-size: 14px; font-weight: 700; color: #10b981; white-space: nowrap; }
-  .badge-tipo { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+  .prod-item-name { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .prod-item-meta { font-size: 13.5px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+  .prod-item-precio { font-size: 16px; font-weight: 700; color: #10b981; white-space: nowrap; }
+  .badge-tipo { font-size: 11.5px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
 
   /* Item de dropdown resaltado por teclado */
   .prod-item.kb-focus {
@@ -106,7 +106,7 @@
   ══════════════════════════════════════════════ */
   .items-table { width: 100%; border-collapse: collapse; }
   .items-table thead th {
-    padding: 11px 14px; font-size: 11px; font-weight: 800;
+    padding: 11px 14px; font-size: 12.5px; font-weight: 800;
     text-transform: uppercase; letter-spacing: .6px;
     color: var(--text-secondary); background: var(--bg-body);
     border-bottom: 2px solid var(--border-color); text-align: left;
@@ -125,30 +125,30 @@
     width: 100%; padding: 9px 11px;
     border: 1.5px solid transparent; border-radius: 7px;
     background: transparent; color: var(--text-primary);
-    font-size: 14px; font-family: var(--font-body);
+    font-size: 16px; font-family: var(--font-body);
     outline: none; transition: all .15s;
   }
   .item-input:hover { border-color: var(--border-color); }
   .item-input:focus { border-color: var(--color-action); background: var(--bg-body); }
-  .item-input.mono { font-family: var(--font-mono); text-align: right; font-size: 14px; }
+  .item-input.mono { font-family: var(--font-mono); text-align: right; font-size: 16px; }
   .subtotal-cell {
-    font-family: var(--font-mono); font-size: 15px; font-weight: 800;
+    font-family: var(--font-mono); font-size: 17px; font-weight: 800;
     color: var(--color-primary); text-align: right; padding-right: 14px; white-space: nowrap;
   }
   .btn-remove-item {
     background: none; border: none; color: var(--text-muted);
     cursor: pointer; padding: 7px 9px; border-radius: 7px;
-    font-size: 16px; transition: all .15s; display: flex; align-items: center;
+    font-size: 18px; transition: all .15s; display: flex; align-items: center;
   }
   .btn-remove-item:hover { background: rgba(239,68,68,.1); color: #ef4444; }
-  .empty-items { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+  .empty-items { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 16px; }
 
   /* Tabs */
   .tabs-busq { display: flex; gap: 5px; margin-bottom: 14px; }
   .tab-btn {
     flex: 1; padding: 9px 8px; border: 1.5px solid var(--border-color);
     border-radius: 8px; background: transparent; color: var(--text-secondary);
-    font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s;
+    font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s;
     display: flex; align-items: center; justify-content: center; gap: 5px;
   }
   .tab-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -156,15 +156,15 @@
 
   /* Panel lateral */
   .totales-panel { display: none; } /* reemplazado por totales-bar */
-  .total-row-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-color); font-size: 13.5px; }
+  .total-row-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-color); font-size: 15.5px; }
   .total-row-item:last-child { border-bottom: none; }
   .total-final { font-size: 24px; font-weight: 800; color: var(--color-primary); font-family: var(--font-mono); }
-  .descuento-toggle { font-size: 12px; color: var(--color-action); cursor: pointer; font-weight: 600; text-decoration: underline; }
+  .descuento-toggle { font-size: 13.5px; color: var(--color-action); cursor: pointer; font-weight: 600; text-decoration: underline; }
   .descuento-fields { display: none; gap: 10px; margin-top: 10px; }
   .descuento-fields.open { display: flex; }
-  .btn-guardar { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--color-primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s; margin-top: 14px; }
+  .btn-guardar { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--color-primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s; margin-top: 14px; }
   .btn-guardar:hover { opacity: .88; }
-  .btn-secondary { width: 100%; padding: 10px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; text-align: center; text-decoration: none; display: block; transition: all .15s; }
+  .btn-secondary { width: 100%; padding: 10px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; text-align: center; text-decoration: none; display: block; transition: all .15s; }
   .btn-secondary:hover { border-color: var(--color-action); color: var(--color-action); }
 
   /* ══════════════════════════════════════════════
@@ -176,7 +176,7 @@
     padding: 10px 14px; background: var(--bg-body);
     border-bottom: 1px solid var(--border-color);
   }
-  .catalogo-header span { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
+  .catalogo-header span { font-size: 13.5px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; }
   .catalogo-list { max-height: 260px; overflow-y: auto; }
   .catalogo-item {
     display: flex; align-items: center; gap: 10px;
@@ -186,12 +186,12 @@
   .catalogo-item:last-child { border-bottom: none; }
   .catalogo-item:hover { background: rgba(0,180,216,.04); }
   .catalogo-item-info { flex: 1; min-width: 0; }
-  .catalogo-item-nombre { font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .catalogo-item-desc { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
-  .catalogo-item-precio { font-size: 14px; font-weight: 800; color: #10b981; white-space: nowrap; font-family: var(--font-mono); }
+  .catalogo-item-nombre { font-size: 15.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .catalogo-item-desc { font-size: 13px; color: var(--text-muted); margin-top: 1px; }
+  .catalogo-item-precio { font-size: 16px; font-weight: 800; color: #10b981; white-space: nowrap; font-family: var(--font-mono); }
   .catalogo-item-acciones { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
   .catalogo-item:hover .catalogo-item-acciones { opacity: 1; }
-  .btn-cat-accion { background: none; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .btn-cat-accion { background: none; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .btn-cat-agregar { color: var(--color-primary); }
   .btn-cat-agregar:hover { background: rgba(31,60,136,.1); }
   .btn-cat-editar  { color: var(--text-muted); }
@@ -207,35 +207,35 @@
   .cat-input {
     padding: 8px 10px; border: 1.5px solid var(--border-color);
     border-radius: 7px; background: var(--bg-card); color: var(--text-primary);
-    font-size: 13px; font-family: var(--font-body); outline: none; width: 100%;
+    font-size: 15px; font-family: var(--font-body); outline: none; width: 100%;
     transition: border-color .15s;
   }
   .cat-input:focus { border-color: var(--color-action); }
   .btn-add-cat {
     width: 100%; padding: 8px; background: #f59e0b; color: #fff;
-    border: none; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+    border: none; border-radius: 7px; font-size: 14px; font-weight: 700;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
     transition: opacity .15s;
   }
   .btn-add-cat:hover { opacity: .88; }
-  .empty-catalogo { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .empty-catalogo { padding: 24px; text-align: center; color: var(--text-muted); font-size: 15px; }
 
   /* Modal edición catálogo */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
   .modal-overlay.active { display: flex; }
   .modal-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); }
   .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
-  .modal-title  { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .modal-close  { background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; }
+  .modal-title  { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-close  { background: none; border: none; font-size: 20.5px; color: var(--text-muted); cursor: pointer; }
   .modal-body   { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; justify-content: flex-end; }
-  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
   .m-field { display: flex; flex-direction: column; gap: 4px; }
-  .m-field label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+  .m-field label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
   .m-field input, .m-field select {
     padding: 9px 11px; border: 1.5px solid var(--border-color); border-radius: var(--radius-sm);
-    background: var(--bg-body); color: var(--text-primary); font-size: 13.5px; outline: none;
+    background: var(--bg-body); color: var(--text-primary); font-size: 15.5px; outline: none;
     transition: border-color .15s;
   }
   .m-field input:focus, .m-field select:focus { border-color: var(--color-action); }
@@ -292,6 +292,16 @@
                     </select>
                   </div>
                 </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label>Dirección</label>
+                    <input type="text" name="cliente_direccion" placeholder="Calle y número" value="<%= presupuesto?.cliente_direccion || '' %>">
+                  </div>
+                  <div class="field">
+                    <label>Localidad</label>
+                    <input type="text" name="cliente_localidad" placeholder="Ej: San Fernando del Valle" value="<%= presupuesto?.cliente_localidad || '' %>">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -331,7 +341,7 @@
             <div class="section-card">
               <div class="section-head">
                 <div class="section-title"><i class="bi bi-chat-left-text"></i> Observaciones al pie del presupuesto</div>
-                <span style="font-size:12px;color:var(--text-muted);">Aparecen en el documento impreso</span>
+                <span style="font-size: 13.5px;color:var(--text-muted);">Aparecen en el documento impreso</span>
               </div>
               <div class="section-body">
                 <div class="field-row">
@@ -352,8 +362,8 @@
             ═══════════════════════════════════════ -->
             <div class="section-card">
               <div class="section-head">
-                <div class="section-title" style="font-size:14px;"><i class="bi bi-list-ul" style="font-size:16px;"></i> Ítems del presupuesto</div>
-                <span id="contadorItems" style="font-size:12.5px;color:var(--text-muted);font-weight:600;">0 ítems</span>
+                <div class="section-title" style="font-size: 16px;"><i class="bi bi-list-ul" style="font-size: 18px;"></i> Ítems del presupuesto</div>
+                <span id="contadorItems" style="font-size: 14px;color:var(--text-muted);font-weight:600;">0 ítems</span>
               </div>
 
               <!-- Tabs -->
@@ -384,14 +394,14 @@
                   <div class="catalogo-panel">
                     <div class="catalogo-header">
                       <span><i class="bi bi-star-fill" style="color:#f59e0b;margin-right:5px;"></i> Lista de precios de presupuestos</span>
-                      <span id="catContador" style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:none;letter-spacing:0;"></span>
+                      <span id="catContador" style="font-size: 12.5px;color:var(--text-muted);font-weight:600;text-transform:none;letter-spacing:0;"></span>
                     </div>
                     <div class="catalogo-list" id="catalogoList">
                       <!-- Se renderiza con JS -->
                     </div>
                     <!-- Formulario agregar nuevo ítem al catálogo -->
                     <div class="catalogo-form-add">
-                      <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Agregar nuevo ítem al catálogo</div>
+                      <div style="font-size: 12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Agregar nuevo ítem al catálogo</div>
                       <div class="row-inputs">
                         <input class="cat-input" type="text" id="catNuevoNombre" placeholder="Nombre / descripción del ítem">
                         <input class="cat-input mono" type="number" id="catNuevoPrecio" placeholder="Precio" min="0" step="any" style="font-family:var(--font-mono);text-align:right;">
@@ -417,7 +427,7 @@
                 <!-- Tab: Manual -->
                 <div id="tabManual" class="tab-panel" style="display:none">
                   <div style="background:var(--bg-body);border:1.5px solid var(--border-color);border-radius:var(--radius-sm);padding:16px;">
-                    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Ingresar ítem personalizado</div>
+                    <div style="font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Ingresar ítem personalizado</div>
                     <div style="display:grid;grid-template-columns:1fr 100px 130px;gap:10px;margin-bottom:10px;">
                       <div class="field">
                         <label>Descripción</label>
@@ -432,7 +442,7 @@
                         <input type="number" id="manualPrecio" placeholder="0" min="0" step="any">
                       </div>
                     </div>
-                    <button type="button" onclick="agregarManual()" style="width:100%;padding:10px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+                    <button type="button" onclick="agregarManual()" style="width:100%;padding:10px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 15.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
                       <i class="bi bi-plus-lg"></i> Agregar ítem
                     </button>
                   </div>
@@ -445,7 +455,7 @@
                   <i class="bi bi-search search-ico"></i>
                   <input type="text" id="itemFilter" placeholder="Buscar dentro de los ítems de este presupuesto..." oninput="filtrarItems()" autocomplete="off">
                 </div>
-                <div id="itemFilterInfo" style="font-size:11.5px;color:var(--text-muted);margin-top:6px;display:none;"></div>
+                <div id="itemFilterInfo" style="font-size: 13px;color:var(--text-muted);margin-top:6px;display:none;"></div>
               </div>
 
               <!-- Tabla de ítems agregados -->
@@ -466,8 +476,8 @@
                     <tr id="emptyRow">
                       <td colspan="6" class="empty-items">
                         <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
-                        <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
-                        <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
+                        <span style="font-size: 16px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
+                        <span style="font-size: 15px;">Usá las pestañas de arriba para agregar productos o servicios</span>
                       </td>
                     </tr>
                   </tbody>
@@ -515,26 +525,26 @@
 
       <!-- Popup descuento -->
       <div class="desc-popup" id="descPopup">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Aplicar descuento</div>
+        <div style="font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:12px;">Aplicar descuento</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
           <div class="field">
             <label>% descuento</label>
-            <input type="number" id="descPct" placeholder="0" min="0" max="100" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+            <input type="number" id="descPct" placeholder="0" min="0" max="100" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size: 16px;outline:none;width:100%;">
           </div>
           <div class="field">
             <label>$ descuento</label>
-            <input type="number" id="descMonto" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+            <input type="number" id="descMonto" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size: 16px;outline:none;width:100%;">
           </div>
         </div>
         <div style="border-top:1px solid var(--border-color);padding-top:12px;margin-bottom:10px;">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Recargo general (%)</div>
+          <div style="font-size: 12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Recargo general (%)</div>
           <div class="field">
             <label>% que se suma a todos los ítems</label>
-            <input type="number" id="ajustePct" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;width:100%;">
+            <input type="number" id="ajustePct" placeholder="0" min="0" step="any" oninput="calcularTotales()" style="padding:9px 11px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size: 16px;outline:none;width:100%;">
           </div>
-          <div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.4;">Queda fundido en el precio de cada ítem. No aparece como línea aparte en el presupuesto impreso.</div>
+          <div style="font-size: 12px;color:var(--text-muted);margin-top:6px;line-height:1.4;">Queda fundido en el precio de cada ítem. No aparece como línea aparte en el presupuesto impreso.</div>
         </div>
-        <button type="button" onclick="toggleDescPopup()" style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;">Listo</button>
+        <button type="button" onclick="toggleDescPopup()" style="width:100%;padding:9px;background:var(--color-primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 15px;font-weight:700;cursor:pointer;">Listo</button>
       </div>
 
     </div>
@@ -648,7 +658,7 @@ function buscarSistema(q) {
   ).slice(0, 12);
 
   drop.innerHTML = !results.length
-    ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13.5px;">Sin resultados</div>'
+    ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size: 15.5px;">Sin resultados</div>'
     : results.map(p => {
         const safeObj = encodeURIComponent(JSON.stringify(p));
         return `
@@ -666,7 +676,7 @@ function buscarSistema(q) {
             <div style="text-align:right;flex-shrink:0;">
               <div class="prod-item-precio">${fmt(p.precio_presupuesto)}</div>
               ${Number(p.precio_presupuesto) !== Number(p.precio_venta)
-                ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">${fmt(p.precio_venta)}</div>`
+                ? `<div style="font-size: 12.5px;color:var(--text-muted);text-decoration:line-through;">${fmt(p.precio_venta)}</div>`
                 : ''}
             </div>
           </div>
@@ -911,8 +921,8 @@ function renderItems() {
   if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-items">
       <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:10px;opacity:.25;"></i>
-      <span style="font-size:14px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
-      <span style="font-size:13px;">Usá las pestañas de arriba para agregar productos o servicios</span>
+      <span style="font-size: 16px;font-weight:600;color:var(--text-secondary);">Todavía no hay ítems</span><br>
+      <span style="font-size: 15px;">Usá las pestañas de arriba para agregar productos o servicios</span>
     </td></tr>`;
     calcularTotales();
     return;
@@ -926,9 +936,9 @@ function renderItems() {
     const ivaSelVal = (pct === null || pct === undefined) ? '' : String(pct);
 
     const badge = item.tipo === 'producto'
-      ? '<span class="badge-tipo badge-sistema" style="font-size:10px;">Producto</span>'
+      ? '<span class="badge-tipo badge-sistema" style="font-size: 11.5px;">Producto</span>'
       : item.tipo === 'servicio'
-        ? '<span class="badge-tipo badge-catalogo" style="font-size:10px;">Catálogo</span>'
+        ? '<span class="badge-tipo badge-catalogo" style="font-size: 11.5px;">Catálogo</span>'
         : '';
 
     const searchStr = [item.nombre, item.sku, item.descripcion].filter(Boolean).join(' ').toLowerCase();
@@ -939,8 +949,8 @@ function renderItems() {
           oninput="items[${i}].nombre=this.value" placeholder="Descripción del ítem">
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap;">
           ${badge}
-          ${item.sku ? `<span style="font-size:11px;color:var(--text-muted);">SKU: ${escHTML(item.sku)}</span>` : ''}
-          ${item.descripcion ? `<span style="font-size:11px;color:var(--text-muted);">${escHTML(item.descripcion)}</span>` : ''}
+          ${item.sku ? `<span style="font-size: 12.5px;color:var(--text-muted);">SKU: ${escHTML(item.sku)}</span>` : ''}
+          ${item.descripcion ? `<span style="font-size: 12.5px;color:var(--text-muted);">${escHTML(item.descripcion)}</span>` : ''}
         </div>
       </td>
       <td>
@@ -961,7 +971,7 @@ function renderItems() {
           onchange="renderItems()">
       </td>
       <td>
-        <select class="item-input" style="font-size:13px;padding:6px 8px;"
+        <select class="item-input" style="font-size: 15px;padding:6px 8px;"
           onchange="items[${i}].pct_iva=this.value===''?null:parseFloat(this.value);renderItems()">
           <option value="" ${ivaSelVal === '' ? 'selected' : ''}>Sin IVA</option>
           <option value="0" ${ivaSelVal === '0' ? 'selected' : ''}>Exento</option>
@@ -970,7 +980,7 @@ function renderItems() {
         </select>
       </td>
       <td class="subtotal-cell">
-        ${desc > 0 ? `<div style="font-size:11px;color:var(--text-muted);text-decoration:line-through;font-weight:400;">${fmt(base)}</div>` : ''}
+        ${desc > 0 ? `<div style="font-size: 12.5px;color:var(--text-muted);text-decoration:line-through;font-weight:400;">${fmt(base)}</div>` : ''}
         ${fmt(sub)}
       </td>
       <td style="text-align:center;padding-right:8px;">
@@ -1053,7 +1063,7 @@ function calcularTotales() {
   if (!hintEl && subEl) {
     hintEl = document.createElement('span');
     hintEl.id = 'ajusteHint';
-    hintEl.style.cssText = 'font-size:10px;color:#f59e0b;font-weight:700;display:block;margin-top:2px;';
+    hintEl.style.cssText = 'font-size: 11.5px;color:#f59e0b;font-weight:700;display:block;margin-top:2px;';
     subEl.parentElement.appendChild(hintEl);
   }
   if (hintEl) hintEl.textContent = ajustePct > 0 ? ('incl. +' + ajustePct + '% recargo') : '';

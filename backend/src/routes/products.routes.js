@@ -77,6 +77,16 @@ router.post('/', (req, res) => {
       price_tiers: req.body.price_tiers ?? null,
     });
 
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'inv_alta',
+        usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+        sucursal_id,
+        detalle: `Producto nuevo: ${sku} · ${name} · $${Number(price).toLocaleString('es-AR')}`,
+        entidad: sku,
+      });
+    } catch (_) {}
+
     res.status(201).json(product);
   } catch (err) {
     console.error(err);
@@ -113,6 +123,25 @@ router.put('/:sku', (req, res) => {
       imagen: imagen !== undefined ? imagen : undefined,
       price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, price_tiers,
     });
+
+    try {
+      const cambios = [];
+      if (price !== undefined && Number(price) !== Number(existing.price)) {
+        cambios.push(`precio de venta: $${Number(existing.price).toLocaleString('es-AR')} → $${Number(price).toLocaleString('es-AR')}`);
+      }
+      if (price_cost !== undefined && price_cost !== null && Number(price_cost) !== Number(existing.price_cost)) {
+        cambios.push(`precio de costo: $${Number(existing.price_cost || 0).toLocaleString('es-AR')} → $${Number(price_cost).toLocaleString('es-AR')}`);
+      }
+      if (cambios.length) {
+        require('../services/auditoria.service').registrar({
+          tipo: 'inv_precio_editado',
+          usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+          sucursal_id: sucursal_id || res.locals?.sucursal_id || 1,
+          detalle: `${sku} · ${name || existing.name} — ${cambios.join(' · ')}`,
+          entidad: sku,
+        });
+      }
+    } catch (_) {}
 
     res.json(updated);
   } catch (err) {
@@ -200,8 +229,18 @@ router.delete('/:sku/imagen', (req, res) => {
 // DELETE /api/products/:sku
 router.delete('/:sku', (req, res) => {
   try {
+    const existing = productsService.findBySku(req.params.sku);
     const removed = productsService.remove(req.params.sku);
     if (!removed) return res.status(404).json({ error: 'Producto no encontrado' });
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'inv_baja',
+        usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+        sucursal_id: res.locals?.sucursal_id || 1,
+        detalle: `Producto eliminado: ${req.params.sku}${existing ? ' · ' + existing.name : ''}`,
+        entidad: req.params.sku,
+      });
+    } catch (_) {}
     res.json({ ok: true });
   } catch (err) {
     console.error(err);

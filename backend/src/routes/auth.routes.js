@@ -66,6 +66,15 @@ req.session.user = {
   name: user.nombre || user.username,
   sucursal_id
 };
+  try {
+    require('../services/auditoria.service').registrar({
+      tipo: 'login',
+      usuario: user.nombre || user.username,
+      sucursal_id,
+      detalle: `Inicio de sesión de ${user.nombre || user.username}`,
+      entidad: 'sesion',
+    });
+  } catch (_) {}
   const returnTo = req.session.returnTo || (req.session.user?.role !== 'admin' ? '/ventas' : '/dashboard');
   delete req.session.returnTo;
   res.redirect(returnTo);
@@ -153,7 +162,18 @@ router.post('/api/vendedor-activo', requireAuth, (req, res) => {
   const { user_id, pin } = req.body;
   if (!user_id || !pin) return res.status(400).json({ error: 'Elegí un empleado e ingresá el PIN' });
   const user = authSvc.verificarPin(Number(user_id), pin);
-  if (!user) return res.status(401).json({ error: 'PIN incorrecto' });
+  if (!user) {
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'pin_fallido',
+        usuario: req.session?.user?.nombre || req.session?.user?.username || null,
+        sucursal_id: res.locals?.sucursal_id || null,
+        detalle: `Intento de PIN incorrecto para el empleado #${user_id}`,
+        entidad: `user_${user_id}`,
+      });
+    } catch (_) {}
+    return res.status(401).json({ error: 'PIN incorrecto' });
+  }
   req.session.vendedorActivo = { id: user.id, nombre: user.nombre };
   res.json(req.session.vendedorActivo);
 });

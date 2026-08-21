@@ -100,6 +100,7 @@ function initPresupuestosSchema() {
   try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_tel TEXT`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_telefono TEXT`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_direccion TEXT`); } catch (e) {}
+  try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_localidad TEXT`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago TEXT DEFAULT 'Contado'`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN validez_dias INTEGER`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN notas TEXT`); } catch (e) {}
@@ -195,7 +196,7 @@ function calcularTotales(items = [], descuento_pct = 0, descuento_monto = 0, aju
   return { subtotal, totalIva, descuento_pct: dPct, descuento_monto: dMonto > 0 ? dMonto : descuento, total, ajuste_pct: Number(ajuste_pct || 0) };
 }
 
-function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, cliente_cond_iva, condicion_pago, condicion_pago_obs, validez_dias, notas, descuento_pct, descuento_monto, ajuste_pct, sucursal_id, user_id, items = [] }) {
+function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, cliente_direccion, cliente_localidad, cliente_cond_iva, condicion_pago, condicion_pago_obs, validez_dias, notas, descuento_pct, descuento_monto, ajuste_pct, sucursal_id, user_id, items = [] }) {
   const numero = generarNumero();
   const tot = calcularTotales(items, descuento_pct, descuento_monto, ajuste_pct);
 
@@ -214,8 +215,10 @@ function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, clie
     tot.subtotal, tot.descuento_pct, tot.descuento_monto, tot.total,
     Number(sucursal_id || 1), user_id ? Number(user_id) : null
   ];
-  if (hasPP('ajuste_pct'))       { cols.push('ajuste_pct');       vals.push(Number(ajuste_pct || 0)); }
-  if (hasPP('cliente_cond_iva')) { cols.push('cliente_cond_iva'); vals.push(cliente_cond_iva || 'Consumidor Final'); }
+  if (hasPP('ajuste_pct'))         { cols.push('ajuste_pct');         vals.push(Number(ajuste_pct || 0)); }
+  if (hasPP('cliente_cond_iva'))   { cols.push('cliente_cond_iva');   vals.push(cliente_cond_iva || 'Consumidor Final'); }
+  if (hasPP('cliente_direccion')) { cols.push('cliente_direccion'); vals.push(cliente_direccion || null); }
+  if (hasPP('cliente_localidad')) { cols.push('cliente_localidad'); vals.push(cliente_localidad || null); }
 
   const r = run(
     `INSERT INTO presupuestos (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
@@ -283,8 +286,10 @@ function update(id, datos) {
     datos.validez_dias !== undefined ? (datos.validez_dias || null) : p.validez_dias,
     datos.notas ?? p.notas, tot.subtotal, tot.descuento_pct, tot.descuento_monto, tot.total
   ];
-  if (hasPP('ajuste_pct'))       { sets.push('ajuste_pct=?');       args.push(Number(ajustePct || 0)); }
-  if (hasPP('cliente_cond_iva')) { sets.push('cliente_cond_iva=?'); args.push(datos.cliente_cond_iva ?? p.cliente_cond_iva ?? 'Consumidor Final'); }
+  if (hasPP('ajuste_pct'))         { sets.push('ajuste_pct=?');         args.push(Number(ajustePct || 0)); }
+  if (hasPP('cliente_cond_iva'))   { sets.push('cliente_cond_iva=?');   args.push(datos.cliente_cond_iva ?? p.cliente_cond_iva ?? 'Consumidor Final'); }
+  if (hasPP('cliente_direccion')) { sets.push('cliente_direccion=?'); args.push(datos.cliente_direccion ?? p.cliente_direccion); }
+  if (hasPP('cliente_localidad')) { sets.push('cliente_localidad=?'); args.push(datos.cliente_localidad ?? p.cliente_localidad); }
   args.push(Number(id));
 
   run(`UPDATE presupuestos SET ${sets.join(', ')}, updated_at=datetime('now','localtime') WHERE id=?`, args);

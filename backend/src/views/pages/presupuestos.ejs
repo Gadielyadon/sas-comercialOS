@@ -3,7 +3,7 @@
 <style>
   /* ── Solo lo que no está en el sistema global ── */
   .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--page-gap); }
-  .stat-sub  { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+  .stat-sub  { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .toolbar-left { display: flex; align-items: center; gap: 10px; }
@@ -18,26 +18,26 @@
   .data-table thead th {
     background: var(--table-head-bg) !important;
     color: var(--table-head-color) !important;
-    font-size: 11px; font-weight: 600;
+    font-size: 12.5px; font-weight: 600;
     text-transform: uppercase; letter-spacing: .07em;
     padding: 11px 16px; border-bottom: none;
     text-align: left;
   }
   .data-table thead th:first-child { border-radius: 8px 0 0 8px; }
   .data-table thead th:last-child  { border-radius: 0 8px 8px 0; }
-  .data-table tbody td { padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; transition: background .12s; }
+  .data-table tbody td { padding: 13px 16px; font-size: 15.5px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; transition: background .12s; }
   .data-table tbody tr:last-child td { border-bottom: none; }
   .data-table tbody tr:hover td { background: var(--table-row-hover); }
 
   /* Badges */
-  .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
+  .badge-estado { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 13px; font-weight: 700; }
   .badge-Borrador  { background: rgba(107,114,128,.1); color: #6b7280; }
   .badge-Enviado   { background: rgba(59,130,246,.1);  color: #3b82f6; }
   .badge-Aprobado  { background: rgba(16,185,129,.1);  color: #10b981; }
   .badge-Rechazado { background: rgba(239,68,68,.1);   color: #ef4444; }
 
   /* Botones */
-  .btn-accion { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; }
+  .btn-accion { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; }
   .btn-accion:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.06); }
   .btn-accion.danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.06); }
   /* Colores por función: verde=ver/imprimir, amarillo=editar, violeta=remito, rojo=eliminar */
@@ -50,11 +50,11 @@
   .badge-estado[onclick] { cursor: pointer; transition: filter .15s; }
   .badge-estado[onclick]:hover { filter: brightness(1.15); }
   .acciones-cell { display: flex; gap: 5px; align-items: center; }
-  .btn-nuevo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; }
+  .btn-nuevo { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15.5px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; }
   .btn-nuevo:hover { opacity: .88; color: #fff; }
 
-  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-save   { padding: 9px 20px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; justify-content: flex-end; }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -64,7 +64,7 @@
     #tablaPresupuestos thead th:nth-child(4), #tablaPresupuestos thead th:nth-child(7),
     #tablaPresupuestos tbody td:nth-child(4), #tablaPresupuestos tbody td:nth-child(7) { display: none; }
     .acciones-cell { gap: 3px; }
-    .btn-accion { padding: 5px 8px; font-size: 13px; }
+    .btn-accion { padding: 5px 8px; font-size: 15px; }
   }
 </style>
 
@@ -93,7 +93,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">Monto total</div>
-          <div class="stat-value" style="font-size:18px">$<%= stats.montoTotal.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
+          <div class="stat-value" style="font-size: 20.5px">$<%= stats.montoTotal.toLocaleString('es-AR',{minimumFractionDigits:0}) %></div>
           <div class="stat-sub">todos los estados</div>
         </div>
       </div>
@@ -123,7 +123,7 @@
         <% if (!lista.length) { %>
         <div class="empty-state">
           <i class="bi bi-file-earmark-text"></i>
-          <strong style="display:block;font-size:16px;color:var(--text-primary);margin-bottom:6px;">Sin presupuestos todavía</strong>
+          <strong style="display:block;font-size: 18px;color:var(--text-primary);margin-bottom:6px;">Sin presupuestos todavía</strong>
           <span>Creá tu primer presupuesto para comenzar</span><br>
           <a href="/presupuestos/nuevo" class="btn-nuevo" style="margin-top:18px;display:inline-flex;">
             <i class="bi bi-plus-lg"></i> Crear presupuesto
@@ -149,13 +149,13 @@
               <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary)"><%= p.numero %></td>
               <td>
                 <strong><%= p.cliente_nombre || 'Sin nombre' %></strong>
-                <% if (p.cliente_cuit) { %><div style="font-size:11.5px;color:var(--text-muted)">CUIT: <%= p.cliente_cuit %></div><% } %>
+                <% if (p.cliente_cuit) { %><div style="font-size: 13px;color:var(--text-muted)">CUIT: <%= p.cliente_cuit %></div><% } %>
               </td>
-              <td style="color:var(--text-secondary);font-size:13px">
+              <td style="color:var(--text-secondary);font-size: 15px">
                 <%= new Date(p.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) %>
               </td>
-              <td style="color:var(--text-muted);font-size:13px"><%= p.cant_items %> ítem<%= p.cant_items !== 1 ? 's' : '' %></td>
-              <td style="text-align:right;font-family:var(--font-mono);font-weight:800;font-size:15px">
+              <td style="color:var(--text-muted);font-size: 15px"><%= p.cant_items %> ítem<%= p.cant_items !== 1 ? 's' : '' %></td>
+              <td style="text-align:right;font-family:var(--font-mono);font-weight:800;font-size: 17px">
                 $<%= Number(p.total).toLocaleString('es-AR',{minimumFractionDigits:0}) %>
               </td>
               <td>
@@ -167,7 +167,7 @@
                   <%= p.estado %>
                 </span>
               </td>
-              <td style="font-size:12px;color:var(--text-muted)"><%= p.sucursal_nombre %></td>
+              <td style="font-size: 13.5px;color:var(--text-muted)"><%= p.sucursal_nombre %></td>
               <td>
                 <div class="acciones-cell">
                   <a href="/presupuestos/ver/<%= p.id %>" class="btn-accion ver" title="Ver / Imprimir"><i class="bi bi-eye"></i></a>
@@ -198,8 +198,8 @@
     </div>
     <form method="POST" id="formEstado">
       <div class="modal-body">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;display:block;">Nuevo estado</label>
-        <select name="estado" id="selectEstado" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size:14px;outline:none;">
+        <label style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;display:block;">Nuevo estado</label>
+        <select name="estado" id="selectEstado" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-size: 16px;outline:none;">
           <option value="Borrador">📝 Borrador</option>
           <option value="Enviado">📤 Enviado</option>
           <option value="Aprobado">✅ Aprobado</option>

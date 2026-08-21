@@ -6,48 +6,139 @@
   <title>Remito - <%= remito.numero %></title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Arial', 'Helvetica Neue', sans-serif; color: #000; font-size: 14px; line-height: 1.5; margin: 0; padding: 24px; background: #f3f4f6; }
-    .doc { max-width: 800px; margin: 0 auto; background: #fff; padding: 32px 40px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-    .afip-header { display: grid; grid-template-columns: 1fr auto; gap: 0; border: 2px solid #000; margin-bottom: 18px; }
-    .afip-col-empresa { padding: 16px 18px; border-right: 2px solid #000; }
-    .afip-col-doc { padding: 16px 18px; text-align: right; min-width: 200px; }
-    .emp-logo { max-height: 56px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
-    .emp-nombre { font-size: 18px; font-weight: 800; margin-bottom: 4px; color: #000; }
-    .emp-dato { font-size: 12px; color: #000; line-height: 1.7; }
-    .doc-titulo { font-size: 19px; font-weight: 800; margin-bottom: 6px; color: #000; letter-spacing: .5px; }
-    .doc-nro { font-size: 24px; font-weight: 900; letter-spacing: .5px; color: #000; }
-    .doc-fecha-label { font-size: 10.5px; color: #000; text-transform: uppercase; letter-spacing: .5px; margin-top: 8px; font-weight: 700; }
-    .doc-fecha-val { font-size: 14px; font-weight: 800; color: #000; }
-    .estado-badge { display:inline-block; padding: 3px 12px; border-radius: 4px; font-size: 12px; font-weight: 800; margin-top: 6px; border: 1.5px solid #000; color: #000 !important; background: #fff !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Arial', 'Helvetica Neue', sans-serif;
+      color: #111;
+      font-size: 15.5px;
+      line-height: 1.5;
+      margin: 0;
+      padding: 24px;
+      background: #e9e9e9;
+    }
+    .doc {
+      max-width: 800px;
+      margin: 0 auto 24px;
+      background: #fff;
+      padding: 30px 34px 200px;
+      border-radius: 0;
+      box-shadow: none;
+      border: 1px solid #ccc;
+      position: relative;
+      min-height: 900px;
+    }
 
-    .cliente-box { border: 2px solid #000; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; background: #fff; }
-    .cliente-box .titulo { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: #000; margin-bottom: 6px; font-weight: 700; }
-    .cliente-box .nombre { font-size: 16px; font-weight: 800; margin-bottom: 2px; color: #000; }
-    .cliente-box .dato { font-size: 13px; color: #000; font-weight: 600; }
+    /* Header estilo comprobante: recuadro con 3 columnas */
+    .header-box {
+      display: grid;
+      grid-template-columns: 1fr auto 220px;
+      border: 1.5px solid #111;
+      border-radius: 0;
+      margin-bottom: 18px;
+    }
+    .h-empresa { padding: 14px 18px; border-right: 1px solid #111; }
+    .emp-logo { max-height: 46px; max-width: 140px; object-fit: contain; margin-bottom: 6px; display: block; }
+    .emp-nombre { font-size: 17.5px; font-weight: 800; color: #111; margin-bottom: 3px; }
+    .emp-tagline { font-size: 12.5px; color: #111; font-weight: 700; font-style: italic; margin-bottom: 4px; }
+    .emp-dato { font-size: 12.5px; color: #111; font-weight: 700; line-height: 1.55; }
+    .fiscal-block { font-size: 12.5px; color: #111; font-weight: 700; margin-top: 6px; line-height: 1.55; border-top: 1px dashed #999; padding-top: 6px; }
+    .fiscal-block strong { color: #111; }
 
-    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    th { background: #fff; text-align: left; padding: 9px 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: #000; font-weight: 800; border-bottom: 2.5px solid #000; }
+    .h-marca { display: flex; align-items: center; justify-content: center; border-right: 1px solid #111; padding: 0 14px; }
+    .marca-r { width: 46px; height: 46px; border: 2px solid #111; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #111; }
+
+    .h-doc { padding: 14px 18px; text-align: right; }
+    .doc-titulo { font-size: 14px; font-weight: 800; letter-spacing: 1.2px; color: #111; text-transform: uppercase; margin-bottom: 3px; }
+    .doc-nro { font-size: 23px; font-weight: 900; color: #111; letter-spacing: .3px; margin-bottom: 6px; }
+    .doc-fecha-label { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #111; font-weight: 800; margin-top: 4px; }
+    .doc-fecha-val { font-size: 15px; font-weight: 700; color: #111; }
+
+    .estado-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 11px;
+      border: 1.3px solid #111;
+      border-radius: 0;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: #111;
+      background: #fff;
+    }
+
+    /* Cliente: recuadro de 2 columnas, igual al modelo */
+    .cliente-box {
+      border: 1.5px solid #111;
+      border-radius: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin-bottom: 18px;
+    }
+    .cliente-col { padding: 12px 18px; }
+    .cliente-col.izq { border-right: 1.5px solid #111; }
+    .cliente-col-grid { display: flex; flex-direction: column; gap: 6px; }
+    .cliente-col-grid > div { display: flex; align-items: baseline; gap: 8px; }
+    .cliente-label { font-size: 12px; font-weight: 800; color: #111; text-transform: uppercase; letter-spacing: .3px; width: 128px; flex-shrink: 0; white-space: nowrap; }
+    .cliente-val   { font-size: 16px; font-weight: 800; color: #111; }
+    .cliente-val.lg { font-size: 18px; font-weight: 900; }
+
+    /* Tabla de items: grilla completa, estilo comprobante */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; border: 1.5px solid #111; }
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: #111;
+      font-weight: 800;
+      background: #fff;
+      border-bottom: 1.5px solid #111;
+      border-right: none;
+    }
+    th:last-child { border-right: none; }
     th.center, td.center { text-align: center; }
-    td { padding: 11px 10px; border-bottom: 1.5px solid #000; font-size: 16px; font-weight: 700; color: #000; }
+    th.right, td.right { text-align: right; }
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #111;
+      border-right: none;
+      font-size: 15.5px;
+      font-weight: 700;
+      color: #111;
+    }
+    td:last-child { border-right: none; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:nth-child(even) { background: #fff; }
 
-    .notas { font-size: 13px; color: #000; background: #fff; padding: 10px 14px; border-radius: 6px; border: 1.5px solid #000; margin-top: 8px; margin-bottom: 20px; font-weight: 600; }
+    .notas {
+      font-size: 13.5px;
+      color: #111;
+      font-weight: 700;
+      background: #fff;
+      padding: 9px 14px;
+      border-radius: 0;
+      border: 1px solid #111;
+      margin-bottom: 18px;
+    }
 
-    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 46px; }
+    /* Firmas: fijas al pie de la hoja, sin recuadro */
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; position: absolute; bottom: 30px; left: 34px; right: 34px; }
     .firma-box { text-align: center; }
-    .firma-linea { border-top: 2px solid #000; padding-top: 8px; margin-top: 46px; }
-    .firma-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #000; }
-    .firma-sub { font-size: 11px; color: #000; margin-top: 3px; font-weight: 600; }
+    .firma-linea { border-top: 1.3px solid #111; padding-top: 8px; margin-top: 46px; }
+    .firma-label { font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: #111; }
+    .firma-sub { font-size: 11.5px; color: #111; font-weight: 700; margin-top: 3px; }
 
     .toolbar { max-width: 800px; margin: 0 auto 14px; display: flex; justify-content: flex-end; gap: 10px; }
-    .btn-print { padding: 10px 20px; background: #1B4FD8; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-print { padding: 10px 20px; background: #1B4FD8; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 700; cursor: pointer; }
+
     @page { size: A4; margin: 15mm; }
     @media print {
       body { background: #fff; padding: 0; }
-      .doc { box-shadow: none; padding: 0; max-width: 100%; }
+      .doc { box-shadow: none; padding: 0 0 200px; max-width: 100%; height: 100%; min-height: 0; }
+      .firmas { left: 0; right: 0; bottom: 0; }
       .toolbar { display: none; }
-      td { padding: 13px 10px; }
-      .afip-header { margin-bottom: 24px; }
-      .cliente-box { margin-bottom: 22px; }
     }
   </style>
 </head>
@@ -55,52 +146,108 @@
   <div class="toolbar">
     <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
   </div>
+
   <div class="doc" id="doc">
-    <div class="afip-header">
-      <div class="afip-col-empresa">
+
+    <%
+      // Datos fiscales del emisor: misma lógica que Presupuesto.
+      // Si AFIP está conectado (facturación habilitada), prioriza los datos de AFIP;
+      // si no, usa los de "Datos de la empresa". Si un campo está vacío en uno,
+      // se completa con el otro (nunca se pierde el dato con que sí fue cargado).
+      const afipOn      = String(config && config.facturacion_habilitada) === '1';
+      const emisorCuit  = afipOn
+        ? ((config && config.afip_cuit)    || (config && config.empresa_cuit) || '')
+        : ((config && config.empresa_cuit) || (config && config.afip_cuit)    || '');
+      const emisorInicio  = (config && config.empresa_inicio_actividades) || '';
+      const emisorIibb    = (config && config.empresa_iibb) || '';
+      const emisorCondIva = (config && config.empresa_cond_iva) || '';
+    %>
+
+    <div class="header-box">
+      <div class="h-empresa">
         <% if (config && config.empresa_logo) { %>
           <img src="<%= config.empresa_logo %>" class="emp-logo" alt="Logo">
         <% } %>
         <div class="emp-nombre"><%= (config && config.empresa_nombre) || 'Mi Empresa' %></div>
+        <% if (config && config.empresa_tagline) { %>
+          <div class="emp-tagline"><%= config.empresa_tagline %></div>
+        <% } %>
         <div class="emp-dato">
           <% if (config && config.empresa_direccion) { %><div><%= config.empresa_direccion %></div><% } %>
-          <% if (config && config.empresa_telefono)  { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
-          <% const _cuit = (config && (config.empresa_cuit || config.afip_cuit)) || ''; %>
-          <% if (_cuit) { %><div>CUIT: <%= _cuit %></div><% } %>
+          <% if (config && config.empresa_telefono) { %><div>Tel: <%= config.empresa_telefono %></div><% } %>
+          <% if (config && config.empresa_email) { %><div><%= config.empresa_email %></div><% } %>
         </div>
+        <% if (emisorCondIva || emisorCuit || emisorInicio || emisorIibb) { %>
+        <div class="fiscal-block">
+          <% if (emisorCondIva) { %><div><%= emisorCondIva %></div><% } %>
+          <% if (emisorCuit)    { %><div><strong>CUIT:</strong> <%= emisorCuit %></div><% } %>
+          <% if (emisorInicio)  { %><div><strong>Inicio de actividades:</strong> <%= emisorInicio %></div><% } %>
+          <% if (emisorIibb)    { %><div><strong>IIBB:</strong> <%= emisorIibb %></div><% } %>
+        </div>
+        <% } %>
       </div>
-      <div class="afip-col-doc">
-        <div class="doc-titulo">REMITO</div>
+
+      <div class="h-marca">
+        <div class="marca-r">R</div>
+      </div>
+
+      <div class="h-doc">
+        <div class="doc-titulo">Remito</div>
         <div class="doc-nro"><%= remito.numero %></div>
-        <div class="doc-fecha-label">Fecha</div>
+        <div class="doc-fecha-label">Fecha de emisión</div>
         <div class="doc-fecha-val"><%= new Date(remito.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %></div>
-        <span class="estado-badge estado-<%= remito.estado %>"><%= remito.estado %></span>
+        <span class="estado-badge"><%= remito.estado %></span>
       </div>
     </div>
 
     <div class="cliente-box">
-      <div class="titulo">Entregar a</div>
-      <div class="nombre"><%= remito.cliente_nombre || 'Consumidor Final' %></div>
-      <% if (remito.cliente_cuit) { %><div class="dato">CUIT/DNI: <%= remito.cliente_cuit %></div><% } %>
-      <% if (remito.cliente_direccion) { %><div class="dato">Dirección: <%= remito.cliente_direccion %></div><% } %>
-      <% if (remito.cliente_tel) { %><div class="dato">Tel: <%= remito.cliente_tel %></div><% } %>
-      <% if (remito.presupuesto) { %><div class="dato">Presupuesto origen: <strong><%= remito.presupuesto.numero %></strong></div><% } %>
+      <div class="cliente-col izq">
+        <div class="cliente-col-grid">
+          <div><span class="cliente-label">Cliente</span><span class="cliente-val lg"><%= remito.cliente_nombre || 'Consumidor Final' %></span></div>
+          <div><span class="cliente-label">Dirección</span><span class="cliente-val"><%= remito.cliente_direccion || '—' %></span></div>
+          <% if (remito.cliente_barrio) { %><div><span class="cliente-label">Barrio</span><span class="cliente-val"><%= remito.cliente_barrio %></span></div><% } %>
+          <div><span class="cliente-label">Localidad</span><span class="cliente-val"><%= remito.cliente_localidad || '—' %></span></div>
+          <% if (remito.cliente_tel) { %><div><span class="cliente-label">Teléfono</span><span class="cliente-val"><%= remito.cliente_tel %></span></div><% } %>
+        </div>
+      </div>
+      <div class="cliente-col">
+        <div class="cliente-col-grid">
+          <div><span class="cliente-label">I.V.A.</span><span class="cliente-val"><%= remito.cliente_cond_iva || 'Consumidor Final' %></span></div>
+          <div><span class="cliente-label">Cond. Venta</span><span class="cliente-val"><%= remito.condicion_venta || 'Contado' %></span></div>
+          <div>
+            <span class="cliente-label">Fecha de Vto.</span>
+            <span class="cliente-val">
+              <% if (remito.validez_dias) {
+                   const vto = new Date(remito.created_at);
+                   vto.setDate(vto.getDate() + Number(remito.validez_dias));
+              %>
+                <%= vto.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' }) %>
+              <% } else { %>—<% } %>
+            </span>
+          </div>
+          <% if (remito.vendedor) { %><div><span class="cliente-label">Vendedor</span><span class="cliente-val"><%= remito.vendedor %></span></div><% } %>
+          <% if (remito.presupuesto) { %><div><span class="cliente-label">Presupuesto</span><span class="cliente-val"><%= remito.presupuesto.numero %></span></div><% } %>
+        </div>
+      </div>
     </div>
 
     <table>
       <thead>
         <tr>
+          <th class="center" style="width:90px;">Cantidad</th>
           <th>Descripción</th>
-          <th class="center" style="width:110px;">Cantidad</th>
-          <th style="width:110px;">Unidad</th>
+          <th class="right" style="width:130px;">Cód. Artículo</th>
         </tr>
       </thead>
       <tbody>
         <% remito.items.forEach(item => { %>
         <tr>
-          <td><%= item.nombre %><% if (item.descripcion) { %><div style="font-size:12.5px;color:#000;font-weight:500;margin-top:2px;"><%= item.descripcion %></div><% } %></td>
           <td class="center"><%= item.cantidad %></td>
-          <td><%= item.unidad || 'unidad' %></td>
+          <td>
+            <%= item.nombre %>
+            <% if (item.descripcion) { %><div style="font-size: 13px;color:#111;font-weight:700;margin-top:2px;"><%= item.descripcion %></div><% } %>
+          </td>
+          <td class="right"><%= item.sku || '—' %></td>
         </tr>
         <% }) %>
       </tbody>
@@ -124,6 +271,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </body>
 </html>

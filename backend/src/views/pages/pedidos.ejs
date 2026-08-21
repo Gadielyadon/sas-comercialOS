@@ -1,29 +1,35 @@
 <%- include('../partials/head', { title }) %>
 
 <style>
-.tab-btn { padding:8px 18px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;display:flex;align-items:center;gap:6px; }
+.tab-btn { padding:8px 18px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;display:flex;align-items:center;gap:6px; }
 .tab-btn.active { background:var(--color-primary);border-color:var(--color-primary);color:#fff; }
 
 .pedido-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:14px 16px;transition:box-shadow .15s;position:relative; }
 .pedido-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
 .pedido-card.urgente { border-left:4px solid #ef4444; }
 
-.prioridad-badge { font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px; }
+.pedido-toggle-row { cursor:pointer; user-select:none; }
+.pedido-chevron { display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;color:var(--text-secondary);transition:transform .18s;flex-shrink:0; }
+.pedido-card.abierto .pedido-chevron { transform:rotate(90deg); color:var(--color-primary); }
+.pedido-detalle { display:none;margin-top:10px; }
+.pedido-card.abierto .pedido-detalle { display:block; }
+
+.prioridad-badge { font-size: 11.5px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px; }
 .prioridad-urgente { background:rgba(239,68,68,.12);color:#dc2626; }
 .prioridad-normal  { background:rgba(27,79,216,.1);color:var(--color-primary); }
 .prioridad-baja    { background:rgba(100,116,139,.1);color:var(--text-secondary); }
 
-.estado-rec-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
+.estado-rec-badge { font-size: 11.5px;font-weight:700;padding:2px 8px;border-radius:20px; }
 .rec-enviado   { background:rgba(99,102,241,.12);color:#6366f1; }
 .rec-parcial   { background:rgba(245,158,11,.12);color:#d97706; }
 .rec-recibido  { background:rgba(16,185,129,.12);color:#059669; }
 
-.btn-accion { width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .12s; }
+.btn-accion { width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size: 15px;transition:all .12s; }
 .btn-accion:hover { border-color:var(--color-primary);color:var(--color-primary);background:rgba(27,79,216,.06); }
 .btn-accion.danger:hover { border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.06); }
 
-.form-lbl { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px; }
-.form-inp  { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;font-family:var(--font-body); }
+.form-lbl { font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin-bottom:5px; }
+.form-inp  { width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;font-family:var(--font-body); }
 .form-inp:focus { border-color:var(--color-primary); }
 
 .empty-pedidos { text-align:center;padding:48px 20px;color:var(--text-muted); }
@@ -34,6 +40,8 @@
   .sidebar { display:none !important; }
   .app-header { display:none !important; }
   .main-content { margin-left:0 !important; }
+  .pedido-detalle { display:block !important; }
+  .pedido-chevron { display:none !important; }
 }
 </style>
 
@@ -59,8 +67,8 @@
       <!-- Recordatorio -->
       <% if (recordatorios > 0) { %>
       <div style="background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;" class="no-print">
-        <i class="bi bi-bell-fill" style="color:#d97706;font-size:16px;"></i>
-        <span style="font-size:13px;font-weight:600;color:#d97706;">
+        <i class="bi bi-bell-fill" style="color:#d97706;font-size: 18px;"></i>
+        <span style="font-size: 15px;font-weight:600;color:#d97706;">
           Tenés <strong><%= recordatorios %></strong> pedido<%= recordatorios > 1 ? 's' : '' %> con recordatorio para hoy.
         </span>
       </div>
@@ -75,86 +83,94 @@
       <% } else { %>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <% pedidos.forEach(p => { %>
-        <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %>">
+        <div class="pedido-card <%= p.prioridad === 'urgente' ? 'urgente' : '' %>" id="pedido-card-<%= p.id %>">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
 
-            <!-- Info -->
+            <!-- Info (clickeable: abre/cierra el detalle) -->
             <div style="flex:1;min-width:200px;">
-              <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">
-                <span class="prioridad-badge prioridad-<%= p.prioridad %>">
-                  <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
-                </span>
-                <% if (p.estado_recepcion === 'enviado') { %>
-                  <span class="estado-rec-badge rec-enviado"><i class="bi bi-send"></i> Enviado</span>
-                <% } else if (p.estado_recepcion === 'recibido_parcial') { %>
-                  <span class="estado-rec-badge rec-parcial"><i class="bi bi-clock"></i> Recibido parcial</span>
-                <% } else if (p.estado_recepcion === 'recibido') { %>
-                  <span class="estado-rec-badge rec-recibido"><i class="bi bi-check-circle"></i> Recibido</span>
+              <div class="pedido-toggle-row" onclick="togglePedido(<%= p.id %>)" style="display:flex;align-items:flex-start;gap:8px;">
+                <span class="pedido-chevron"><i class="bi bi-chevron-right"></i></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap;">
+                    <span class="prioridad-badge prioridad-<%= p.prioridad %>">
+                      <%= p.prioridad === 'urgente' ? '🔴 Urgente' : p.prioridad === 'normal' ? 'Normal' : 'Baja' %>
+                    </span>
+                    <% if (p.estado_recepcion === 'enviado') { %>
+                      <span class="estado-rec-badge rec-enviado"><i class="bi bi-send"></i> Enviado</span>
+                    <% } else if (p.estado_recepcion === 'recibido_parcial') { %>
+                      <span class="estado-rec-badge rec-parcial"><i class="bi bi-clock"></i> Recibido parcial</span>
+                    <% } else if (p.estado_recepcion === 'recibido') { %>
+                      <span class="estado-rec-badge rec-recibido"><i class="bi bi-check-circle"></i> Recibido</span>
+                    <% } %>
+                  </div>
+
+                  <div style="font-size: 16px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">
+                    <%= p.titulo %>
+                  </div>
+
+                  <div style="font-size: 13.5px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:10px;">
+                    <% if (p.proveedor) { %><span><i class="bi bi-truck"></i> <%= p.proveedor %></span><% } %>
+                    <% if (p.items && p.items.length) { %><span><i class="bi bi-box"></i> <%= p.items.length %> producto<%= p.items.length !== 1 ? 's' : '' %></span><% } %>
+                    <% if (p.fecha_entrega) { %><span><i class="bi bi-calendar3"></i> <%= p.fecha_entrega %></span><% } %>
+                    <span style="color:var(--text-muted);"><i class="bi bi-clock-history"></i> <%= new Date(p.created_at).toLocaleDateString('es-AR') %></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ DETALLE (colapsado por defecto) ═══ -->
+              <div class="pedido-detalle">
+                <!-- Ítems del pedido -->
+                <% if (p.items && p.items.length) { %>
+                <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;margin-top:4px;">
+                  <table style="width:100%;border-collapse:collapse;font-size: 13.5px;">
+                    <thead>
+                      <tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
+                        <th style="padding:6px 10px;text-align:left;font-weight:700;color:var(--text-secondary);font-size: 12px;text-transform:uppercase;">Producto</th>
+                        <th style="padding:6px 10px;text-align:center;font-weight:700;color:var(--text-secondary);font-size: 12px;text-transform:uppercase;width:70px;">Cant.</th>
+                        <th style="padding:6px 10px;text-align:right;font-weight:700;color:var(--text-secondary);font-size: 12px;text-transform:uppercase;width:100px;">P. Costo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% p.items.forEach(item => { %>
+                      <tr style="border-bottom:1px solid var(--border-color);">
+                        <td style="padding:7px 10px;color:var(--text-primary);">
+                          <%= item.nombre %>
+                          <% if (item.es_manual) { %>
+                            <span style="font-size: 11.5px;background:rgba(245,158,11,.12);color:#d97706;padding:1px 5px;border-radius:4px;margin-left:4px;">Manual</span>
+                          <% } %>
+                          <% if (item.recibido) { %>
+                            <span style="font-size: 11.5px;background:rgba(16,185,129,.12);color:#059669;padding:1px 5px;border-radius:4px;margin-left:4px;">✓ Recibido</span>
+                          <% } %>
+                        </td>
+                        <td style="padding:7px 10px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);"><%= item.cantidad %></td>
+                        <td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">
+                          <%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %>
+                        </td>
+                      </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+                <% } %>
+
+                <% if (p.notas) { %>
+                <div style="font-size: 13px;color:var(--text-secondary);margin-top:8px;background:var(--bg-body);padding:6px 10px;border-radius:6px;border-left:3px solid var(--border-color);">
+                  📝 <%= p.notas %>
+                </div>
                 <% } %>
               </div>
-
-              <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">
-                <%= p.titulo %>
-              </div>
-
-              <div style="font-size:12px;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
-                <% if (p.proveedor) { %><span><i class="bi bi-truck"></i> <%= p.proveedor %></span><% } %>
-                <% if (p.items && p.items.length) { %><span><i class="bi bi-box"></i> <%= p.items.length %> producto<%= p.items.length !== 1 ? 's' : '' %></span><% } %>
-                <% if (p.fecha_entrega) { %><span><i class="bi bi-calendar3"></i> <%= p.fecha_entrega %></span><% } %>
-                <span style="color:var(--text-muted);"><i class="bi bi-clock-history"></i> <%= new Date(p.created_at).toLocaleDateString('es-AR') %></span>
-              </div>
-
-              <!-- Ítems del pedido -->
-              <% if (p.items && p.items.length) { %>
-              <div style="background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;">
-                <table style="width:100%;border-collapse:collapse;font-size:12px;">
-                  <thead>
-                    <tr style="background:var(--bg-surface-2);border-bottom:1px solid var(--border-color);">
-                      <th style="padding:6px 10px;text-align:left;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;">Producto</th>
-                      <th style="padding:6px 10px;text-align:center;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;width:70px;">Cant.</th>
-                      <th style="padding:6px 10px;text-align:right;font-weight:700;color:var(--text-secondary);font-size:10.5px;text-transform:uppercase;width:100px;">P. Costo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% p.items.forEach(item => { %>
-                    <tr style="border-bottom:1px solid var(--border-color);">
-                      <td style="padding:7px 10px;color:var(--text-primary);">
-                        <%= item.nombre %>
-                        <% if (item.es_manual) { %>
-                          <span style="font-size:10px;background:rgba(245,158,11,.12);color:#d97706;padding:1px 5px;border-radius:4px;margin-left:4px;">Manual</span>
-                        <% } %>
-                        <% if (item.recibido) { %>
-                          <span style="font-size:10px;background:rgba(16,185,129,.12);color:#059669;padding:1px 5px;border-radius:4px;margin-left:4px;">✓ Recibido</span>
-                        <% } %>
-                      </td>
-                      <td style="padding:7px 10px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-primary);"><%= item.cantidad %></td>
-                      <td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);color:var(--text-secondary);">
-                        <%= item.precio_costo > 0 ? '$' + Number(item.precio_costo).toLocaleString('es-AR',{minimumFractionDigits:2}) : '—' %>
-                      </td>
-                    </tr>
-                    <% }) %>
-                  </tbody>
-                </table>
-              </div>
-              <% } %>
-
-              <% if (p.notas) { %>
-              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;background:var(--bg-body);padding:6px 10px;border-radius:6px;border-left:3px solid var(--border-color);">
-                📝 <%= p.notas %>
-              </div>
-              <% } %>
             </div>
 
             <!-- Acciones -->
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;" class="no-print">
               <% if (!p.estado_recepcion || p.estado_recepcion === null) { %>
               <button onclick="abrirEnviarProveedor(<%= p.id %>, '<%= (p.titulo||'').replace(/'/g,'') %>')"
-                style="padding:6px 12px;background:rgba(99,102,241,.1);color:#6366f1;border:1.5px solid rgba(99,102,241,.3);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">
+                style="padding:6px 12px;background:rgba(99,102,241,.1);color:#6366f1;border:1.5px solid rgba(99,102,241,.3);border-radius:8px;font-size: 13.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);">
                 <i class="bi bi-send"></i> Enviar a proveedor
               </button>
               <% } else if (p.estado_recepcion === 'enviado' || p.estado_recepcion === 'recibido_parcial') { %>
               <button onclick="abrirEnviarProveedor(<%= p.id %>, '<%= (p.titulo||'').replace(/'/g,'') %>')"
-                style="padding:6px 12px;background:rgba(99,102,241,.06);color:#6366f1;border:1.5px dashed rgba(99,102,241,.4);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);"
+                style="padding:6px 12px;background:rgba(99,102,241,.06);color:#6366f1;border:1.5px dashed rgba(99,102,241,.4);border-radius:8px;font-size: 13.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);"
                 title="Actualizar proveedor del pedido">
                 <i class="bi bi-arrow-repeat"></i> Re-enviar
               </button>
@@ -191,12 +207,12 @@
     <!-- Header (fijo) -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19.5px;">
           <i class="bi bi-journal-check"></i>
         </div>
         <div>
-          <div style="font-size:16px;font-weight:800;color:var(--text-primary);" id="modalPedidoTitulo">Nuevo pedido</div>
-          <div style="font-size:12px;color:var(--text-secondary);">Agregá productos y elegí el proveedor</div>
+          <div style="font-size: 18px;font-weight:800;color:var(--text-primary);" id="modalPedidoTitulo">Nuevo pedido</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);">Agregá productos y elegí el proveedor</div>
         </div>
       </div>
       <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:22px;"><i class="bi bi-x-lg"></i></button>
@@ -224,9 +240,9 @@
 
     <!-- Buscador de productos — filtrado en cliente sin fetch por letra -->
     <div style="margin-bottom:14px;">
-      <label class="form-lbl">Agregar producto del sistema <span style="font-weight:400;text-transform:none;font-size:10px;">(<span id="pedProdCount">0</span> disponibles)</span></label>
+      <label class="form-lbl">Agregar producto del sistema <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(<span id="pedProdCount">0</span> disponibles)</span></label>
       <div style="position:relative;">
-        <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:13px;pointer-events:none;z-index:1;"></i>
+        <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size: 15px;pointer-events:none;z-index:1;"></i>
         <input type="text" id="pedBuscador" class="form-inp"
           placeholder="Buscá por nombre o SKU…"
           autocomplete="off"
@@ -245,7 +261,7 @@
     <div style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="height:1px;flex:1;background:var(--border-color);"></div>
-        <span style="font-size:11px;color:var(--text-secondary);font-weight:600;">O INGRESÁ UN PRODUCTO MANUAL</span>
+        <span style="font-size: 12.5px;color:var(--text-secondary);font-weight:600;">O INGRESÁ UN PRODUCTO MANUAL</span>
         <div style="height:1px;flex:1;background:var(--border-color);"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:end;">
@@ -262,7 +278,7 @@
           <input type="number" id="manualCosto" class="form-inp" min="0" step="0.01" placeholder="0" style="width:100px;">
         </div>
         <button onclick="agregarManual()"
-          style="padding:8px 14px;background:rgba(245,158,11,.1);color:#d97706;border:1.5px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;height:38px;">
+          style="padding:8px 14px;background:rgba(245,158,11,.1);color:#d97706;border:1.5px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;height:38px;">
           + Agregar
         </button>
       </div>
@@ -270,19 +286,19 @@
 
     <!-- Tabla de ítems -->
     <div style="border:1px solid var(--border-color);border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <table style="width:100%;border-collapse:collapse;font-size: 15px;">
         <thead>
           <tr style="background:var(--bg-surface-2);">
-            <th style="padding:8px 12px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Producto</th>
-            <th style="padding:8px 12px;text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:90px;">Cantidad</th>
-            <th style="padding:8px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Costo</th>
-            <th style="padding:8px 12px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Venta</th>
+            <th style="padding:8px 12px;text-align:left;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);">Producto</th>
+            <th style="padding:8px 12px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:90px;">Cantidad</th>
+            <th style="padding:8px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Costo</th>
+            <th style="padding:8px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);width:120px;">P. Venta</th>
             <th style="width:36px;"></th>
           </tr>
         </thead>
         <tbody id="pedItemsTbody">
           <tr id="pedItemsVacio">
-            <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;">
+            <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size: 15px;">
               <i class="bi bi-box-seam" style="font-size:22px;display:block;margin-bottom:6px;opacity:.4;"></i>
               Buscá o ingresá productos para el pedido
             </td>
@@ -293,7 +309,7 @@
 
     <!-- Notas -->
     <div>
-      <label class="form-lbl">Notas <span style="font-weight:400;text-transform:none;font-size:10px;">(opcional)</span></label>
+      <label class="form-lbl">Notas <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
       <textarea id="m_notas" class="form-inp" rows="2" placeholder="Detalles adicionales..." style="resize:vertical;"></textarea>
     </div>
 
@@ -304,12 +320,12 @@
     <div style="padding:16px 24px;border-top:1px solid var(--border-color);flex-shrink:0;">
       <div style="display:flex;gap:8px;">
         <button onclick="guardarPedido()"
-          style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          style="flex:1;padding:11px;background:linear-gradient(135deg,var(--color-primary),#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
           <i class="bi bi-check-lg"></i> Guardar pedido
         </button>
         <button onclick="cerrarModal()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
       </div>
-      <div id="pedError" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size:13px;color:#dc2626;"></div>
+      <div id="pedError" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;font-size: 15px;color:#dc2626;"></div>
     </div>
   </div>
 </div>
@@ -318,11 +334,11 @@
 <div class="sale-overlay" id="modalEnviar" onclick="if(event.target.id==='modalEnviar')cerrarModalEnviar()">
   <div class="sale-modal" style="max-width:400px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div style="font-size:16px;font-weight:800;color:var(--text-primary);">Enviar a proveedor</div>
-      <button onclick="cerrarModalEnviar()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <div style="font-size: 18px;font-weight:800;color:var(--text-primary);">Enviar a proveedor</div>
+      <button onclick="cerrarModalEnviar()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <input type="hidden" id="enviarPedidoId">
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;" id="enviarPedidoNombre"></div>
+    <div style="font-size: 15px;color:var(--text-secondary);margin-bottom:16px;" id="enviarPedidoNombre"></div>
     <div>
       <label class="form-lbl">Elegí el proveedor</label>
       <select id="enviarProveedorId" class="form-inp" style="cursor:pointer;">
@@ -332,10 +348,10 @@
         <% }) %>
       </select>
     </div>
-    <div id="enviarError" style="display:none;margin-top:8px;font-size:12px;color:#dc2626;"></div>
+    <div id="enviarError" style="display:none;margin-top:8px;font-size: 13.5px;color:#dc2626;"></div>
     <div style="display:flex;gap:8px;margin-top:18px;">
       <button onclick="confirmarEnviar()"
-        style="flex:1;padding:11px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        style="flex:1;padding:11px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
         <i class="bi bi-send-fill"></i> Enviar
       </button>
       <button onclick="cerrarModalEnviar()" class="btn-action btn-action-outline" style="padding:11px 16px;">Cancelar</button>
@@ -393,16 +409,16 @@ function renderDropPedido(lista) {
       style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;transition:background .1s;"
       onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
       <div>
-        <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${p.name}</div>
-        <div style="font-size:11px;color:var(--text-secondary);">
+        <div style="font-weight:700;font-size: 15px;color:var(--text-primary);">${p.name}</div>
+        <div style="font-size: 12.5px;color:var(--text-secondary);">
           SKU: ${p.sku} · Stock: <strong style="color:${p.stock > 0 ? 'var(--color-success)' : '#ef4444'};">${p.stock}</strong>
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11px;font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtP(p.price_cost)} <span style="font-size:9px;font-weight:400;opacity:.7;">costo</span></div>
-        <div style="font-size:11px;font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">${fmtP(p.price)} <span style="font-size:9px;font-weight:400;">venta</span></div>
+        <div style="font-size: 12.5px;font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">${fmtP(p.price_cost)} <span style="font-size: 10.5px;font-weight:400;opacity:.7;">costo</span></div>
+        <div style="font-size: 12.5px;font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">${fmtP(p.price)} <span style="font-size: 10.5px;font-weight:400;">venta</span></div>
       </div>
-    </div>`).join('') + (lista.length > 30 ? `<div style="padding:8px 14px;text-align:center;font-size:11.5px;color:var(--text-secondary);">Mostrando 30 de ${lista.length} — escribí para filtrar</div>` : '');
+    </div>`).join('') + (lista.length > 30 ? `<div style="padding:8px 14px;text-align:center;font-size: 13px;color:var(--text-secondary);">Mostrando 30 de ${lista.length} — escribí para filtrar</div>` : '');
   drop.style.display = 'block';
 }
 
@@ -425,7 +441,7 @@ function filtrarProductosPedido(q) {
     (p.sku && p.sku.toLowerCase().includes(ql))
   );
   if (!filtrados.length) {
-    drop.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">Sin resultados para "${q}"</div>`;
+    drop.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-secondary);font-size: 15px;">Sin resultados para "${q}"</div>`;
     drop.style.display = 'block';
     return;
   }
@@ -468,7 +484,7 @@ function renderPedItems() {
   if (!_pedItems.length) {
     tbody.innerHTML = `
       <tr id="pedItemsVacio">
-        <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size:13px;">
+        <td colspan="4" style="padding:24px;text-align:center;color:var(--text-secondary);font-size: 15px;">
           <i class="bi bi-box-seam" style="font-size:22px;display:block;margin-bottom:6px;opacity:.4;"></i>
           Buscá o ingresá productos para el pedido
         </td>
@@ -478,36 +494,36 @@ function renderPedItems() {
   tbody.innerHTML = _pedItems.map((item, idx) => `
     <tr style="border-bottom:1px solid var(--border-color);background:var(--bg-surface);">
       <td style="padding:8px 12px;">
-        <div style="font-weight:700;font-size:13px;color:var(--text-primary);">${item.nombre}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);">${item.sku ? 'SKU: ' + item.sku : '🖊 Manual'}</div>
+        <div style="font-weight:700;font-size: 15px;color:var(--text-primary);">${item.nombre}</div>
+        <div style="font-size: 12px;color:var(--text-secondary);">${item.sku ? 'SKU: ' + item.sku : '🖊 Manual'}</div>
       </td>
       <td style="padding:6px 8px;text-align:center;">
         <input type="number" value="${item.cantidad}" min="0.001" step="0.001"
-          style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;outline:none;"
+          style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:center;outline:none;"
           oninput="updatePedItem(${idx},'cantidad',this.value)"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </td>
       <td style="padding:6px 8px;">
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
-          <span style="color:var(--text-secondary);font-size:11px;">$</span>
+          <span style="color:var(--text-secondary);font-size: 12.5px;">$</span>
           <input type="number" value="${item.precio_costo}" min="0" step="0.01"
-            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:right;outline:none;"
+            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:right;outline:none;"
             oninput="updatePedItem(${idx},'precio_costo',this.value)"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
         </div>
       </td>
       <td style="padding:6px 8px;">
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
-          <span style="color:var(--text-secondary);font-size:11px;">$</span>
+          <span style="color:var(--text-secondary);font-size: 12.5px;">$</span>
           <input type="number" value="${item.precio_venta || 0}" min="0" step="0.01"
-            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:right;outline:none;"
+            style="width:85px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:right;outline:none;"
             oninput="updatePedItem(${idx},'precio_venta',this.value)"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
         </div>
       </td>
       <td style="padding:4px 6px;text-align:center;">
         <button onclick="quitarPedItem(${idx})"
-          style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:17px;padding:4px;border-radius:6px;transition:.15s;"
+          style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 19.5px;padding:4px;border-radius:6px;transition:.15s;"
           onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-secondary)'">
           <i class="bi bi-x-circle"></i>
         </button>
@@ -579,6 +595,12 @@ async function confirmarEnviar() {
     location.reload();
   } catch(e) { errEl.textContent = 'Error de conexión'; errEl.style.display='block'; }
 }
+
+// ── Acordeón de pedidos: colapsado por defecto ──────────────────
+function togglePedido(id) {
+  document.getElementById('pedido-card-' + id)?.classList.toggle('abierto');
+}
+window.togglePedido = togglePedido;
 
 // ── Delegación de eventos ──────────────────────────────────────
 document.addEventListener('click', e => {

@@ -4,33 +4,33 @@
 .dash-card { background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .18s,transform .18s; }
 .dash-card:hover { box-shadow:var(--shadow-md); }
 .dash-card-header { display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border-color); }
-.dash-card-title  { font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:7px; }
+.dash-card-title  { font-size: 15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:7px; }
 
 .stat-chip { border-radius:var(--radius-lg);padding:20px 22px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);transition:transform .15s,box-shadow .15s; }
 .stat-chip:hover  { transform:translateY(-2px);box-shadow:var(--shadow-lg); }
-.stat-chip.azul   { background:#1B4FD8; }
+.stat-chip.azul   { background:var(--gradient-hero); }
 .stat-chip.indigo { background:#4F46E5; }
 .stat-chip.verde  { background:#10b981; }
 .stat-chip.alerta { background:#f59e0b; }
-.stat-chip-label  { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.80); }
+.stat-chip-label  { font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.80); }
 .stat-chip-value  { font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff; }
-.stat-chip-trend  { font-size:12px;color:rgba(255,255,255,.70);font-weight:500;margin-top:2px; }
+.stat-chip-trend  { font-size: 13.5px;color:rgba(255,255,255,.70);font-weight:500;margin-top:2px; }
 .stat-chip-icon   { position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:38px;opacity:.12;color:#fff;pointer-events:none; }
 
 .insight-card  { background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow-sm);transition:box-shadow .15s,transform .15s; }
 .insight-card:hover { box-shadow:var(--shadow-md);transform:translateY(-1px); }
-.insight-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
+.insight-label { font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
 .insight-value { font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;line-height:1.1; }
-.insight-sub   { font-size:12px;color:var(--text-secondary);margin-top:2px; }
-.insight-icon  { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px; }
+.insight-sub   { font-size: 13.5px;color:var(--text-secondary);margin-top:2px; }
+.insight-icon  { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size: 19.5px;margin-bottom:10px; }
 
-.th-dash { padding:11px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--table-head-color);border-bottom:none; }
+.th-dash { padding:11px 14px;font-size: 12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--table-head-color);border-bottom:none; }
 #tablaActividad thead tr { background:var(--table-head-bg); }
 #tablaActividad thead tr th:first-child { border-radius:8px 0 0 8px; }
 #tablaActividad thead tr th:last-child  { border-radius:0 8px 8px 0; }
 .fila-act:hover td { background:var(--table-row-hover); }
 
-.stock-alert-item { display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border-color);font-size:13px;transition:background .12s; }
+.stock-alert-item { display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border-color);font-size: 15px;transition:background .12s; }
 .stock-alert-item:last-child { border-bottom:none; }
 .stock-alert-item:hover { background:var(--bg-hover); }
 
@@ -52,14 +52,41 @@
   .grid-main  { grid-template-columns:1fr !important; }
 }
 @media (max-width:768px){
-  .stat-chip-value { font-size:20px; }
+  .stat-chip-value { font-size: 23px; }
   .stat-chip { padding:14px 16px; }
   .grid-chips { grid-template-columns:1fr 1fr !important; }
-  .insight-value { font-size:18px; }
+  .insight-value { font-size: 20.5px; }
 }
 @media (max-width:480px){
   .grid-chips { grid-template-columns:1fr !important; }
 }
+
+/* ── Calendario chiquito del dashboard ── */
+.dash-cal {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-surface); border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md); padding: 5px 6px;
+}
+.dash-cal-arrow {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--text-muted); border-radius: 8px; cursor: pointer; font-size: 15px;
+}
+.dash-cal-arrow:hover { background: var(--bg-surface-2); color: var(--text-primary); }
+.dash-cal-modo { display: inline-flex; background: var(--bg-surface-2); border-radius: 8px; padding: 2px; gap: 2px; }
+.dash-cal-modo-btn {
+  border: none; background: none; padding: 5px 10px; border-radius: 6px; font-size: 13px; font-weight: 700;
+  color: var(--text-muted); cursor: pointer; font-family: var(--font-body);
+}
+.dash-cal-modo-btn.active { background: var(--color-primary); color: #fff; }
+.dash-cal input[type=date] {
+  border: none; background: none; color: var(--text-primary); font-size: 14px; font-weight: 600;
+  font-family: var(--font-body); padding: 5px 4px; cursor: pointer;
+}
+.dash-cal-hoy {
+  border: 1px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary);
+  font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-family: var(--font-body);
+}
+.dash-cal-hoy:hover { border-color: var(--color-primary); color: var(--color-primary); }
 </style>
 
 <div class="app-wrapper">
@@ -75,31 +102,48 @@
           <p id="fechaHoy"></p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div class="dash-cal">
+            <button type="button" class="dash-cal-arrow" onclick="dashCalMover(-1)" title="Período anterior"><i class="bi bi-chevron-left"></i></button>
+            <div class="dash-cal-modo">
+              <button type="button" class="dash-cal-modo-btn active" data-modo="dia" onclick="dashCalModo('dia')">Día</button>
+              <button type="button" class="dash-cal-modo-btn" data-modo="mes" onclick="dashCalModo('mes')">Mes</button>
+              <button type="button" class="dash-cal-modo-btn" data-modo="anio" onclick="dashCalModo('anio')">Año</button>
+            </div>
+            <input type="date" id="dashCalFecha" onchange="dashCalCambio()">
+            <button type="button" class="dash-cal-arrow" onclick="dashCalMover(1)" title="Período siguiente"><i class="bi bi-chevron-right"></i></button>
+            <button type="button" class="dash-cal-hoy" id="dashCalHoyBtn" onclick="dashCalHoy()" style="display:none;">Hoy</button>
+          </div>
           <% if (cajaActual) { %>
-          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:rgba(16,185,129,.10);border:1.5px solid rgba(16,185,129,.3);color:#065f46;font-size:13px;font-weight:700;text-decoration:none;">
+          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:rgba(16,185,129,.10);border:1.5px solid rgba(16,185,129,.3);color:#065f46;font-size: 15px;font-weight:700;text-decoration:none;">
             <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.3);display:inline-block;"></span>
             Caja abierta — Ver turno
           </a>
           <% } else { %>
-          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size:13px;font-weight:600;text-decoration:none;">
+          <a href="/caja/turno" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size: 15px;font-weight:600;text-decoration:none;">
             <i class="bi bi-cash-coin"></i> Abrir caja
           </a>
           <% } %>
-          <a href="/historial" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size:13px;font-weight:600;text-decoration:none;">
+          <a href="/historial" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-md);background:var(--bg-surface);border:1.5px solid var(--border-color);color:var(--text-secondary);font-size: 15px;font-weight:600;text-decoration:none;">
             <i class="bi bi-clock-history"></i> Historial
           </a>
         </div>
       </div>
 
+      <div id="dashCalAviso" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.2);border-radius:10px;font-size: 14px;color:var(--text-secondary);">
+        <i class="bi bi-info-circle" style="color:var(--color-primary);"></i>
+        Mostrando el período seleccionado. El stock crítico y la deuda a proveedores siempre muestran el dato de hoy (no cambian con la fecha).
+      </div>
+
       <!-- STAT CHIPS HOY -->
       <div class="grid-chips" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px;">
         <% const chipColors = ['azul','indigo','verde','alerta'];
+           const chipIds = ['dashChipVendido','dashChipTicket','dashChipVentas','dashChipStock'];
            for (let si = 0; si < stats.length; si++) { const s = stats[si]; %>
         <div class="stat-chip <%= chipColors[si]||'azul' %> fade-up" style="animation-delay:<%=si*.06%>s;">
           <i class="bi <%= s.icon %> stat-chip-icon"></i>
-          <div class="stat-chip-label"><%= s.label %></div>
-          <div class="stat-chip-value"><%= s.value %></div>
-          <div class="stat-chip-trend"><%= s.trend %></div>
+          <div class="stat-chip-label" id="<%= chipIds[si] %>Label"><%= s.label %></div>
+          <div class="stat-chip-value" id="<%= chipIds[si] %>Value"><%= s.value %></div>
+          <div class="stat-chip-trend" id="<%= chipIds[si] %>Trend"><%= s.trend %></div>
         </div>
         <% } %>
       </div>
@@ -114,9 +158,9 @@
       %>
       <div class="dash-card grid-main fade-up" style="margin-bottom:20px;animation-delay:.10s;display:grid;grid-template-columns:1.2fr 1fr;">
         <div style="padding:22px 24px;border-right:1px solid var(--border-color);">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Vendido este mes</div>
-          <div style="font-size:34px;font-weight:900;color:var(--text-primary);letter-spacing:-1.5px;line-height:1;"><%= fmtPesos(rm.vendidoMes) %></div>
-          <div style="font-size:12.5px;color:var(--text-secondary);margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;" id="dashResumenLabelVendido">Vendido este mes</div>
+          <div style="font-size:34px;font-weight:900;color:var(--text-primary);letter-spacing:-1.5px;line-height:1;" id="dashResumenVendido"><%= fmtPesos(rm.vendidoMes) %></div>
+          <div style="font-size: 14px;color:var(--text-secondary);margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;" id="dashResumenVendidoSub">
             <span><%= rm.countMes || 0 %> ventas</span>
             <span style="color:var(--border-color);">|</span>
             <% if (dMes === null) { %>
@@ -129,21 +173,23 @@
           </div>
         </div>
         <div style="padding:22px 24px;">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Ganancia estimada del mes</div>
+          <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;" id="dashResumenLabelGanancia">Ganancia estimada del mes</div>
+          <div id="dashResumenGananciaBox">
           <% if (rm.hayCostos) { %>
-            <div style="font-size:34px;font-weight:900;color:var(--text-primary);letter-spacing:-1.5px;line-height:1;"><%= fmtPesos(rm.ganancia) %></div>
-            <div style="font-size:12.5px;color:var(--text-secondary);margin-top:10px;">
+            <div style="font-size:34px;font-weight:900;color:var(--text-primary);letter-spacing:-1.5px;line-height:1;" id="dashResumenGanancia"><%= fmtPesos(rm.ganancia) %></div>
+            <div style="font-size: 14px;color:var(--text-secondary);margin-top:10px;" id="dashResumenGananciaSub">
               Estimada con el costo de tus productos<% if (rm.cobertura < 100) { %> · sobre el <%= rm.cobertura %>% de lo vendido<% } %>
             </div>
           <% } else { %>
             <div style="display:flex;align-items:flex-start;gap:11px;margin-top:2px;">
-              <i class="bi bi-info-circle" style="font-size:20px;color:var(--color-primary);line-height:1.3;"></i>
-              <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.5;">
+              <i class="bi bi-info-circle" style="font-size: 23px;color:var(--color-primary);line-height:1.3;"></i>
+              <div style="font-size: 15.5px;color:var(--text-secondary);line-height:1.5;">
                 Cargá el <strong>costo</strong> de tus productos y vas a ver acá cuánto ganás cada mes.
                 <a href="/inventario" style="color:var(--color-primary);text-decoration:none;font-weight:600;white-space:nowrap;">Ir a productos →</a>
               </div>
             </div>
           <% } %>
+          </div>
         </div>
       </div>
 
@@ -205,14 +251,14 @@
         <div class="dash-card fade-up" style="animation-delay:.18s;">
           <div class="dash-card-header">
             <span class="dash-card-title"><i class="bi bi-bar-chart-line" style="color:var(--color-primary);"></i> Ventas de los últimos 7 días</span>
-            <button onclick="exportarSemanaCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+            <button onclick="exportarSemanaCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 13px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
           </div>
           <div style="padding:16px 18px;"><canvas id="chartSemana" height="155"></canvas></div>
         </div>
         <div class="dash-card fade-up" style="animation-delay:.22s;">
           <div class="dash-card-header">
             <span class="dash-card-title"><i class="bi bi-receipt" style="color:#ef4444;"></i> En qué gasté este mes</span>
-            <a href="/gastos" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todos →</a>
+            <a href="/gastos" style="font-size: 13px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todos →</a>
           </div>
           <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
             <% if (!gastosMes?.porCat?.length) { %>
@@ -230,10 +276,10 @@
             %>
             <div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                <span style="font-size: 14px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
                   <span style="width:8px;height:8px;border-radius:2px;background:<%=cc%>;flex-shrink:0;"></span><%=cat.categoria%>
                 </span>
-                <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#ef4444;">$<%=Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
+                <span style="font-family:var(--font-mono);font-size: 14px;font-weight:700;color:#ef4444;">$<%=Number(cat.total).toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
               </div>
               <div style="height:6px;border-radius:3px;background:var(--border-color);overflow:hidden;">
                 <div style="height:100%;background:<%=cc%>;width:<%=w%>%;border-radius:3px;transition:width .6s;"></div>
@@ -241,8 +287,8 @@
             </div>
             <% } %>
             <div style="padding-top:10px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;font-weight:700;color:var(--text-secondary);">Total gastado este mes</span>
-              <span style="font-family:var(--font-mono);font-size:14px;font-weight:800;color:#ef4444;">$<%=gm.toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
+              <span style="font-size: 13.5px;font-weight:700;color:var(--text-secondary);">Total gastado este mes</span>
+              <span style="font-family:var(--font-mono);font-size: 16px;font-weight:800;color:#ef4444;">$<%=gm.toLocaleString('es-AR',{minimumFractionDigits:0})%></span>
             </div>
             <% } %>
           </div>
@@ -254,14 +300,14 @@
         <div class="dash-card fade-up" style="display:flex;flex-direction:column;animation-delay:.24s;">
           <div class="dash-card-header">
             <span class="dash-card-title"><i class="bi bi-pie-chart" style="color:#10b981;"></i> Cómo te pagaron hoy</span>
-            <button onclick="exportarMetodosCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+            <button onclick="exportarMetodosCSV()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 13px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
           </div>
           <div style="padding:14px 18px 8px;"><canvas id="chartMetodos" height="130"></canvas></div>
           <div id="metodosDesglose" style="padding:0 14px 14px;display:flex;flex-direction:column;gap:6px;">
-            <div style="text-align:center;padding:10px;color:var(--text-muted);font-size:12px;">Cargando...</div>
+            <div style="text-align:center;padding:10px;color:var(--text-muted);font-size: 13.5px;">Cargando...</div>
           </div>
           <div style="padding:10px 14px;border-top:1px solid var(--border-color);margin-top:auto;">
-            <a href="/dashboard/reportes/metodos" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:8px;background:rgba(99,102,241,.07);border:1.5px solid rgba(99,102,241,.2);color:#6366f1;font-size:12px;font-weight:700;text-decoration:none;">
+            <a href="/dashboard/reportes/metodos" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:8px;background:rgba(99,102,241,.07);border:1.5px solid rgba(99,102,241,.2);color:#6366f1;font-size: 13.5px;font-weight:700;text-decoration:none;">
               <i class="bi bi-bar-chart-line"></i> Ver reporte completo
             </a>
           </div>
@@ -270,29 +316,29 @@
         <div class="dash-card fade-up" style="animation-delay:.28s;">
           <div class="dash-card-header">
             <span class="dash-card-title"><i class="bi bi-hourglass-split" style="color:#a855f7;"></i> Productos estancados (45+ días sin vender)</span>
-            <a href="/inventario" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver inventario →</a>
+            <a href="/inventario" style="font-size: 13px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver inventario →</a>
           </div>
           <% if (!productosEstancados?.length) { %>
           <div style="padding:28px;text-align:center;color:var(--text-secondary);">
             <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
-            <div style="font-size:13px;font-weight:600;">Todo tu stock rota bien</div>
-            <div style="font-size:12px;margin-top:3px;">Ningún producto lleva más de 45 días sin venderse</div>
+            <div style="font-size: 15px;font-weight:600;">Todo tu stock rota bien</div>
+            <div style="font-size: 13.5px;margin-top:3px;">Ningún producto lleva más de 45 días sin venderse</div>
           </div>
           <% } else { %>
           <div style="overflow-y:auto;max-height:260px;">
             <% productosEstancados.forEach(p => { %>
             <div class="stock-alert-item">
-              <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="<%=p.name%>">
+              <span style="font-size: 14px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="<%=p.name%>">
                 <%=p.name.length>32?p.name.slice(0,30)+'…':p.name%>
               </span>
-              <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">
+              <span style="font-size: 13px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">
                 <%=p.stock%> ud · <%= fmtPesos(p.valor) %>
               </span>
             </div>
             <% }) %>
           </div>
           <div style="padding:10px 16px;border-top:1px solid var(--border-color);">
-            <div style="font-size:12px;color:var(--text-secondary);text-align:center;"><%=productosEstancados.length%> producto<%=productosEstancados.length!==1?'s':''%> sin rotar — evaluá liquidarlos o dejar de reponerlos</div>
+            <div style="font-size: 13.5px;color:var(--text-secondary);text-align:center;"><%=productosEstancados.length%> producto<%=productosEstancados.length!==1?'s':''%> sin rotar — evaluá liquidarlos o dejar de reponerlos</div>
           </div>
           <% } %>
         </div>
@@ -300,29 +346,29 @@
         <div class="dash-card fade-up" style="animation-delay:.32s;">
           <div class="dash-card-header">
             <span class="dash-card-title"><i class="bi bi-exclamation-triangle" style="color:#f59e0b;"></i> Stock a reponer</span>
-            <a href="/inventario" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todo →</a>
+            <a href="/inventario" style="font-size: 13px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todo →</a>
           </div>
           <% if (!stockCritico?.length) { %>
           <div style="padding:28px;text-align:center;color:var(--text-secondary);">
             <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
-            <div style="font-size:13px;font-weight:600;">Todo el stock está bien</div>
-            <div style="font-size:12px;margin-top:3px;">Ningún producto con stock crítico</div>
+            <div style="font-size: 15px;font-weight:600;">Todo el stock está bien</div>
+            <div style="font-size: 13.5px;margin-top:3px;">Ningún producto con stock crítico</div>
           </div>
           <% } else { %>
           <div style="overflow-y:auto;max-height:260px;">
             <% stockCritico.slice(0,10).forEach(p => { %>
             <div class="stock-alert-item">
-              <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="<%=p.name%>">
+              <span style="font-size: 14px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="<%=p.name%>">
                 <%=p.name.length>22?p.name.slice(0,20)+'…':p.name%>
               </span>
-              <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=p.stock<=0?'#dc2626':'#eab308'%>;color:<%=p.stock<=0?'#fff':'#422006'%>;">
+              <span style="font-size: 13.5px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=p.stock<=0?'#dc2626':'#eab308'%>;color:<%=p.stock<=0?'#fff':'#422006'%>;">
                 <%=p.stock<=0?'Sin stock':p.stock+' ud'%>
               </span>
             </div>
             <% }) %>
           </div>
           <div style="padding:10px 16px;border-top:1px solid var(--border-color);">
-            <div style="font-size:12px;color:var(--text-secondary);text-align:center;"><%=stockCritico.length%> producto<%=stockCritico.length!==1?'s':''%> con stock crítico</div>
+            <div style="font-size: 13.5px;color:var(--text-secondary);text-align:center;"><%=stockCritico.length%> producto<%=stockCritico.length!==1?'s':''%> con stock crítico</div>
           </div>
           <% } %>
         </div>
@@ -335,9 +381,9 @@
           <span class="dash-card-title"><i class="bi bi-people" style="color:#6366f1;"></i> Ventas por vendedor hoy</span>
         </div>
         <div style="padding:6px 18px 14px;overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+          <table style="width:100%;border-collapse:collapse;font-size: 14px;">
             <thead>
-              <tr style="text-align:left;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">
+              <tr style="text-align:left;color:var(--text-muted);font-size: 12.5px;text-transform:uppercase;letter-spacing:.5px;">
                 <th style="padding:8px 6px;">Vendedor</th>
                 <th style="padding:8px 6px;text-align:center;">Ventas</th>
                 <th style="padding:8px 6px;text-align:right;">Total</th>
@@ -365,26 +411,26 @@
       <div class="dash-card fade-up" style="margin-bottom:20px;animation-delay:.33s;">
         <div class="dash-card-header">
           <span class="dash-card-title"><i class="bi bi-wallet2" style="color:#dc2626;"></i> Cuentas corrientes pendientes de cobro</span>
-          <a href="/clientes" style="font-size:11.5px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver clientes →</a>
+          <a href="/clientes" style="font-size: 13px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver clientes →</a>
         </div>
         <% if (!clientesDeuda?.n) { %>
         <div style="padding:28px;text-align:center;color:var(--text-secondary);">
           <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
-          <div style="font-size:13px;font-weight:600;">No tenés cuentas corrientes pendientes</div>
-          <div style="font-size:12px;margin-top:3px;">Todos tus clientes con saldo están al día</div>
+          <div style="font-size: 15px;font-weight:600;">No tenés cuentas corrientes pendientes</div>
+          <div style="font-size: 13.5px;margin-top:3px;">Todos tus clientes con saldo están al día</div>
         </div>
         <% } else { %>
         <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
           <% clientesDeuda.clientes.forEach(c => { %>
           <div style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-size:13px;font-weight:600;color:var(--text-primary);"><%= c.nombre %></span>
-            <span style="font-size:13px;font-weight:800;color:#dc2626;font-family:var(--font-mono);"><%= fmtPesos(c.saldo) %></span>
+            <span style="font-size: 15px;font-weight:600;color:var(--text-primary);"><%= c.nombre %></span>
+            <span style="font-size: 15px;font-weight:800;color:#dc2626;font-family:var(--font-mono);"><%= fmtPesos(c.saldo) %></span>
           </div>
           <% }) %>
         </div>
         <div style="padding:10px 16px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:12.5px;color:var(--text-secondary);font-weight:600;"><%= clientesDeuda.n %> cliente<%= clientesDeuda.n!==1?'s':'' %> con saldo pendiente</span>
-          <span style="font-size:13.5px;font-weight:800;color:#dc2626;font-family:var(--font-mono);">Total: <%= fmtPesos(clientesDeuda.total) %></span>
+          <span style="font-size: 14px;color:var(--text-secondary);font-weight:600;"><%= clientesDeuda.n %> cliente<%= clientesDeuda.n!==1?'s':'' %> con saldo pendiente</span>
+          <span style="font-size: 15.5px;font-weight:800;color:#dc2626;font-family:var(--font-mono);">Total: <%= fmtPesos(clientesDeuda.total) %></span>
         </div>
         <% } %>
       </div>
@@ -393,8 +439,8 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
         <div class="dash-card fade-up" style="animation-delay:.36s;">
           <div class="dash-card-header">
-            <span class="dash-card-title" style="font-size:12.5px;"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Lo más vendido (30 días)</span>
-            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
+            <span class="dash-card-title" style="font-size: 14px;"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Lo más vendido (30 días)</span>
+            <button onclick="exportarTopCSV()" style="display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);"><i class="bi bi-download"></i> CSV</button>
           </div>
           <div style="padding:10px 14px;"><canvas id="chartProductos" height="110"></canvas></div>
         </div>
@@ -403,16 +449,16 @@
              const maxGan = Math.max.apply(null, topGanancia.map(p => p.ganancia || 0)) || 1; %>
         <div class="dash-card fade-up" style="animation-delay:.38s;">
           <div class="dash-card-header">
-            <span class="dash-card-title" style="font-size:12.5px;"><i class="bi bi-cash-coin" style="color:#10b981;"></i> Lo que más ganancia deja (30 días)</span>
+            <span class="dash-card-title" style="font-size: 14px;"><i class="bi bi-cash-coin" style="color:#10b981;"></i> Lo que más ganancia deja (30 días)</span>
           </div>
           <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">
             <% topGanancia.slice(0,4).forEach(function(p, i){ const w = Math.round((p.ganancia/maxGan)*100); %>
             <div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px;">
-                <span style="font-size:12px;color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                <span style="font-size: 13.5px;color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                   <span style="color:var(--text-muted);font-weight:700;margin-right:5px;"><%= i+1 %>.</span><%= p.name %>
                 </span>
-                <span style="font-size:12px;font-weight:800;color:#10b981;font-family:var(--font-mono);white-space:nowrap;"><%= fmtPesos(p.ganancia) %></span>
+                <span style="font-size: 13.5px;font-weight:800;color:#10b981;font-family:var(--font-mono);white-space:nowrap;"><%= fmtPesos(p.ganancia) %></span>
               </div>
               <div style="height:5px;border-radius:3px;background:var(--bg-hover);overflow:hidden;">
                 <div style="height:100%;width:<%= w %>%;border-radius:3px;background:#10b981;"></div>
@@ -428,7 +474,7 @@
       <div class="dash-card fade-up" style="animation-delay:.35s;">
         <div class="dash-card-header">
           <span class="dash-card-title"><i class="bi bi-lightning-charge" style="color:var(--color-primary);"></i> Últimas ventas de hoy</span>
-          <a href="/historial" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size:12px;font-weight:700;text-decoration:none;">
+          <a href="/historial" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size: 13.5px;font-weight:700;text-decoration:none;">
             <i class="bi bi-clock-history"></i> Ver historial completo
           </a>
         </div>
@@ -512,7 +558,7 @@ function diasAtrasArg(n) {
   const desglose=document.getElementById('metodosDesglose');
   if(!dataMetodos.length){
     document.getElementById('chartMetodos').style.display='none';
-    desglose.innerHTML='<p style="font-size:12px;color:var(--text-secondary);text-align:center;padding:12px 0;">Sin ventas hoy</p>';
+    desglose.innerHTML='<p style="font-size: 13.5px;color:var(--text-secondary);text-align:center;padding:12px 0;">Sin ventas hoy</p>';
     return;
   }
   new Chart(document.getElementById('chartMetodos'),{
@@ -531,15 +577,15 @@ function diasAtrasArg(n) {
       let html=data.metodos.map((m,i)=>`
         <div style="background:var(--bg-surface-2);border-radius:9px;padding:8px 10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${m.comision_pct>0?'5px':'0'};">
-            <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text-primary);">
+            <span style="display:flex;align-items:center;gap:5px;font-size: 13.5px;font-weight:700;color:var(--text-primary);">
               <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i%COLORS.length]};flex-shrink:0;"></span>${m.metodo}
             </span>
-            <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:800;color:var(--text-primary);">${fmt(m.total)}</span>
+            <span style="font-family:var(--font-mono);font-size: 14px;font-weight:800;color:var(--text-primary);">${fmt(m.total)}</span>
           </div>
-          ${m.comision_pct>0?`<div style="font-size:11px;color:#d97706;">Comisión ${m.comision_pct}% → te llegan ${fmt(m.neto)}</div>`:`<div style="font-size:11px;color:#10b981;font-weight:600;">Sin comisión</div>`}
+          ${m.comision_pct>0?`<div style="font-size: 12.5px;color:#d97706;">Comisión ${m.comision_pct}% → te llegan ${fmt(m.neto)}</div>`:`<div style="font-size: 12.5px;color:#10b981;font-weight:600;">Sin comisión</div>`}
         </div>`).join('');
       if(data.metodos.length>1)
-        html+=`<div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;display:flex;justify-content:space-between;font-size:13px;">
+        html+=`<div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:2px;display:flex;justify-content:space-between;font-size: 15px;">
           <span style="color:#10b981;font-weight:800;">Lo que te llega</span>
           <span style="color:#10b981;font-family:var(--font-mono);font-weight:800;">${fmt(totalNeto)}</span></div>`;
       desglose.innerHTML=html;
@@ -547,7 +593,7 @@ function diasAtrasArg(n) {
     .catch(()=>{
       const tot=dataMetodos.reduce((a,x)=>a+Number(x.total),0);
       desglose.innerHTML=dataMetodos.map((m,i)=>`
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;">
+        <div style="display:flex;justify-content:space-between;font-size: 13.5px;padding:3px 0;">
           <span style="display:flex;align-items:center;gap:5px;color:var(--text-secondary);">
             <span style="width:8px;height:8px;border-radius:2px;background:${COLORS[i]};"></span>${m.payment_method}
           </span>
@@ -577,7 +623,7 @@ function diasAtrasArg(n) {
     .then(data=>{
       const ventas=data.ventas||[];
       if(!ventas.length){
-        tbody.innerHTML=`<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-secondary);font-size:13px;">
+        tbody.innerHTML=`<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text-secondary);font-size: 15px;">
           <i class="bi bi-bag-x" style="font-size:24px;display:block;margin-bottom:6px;opacity:.2;"></i>
           Sin ventas registradas hoy todavía</td></tr>`;
         return;
@@ -585,14 +631,14 @@ function diasAtrasArg(n) {
       tbody.innerHTML=ventas.map(v=>{
         const hora=parseFechaLocal(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
         const bf=v.facturada
-          ?`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra||''}</span>`
-          :`<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
+          ?`<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra||''}</span>`
+          :`<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
         return `<tr class="fila-act" style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:10px 14px;font-size:13px;color:var(--text-secondary);">#${v.id}</td>
-          <td style="padding:10px 14px;font-size:13px;font-weight:600;">${hora}</td>
-          <td style="padding:10px 14px;"><span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span></td>
+          <td style="padding:10px 14px;font-size: 15px;color:var(--text-secondary);">#${v.id}</td>
+          <td style="padding:10px 14px;font-size: 15px;font-weight:600;">${hora}</td>
+          <td style="padding:10px 14px;"><span style="padding:3px 10px;border-radius:20px;font-size: 13px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span></td>
           <td style="padding:10px 14px;">${bf}</td>
-          <td style="padding:10px 18px;text-align:right;font-weight:800;font-size:14px;">$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+          <td style="padding:10px 18px;text-align:right;font-weight:800;font-size: 16px;">$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
         </tr>`;
       }).join('');
     })
@@ -603,4 +649,107 @@ function descargaCSV(csv,nombre){const a=Object.assign(document.createElement('a
 function exportarSemanaCSV(){let csv='\uFEFFfecha;total\n';for(let i=6;i>=0;i--){const k=diasAtrasArg(i);const f=dataSemana.find(r=>r.fecha===k);csv+=`${k};${f?Number(f.total).toFixed(2):'0'}\n`;}descargaCSV(csv,'ventas_semana.csv');}
 function exportarTopCSV(){let csv='\uFEFFproducto;unidades\n';dataTopProd.forEach(p=>{csv+=`${p.name};${p.cantidad}\n`;});descargaCSV(csv,'top_productos.csv');}
 function exportarMetodosCSV(){let csv='\uFEFFmetodo;total\n';dataMetodos.forEach(m=>{csv+=`${m.payment_method};${Number(m.total).toFixed(2)}\n`;});descargaCSV(csv,'metodos_pago.csv');}
+
+// ── Calendario chiquito del dashboard ─────────────────────────
+let dashCalModoActual = 'dia';
+
+function dashCalHoyISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function dashCalModo(modo) {
+  dashCalModoActual = modo;
+  document.querySelectorAll('.dash-cal-modo-btn').forEach(b => b.classList.toggle('active', b.dataset.modo === modo));
+  dashCalCambio();
+}
+
+function dashCalRango(fechaStr, modo) {
+  const [y, m, d] = fechaStr.split('-').map(Number);
+  if (modo === 'dia') return { desde: fechaStr, hasta: fechaStr };
+  if (modo === 'mes') {
+    const ultimoDia = new Date(y, m, 0).getDate();
+    return { desde: `${y}-${String(m).padStart(2,'0')}-01`, hasta: `${y}-${String(m).padStart(2,'0')}-${String(ultimoDia).padStart(2,'0')}` };
+  }
+  // año
+  return { desde: `${y}-01-01`, hasta: `${y}-12-31` };
+}
+
+function dashCalMover(delta) {
+  const input = document.getElementById('dashCalFecha');
+  const [y, m, d] = input.value.split('-').map(Number);
+  let nueva;
+  if (dashCalModoActual === 'dia')      nueva = new Date(y, m-1, d + delta);
+  else if (dashCalModoActual === 'mes') nueva = new Date(y, m-1 + delta, 1);
+  else                                  nueva = new Date(y + delta, m-1, 1);
+  input.value = nueva.getFullYear() + '-' + String(nueva.getMonth()+1).padStart(2,'0') + '-' + String(nueva.getDate()).padStart(2,'0');
+  dashCalCambio();
+}
+
+function dashCalHoy() {
+  document.getElementById('dashCalFecha').value = dashCalHoyISO();
+  dashCalCambio();
+}
+
+function dashCalFmtPesos(n) {
+  return '$' + (Number(n)||0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+}
+
+async function dashCalCambio() {
+  const fechaInput = document.getElementById('dashCalFecha').value || dashCalHoyISO();
+  const { desde, hasta } = dashCalRango(fechaInput, dashCalModoActual);
+  const esHoy = dashCalModoActual === 'dia' && fechaInput === dashCalHoyISO();
+
+  document.getElementById('dashCalHoyBtn').style.display = esHoy ? 'none' : 'inline-block';
+  document.getElementById('dashCalAviso').style.display = esHoy ? 'none' : 'block';
+
+  // Etiquetas legibles según el modo
+  const [y, m, d] = fechaInput.split('-').map(Number);
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  let etiqueta;
+  if (dashCalModoActual === 'dia')      etiqueta = esHoy ? 'hoy' : `el ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+  else if (dashCalModoActual === 'mes') etiqueta = `en ${meses[m-1]} ${y}`;
+  else                                  etiqueta = `en ${y}`;
+
+  document.getElementById('dashChipVendidoLabel').textContent = `Vendido ${etiqueta}`;
+  document.getElementById('dashChipVentasLabel').textContent  = dashCalModoActual === 'dia' ? 'Ventas del día' : `Ventas ${etiqueta}`;
+  document.getElementById('dashResumenLabelVendido').textContent  = `Vendido ${etiqueta}`;
+  document.getElementById('dashResumenLabelGanancia').textContent = `Ganancia estimada ${etiqueta}`;
+
+  try {
+    const r = await fetch(`/api/dashboard/periodo?desde=${desde}&hasta=${hasta}`);
+    const data = await r.json();
+    if (!data.ok) return;
+
+    document.getElementById('dashChipVendidoValue').textContent = dashCalFmtPesos(data.total_vendido);
+    document.getElementById('dashChipVendidoTrend').textContent = `${data.count_ventas} transacciones`;
+    document.getElementById('dashChipTicketValue').textContent  = dashCalFmtPesos(data.ticket_promedio);
+    document.getElementById('dashChipTicketTrend').textContent  = esHoy ? 'promedio por venta hoy' : `promedio por venta ${etiqueta}`;
+    document.getElementById('dashChipVentasValue').textContent  = data.count_ventas;
+
+    document.getElementById('dashResumenVendido').textContent = dashCalFmtPesos(data.total_vendido);
+    document.getElementById('dashResumenVendidoSub').innerHTML = `<span>${data.count_ventas} venta${data.count_ventas===1?'':'s'}</span>`;
+
+    const gananciaBox = document.getElementById('dashResumenGananciaBox');
+    if (data.hay_costos) {
+      gananciaBox.innerHTML = `
+        <div style="font-size:34px;font-weight:900;color:var(--text-primary);letter-spacing:-1.5px;line-height:1;">${dashCalFmtPesos(data.ganancia)}</div>
+        <div style="font-size: 14px;color:var(--text-secondary);margin-top:10px;">
+          Estimada con el costo de tus productos${data.cobertura_pct < 100 ? ` · sobre el ${data.cobertura_pct}% de lo vendido` : ''}
+        </div>`;
+    } else {
+      gananciaBox.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:11px;margin-top:2px;">
+          <i class="bi bi-info-circle" style="font-size: 23px;color:var(--color-primary);line-height:1.3;"></i>
+          <div style="font-size: 15.5px;color:var(--text-secondary);line-height:1.5;">
+            No hay ventas con costo cargado en este período.
+          </div>
+        </div>`;
+    }
+  } catch (e) {
+    console.error('Error cargando período del dashboard', e);
+  }
+}
+
+document.getElementById('dashCalFecha').value = dashCalHoyISO();
 </script>

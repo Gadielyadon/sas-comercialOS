@@ -35,7 +35,13 @@ function initRemitosSchema() {
   // Migración: si alguien ya tenía una versión vieja sin presupuesto_id
   try {
     const cols = all(`PRAGMA table_info(remitos)`).map(c => c.name);
-    if (!cols.includes('presupuesto_id')) run(`ALTER TABLE remitos ADD COLUMN presupuesto_id INTEGER`);
+    if (!cols.includes('presupuesto_id'))    run(`ALTER TABLE remitos ADD COLUMN presupuesto_id INTEGER`);
+    if (!cols.includes('cliente_barrio'))    run(`ALTER TABLE remitos ADD COLUMN cliente_barrio TEXT`);
+    if (!cols.includes('cliente_localidad')) run(`ALTER TABLE remitos ADD COLUMN cliente_localidad TEXT`);
+    if (!cols.includes('cliente_cond_iva'))  run(`ALTER TABLE remitos ADD COLUMN cliente_cond_iva TEXT`);
+    if (!cols.includes('condicion_venta'))   run(`ALTER TABLE remitos ADD COLUMN condicion_venta TEXT`);
+    if (!cols.includes('vendedor'))          run(`ALTER TABLE remitos ADD COLUMN vendedor TEXT`);
+    if (!cols.includes('validez_dias'))      run(`ALTER TABLE remitos ADD COLUMN validez_dias INTEGER`);
   } catch (e) {}
 }
 
@@ -77,20 +83,26 @@ function getById(id) {
   return remito;
 }
 
-function crear({ presupuesto_id, cliente_nombre, cliente_cuit, cliente_direccion, cliente_email, cliente_tel, notas, items, sucursal_id, user_id }) {
+function crear({ presupuesto_id, cliente_nombre, cliente_cuit, cliente_direccion, cliente_barrio, cliente_localidad, cliente_email, cliente_tel, cliente_cond_iva, condicion_venta, vendedor, validez_dias, notas, items, sucursal_id, user_id }) {
   const numero = generarNumero();
   const r = run(`
     INSERT INTO remitos
-      (numero, presupuesto_id, cliente_nombre, cliente_cuit, cliente_direccion, cliente_email, cliente_tel, notas, sucursal_id, user_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?)
+      (numero, presupuesto_id, cliente_nombre, cliente_cuit, cliente_direccion, cliente_barrio, cliente_localidad, cliente_email, cliente_tel, cliente_cond_iva, condicion_venta, vendedor, validez_dias, notas, sucursal_id, user_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `, [
     numero,
     presupuesto_id || null,
     cliente_nombre || '',
     cliente_cuit || null,
     cliente_direccion || null,
+    cliente_barrio || null,
+    cliente_localidad || null,
     cliente_email || null,
     cliente_tel || null,
+    cliente_cond_iva || null,
+    condicion_venta || null,
+    vendedor || null,
+    validez_dias ? Number(validez_dias) : null,
     notas || null,
     sucursal_id || 1,
     user_id || null,
@@ -118,8 +130,12 @@ function desdePresupuesto(presupuesto_id) {
     presupuesto_numero: pres.numero,
     cliente_nombre: pres.cliente_nombre,
     cliente_cuit: pres.cliente_cuit,
+    cliente_direccion: pres.cliente_direccion,
+    cliente_localidad: pres.cliente_localidad,
     cliente_email: pres.cliente_email,
     cliente_tel: pres.cliente_tel,
+    cliente_cond_iva: pres.cliente_cond_iva,
+    condicion_venta: pres.condicion_pago,
     items: items.map(it => ({
       sku: it.sku,
       nombre: it.nombre,

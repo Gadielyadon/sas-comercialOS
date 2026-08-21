@@ -98,7 +98,7 @@ router.get('/sales/recent', salesCtrl.recent);
 router.get('/ventas/buscar', (req, res) => {
   try {
     const { all } = require('../db');
-    const { desde, hasta, metodo, q, page = 1, status, limit: limitParam } = req.query;
+    const { desde, hasta, metodo, q, page = 1, status, limit: limitParam, facturada, cc } = req.query;
     const limit  = Math.min(Number(limitParam) || 20, 200);
     const offset = (Number(page) - 1) * limit;
 
@@ -111,6 +111,13 @@ router.get('/ventas/buscar', (req, res) => {
     if (status && status !== 'todas') {
       conditions.push(`COALESCE(s.status,'completada') = ?`);
       params.push(status);
+    }
+    // Filtro por estado de facturación: 'si' = ya facturadas, 'no' = pendientes de facturar
+    if (facturada === 'si') { conditions.push(`f.id IS NOT NULL`); }
+    if (facturada === 'no') { conditions.push(`f.id IS NULL`); }
+    // Filtro: solo ventas a cuenta corriente
+    if (cc === '1') {
+      conditions.push(`EXISTS (SELECT 1 FROM cuenta_corriente ccx WHERE ccx.sale_id = s.id AND ccx.tipo = 'cargo')`);
     }
 
     if (q) {
@@ -153,16 +160,24 @@ router.get('/ventas/buscar', (req, res) => {
         COALESCE(s.monto_mixto2, NULL) AS monto_mixto2,
         COALESCE(s.status,'completada') AS status,
         s.anulacion_motivo, s.anulada_at, s.anulada_by,
+        s.cliente_id,
+        c.nombre      AS cliente_nombre,
+        c.documento   AS cliente_documento,
         f.id          AS factura_id,
         f.tipo_cbte   AS factura_tipo_cbte,
         f.punto_venta AS factura_punto_venta,
         f.nro_cbte    AS factura_nro_cbte,
         f.cae         AS factura_cae,
         f.cae_vto     AS factura_cae_vto,
-        f.created_at  AS factura_created_at
+        f.created_at  AS factura_created_at,
+        EXISTS (
+          SELECT 1 FROM cuenta_corriente ccx
+          WHERE ccx.sale_id = s.id AND ccx.tipo = 'cargo'
+        ) AS es_cuenta_corriente
       FROM sales s
       LEFT JOIN sale_items si ON si.sale_id = s.id
       LEFT JOIN facturas f    ON f.sale_id = s.id
+      LEFT JOIN clientes c    ON c.id = s.cliente_id
       ${where}
       ORDER BY s.id DESC
       LIMIT ? OFFSET ?
@@ -189,6 +204,7 @@ router.get('/ventas/buscar', (req, res) => {
       return {
         ...v,
         facturada: !!v.factura_id,
+        es_cuenta_corriente: !!v.es_cuenta_corriente,
         factura_tipo_letra: tipoLetra,
         subtotal: Math.round(subtotal * 100) / 100,
         descuento_monto,
@@ -545,6 +561,15 @@ router.post('/config', (req, res) => {
            ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
         [String(key), String(value)]);
     }
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'ajuste_config',
+        usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+        sucursal_id: res.locals?.sucursal_id || null,
+        detalle: `Se guardaron cambios en Ajustes: ${Object.keys(req.body).join(', ')}`,
+        entidad: 'config',
+      });
+    } catch (_) {}
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -556,7 +581,19 @@ router.get('/users', (req, res) => {
 });
 
 router.post('/users', (req, res) => {
-  try { res.status(201).json(require('../services/auth.service').createUser(req.body)); }
+  try {
+    const nuevo = require('../services/auth.service').createUser(req.body);
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'ajuste_config',
+        usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+        sucursal_id: res.locals?.sucursal_id || null,
+        detalle: `Nuevo usuario/vendedor creado: ${req.body?.nombre || req.body?.username || ''}`,
+        entidad: 'usuarios',
+      });
+    } catch (_) {}
+    res.status(201).json(nuevo);
+  }
   catch(e) { res.status(400).json({ error: e.message }); }
 });
 
@@ -566,7 +603,19 @@ router.put('/users/:id', (req, res) => {
 });
 
 router.delete('/users/:id', (req, res) => {
-  try { require('../services/auth.service').deleteUser(Number(req.params.id)); res.json({ ok: true }); }
+  try {
+    require('../services/auth.service').deleteUser(Number(req.params.id));
+    try {
+      require('../services/auditoria.service').registrar({
+        tipo: 'ajuste_config',
+        usuario: req.session?.user?.name || req.session?.user?.nombre || null,
+        sucursal_id: res.locals?.sucursal_id || null,
+        detalle: `Usuario/vendedor #${req.params.id} eliminado`,
+        entidad: 'usuarios',
+      });
+    } catch (_) {}
+    res.json({ ok: true });
+  }
   catch(e) { res.status(400).json({ error: e.message }); }
 });
 

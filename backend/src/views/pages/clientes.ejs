@@ -3,7 +3,7 @@
 .cat-cliente-pill {
   display: inline-flex; align-items: center;
   padding: 3px 10px; border-radius: 20px;
-  font-size: 11px; font-weight: 700;
+  font-size: 12.5px; font-weight: 700;
   background: rgba(27,79,216,.08); color: var(--color-primary);
   white-space: nowrap;
 }
@@ -13,7 +13,7 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all .15s;
@@ -61,12 +61,12 @@
         </div>
 
         <!-- Filtro categoría -->
-        <select id="categoriaSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+        <select id="categoriaSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size: 14px;">
           <option value="">Todas las categorías</option>
         </select>
 
         <!-- Ordenar -->
-        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size:12.5px;">
+        <select id="ordenSelect" onchange="filtrar()" class="filter-select" style="padding:8px 28px 8px 12px;font-size: 14px;">
           <option value="nombre">Ordenar: A → Z</option>
           <option value="mayor-deuda">Mayor deuda primero</option>
           <option value="menor-deuda">Menor deuda primero</option>
@@ -75,11 +75,11 @@
         <!-- Exportar -->
         <div style="display:flex;gap:6px;margin-left:auto;">
           <button onclick="exportarClientesCSV()"
-            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-filetype-csv"></i> CSV
           </button>
           <button onclick="exportarClientesPDF()"
-            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+            style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size: 14px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
             <i class="bi bi-file-earmark-pdf"></i> PDF
           </button>
         </div>
@@ -107,9 +107,9 @@
                 <tr data-id="<%= c.id %>">
                   <td class="sale-id"><%= c.id %></td>
                   <td>
-                    <strong><%= c.nombre %></strong>
+                    <strong style="cursor:pointer;" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'datos')" title="Ver ficha completa"><%= c.nombre %></strong>
                     <% if (c.id === 1) { %>
-                      <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);margin-left:6px;font-weight:600;">Default</span>
+                      <span style="font-size: 11.5px;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);margin-left:6px;font-weight:600;">Default</span>
                     <% } %>
                   </td>
                   <td style="color:var(--text-secondary);font-family:var(--font-mono)"><%= c.documento || '—' %></td>
@@ -117,7 +117,7 @@
                     <% if (c.categoria) { %>
                       <span class="cat-cliente-pill" data-cat="<%= c.categoria %>"><%= c.categoria %></span>
                     <% } else { %>
-                      <span style="color:var(--text-muted);font-size:12px;">—</span>
+                      <span style="color:var(--text-muted);font-size: 13.5px;">—</span>
                     <% } %>
                   </td>
                   <td>
@@ -134,23 +134,23 @@
                       <% const usado = Math.max(0, c.saldo || 0); %>
                       <% const pct = Math.min(100, Math.round((usado / c.limite_credito) * 100)); %>
                       <% const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981'; %>
-                      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px;">
+                      <div style="font-size: 12.5px;color:var(--text-secondary);margin-bottom:3px;">
                         $<%= Number(usado).toLocaleString('es-AR') %> / $<%= Number(c.limite_credito).toLocaleString('es-AR') %>
                       </div>
                       <div style="width:100%;max-width:120px;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden;">
                         <div style="width:<%= pct %>%;height:100%;background:<%= color %>;border-radius:3px;transition:width .3s;"></div>
                       </div>
                     <% } else { %>
-                      <span style="color:var(--text-muted);font-size:12px;">Sin límite</span>
+                      <span style="color:var(--text-muted);font-size: 13.5px;">Sin límite</span>
                     <% } %>
                   </td>
                   <td>
                     <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
-                      <button class="btn-action btn-action-outline btn-sm" onclick="verMovimientos(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="Ver cuenta corriente">
+                      <button class="btn-action btn-action-outline btn-sm" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'cuenta')" title="Ver cuenta corriente">
                         <i class="bi bi-clock-history"></i> Cuenta
                       </button>
                       <% if (c.id !== 1) { %>
-                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirHistorialVentas(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>')" title="Ver historial de compras"
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'compras')" title="Ver historial de compras"
                           style="color:#6366f1;border-color:rgba(99,102,241,.3);">
                           <i class="bi bi-bag-check"></i> Compras
                         </button>
@@ -196,67 +196,67 @@
   <div class="sale-modal" style="max-width:440px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 18px;">
           <i class="bi bi-person"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="modalClienteTitulo">Nuevo Cliente</div>
-          <div style="font-size:11px;color:var(--text-secondary);">Datos del cliente</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);" id="modalClienteTitulo">Nuevo Cliente</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);">Datos del cliente</div>
         </div>
       </div>
-      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModal()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Nombre *</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Nombre *</label>
         <input type="text" id="c_nombre" placeholder="Nombre completo o razón social"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13.5px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15.5px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div>
-          <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">CUIT / DNI</label>
+          <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">CUIT / DNI</label>
           <input type="text" id="c_documento" placeholder="Opcional"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:13px;outline:none;transition:border .2s;"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;outline:none;transition:border .2s;"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Teléfono</label>
+          <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Teléfono</label>
           <input type="text" id="c_telefono" placeholder="Opcional"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
         </div>
       </div>
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Email</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Email</label>
         <input type="email" id="c_email" placeholder="Opcional"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Dirección</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Dirección</label>
         <input type="text" id="c_direccion" placeholder="Opcional"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <!-- Categoría -->
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">
-          Categoría <span style="font-weight:400;color:var(--text-muted);font-size:10px;">(opcional)</span>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">
+          Categoría <span style="font-weight:400;color:var(--text-muted);font-size: 11.5px;">(opcional)</span>
         </label>
         <div style="display:flex;gap:6px;">
           <select id="c_categoria" class="form-input" style="flex:1;cursor:pointer;">
             <option value="">Sin categoría</option>
           </select>
           <button type="button" onclick="abrirNuevaCat()" title="Nueva categoría"
-            style="width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--color-primary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            style="width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--color-primary);font-size: 18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <i class="bi bi-plus"></i>
           </button>
         </div>
         <div id="nuevaCatWrap" style="display:none;margin-top:6px;display:none;gap:6px;">
           <input type="text" id="nuevaCatInput" class="form-input" placeholder="Nombre de la categoría" style="flex:1;">
           <button type="button" onclick="guardarNuevaCat()"
-            style="padding:0 14px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            style="padding:0 14px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size: 13.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
             Agregar
           </button>
         </div>
@@ -265,21 +265,21 @@
       <!-- Límite de crédito -->
       <div style="background:rgba(27,79,216,.04);border:1.5px solid rgba(27,79,216,.15);border-radius:var(--radius-md);padding:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-size:11px;font-weight:700;color:var(--color-primary);text-transform:uppercase;letter-spacing:.5px;">
+          <div style="font-size: 12.5px;font-weight:700;color:var(--color-primary);text-transform:uppercase;letter-spacing:.5px;">
             <i class="bi bi-shield-check" style="margin-right:5px;"></i>Límite de crédito (cuenta corriente)
           </div>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size: 13.5px;color:var(--text-secondary);">
             Activar
             <input type="checkbox" id="c_limite_check" onchange="toggleLimiteCredito(this)" style="cursor:pointer;">
           </label>
         </div>
-        <div id="c_limite_off" style="font-size:11.5px;color:var(--text-secondary);font-style:italic;">Sin límite — puede fiarse sin restricción</div>
+        <div id="c_limite_off" style="font-size: 13px;color:var(--text-secondary);font-style:italic;">Sin límite — puede fiarse sin restricción</div>
         <div id="c_limite_fields" style="display:none;">
-          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:5px;">Monto máximo de deuda ($)</label>
+          <label style="font-size: 12.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:5px;">Monto máximo de deuda ($)</label>
           <input type="text" inputmode="decimal" id="c_limite_credito" class="fmt-precio" placeholder="Ej: 50000"
-            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:16px;font-weight:700;outline:none;transition:border .2s;"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size: 18px;font-weight:700;outline:none;transition:border .2s;"
             onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='rgba(27,79,216,.3)'">
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px;">Si el cliente supera este monto, el sistema bloquea la venta.</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);margin-top:5px;">Si el cliente supera este monto, el sistema bloquea la venta.</div>
         </div>
       </div>
     </div>
@@ -299,40 +299,40 @@
   <div class="sale-modal" style="max-width:420px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 18px;">
           <i class="bi bi-plus-circle"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Registrar Cargo</div>
-          <div style="font-size:11px;color:var(--text-secondary);" id="cargoClienteNombre">—</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);">Registrar Cargo</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);" id="cargoClienteNombre">—</div>
         </div>
       </div>
-      <button onclick="cerrarModalCargo()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModalCargo()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#92400e;">
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size: 14px;color:#92400e;">
       <i class="bi bi-info-circle" style="margin-right:5px;"></i>
       Mercadería o servicios que el cliente lleva sin pagar ahora (fiado manual).
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Monto ($) *</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Monto ($) *</label>
         <input type="text" inputmode="decimal" id="cargo_monto" class="fmt-precio" placeholder="0,00"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size: 20.5px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
         <input type="text" id="cargo_desc" placeholder="Ej: Bolsa de harina, Semana 1…"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:20px;">
       <button onclick="confirmarCargo()"
-        style="flex:1;justify-content:center;padding:11px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
+        style="flex:1;justify-content:center;padding:11px;background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
         <i class="bi bi-plus-circle-fill"></i> Registrar cargo
       </button>
       <button onclick="cerrarModalCargo()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
@@ -347,15 +347,15 @@
   <div class="sale-modal" style="max-width:680px;text-align:left;max-height:90vh;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:18px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;color:#10b981;font-size: 20.5px;">
           <i class="bi bi-file-earmark-excel"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Importar Clientes</div>
-          <div style="font-size:11px;color:var(--text-secondary);" id="imp_cli_subtitle">Seleccioná un archivo .xlsx o .csv</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);">Importar Clientes</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);" id="imp_cli_subtitle">Seleccioná un archivo .xlsx o .csv</div>
         </div>
       </div>
-      <button onclick="cerrarImportarClientes()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarImportarClientes()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <!-- Step 1: subir archivo -->
@@ -366,20 +366,20 @@
         ondragleave="this.style.borderColor='var(--border-color)'"
         ondrop="event.preventDefault();this.style.borderColor='var(--border-color)';impCliFileSelected({target:{files:event.dataTransfer.files}})">
         <i class="bi bi-cloud-upload" style="font-size:32px;color:var(--text-muted);display:block;margin-bottom:8px;"></i>
-        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Arrastrá el archivo o hacé click</div>
-        <div style="font-size:12px;color:var(--text-secondary);">.xlsx · .xls · .csv — máx. 5MB</div>
+        <div style="font-size: 16px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Arrastrá el archivo o hacé click</div>
+        <div style="font-size: 13.5px;color:var(--text-secondary);">.xlsx · .xls · .csv — máx. 5MB</div>
       </div>
       <input type="file" id="imp_cli_file" accept=".xlsx,.xls,.csv" style="display:none" onchange="impCliFileSelected(event)">
 
       <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:12px;color:var(--text-secondary);">¿No tenés el formato? Descargá la plantilla:</span>
+        <span style="font-size: 13.5px;color:var(--text-secondary);">¿No tenés el formato? Descargá la plantilla:</span>
         <button onclick="descargarPlantillaClientes()"
-          style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.06);color:#059669;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.06);color:#059669;font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
           <i class="bi bi-download"></i> Plantilla Excel
         </button>
       </div>
 
-      <div style="margin-top:12px;background:var(--bg-surface-2);border-radius:8px;padding:10px 14px;font-size:11.5px;color:var(--text-secondary);">
+      <div style="margin-top:12px;background:var(--bg-surface-2);border-radius:8px;padding:10px 14px;font-size: 13px;color:var(--text-secondary);">
         <strong>Columnas reconocidas:</strong> nombre · documento · telefono · email · direccion · limite_credito<br>
         Si el cliente ya existe (mismo documento o nombre), se actualiza. Si no existe, se crea.
       </div>
@@ -388,12 +388,12 @@
     <!-- Step 2: preview -->
     <div id="imp_cli_step2" style="display:none;">
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        <span id="imp_cli_countNew"    style="padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;font-size:12px;font-weight:700;">0 nuevos</span>
-        <span id="imp_cli_countUpdate" style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.1);color:#d97706;font-size:12px;font-weight:700;">0 actualizar</span>
-        <span id="imp_cli_countError"  style="padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444;font-size:12px;font-weight:700;">0 errores</span>
+        <span id="imp_cli_countNew"    style="padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.1);color:#059669;font-size: 13.5px;font-weight:700;">0 nuevos</span>
+        <span id="imp_cli_countUpdate" style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.1);color:#d97706;font-size: 13.5px;font-weight:700;">0 actualizar</span>
+        <span id="imp_cli_countError"  style="padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444;font-size: 13.5px;font-weight:700;">0 errores</span>
       </div>
       <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:320px;overflow-y:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size: 13.5px;">
           <thead style="background:var(--bg-surface-2);position:sticky;top:0;">
             <tr>
               <th style="padding:8px 12px;text-align:left;font-weight:700;color:var(--text-secondary);">Estado</th>
@@ -410,11 +410,11 @@
 
     <!-- Footer -->
     <div id="imp_cli_footer" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-      <span id="imp_cli_footerInfo" style="font-size:12px;color:var(--text-secondary);"></span>
+      <span id="imp_cli_footerInfo" style="font-size: 13.5px;color:var(--text-secondary);"></span>
       <div style="display:flex;gap:8px;">
         <button onclick="impCliVolver()" class="btn-action btn-action-outline" style="padding:9px 16px;">← Volver</button>
         <button onclick="ejecutarImportacionClientes()" id="imp_cli_btnImportar"
-          style="padding:9px 20px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:var(--font-body);">
+          style="padding:9px 20px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:var(--font-body);">
           <i class="bi bi-check-lg"></i> <span id="imp_cli_btnLabel">Importar</span>
         </button>
       </div>
@@ -429,54 +429,54 @@
   <div class="sale-modal" style="max-width:400px;text-align:left;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 18px;">
           <i class="bi bi-cash-stack"></i>
         </div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);" id="pagoTitulo">Registrar Pago</div>
-          <div style="font-size:11px;color:var(--text-secondary);" id="pagoClienteNombre">—</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);" id="pagoTitulo">Registrar Pago</div>
+          <div style="font-size: 12.5px;color:var(--text-secondary);" id="pagoClienteNombre">—</div>
         </div>
       </div>
-      <button onclick="cerrarModalPago()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;"><i class="bi bi-x-lg"></i></button>
+      <button onclick="cerrarModalPago()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <!-- Saldo deudor actual -->
     <div id="pagoSaldoBox" style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12px;color:#dc2626;font-weight:600;" id="pagoSaldoLabel">Saldo deudor total</span>
-      <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:#dc2626;" id="pagoSaldoActual">$0.00</span>
+      <span style="font-size: 13.5px;color:#dc2626;font-weight:600;" id="pagoSaldoLabel">Saldo deudor total</span>
+      <span style="font-family:var(--font-mono);font-size: 20.5px;font-weight:800;color:#dc2626;" id="pagoSaldoActual">$0.00</span>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-          <label style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;" id="pagoMontoLabel">Monto a cobrar ($)</label>
-          <button id="pagoCobrarTodo" onclick="pagarTodo()" style="font-size:11px;font-weight:600;color:var(--color-primary);background:rgba(27,79,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
+          <label style="font-size: 12.5px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;" id="pagoMontoLabel">Monto a cobrar ($)</label>
+          <button id="pagoCobrarTodo" onclick="pagarTodo()" style="font-size: 12.5px;font-weight:600;color:var(--color-primary);background:rgba(27,79,216,.1);border:none;border-radius:5px;padding:2px 9px;cursor:pointer;">
             Cobrar todo
           </button>
         </div>
         <input type="text" inputmode="decimal" id="p_monto" class="fmt-precio" placeholder="0,00"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size:18px;font-weight:700;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-mono);font-size: 20.5px;font-weight:700;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'"
           oninput="calcRestante()">
       </div>
 
       <!-- Saldo pendiente tras el pago -->
       <div id="restanteWrap" style="display:none;border-radius:var(--radius-sm);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;font-weight:600;" id="restanteLabel">Saldo pendiente tras pago</span>
-        <span style="font-family:var(--font-mono);font-size:15px;font-weight:700;" id="restanteValor">$0.00</span>
+        <span style="font-size: 13.5px;font-weight:600;" id="restanteLabel">Saldo pendiente tras pago</span>
+        <span style="font-family:var(--font-mono);font-size: 17px;font-weight:700;" id="restanteValor">$0.00</span>
       </div>
 
       <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
+        <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Descripción</label>
         <input type="text" id="p_desc" placeholder="Ej: Pago en efectivo, Transferencia…"
-          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;outline:none;transition:border .2s;"
+          style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='#10b981'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
     </div>
 
     <div style="display:flex;gap:10px;margin-top:20px;">
       <button onclick="confirmarPago()"
-        style="flex:1;justify-content:center;padding:11px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
+        style="flex:1;justify-content:center;padding:11px;background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);font-size: 16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;">
         <i class="bi bi-check-circle-fill"></i> Confirmar pago
       </button>
       <button onclick="cerrarModalPago()" class="btn-action btn-action-outline" style="padding:11px 18px;">Cancelar</button>
@@ -485,116 +485,121 @@
 </div>
 
 <!-- ══════════════════════════════════════════
-     MODAL CUENTA CORRIENTE / MOVIMIENTOS
+     FICHA DE CLIENTE (Datos / Cuenta corriente / Compras)
 ══════════════════════════════════════════ -->
-<div class="sale-overlay" id="modalMovimientos" onclick="if(event.target.id==='modalMovimientos')cerrarModalMovimientos()">
-  <div style="width:100%;max-width:900px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+<style>
+.ficha-tab {
+  padding: 9px 16px; border-radius: 8px; border: none; background: transparent;
+  color: var(--text-secondary); font-size: 14.5px; font-weight: 700; cursor: pointer;
+  font-family: var(--font-body); display:flex; align-items:center; gap:7px; transition: all .15s;
+}
+.ficha-tab:hover { background: var(--bg-surface-2); color: var(--text-primary); }
+.ficha-tab.on    { background: var(--color-primary); color: #fff; }
+.ficha-dato-row  { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border-color); }
+.ficha-dato-row:last-child { border-bottom:none; }
+.ficha-dato-label { font-size: 12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); }
+.ficha-dato-valor { font-size: 15.5px; color:var(--text-primary); font-weight:600; text-align:right; }
+</style>
+<div class="sale-overlay" id="modalFicha" onclick="if(event.target.id==='modalFicha')cerrarFicha()">
+  <div style="width:100%;max-width:980px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
-          <i class="bi bi-person-lines-fill"></i>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19px;flex-shrink:0;">
+          <i class="bi bi-person-fill"></i>
         </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Cuenta Corriente</div>
-          <div style="font-size:12px;color:var(--text-secondary);" id="movClienteNombre">—</div>
+        <div style="min-width:0;">
+          <div style="font-size: 17.5px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="fichaClienteNombre">—</div>
+          <div style="font-size: 12.5px;" id="fichaClienteSaldoTag">—</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button onclick="exportarEstadoCuenta('pdf')"
-          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-          <i class="bi bi-printer"></i> Imprimir
+        <button id="fichaBtnEditar" onclick="abrirEditar(_fichaCliente)"
+          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.07);color:var(--color-primary);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-pencil"></i> Editar
         </button>
-        <button onclick="exportarEstadoCuenta('csv')"
-          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-          <i class="bi bi-filetype-csv"></i> CSV
-        </button>
-        <button onclick="cerrarModalMovimientos()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
+        <button onclick="cerrarFicha()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;padding:4px;line-height:1;">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>
 
-    <!-- Cuerpo dos columnas -->
-    <div style="display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;">
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;padding:12px 22px 0;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <button class="ficha-tab" id="fichaTab_datos"   onclick="seleccionarTabFicha('datos')"><i class="bi bi-person-vcard"></i> Datos</button>
+      <button class="ficha-tab" id="fichaTab_cuenta"  onclick="seleccionarTabFicha('cuenta')"><i class="bi bi-wallet2"></i> Cuenta corriente</button>
+      <button class="ficha-tab" id="fichaTab_compras" onclick="seleccionarTabFicha('compras')"><i class="bi bi-bag-check-fill"></i> Compras</button>
+    </div>
 
-      <!-- IZQUIERDA: Resumen del cliente -->
-      <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-surface-2);">
-
-        <!-- Saldo grande -->
-        <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="movBannerLabel">Saldo</div>
-          <div style="font-size:32px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;line-height:1;" id="movBannerValor">$0,00</div>
-        </div>
-
-        <!-- Stats rápidas -->
-        <div id="movStats" style="display:flex;flex-direction:column;gap:8px;"></div>
-
-        <!-- Acciones -->
-        <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;">
-          <button id="movBtnCargo" onclick="movIrCargo()"
-            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
-            <i class="bi bi-plus-circle"></i> Registrar cargo
-          </button>
-          <button id="movBtnCobrar" onclick="movIrCobrar()"
-            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
-            <i class="bi bi-cash-stack"></i> Registrar pago
-          </button>
-        </div>
+    <!-- ═══ PANE: DATOS ═══ -->
+    <div id="fichaPane_datos" style="flex:1;overflow-y:auto;padding:22px;display:none;">
+      <div style="max-width:520px;margin:0 auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:6px 18px;">
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Nombre / Razón social</span><span class="ficha-dato-valor" id="fd_nombre">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">CUIT / DNI</span><span class="ficha-dato-valor" id="fd_documento">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Teléfono</span><span class="ficha-dato-valor" id="fd_telefono">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Email</span><span class="ficha-dato-valor" id="fd_email">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Dirección</span><span class="ficha-dato-valor" id="fd_direccion">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Categoría</span><span class="ficha-dato-valor" id="fd_categoria">—</span></div>
+        <div class="ficha-dato-row"><span class="ficha-dato-label">Límite de crédito</span><span class="ficha-dato-valor" id="fd_limite">—</span></div>
       </div>
+    </div>
 
-      <!-- DERECHA: Movimientos -->
-      <div style="display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial de movimientos</span>
-          <span style="font-size:11.5px;color:var(--text-secondary);" id="movTotal">—</span>
+    <!-- ═══ PANE: CUENTA CORRIENTE ═══ -->
+    <div id="fichaPane_cuenta" style="flex:1;overflow:hidden;display:none;">
+      <div style="display:grid;grid-template-columns:260px 1fr;height:100%;">
+
+        <!-- IZQUIERDA: Resumen -->
+        <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-surface-2);">
+          <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
+            <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="movBannerLabel">Saldo</div>
+            <div style="font-size:32px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;line-height:1;" id="movBannerValor">$0,00</div>
+          </div>
+          <div id="movStats" style="display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="exportarEstadoCuenta('pdf')" title="Imprimir estado de cuenta"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+              <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <button onclick="exportarEstadoCuenta('csv')" title="Exportar CSV"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+              <i class="bi bi-filetype-csv"></i> CSV
+            </button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;">
+            <button id="movBtnCargo" onclick="movIrCargo()"
+              style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+              <i class="bi bi-plus-circle"></i> Registrar cargo
+            </button>
+            <button id="movBtnCobrar" onclick="movIrCobrar()"
+              style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size: 15px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+              <i class="bi bi-cash-stack"></i> Registrar pago
+            </button>
+          </div>
         </div>
-        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;" id="movListado">
-          <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
+
+        <!-- DERECHA: Movimientos -->
+        <div style="display:flex;flex-direction:column;overflow:hidden;">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <span style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial de movimientos</span>
+            <span style="font-size: 13px;color:var(--text-secondary);" id="movTotal">—</span>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;" id="movListado">
+            <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ══════════════════════════════════════
-     MODAL: Historial de compras del cliente
-══════════════════════════════════════ -->
-<div class="sale-overlay" id="modalHistorialVentas" onclick="if(event.target.id==='modalHistorialVentas')cerrarHistorialVentas()">
-  <div style="width:100%;max-width:980px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
-
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
-          <i class="bi bi-bag-check-fill"></i>
-        </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);">Historial de compras</div>
-          <div style="font-size:12px;color:var(--text-secondary);" id="hvClienteNombre">—</div>
-        </div>
-      </div>
-      <button onclick="cerrarHistorialVentas()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:20px;padding:4px;line-height:1;">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <!-- Body: stats arriba + tabla abajo -->
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;">
-
-      <!-- Stats cards -->
+    <!-- ═══ PANE: COMPRAS ═══ -->
+    <div id="fichaPane_compras" style="flex:1;overflow-y:auto;display:none;flex-direction:column;min-height:0;">
       <div id="hvStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--border-color);flex-shrink:0;"></div>
-
-      <!-- Buscador local -->
       <div style="padding:10px 20px 0;flex-shrink:0;">
         <input type="text" id="hvBuscar" placeholder="Buscar por N° de venta, producto o medio de pago…"
           oninput="filtrarHistorial()"
-          style="width:100%;padding:9px 13px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size:13px;outline:none;box-sizing:border-box;transition:border-color .15s;"
+          style="width:100%;padding:9px 13px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size: 15px;outline:none;box-sizing:border-box;transition:border-color .15s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
-
-      <!-- Listado de ventas -->
       <div style="flex:1;overflow-y:auto;padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;" id="hvListado">
         <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
       </div>
@@ -614,6 +619,67 @@ let _cargoClienteId = null;
 let _movId          = null;
 let _movNombre      = '';
 let _movSaldo       = 0;
+let _fichaCliente   = null;
+let _fichaTabActual = 'datos';
+
+/* ════════════════════════════════════
+   FICHA DE CLIENTE (Datos / Cuenta / Compras)
+════════════════════════════════════ */
+function fmtMoneda(n) {
+  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function abrirFicha(id, nombre, tabInicial) {
+  document.getElementById('fichaClienteNombre').textContent = nombre;
+  document.getElementById('fichaClienteSaldoTag').textContent = '';
+  document.getElementById('fichaBtnEditar').style.display = (id === 1) ? 'none' : 'flex';
+  document.getElementById('modalFicha').classList.add('open');
+  seleccionarTabFicha(tabInicial || 'datos');
+
+  try {
+    const cliente = await fetch(`/api/clientes/${id}`).then(r => r.json());
+    _fichaCliente = cliente;
+    renderFichaDatos(cliente);
+
+    const saldo = Number(cliente.saldo || 0);
+    const tag = document.getElementById('fichaClienteSaldoTag');
+    if (saldo > 0)      { tag.textContent = 'Debe ' + fmtMoneda(saldo);        tag.style.color = '#dc2626'; }
+    else if (saldo < 0) { tag.textContent = 'A favor ' + fmtMoneda(Math.abs(saldo)); tag.style.color = '#d97706'; }
+    else                { tag.textContent = 'Al día';                          tag.style.color = '#10b981'; }
+
+    // Se cargan ambas pestañas en paralelo para que el cambio de tab sea instantáneo
+    cargarCuentaCorriente(id, nombre, saldo);
+    cargarComprasCliente(id, nombre);
+  } catch (e) {
+    console.error('Error al abrir ficha de cliente:', e);
+  }
+}
+
+function renderFichaDatos(c) {
+  document.getElementById('fd_nombre').textContent    = c.nombre || '—';
+  document.getElementById('fd_documento').textContent  = c.documento || '—';
+  document.getElementById('fd_telefono').textContent   = c.telefono || '—';
+  document.getElementById('fd_email').textContent      = c.email || '—';
+  document.getElementById('fd_direccion').textContent  = c.direccion || '—';
+  document.getElementById('fd_categoria').textContent  = c.categoria || 'Sin categoría';
+  document.getElementById('fd_limite').textContent     = c.limite_credito != null ? fmtMoneda(c.limite_credito) : 'Sin límite';
+}
+
+function seleccionarTabFicha(tab) {
+  _fichaTabActual = tab;
+  ['datos', 'cuenta', 'compras'].forEach(t => {
+    const btn  = document.getElementById('fichaTab_' + t);
+    const pane = document.getElementById('fichaPane_' + t);
+    if (btn)  btn.classList.toggle('on', t === tab);
+    if (pane) pane.style.display = (t === tab) ? (t === 'datos' ? 'block' : 'flex') : 'none';
+  });
+}
+
+function cerrarFicha() {
+  document.getElementById('modalFicha').classList.remove('open');
+  _fichaCliente = null;
+  _hvRaw = [];
+}
 
 /* ════════════════════════════════════
    CRUD CLIENTES
@@ -799,14 +865,12 @@ async function confirmarPago() {
 /* ════════════════════════════════════
    MOVIMIENTOS / CUENTA CORRIENTE
 ════════════════════════════════════ */
-async function verMovimientos(id, nombre, saldo) {
+async function cargarCuentaCorriente(id, nombre, saldo) {
   _movId     = id;
   _movNombre = nombre;
   _movSaldo  = Number(saldo);
 
-  document.getElementById('movClienteNombre').textContent = nombre;
   document.getElementById('movListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:24px 0;">Cargando…</p>';
-  document.getElementById('modalMovimientos').classList.add('open');
 
   // Banner de saldo
   const banner    = document.getElementById('movBanner');
@@ -862,17 +926,17 @@ async function verMovimientos(id, nombre, saldo) {
   const statsEl = document.getElementById('movStats');
   if (statsEl) statsEl.innerHTML = `
     <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;">
-      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
+      <div style="font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:8px;">Resumen</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+        <div style="display:flex;justify-content:space-between;font-size: 14px;">
           <span style="color:var(--text-secondary);">Total cargado</span>
           <span style="font-family:var(--font-mono);font-weight:700;color:#dc2626;">+$${totalCargos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12.5px;">
+        <div style="display:flex;justify-content:space-between;font-size: 14px;">
           <span style="color:var(--text-secondary);">Total pagado</span>
           <span style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-$${totalPagos.toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
         </div>
-        <div style="border-top:1px dashed var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size:12.5px;">
+        <div style="border-top:1px dashed var(--border-color);padding-top:6px;display:flex;justify-content:space-between;font-size: 14px;">
           <span style="color:var(--text-secondary);">Movimientos</span>
           <span style="font-weight:700;color:var(--text-primary);">${movs.length}</span>
         </div>
@@ -897,7 +961,7 @@ async function verMovimientos(id, nombre, saldo) {
     // Items de la venta si los tiene
     const itemsHtml = m.items && m.items.length
       ? `<div style="margin-top:6px;padding:6px 8px;background:var(--bg-surface-2);border-radius:6px;display:flex;flex-direction:column;gap:3px;">
-          ${m.items.map(i => `<div style="font-size:11px;color:var(--text-secondary);display:flex;justify-content:space-between;">
+          ${m.items.map(i => `<div style="font-size: 12.5px;color:var(--text-secondary);display:flex;justify-content:space-between;">
             <span>${i.nombre} x${i.cantidad}</span>
             <span style="font-family:var(--font-mono);">$${Number(i.precio_unitario*i.cantidad).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
           </div>`).join('')}
@@ -915,31 +979,31 @@ async function verMovimientos(id, nombre, saldo) {
         data-mov data-tipo="${m.tipo}" data-desc="${desc.replace(/"/g,'&quot;')}" data-monto="${m.monto}" data-acum="${m.acum}" data-fecha="${fecha}">
       <i class="bi ${icono}" style="font-size:22px;color:${iconCol};flex-shrink:0;"></i>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}</div>
+        <div style="font-size: 15.5px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${desc}</div>
         ${itemsHtml}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
-            <i class="bi bi-calendar3" style="font-size:10px;"></i>${fechaPart}
+          <span style="font-size: 13px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
+            <i class="bi bi-calendar3" style="font-size: 11.5px;"></i>${fechaPart}
           </span>
-          <span style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
-            <i class="bi bi-clock" style="font-size:10px;"></i>${horaPart}
+          <span style="font-size: 13px;color:var(--text-secondary);display:flex;align-items:center;gap:4px;">
+            <i class="bi bi-clock" style="font-size: 11.5px;"></i>${horaPart}
           </span>
-          <span style="font-size:11px;font-weight:600;color:${acumColor};background:${acumColor}1a;padding:1px 7px;border-radius:20px;">${acumLabel}</span>
+          <span style="font-size: 12.5px;font-weight:600;color:${acumColor};background:${acumColor}1a;padding:1px 7px;border-radius:20px;">${acumLabel}</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:var(--font-mono);font-size:17px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
-        <div style="font-size:10.5px;color:var(--text-secondary);margin-top:1px;">${esCargo?'cargo':'pago'}</div>
+        <div style="font-family:var(--font-mono);font-size: 19.5px;font-weight:800;color:${color};">${signo}$${Number(m.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</div>
+        <div style="font-size: 12px;color:var(--text-secondary);margin-top:1px;">${esCargo?'cargo':'pago'}</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function cerrarModalMovimientos() { document.getElementById('modalMovimientos').classList.remove('open'); }
+function cerrarModalMovimientos() { /* obsoleta: la ficha usa cerrarFicha() */ }
 
 // Botones rápidos desde movimientos
-function movIrCargo()  { cerrarModalMovimientos(); setTimeout(() => abrirCargo(_movId, _movNombre), 80); }
-function movIrCobrar() { cerrarModalMovimientos(); setTimeout(() => abrirPago(_movId, _movNombre, _movSaldo), 80); }
+function movIrCargo()  { cerrarFicha(); setTimeout(() => abrirCargo(_movId, _movNombre), 80); }
+function movIrCobrar() { cerrarFicha(); setTimeout(() => abrirPago(_movId, _movNombre, _movSaldo), 80); }
 
 /* ════════════════════════════════════
    FILTRO LOCAL
@@ -1035,7 +1099,7 @@ function exportarClientesPDF() {
   const win = window.open('','_blank','width=800,height=600');
   win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
     <title>Clientes — AxSoft</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;margin:24px}h2{font-size:18px;margin-bottom:4px}p{color:#666;font-size:12px;margin:0 0 16px}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
+    <style>body{font-family:Arial,sans-serif;font-size: 15px;margin:24px}h2{font-size: 20.5px;margin-bottom:4px}p{color:#666;font-size: 13.5px;margin:0 0 16px}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size: 12.5px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
   </head><body>
     <h2>Clientes — AxSoft</h2>
     <p>Generado: ${new Date().toLocaleString('es-AR')} · ${rows.length} clientes</p>
@@ -1048,7 +1112,7 @@ function exportarClientesPDF() {
 
 /* ── Exportar estado de cuenta individual ── */
 function exportarEstadoCuenta(formato) {
-  const nombre = document.getElementById('movClienteNombre')?.textContent || 'Cliente';
+  const nombre = document.getElementById('fichaClienteNombre')?.textContent || 'Cliente';
   const saldo  = document.getElementById('movBannerValor')?.textContent  || '$0';
   const items  = [...document.querySelectorAll('#movListado [data-mov]')];
 
@@ -1084,10 +1148,10 @@ function exportarEstadoCuenta(formato) {
   const win = window.open('','_blank','width=800,height=700');
   win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
     <title>Estado de Cuenta — ${nombre}</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;margin:28px}h2{font-size:18px;margin-bottom:2px}h2 span{font-size:14px;font-weight:400;color:#666;margin-left:10px}.saldo{font-size:22px;font-weight:800;margin:10px 0 20px;padding:12px 18px;border-radius:8px;display:inline-block;background:#fee2e2;color:#dc2626}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size:11px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
+    <style>body{font-family:Arial,sans-serif;font-size: 15px;margin:28px}h2{font-size: 20.5px;margin-bottom:2px}h2 span{font-size: 16px;font-weight:400;color:#666;margin-left:10px}.saldo{font-size:22px;font-weight:800;margin:10px 0 20px;padding:12px 18px;border-radius:8px;display:inline-block;background:#fee2e2;color:#dc2626}table{width:100%;border-collapse:collapse}th{background:#1f3c88;color:#fff;padding:8px 12px;font-size: 12.5px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}tr:nth-child(even) td{background:#f9fafb}@media print{body{margin:0}}</style>
   </head><body>
     <h2>Estado de Cuenta <span>AxSoft</span></h2>
-    <p style="color:#666;font-size:12px;">Cliente: <strong>${nombre}</strong> · Impreso: ${new Date().toLocaleString('es-AR')}</p>
+    <p style="color:#666;font-size: 13.5px;">Cliente: <strong>${nombre}</strong> · Impreso: ${new Date().toLocaleString('es-AR')}</p>
     <div class="saldo">Saldo actual: ${saldo}</div>
     <table>
       <thead><tr><th>Fecha</th><th>Descripción</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead>
@@ -1176,9 +1240,9 @@ function guardarNuevaCat() {
   if (!el) return;
   const stat = (icon, label, value, color) =>
     `<div style="display:flex;align-items:center;gap:10px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px 14px;">
-      <i class="bi ${icon}" style="font-size:18px;color:${color};"></i>
-      <div><div style="font-size:11px;color:var(--text-secondary);">${label}</div>
-      <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${value}</div></div>
+      <i class="bi ${icon}" style="font-size: 20.5px;color:${color};"></i>
+      <div><div style="font-size: 12.5px;color:var(--text-secondary);">${label}</div>
+      <div style="font-size: 16px;font-weight:700;color:var(--text-primary);">${value}</div></div>
     </div>`;
   el.innerHTML =
     stat('bi-people', 'Total clientes', clientes.length, 'var(--color-primary)') +
@@ -1261,12 +1325,12 @@ async function impCliFileSelected(evt) {
       const fmt = n => n ? '$' + Number(n).toLocaleString('es-AR') : '—';
       tbody.innerHTML = _impCliRows.map(r => {
         const badge = r._error
-          ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,.1);color:#ef4444;">ERROR</span>`
-          : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(16,185,129,.1);color:#10b981;">OK</span>`;
+          ? `<span style="font-size: 11.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,.1);color:#ef4444;">ERROR</span>`
+          : `<span style="font-size: 11.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(16,185,129,.1);color:#10b981;">OK</span>`;
         return `<tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:8px 12px;">${badge}${r._error ? `<span style="font-size:10px;color:#ef4444;margin-left:4px;">${r._error}</span>` : ''}</td>
+          <td style="padding:8px 12px;">${badge}${r._error ? `<span style="font-size: 11.5px;color:#ef4444;margin-left:4px;">${r._error}</span>` : ''}</td>
           <td style="padding:8px 12px;font-weight:600;color:var(--text-primary);">${r.nombre||'—'}</td>
-          <td style="padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);">${r.documento||'—'}</td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);font-size: 12.5px;color:var(--text-secondary);">${r.documento||'—'}</td>
           <td style="padding:8px 12px;color:var(--text-secondary);">${r.telefono||'—'}</td>
           <td style="padding:8px 12px;text-align:right;font-family:var(--font-mono);color:var(--color-primary);">${fmt(r.limite_credito)}</td>
         </tr>`;
@@ -1334,13 +1398,11 @@ function fmt2(n) {
   return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function abrirHistorialVentas(id, nombre) {
+async function cargarComprasCliente(id, nombre) {
   _hvClienteId = id;
-  document.getElementById('hvClienteNombre').textContent = nombre;
   document.getElementById('hvBuscar').value = '';
   document.getElementById('hvListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>';
   document.getElementById('hvStats').innerHTML = '';
-  document.getElementById('modalHistorialVentas').classList.add('open');
 
   try {
     const [rVentas, rStats] = await Promise.all([
@@ -1367,18 +1429,18 @@ function renderHvStats(s) {
     <div style="background:${c.bg};border:1px solid ${c.border};border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;">
       <i class="bi ${c.icono}" style="font-size:22px;color:${c.color};flex-shrink:0;"></i>
       <div>
-        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${c.color};opacity:.8;margin-bottom:3px;">${c.label}</div>
-        <div style="font-size:20px;font-weight:800;font-family:var(--font-mono);color:${c.color};line-height:1;">${c.valor}</div>
+        <div style="font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${c.color};opacity:.8;margin-bottom:3px;">${c.label}</div>
+        <div style="font-size: 23px;font-weight:800;font-family:var(--font-mono);color:${c.color};line-height:1;">${c.valor}</div>
       </div>
     </div>`).join('');
 
   if (s.top_producto) {
     document.getElementById('hvStats').innerHTML += `
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;grid-column:1/-1;">
-        <i class="bi bi-trophy-fill" style="font-size:20px;color:#10b981;flex-shrink:0;"></i>
+        <i class="bi bi-trophy-fill" style="font-size: 23px;color:#10b981;flex-shrink:0;"></i>
         <div>
-          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#10b981;opacity:.8;margin-bottom:2px;">Producto más comprado</div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${s.top_producto.name} <span style="font-family:var(--font-mono);font-weight:600;color:#10b981;">(${s.top_producto.veces} unidades)</span></div>
+          <div style="font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#10b981;opacity:.8;margin-bottom:2px;">Producto más comprado</div>
+          <div style="font-size: 16px;font-weight:700;color:var(--text-primary);">${s.top_producto.name} <span style="font-family:var(--font-mono);font-weight:600;color:#10b981;">(${s.top_producto.veces} unidades)</span></div>
         </div>
       </div>`;
   }
@@ -1389,8 +1451,8 @@ function renderHvListado(ventas) {
     document.getElementById('hvListado').innerHTML = `
       <div style="text-align:center;padding:40px 0;color:var(--text-secondary);">
         <i class="bi bi-bag-x" style="font-size:40px;opacity:.2;display:block;margin-bottom:10px;"></i>
-        <div style="font-size:14px;font-weight:700;">Sin compras registradas</div>
-        <div style="font-size:12px;margin-top:4px;opacity:.6;">Cuando este cliente realice una compra aparecerá aquí</div>
+        <div style="font-size: 16px;font-weight:700;">Sin compras registradas</div>
+        <div style="font-size: 13.5px;margin-top:4px;opacity:.6;">Cuando este cliente realice una compra aparecerá aquí</div>
       </div>`;
     return;
   }
@@ -1404,11 +1466,11 @@ function renderHvListado(ventas) {
     const itemsHtml = v.items && v.items.length
       ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">
           ${v.items.slice(0,4).map(i => `
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-secondary);">
+            <div style="display:flex;justify-content:space-between;font-size: 13px;color:var(--text-secondary);">
               <span>${i.name} × ${i.qty}</span>
               <span style="font-family:var(--font-mono);">$${fmt2(i.subtotal)}</span>
             </div>`).join('')}
-          ${v.items.length > 4 ? `<div style="font-size:11px;color:var(--text-secondary);font-style:italic;">+ ${v.items.length - 4} ítems más</div>` : ''}
+          ${v.items.length > 4 ? `<div style="font-size: 12.5px;color:var(--text-secondary);font-style:italic;">+ ${v.items.length - 4} ítems más</div>` : ''}
         </div>`
       : '';
 
@@ -1418,22 +1480,22 @@ function renderHvListado(ventas) {
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
             <div style="width:34px;height:34px;border-radius:8px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <i class="bi bi-receipt" style="color:#6366f1;font-size:15px;"></i>
+              <i class="bi bi-receipt" style="color:#6366f1;font-size: 17px;"></i>
             </div>
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="font-size:13px;font-weight:700;color:var(--text-primary);">Venta #${v.id}</span>
-                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${metodoBg};color:${metodoCOlor};">${v.payment_method || '—'}</span>
+                <span style="font-size: 15px;font-weight:700;color:var(--text-primary);">Venta #${v.id}</span>
+                <span style="font-size: 12.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:${metodoBg};color:${metodoCOlor};">${v.payment_method || '—'}</span>
               </div>
-              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">
-                <i class="bi bi-calendar3" style="font-size:10px;"></i> ${fp}
-                <span style="margin-left:6px;"><i class="bi bi-clock" style="font-size:10px;"></i> ${hp || ''}</span>
+              <div style="font-size: 13px;color:var(--text-secondary);margin-top:2px;">
+                <i class="bi bi-calendar3" style="font-size: 11.5px;"></i> ${fp}
+                <span style="margin-left:6px;"><i class="bi bi-clock" style="font-size: 11.5px;"></i> ${hp || ''}</span>
               </div>
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--text-primary);">$${fmt2(v.total)}</div>
-            <div style="font-size:11px;color:var(--text-secondary);">${(v.items||[]).length} ítem${(v.items||[]).length !== 1 ? 's' : ''}</div>
+            <div style="font-family:var(--font-mono);font-size: 20.5px;font-weight:800;color:var(--text-primary);">$${fmt2(v.total)}</div>
+            <div style="font-size: 12.5px;color:var(--text-secondary);">${(v.items||[]).length} ítem${(v.items||[]).length !== 1 ? 's' : ''}</div>
           </div>
         </div>
         ${itemsHtml}
@@ -1452,9 +1514,6 @@ function filtrarHistorial() {
   renderHvListado(filtered);
 }
 
-function cerrarHistorialVentas() {
-  document.getElementById('modalHistorialVentas').classList.remove('open');
-  _hvRaw = [];
-}
+function cerrarHistorialVentas() { /* obsoleta: la ficha usa cerrarFicha() */ }
 
 </script>

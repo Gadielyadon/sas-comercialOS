@@ -11,18 +11,18 @@
   padding: 8px 12px; border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-color);
   background: var(--bg-surface-2); color: var(--text-primary);
-  font-family: var(--font-body); font-size: 13px; outline: none;
+  font-family: var(--font-body); font-size: 15px; outline: none;
   transition: border-color .15s;
 }
 .hist-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(27,79,216,.10); }
 .hist-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
-.hist-search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none; }
+.hist-search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
 .hist-search-wrap input { padding-left: 32px; width: 100%; }
 
 /* ── TABS DE ESTADO ── */
 .estado-tabs { display: flex; gap: 6px; }
 .estado-tab {
-  padding: 7px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 700;
+  padding: 7px 16px; border-radius: 20px; font-size: 14px; font-weight: 700;
   border: 1.5px solid var(--border-color); background: var(--bg-surface-2);
   color: var(--text-secondary); cursor: pointer; transition: all .15s; font-family: var(--font-body);
 }
@@ -33,14 +33,14 @@
 /* ── TABLA ── */
 .hist-table { width: 100%; border-collapse: collapse; }
 .hist-th {
-  padding: 11px 14px; font-size: 11px; font-weight: 600;
+  padding: 11px 14px; font-size: 12.5px; font-weight: 600;
   text-transform: uppercase; letter-spacing: .07em;
   color: var(--table-head-color); border-bottom: none; text-align: left;
 }
 .hist-thead tr { background: var(--table-head-bg); }
 .hist-thead tr th:first-child { border-radius: 8px 0 0 8px; }
 .hist-thead tr th:last-child  { border-radius: 0 8px 8px 0; }
-.hist-td { padding: 11px 14px; font-size: 13.5px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); transition: background .12s; vertical-align: middle; }
+.hist-td { padding: 11px 14px; font-size: 15.5px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); transition: background .12s; vertical-align: middle; }
 .hist-row:last-child .hist-td { border-bottom: none; }
 .hist-row:hover .hist-td { background: var(--table-row-hover); cursor: pointer; }
 .hist-row.anulada .hist-td { opacity: .5; }
@@ -58,8 +58,8 @@
   background: var(--bg-surface); flex-wrap: wrap; gap: 12px;
 }
 .hist-resumen-item { display: flex; flex-direction: column; gap: 2px; }
-.hist-resumen-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
-.hist-resumen-val   { font-size: 16px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+.hist-resumen-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+.hist-resumen-val   { font-size: 18px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
 
 /* ── MODAL ANULACIÓN ── */
 .anular-overlay {
@@ -77,7 +77,7 @@
 @keyframes spin { to{transform:rotate(360deg)} }
 
 /* ── PAGINACIÓN ── */
-.pag-btn { padding: 6px 12px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: all .15s; }
+.pag-btn { padding: 6px 12px; border-radius: 7px; border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: all .15s; }
 .pag-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .pag-btn.on { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
 
@@ -87,6 +87,36 @@
   .estado-tabs { flex-wrap: wrap; }
   .hist-col-hora, .hist-col-metodo { display: none; }
 }
+
+/* ── MODAL FACTURAR (AFIP) — reutiliza el mismo look del POS ── */
+.afip-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.afip-overlay.open{opacity:1;pointer-events:all;}
+.afip-modal{background:var(--bg-card);border-radius:var(--radius-xl);padding:28px;width:420px;max-width:95vw;box-shadow:var(--shadow-xl);animation:modalPop .15s ease;}
+.afip-modal h3{font-size: 19.5px;font-weight:700;color:var(--text-primary);margin:0 0 4px;}
+.afip-modal .afip-sub{font-size: 13.5px;color:var(--text-secondary);margin-bottom:20px;}
+.afip-tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.afip-tipo-btn{padding:14px 8px;border-radius:12px;border:2px solid var(--border-color);background:var(--bg-surface-2);cursor:pointer;text-align:center;transition:all .15s;font-family:var(--font-body);}
+.afip-tipo-btn:hover{border-color:var(--color-primary);background:rgba(27,79,216,.05);}
+.afip-tipo-btn.sel{border-color:var(--color-primary);background:rgba(27,79,216,.08);}
+.afip-tipo-letra{font-size:28px;font-weight:800;color:var(--color-primary);line-height:1;}
+.afip-tipo-desc{font-size: 11.5px;color:var(--text-secondary);margin-top:4px;line-height:1.3;}
+.afip-field{margin-bottom:14px;}
+.afip-field label{display:block;font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:5px;}
+.afip-field input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size: 15.5px;outline:none;box-sizing:border-box;transition:border-color .15s;}
+.afip-field input:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(27,79,216,.12);}
+.afip-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-afip-emit{flex:1;padding:12px;border-radius:10px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size: 16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+.btn-afip-emit:hover{background:#1540b8;}
+.btn-afip-emit:disabled{opacity:.5;cursor:not-allowed;}
+.btn-afip-cancel{padding:12px 18px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size: 16px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-afip-cancel:hover{border-color:var(--text-secondary);color:var(--text-primary);}
+.afip-result{display:none;text-align:center;padding:10px 0;}
+.afip-result.show{display:block;}
+.afip-cae-box{background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:12px;padding:14px;margin-top:12px;font-family:var(--font-mono);font-size: 15px;word-break:break-all;}
+.afip-cae-label{font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:4px;}
+.afip-cae-val{font-size: 17px;font-weight:800;color:var(--color-primary);}
+.afip-spinner{display:none;align-items:center;justify-content:center;gap:8px;font-size: 15px;color:var(--text-secondary);margin:8px 0;}
+.afip-spinner.show{display:flex;}
 </style>
 
 <div class="app-wrapper">
@@ -102,7 +132,7 @@
           <h2>Historial de Ventas</h2>
           <p>Todas las ventas del negocio — filtrá, buscá y anulá cuando sea necesario.</p>
         </div>
-        <button onclick="exportarXLSX()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+        <button onclick="exportarXLSX()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
           <i class="bi bi-file-earmark-excel"></i> Exportar Excel
         </button>
       </div>
@@ -120,7 +150,7 @@
 
           <!-- Fechas -->
           <input type="date" class="hist-input" id="filtroDesde" onchange="buscar(1)">
-          <span style="font-size:12px;color:var(--text-muted);">→</span>
+          <span style="font-size: 13.5px;color:var(--text-muted);">→</span>
           <input type="date" class="hist-input" id="filtroHasta" onchange="buscar(1)">
 
           <!-- Método de pago -->
@@ -132,11 +162,24 @@
             <option>Transferencia</option>
           </select>
 
+          <!-- Estado de facturación -->
+          <select class="hist-input" id="filtroFacturada" onchange="buscar(1)" style="min-width:150px;">
+            <option value="">Facturación: todas</option>
+            <option value="no">Sin facturar</option>
+            <option value="si">Ya facturadas</option>
+          </select>
+
+          <!-- Solo cuenta corriente -->
+          <label style="display:flex;align-items:center;gap:6px;font-size: 14px;color:var(--text-secondary);cursor:pointer;user-select:none;padding:0 4px;">
+            <input type="checkbox" id="filtroCC" onchange="buscar(1)" style="width:16px;height:16px;accent-color:var(--color-primary);cursor:pointer;">
+            Solo cuenta corriente
+          </label>
+
           <!-- Botones -->
-          <button onclick="buscar(1)" style="padding:8px 16px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;">
+          <button onclick="buscar(1)" style="padding:8px 16px;border-radius:var(--radius-sm);border:none;background:var(--color-primary);color:#fff;font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;gap:6px;">
             <i class="bi bi-search"></i> Buscar
           </button>
-          <button onclick="limpiar()" style="padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+          <button onclick="limpiar()" style="padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size: 15px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
             Limpiar
           </button>
         </div>
@@ -148,7 +191,7 @@
             <button class="estado-tab"     id="tabCompletada" onclick="setTab('completada')">✅ Completadas</button>
             <button class="estado-tab"     id="tabAnulada"    onclick="setTab('anulada')">❌ Anuladas</button>
           </div>
-          <span id="infoResultados" style="font-size:12px;color:var(--text-muted);"></span>
+          <span id="infoResultados" style="font-size: 13.5px;color:var(--text-muted);"></span>
         </div>
 
         <!-- TABLA -->
@@ -207,40 +250,40 @@
 <div class="anular-overlay" id="anularOverlay" onclick="if(event.target===this)cerrarAnular()">
   <div class="anular-modal">
     <div class="modal-header" style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+      <span style="font-size: 16px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
         <i class="bi bi-x-circle-fill" style="color:#ef4444;"></i>
         Anular venta <span id="anularNumero" style="color:#ef4444;"></span>
       </span>
-      <button onclick="cerrarAnular()" style="background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;">✕</button>
+      <button onclick="cerrarAnular()" style="background:none;border:none;font-size: 20.5px;color:var(--text-muted);cursor:pointer;">✕</button>
     </div>
     <div style="padding:20px;">
       <!-- Info de la venta a anular -->
-      <div id="anularInfo" style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;font-size:13px;">
+      <div id="anularInfo" style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;font-size: 15px;">
       </div>
 
       <!-- Advertencia -->
-      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#92400e;display:flex;gap:8px;">
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size: 14px;color:#92400e;display:flex;gap:8px;">
         <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px;"></i>
         <span>Esta acción <strong>devuelve el stock</strong> de los productos y <strong>no se puede deshacer</strong>. La venta quedará marcada como anulada.</span>
       </div>
 
       <!-- Motivo -->
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:6px;">
+        <label style="display:block;font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-bottom:6px;">
           Motivo de anulación <span style="color:#ef4444;">*</span>
         </label>
         <textarea id="anularMotivo" placeholder="Ej: Error en la carga, devolución del cliente, venta duplicada..." rows="3"
-          style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size:13.5px;outline:none;resize:vertical;transition:border .15s;">
+          style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-family:var(--font-body);font-size: 15.5px;outline:none;resize:vertical;transition:border .15s;">
         </textarea>
-        <div id="anularMotivoError" style="color:#ef4444;font-size:12px;margin-top:4px;display:none;">El motivo es obligatorio</div>
+        <div id="anularMotivoError" style="color:#ef4444;font-size: 13.5px;margin-top:4px;display:none;">El motivo es obligatorio</div>
       </div>
 
       <!-- Botones -->
       <div style="display:flex;gap:10px;">
-        <button onclick="cerrarAnular()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+        <button onclick="cerrarAnular()" style="flex:1;padding:11px;border-radius:var(--radius-sm);border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 15px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
           Cancelar
         </button>
-        <button onclick="confirmarAnulacion()" id="btnConfirmarAnular" style="flex:2;padding:11px;border-radius:var(--radius-sm);border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;">
+        <button onclick="confirmarAnulacion()" id="btnConfirmarAnular" style="flex:2;padding:11px;border-radius:var(--radius-sm);border:none;background:#ef4444;color:#fff;font-size: 15px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;">
           <i class="bi bi-x-circle"></i> Confirmar anulación
         </button>
       </div>
@@ -248,9 +291,70 @@
   </div>
 </div>
 
+<!-- MODAL FACTURAR (AFIP) — invoca la misma venta desde Historial -->
+<div class="afip-overlay" id="afipOverlay" onclick="if(event.target===this)cerrarModalFactura()">
+  <div class="afip-modal">
+    <h3><i class="bi bi-shield-check" style="color:var(--color-primary);margin-right:6px;"></i>Factura Electrónica AFIP</h3>
+    <div class="afip-sub" id="afipSubVenta">Seleccioná el tipo de comprobante a emitir</div>
+
+    <div class="afip-tipo-grid">
+      <button class="afip-tipo-btn" onclick="selTipo('A')" id="tipoA">
+        <div class="afip-tipo-letra">A</div>
+        <div class="afip-tipo-desc">Resp. Inscripto a Resp. Inscripto</div>
+      </button>
+      <button class="afip-tipo-btn sel" onclick="selTipo('B')" id="tipoB">
+        <div class="afip-tipo-letra">B</div>
+        <div class="afip-tipo-desc">A Consumidor Final o Monotributo</div>
+      </button>
+      <button class="afip-tipo-btn" onclick="selTipo('C')" id="tipoC">
+        <div class="afip-tipo-letra">C</div>
+        <div class="afip-tipo-desc">Monotributista a cualquier receptor</div>
+      </button>
+    </div>
+
+    <div class="afip-field" id="afipCuitField">
+      <label>CUIT del receptor (solo Factura A)</label>
+      <input type="text" id="afipCuit" placeholder="20-12345678-9" maxlength="13"/>
+    </div>
+    <div class="afip-field">
+      <label>Nombre / Razón social del receptor</label>
+      <input type="text" id="afipReceptorNombre" placeholder="Consumidor Final"/>
+    </div>
+
+    <div class="afip-spinner" id="afipSpinner">
+      <div class="afip-spin-icon"></div> Comunicando con AFIP...
+    </div>
+
+    <div class="afip-result" id="afipResult">
+      <div style="font-size:40px;">✅</div>
+      <div style="font-size: 17px;font-weight:700;margin-top:6px;color:var(--text-primary);">¡Factura emitida con éxito!</div>
+      <div class="afip-cae-box">
+        <div class="afip-cae-label">CAE</div>
+        <div class="afip-cae-val" id="afipCaeVal">—</div>
+        <div class="afip-cae-label" style="margin-top:8px;">Vencimiento CAE</div>
+        <div id="afipCaeVto" style="font-size: 15px;font-weight:600;color:var(--text-primary);">—</div>
+        <div class="afip-cae-label" style="margin-top:8px;">Nro. Comprobante</div>
+        <div id="afipNroCbte" style="font-size: 15px;font-weight:600;color:var(--text-primary);">—</div>
+      </div>
+      <button onclick="descargarPdfFacturaHist()" style="width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1.5px solid var(--color-primary);background:rgba(27,79,216,.07);color:var(--color-primary);font-family:var(--font-body);font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+        <i class="bi bi-download"></i> Descargar PDF
+      </button>
+    </div>
+
+    <div class="afip-actions" id="afipActions">
+      <button class="btn-afip-cancel" onclick="cerrarModalFactura()">Cancelar</button>
+      <button class="btn-afip-emit" id="btnAfipEmit" onclick="emitirFacturaHist()">
+        <i class="bi bi-send"></i> Emitir con AFIP
+      </button>
+    </div>
+  </div>
+</div>
+
 <%- include('../partials/scripts') %>
 <script>
 'use strict';
+
+window.__facturacionHabilitada = <%= facturacionHabilitada ? 'true' : 'false' %>;
 
 let _ventas      = [];
 let _paginaActual = 1;
@@ -293,6 +397,8 @@ function limpiar() {
   document.getElementById('filtroHasta').value = hoy;
   document.getElementById('filtroQ').value = '';
   document.getElementById('filtroMetodo').value = '';
+  document.getElementById('filtroFacturada').value = '';
+  document.getElementById('filtroCC').checked = false;
   _tabActual = 'todas';
   ['tabTodas','tabCompletada','tabAnulada'].forEach(id => document.getElementById(id).className = 'estado-tab');
   document.getElementById('tabTodas').classList.add('on');
@@ -312,11 +418,15 @@ async function buscar(page = 1) {
   const hasta  = document.getElementById('filtroHasta').value;
   const q      = document.getElementById('filtroQ').value.trim();
   const metodo = document.getElementById('filtroMetodo').value;
+  const facturada = document.getElementById('filtroFacturada').value;
+  const soloCC    = document.getElementById('filtroCC').checked;
 
   if (desde)  params.set('desde', desde);
   if (hasta)  params.set('hasta', hasta);
   if (q)      params.set('q', q);
   if (metodo) params.set('metodo', metodo);
+  if (facturada) params.set('facturada', facturada);
+  if (soloCC)    params.set('cc', '1');
   if (_tabActual !== 'todas') params.set('status', _tabActual);
 
   try {
@@ -371,20 +481,26 @@ function renderTabla(ventas) {
     const esAnulada = v.status === 'anulada';
 
     const badgeEstado = esAnulada
-      ? `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;">❌ Anulada</span>`
-      : `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(16,185,129,.12);color:#059669;">✅ Completada</span>`;
+      ? `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;">❌ Anulada</span>`
+      : `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(16,185,129,.12);color:#059669;">✅ Completada</span>`;
 
     const badgeFact = v.facturada
-      ? `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra}</span>`
-      : `<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
+      ? `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra}</span>`
+      : `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
+
+    const badgeCC = v.es_cuenta_corriente
+      ? `<span title="${v.cliente_nombre ? 'Cliente: '+v.cliente_nombre : 'Venta a cuenta corriente'}" style="margin-left:5px;padding:2px 8px;border-radius:20px;font-size: 11.5px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">
+           <i class="bi bi-wallet2"></i> CC
+         </span>`
+      : '';
 
     const btnAnular = !esAnulada
       ? `<button onclick="event.stopPropagation();abrirAnular(${v.id})"
-           style="padding:5px 10px;border-radius:7px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);transition:all .15s;"
+           style="padding:5px 10px;border-radius:7px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;font-size: 13.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-body);transition:all .15s;"
            title="Anular venta">
            <i class="bi bi-x-circle"></i>
          </button>`
-      : `<span style="font-size:11px;color:var(--text-muted);padding:0 6px;">—</span>`;
+      : `<span style="font-size: 12.5px;color:var(--text-muted);padding:0 6px;">—</span>`;
 
     const totalStyle = esAnulada
       ? `text-decoration:line-through;color:var(--text-muted);`
@@ -398,40 +514,40 @@ function renderTabla(ventas) {
 
     // Etiqueta de descuento general (muestra el % si fue por porcentaje)
     const chipDesc = tieneDesc
-      ? `<span title="Descuento aplicado sobre el total de la venta" style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:800;background:rgba(239,68,68,.10);color:#dc2626;white-space:nowrap;">
+      ? `<span title="Descuento aplicado sobre el total de la venta" style="display:inline-block;padding:3px 9px;border-radius:20px;font-size: 13px;font-weight:800;background:rgba(239,68,68,.10);color:#dc2626;white-space:nowrap;">
            −${fmt(descMonto)}${Number(v.discount_pct) > 0 ? ` <span style="font-weight:600;opacity:.85;">(${Number(v.discount_pct)}%)</span>` : ''}
          </span>`
-      : `<span style="font-size:12px;color:var(--text-muted);">—</span>`;
+      : `<span style="font-size: 13.5px;color:var(--text-muted);">—</span>`;
 
     // Etiqueta de precios modificados a mano
     const chipEdit = nEditados > 0
       ? `<div style="margin-top:3px;">
            <span title="${nEditados} producto(s) con el precio modificado a mano${ajusteMan > 0 ? ` · ${fmt(ajusteMan)} menos que el precio de lista` : ''}"
-                 style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">
+                 style="display:inline-block;padding:2px 8px;border-radius:20px;font-size: 12px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">
              ✎ ${nEditados} precio${nEditados > 1 ? 's' : ''} editado${nEditados > 1 ? 's' : ''}${ajusteMan > 0 ? ` · −${fmt(ajusteMan)}` : ''}
            </span>
          </div>`
       : '';
 
     const chipVendedor = v.usuario
-      ? `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;background:var(--bg-surface-2);color:var(--text-secondary);white-space:nowrap;">
-           <i class="bi bi-person" style="font-size:10px;"></i> ${v.usuario}
+      ? `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size: 13px;font-weight:700;background:var(--bg-surface-2);color:var(--text-secondary);white-space:nowrap;">
+           <i class="bi bi-person" style="font-size: 11.5px;"></i> ${v.usuario}
          </span>`
-      : `<span style="font-size:11px;color:var(--text-muted);" title="Esta venta es anterior al registro de vendedor">—</span>`;
+      : `<span style="font-size: 12.5px;color:var(--text-muted);" title="Esta venta es anterior al registro de vendedor">—</span>`;
 
     // Items del detalle (marcando los que tuvieron el precio cambiado a mano)
     const itemsHtml = (v.items||[]).map(it => {
       const editado = Number(it.precio_editado) === 1 && it.price_original != null;
       const precioCol = editado
-        ? `<span style="font-size:11.5px;color:var(--text-muted);text-decoration:line-through;">${fmt(it.price_original)}</span>
-           <span style="font-size:12px;font-weight:800;color:#b45309;"> → ${fmt(it.price)}</span>
+        ? `<span style="font-size: 13px;color:var(--text-muted);text-decoration:line-through;">${fmt(it.price_original)}</span>
+           <span style="font-size: 13.5px;font-weight:800;color:#b45309;"> → ${fmt(it.price)}</span>
            <span title="Precio modificado a mano" style="color:#b45309;font-weight:800;">✎</span>`
-        : `<span style="font-size:12px;color:var(--text-secondary);">${fmt(it.price)}</span>`;
+        : `<span style="font-size: 13.5px;color:var(--text-secondary);">${fmt(it.price)}</span>`;
       return `<tr>
-        <td style="padding:4px 8px 4px 0;font-size:13px;color:var(--text-primary);">${it.name}</td>
-        <td style="padding:4px 8px;font-size:12px;color:var(--text-secondary);white-space:nowrap;">× ${it.qty}</td>
+        <td style="padding:4px 8px 4px 0;font-size: 15px;color:var(--text-primary);">${it.name}</td>
+        <td style="padding:4px 8px;font-size: 13.5px;color:var(--text-secondary);white-space:nowrap;">× ${it.qty}</td>
         <td style="padding:4px 8px;white-space:nowrap;">${precioCol}</td>
-        <td style="padding:4px 0;font-size:13px;text-align:right;font-weight:600;">$${Number(it.subtotal||it.price*it.qty).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+        <td style="padding:4px 0;font-size: 15px;text-align:right;font-weight:600;">$${Number(it.subtotal||it.price*it.qty).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
       </tr>`;
     }).join('');
 
@@ -447,9 +563,9 @@ function renderTabla(ventas) {
       Number(v.recargo_pct) > 0 ? `Recargo: <strong>+${Number(v.recargo_pct)}%</strong>` : null,
       esMixto && tieneMontosDetalle
         ? `<span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
-             <span style="font-size:11.5px;font-weight:700;color:#059669;">${metodos[0]}: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
+             <span style="font-size: 13px;font-weight:700;color:#059669;">${metodos[0]}: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
              <span style="color:var(--text-muted);">+</span>
-             <span style="font-size:11.5px;font-weight:700;color:var(--color-primary);">${metodos[1]}: <strong>$${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
+             <span style="font-size: 13px;font-weight:700;color:var(--color-primary);">${metodos[1]}: <strong>$${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong></span>
            </span>`
         : (!esMixto && v.cash_received ? `Recibido: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null),
       !esMixto && v.cash_received ? `Vuelto: <strong>$${Number(v.change_amount||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null,
@@ -461,42 +577,43 @@ function renderTabla(ventas) {
     return `
       <tr class="hist-row ${esAnulada?'anulada':''}" onclick="toggleDetalle(${v.id})">
         <td class="hist-td" style="padding:10px 6px 10px 14px;">
-          <i class="bi bi-chevron-right" id="hchev-${v.id}" style="font-size:11px;color:var(--text-muted);transition:transform .15s;"></i>
+          <i class="bi bi-chevron-right" id="hchev-${v.id}" style="font-size: 12.5px;color:var(--text-muted);transition:transform .15s;"></i>
         </td>
-        <td class="hist-td" style="color:var(--text-muted);font-size:12px;">#${v.id}</td>
+        <td class="hist-td" style="color:var(--text-muted);font-size: 13.5px;">#${v.id}</td>
         <td class="hist-td">${fDate}</td>
         <td class="hist-td hist-col-hora" style="color:var(--text-secondary);">${fTime}</td>
         <td class="hist-td hist-col-metodo">
           ${esMixto && tieneMontosDetalle
-            ? `<span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(16,185,129,.08);color:#059669;">${metodos[0]} $${Number(v.cash_received||0).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>
-               <span style="font-size:10px;color:var(--text-muted);margin:0 2px;">+</span>
-               <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${metodos[1]} $${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>`
-            : `<span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span>`
+            ? `<span style="padding:3px 10px;border-radius:20px;font-size: 13px;font-weight:700;background:rgba(16,185,129,.08);color:#059669;">${metodos[0]} $${Number(v.cash_received||0).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>
+               <span style="font-size: 11.5px;color:var(--text-muted);margin:0 2px;">+</span>
+               <span style="padding:3px 10px;border-radius:20px;font-size: 13px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${metodos[1]} $${Number(v.monto_mixto2).toLocaleString('es-AR',{minimumFractionDigits:0})}</span>`
+            : `<span style="padding:3px 10px;border-radius:20px;font-size: 13px;font-weight:700;background:rgba(27,79,216,.08);color:var(--color-primary);">${v.payment_method}</span>`
           }
         </td>
         <td class="hist-td">${chipVendedor}</td>
-        <td class="hist-td">${badgeFact}</td>
+        <td class="hist-td">${badgeFact}${badgeCC}</td>
         <td class="hist-td">${badgeEstado}</td>
         <td class="hist-td" style="text-align:right;">${chipDesc}${chipEdit}</td>
-        <td class="hist-td" style="text-align:right;font-size:14px;${totalStyle}">${fmt(v.total)}</td>
+        <td class="hist-td" style="text-align:right;font-size: 16px;${totalStyle}">${fmt(v.total)}</td>
         <td class="hist-td" style="text-align:center;">${btnAnular}</td>
       </tr>
       <tr class="hist-detalle" id="hdet-${v.id}">
         <td colspan="11" style="padding:0;">
           <div class="hist-detalle-inner">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;">Items de la venta</div>
+              <div style="font-size: 12.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);font-weight:700;">Items de la venta</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button onclick="event.stopPropagation();reimprimirTicket(${v.id})" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+                <button onclick="event.stopPropagation();reimprimirTicket(${v.id})" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
                   <i class="bi bi-printer"></i> Reimprimir ticket
                 </button>
-                ${v.facturada ? `<a href="/afip/pdf/${v.id}" target="_blank" onclick="event.stopPropagation()" style="padding:6px 12px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.07);color:var(--color-primary);font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-file-earmark-pdf"></i> PDF Factura</a>` : ''}
+                ${v.facturada ? `<a href="/afip/pdf/${v.id}" target="_blank" onclick="event.stopPropagation()" style="padding:6px 12px;border-radius:8px;border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.07);color:var(--color-primary);font-size: 13.5px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-file-earmark-pdf"></i> PDF Factura</a>` : ''}
+                ${(!v.facturada && !esAnulada && window.__facturacionHabilitada) ? `<button onclick="event.stopPropagation();abrirModalFacturaHist(${v.id})" style="padding:6px 12px;border-radius:8px;border:1.5px solid rgba(27,79,216,.35);background:rgba(27,79,216,.09);color:var(--color-primary);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-send"></i> Facturar</button>` : ''}
               </div>
             </div>
             <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
               <tbody>${itemsHtml}</tbody>
             </table>
-            ${extraInfo.length ? `<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary);">${extraInfo.map(i=>`<span>${i}</span>`).join('')}</div>` : ''}
+            ${extraInfo.length ? `<div style="display:flex;flex-wrap:wrap;gap:14px;font-size: 13.5px;color:var(--text-secondary);">${extraInfo.map(i=>`<span>${i}</span>`).join('')}</div>` : ''}
           </div>
         </td>
       </tr>`;
@@ -528,11 +645,11 @@ function abrirAnular(id) {
 
   document.getElementById('anularInfo').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <strong style="font-size:14px;color:var(--text-primary);">Venta #${id}</strong>
-      <strong style="font-size:16px;color:#dc2626;">${fmt(v.total)}</strong>
+      <strong style="font-size: 16px;color:var(--text-primary);">Venta #${id}</strong>
+      <strong style="font-size: 18px;color:#dc2626;">${fmt(v.total)}</strong>
     </div>
-    <div style="font-size:12px;color:var(--text-secondary);">${fecha} · ${v.payment_method}</div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">${itemsTexto}${masItems}</div>`;
+    <div style="font-size: 13.5px;color:var(--text-secondary);">${fecha} · ${v.payment_method}</div>
+    <div style="font-size: 13.5px;color:var(--text-secondary);margin-top:4px;">${itemsTexto}${masItems}</div>`;
 
   document.getElementById('anularOverlay').classList.add('open');
   setTimeout(() => document.getElementById('anularMotivo').focus(), 150);
@@ -608,12 +725,114 @@ async function reimprimirTicket(id) {
   ).join('');
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #${v.id}</title>
     <style>@page{size:${es80?'80mm auto':'A4'};margin:6mm;}body{font-family:monospace;margin:0;padding:0;background:#fff;color:#000;font-size:${es80?'11px':'13px'};}.t{width:${es80?'72mm':'180mm'};max-width:100%;margin:0 auto;}.c{text-align:center;}.l{border-top:1px dashed #000;margin:10px 0;}.r{display:flex;justify-content:space-between;font-size:${es80?'12px':'13px'};margin:4px 0;}.r.m{font-weight:700;font-size:${es80?'14px':'16px'};}table{width:100%;border-collapse:collapse;font-size:${es80?'10px':'12px'};}</style></head>
-    <body><div class="t">${cfg.logo?`<div class="c"><img src="${escHtml(cfg.logo)}" style="max-width:100%;max-height:60px;"></div>`:''}<div class="c"><div style="font-size:${es80?'18px':'24px'};font-weight:700;">${escHtml(cfg.nombre)}</div>${cfg.direccion?`<div style="font-size:10px;">${escHtml(cfg.direccion)}</div>`:''}</div><div class="l"></div><div>Venta: #${v.id}</div><div>Fecha: ${escHtml(fechaTxt)}</div><div>Método: ${escHtml(v.payment_method||'-')}</div>${v.status==='anulada'?`<div style="color:red;font-weight:700;">*** VENTA ANULADA ***</div>`:''}
-    <div class="l"></div><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead><tbody>${items}</tbody></table><div class="l"></div><div class="r m"><span>TOTAL:</span><span>$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>${v.cash_received?`<div class="r"><span>Recibido:</span><span>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}<div class="l"></div><div class="c" style="font-size:10px;">${escHtml(cfg.footer)}</div></div></body></html>`;
+    <body><div class="t">${cfg.logo?`<div class="c"><img src="${escHtml(cfg.logo)}" style="max-width:100%;max-height:60px;"></div>`:''}<div class="c"><div style="font-size:${es80?'18px':'24px'};font-weight:700;">${escHtml(cfg.nombre)}</div>${cfg.direccion?`<div style="font-size: 11.5px;">${escHtml(cfg.direccion)}</div>`:''}</div><div class="l"></div><div>Venta: #${v.id}</div><div>Fecha: ${escHtml(fechaTxt)}</div><div>Método: ${escHtml(v.payment_method||'-')}</div>${v.status==='anulada'?`<div style="color:red;font-weight:700;">*** VENTA ANULADA ***</div>`:''}
+    <div class="l"></div><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead><tbody>${items}</tbody></table><div class="l"></div><div class="r m"><span>TOTAL:</span><span>$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>${v.cash_received?`<div class="r"><span>Recibido:</span><span>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}<div class="l"></div><div class="c" style="font-size: 11.5px;">${escHtml(cfg.footer)}</div></div></body></html>`;
   const w = window.open('','_blank',`width=${es80?420:900},height=700`);
   if (!w) { alert('Permití ventanas emergentes'); return; }
   w.document.open(); w.document.write(html); w.document.close();
   w.focus(); setTimeout(()=>w.print(),250);
+}
+
+// ── FACTURAR DESDE HISTORIAL (AFIP) ──
+let afipTipoSel = 'B';
+let afipSaleId  = null;
+let afipEmitido = false;
+
+function selTipo(tipo) {
+  afipTipoSel = tipo;
+  ['A','B','C'].forEach(function(t) {
+    var el = document.getElementById('tipo' + t);
+    if (el) el.classList.toggle('sel', t === tipo);
+  });
+  var cuitField = document.getElementById('afipCuitField');
+  if (cuitField) cuitField.style.display = tipo === 'A' ? 'block' : 'none';
+}
+
+function abrirModalFacturaHist(id) {
+  const v = _ventas.find(x => x.id === id);
+  if (!v) return;
+  if (v.facturada) { showToastHist('Esta venta ya fue facturada', 'warn'); return; }
+
+  afipSaleId  = id;
+  afipEmitido = false;
+  afipTipoSel = 'B';
+  selTipo('B');
+
+  document.getElementById('afipSubVenta').textContent = `Venta #${id} · ${fmt(v.total)}`;
+  document.getElementById('afipCuit').value = (v.cliente_documento && v.cliente_id !== 1) ? v.cliente_documento : '';
+  document.getElementById('afipReceptorNombre').value = (v.cliente_nombre && v.cliente_id !== 1) ? v.cliente_nombre : '';
+  document.getElementById('afipResult').classList.remove('show');
+  document.getElementById('afipActions').style.display = 'flex';
+  document.getElementById('btnAfipEmit').disabled = false;
+  document.getElementById('afipSpinner').classList.remove('show');
+
+  document.getElementById('afipOverlay').classList.add('open');
+}
+
+function cerrarModalFactura() {
+  document.getElementById('afipOverlay').classList.remove('open');
+  // Si se emitió una factura mientras el modal estaba abierto, refrescar la tabla
+  if (afipEmitido) buscar(_paginaActual);
+}
+
+async function emitirFacturaHist() {
+  if (afipEmitido || !afipSaleId) return;
+  var cuit   = document.getElementById('afipCuit').value.trim().replace(/\D/g,'');
+  var nombre = document.getElementById('afipReceptorNombre').value.trim() || 'Consumidor Final';
+  if (afipTipoSel === 'A' && cuit.length < 11) {
+    showToastHist('Para Factura A ingresá el CUIT del receptor', 'warn');
+    document.getElementById('afipCuit').focus();
+    return;
+  }
+  document.getElementById('btnAfipEmit').disabled = true;
+  document.getElementById('afipSpinner').classList.add('show');
+  try {
+    const r = await fetch('/afip/emitir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sale_id: afipSaleId, tipo: afipTipoSel, cliente: { cuit: cuit || null, nombre: nombre } })
+    });
+    const data = await r.json();
+    document.getElementById('afipSpinner').classList.remove('show');
+    if (!r.ok) throw new Error(data.error || 'Error al comunicarse con AFIP');
+    afipEmitido = true;
+    let vto = data.cae_vto ? `${String(data.cae_vto).slice(6,8)}/${String(data.cae_vto).slice(4,6)}/${String(data.cae_vto).slice(0,4)}` : (data.cae_vto || '—');
+    document.getElementById('afipCaeVal').textContent  = data.cae;
+    document.getElementById('afipCaeVto').textContent  = vto;
+    const nroPadded = String(data.nro_cbte).padStart(8,'0');
+    const pvPadded  = String(data.punto_venta).padStart(4,'0');
+    document.getElementById('afipNroCbte').textContent = `Fact. ${data.tipo_letra} N° ${pvPadded}-${nroPadded}`;
+    document.getElementById('afipResult').classList.add('show');
+    document.getElementById('afipActions').style.display = 'none';
+    showToastHist('Factura emitida con CAE', 'success');
+    buscar(_paginaActual); // refresca badges de Factura/CC en la tabla
+  } catch(e) {
+    document.getElementById('afipSpinner').classList.remove('show');
+    document.getElementById('btnAfipEmit').disabled = false;
+    showToastHist('Error: ' + e.message, 'error');
+  }
+}
+
+function descargarPdfFacturaHist() {
+  if (!afipSaleId) return;
+  window.open('/afip/pdf/' + afipSaleId, '_blank');
+}
+
+// Toast liviano — Historial no trae uno propio, así que armamos uno mínimo
+function showToastHist(msg, tipo) {
+  let el = document.getElementById('histToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'histToast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:4000;padding:12px 20px;border-radius:10px;font-family:var(--font-body);font-size:14.5px;font-weight:700;color:#fff;box-shadow:var(--shadow-xl);transition:opacity .25s;opacity:0;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  const colores = { success:'#059669', warn:'#b45309', error:'#dc2626' };
+  el.style.background = colores[tipo] || '#1b4fd8';
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3200);
 }
 
 // ── EXPORTAR XLSX ──
@@ -624,10 +843,14 @@ function exportarXLSX() {
   const hasta  = document.getElementById('filtroHasta')?.value  || '';
   const metodo = document.getElementById('filtroMetodo')?.value || '';
   const q      = document.getElementById('filtroQ')?.value      || '';
+  const facturada = document.getElementById('filtroFacturada')?.value || '';
+  const soloCC    = document.getElementById('filtroCC')?.checked || false;
   if (desde)  params.set('desde', desde);
   if (hasta)  params.set('hasta',  hasta);
   if (metodo && metodo !== 'todos') params.set('metodo', metodo);
   if (q)      params.set('q', q);
+  if (facturada) params.set('facturada', facturada);
+  if (soloCC)    params.set('cc', '1');
   window.location.href = '/api/historial.xlsx?' + params.toString();
 }
 </script>

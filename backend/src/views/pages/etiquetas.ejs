@@ -1,0 +1,316 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+  .etq-layout { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; }
+  @media (max-width: 1000px) { .etq-layout { grid-template-columns: 1fr; } }
+
+  .etq-btn-todos {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px;
+    border-radius: var(--radius-sm); border: 1.5px solid var(--border-color);
+    background: var(--bg-surface-2); color: var(--text-secondary); font-size: 14px;
+    font-weight: 700; cursor: pointer; white-space: nowrap; transition: all .15s;
+  }
+  .etq-btn-todos:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .etq-btn-todos.activo { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  .etq-hint { font-size: 12.5px; color: var(--text-muted); margin: -6px 0 10px; }
+  .etq-search { position: relative; flex: 1; min-width: 220px; }
+  .etq-search input { width: 100%; padding: 10px 14px 10px 36px; }
+  .etq-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+  .etq-cat-chip {
+    padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
+    background: var(--bg-surface-2); color: var(--text-secondary); font-size: 14px; font-weight: 600;
+    cursor: pointer; user-select: none; transition: all .15s; white-space: nowrap;
+  }
+  .etq-cat-chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .etq-cat-chip.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+
+  .etq-table-wrap { max-height: 560px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; }
+  .etq-table { width: 100%; border-collapse: collapse; }
+  .etq-table thead th {
+    position: sticky; top: 0; background: var(--table-head-bg); color: var(--table-head-color);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
+    padding: 10px 12px; text-align: left; z-index: 1;
+  }
+  .etq-table tbody td { padding: 9px 12px; font-size: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
+  .etq-table tbody tr:hover td { background: var(--table-row-hover); }
+  .etq-table tbody tr.selected td { background: rgba(27,79,216,.06); }
+  .etq-cat-badge { font-size: 12px; padding: 2px 8px; border-radius: 12px; background: var(--bg-surface-2); color: var(--text-muted); }
+
+  .etq-panel { position: sticky; top: 16px; }
+  .etq-panel-card { padding: 18px; }
+  .etq-sel-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border-color); }
+  .etq-sel-item:last-child { border-bottom: none; }
+  .etq-sel-name { flex: 1; font-size: 14px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .etq-sel-item input[type=number] { width: 56px; padding: 5px 6px; font-size: 14px; text-align: center; }
+  .etq-sel-item .btn-quitar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+  .etq-sel-item .btn-quitar:hover { color: #ef4444; }
+  .etq-empty-sel { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 14px; }
+
+  .etq-formato-opt { display: flex; gap: 8px; margin-top: 10px; }
+  .etq-formato-opt label {
+    flex: 1; text-align: center; padding: 9px 6px; border-radius: 8px; border: 1.5px solid var(--border-color);
+    font-size: 13.5px; font-weight: 700; cursor: pointer; color: var(--text-secondary); transition: all .15s;
+  }
+  .etq-formato-opt input { display: none; }
+  .etq-formato-opt input:checked + label { border-color: var(--color-primary); color: var(--color-primary); background: rgba(27,79,216,.06); }
+
+  .btn-generar { width: 100%; margin-top: 14px; padding: 12px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn-generar:disabled { opacity: .5; cursor: not-allowed; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Inventario · Etiquetado', user }) %>
+    <div class="page-body">
+
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.2);border-radius:10px;margin-bottom:16px;">
+        <i class="bi bi-info-circle" style="color:var(--color-primary);font-size: 20.5px;"></i>
+        <div style="font-size: 15px;color:var(--text-secondary);">
+          Elegí productos por categoría o buscándolos, indicá cuántas etiquetas de cada uno necesitás, y generá la hoja para imprimir. El código de barras usa el <strong>SKU</strong> de cada producto.
+        </div>
+      </div>
+
+      <div class="etq-layout">
+        <!-- Izquierda: buscador + tabla de productos -->
+        <div class="ax-card" style="padding:18px;">
+          <div class="etq-toolbar">
+            <div class="etq-search">
+              <i class="bi bi-search"></i>
+              <input type="text" id="etqBuscar" placeholder="Buscar por nombre o SKU..." oninput="etqFiltrar()">
+            </div>
+            <button type="button" class="etq-btn-todos" id="etqBtnTodos" onclick="etqToggleTodos()">
+              <i class="bi bi-check2-square"></i> Seleccionar todos
+            </button>
+          </div>
+
+          <% if (categorias.length) { %>
+          <div class="etq-toolbar" id="etqCatChips">
+            <span class="etq-cat-chip active" data-cat="">Todas</span>
+            <% categorias.forEach(c => { %>
+              <span class="etq-cat-chip" data-cat="<%= c.toLowerCase() %>"><%= c %></span>
+            <% }) %>
+          </div>
+          <% } %>
+
+          <div class="etq-hint" id="etqHint">"Seleccionar todos" toma los productos que ves en la lista según el filtro/categoría activa.</div>
+
+          <div class="etq-table-wrap">
+            <table class="etq-table" id="etqTabla">
+              <thead>
+                <tr>
+                  <th style="width:34px;"></th>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Categoría</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% products.forEach(p => { %>
+                <tr data-sku="<%= p.sku %>" data-nombre="<%= (p.name||'').toLowerCase() %>" data-cat="<%= (p.category||'').toLowerCase() %>" onclick="etqToggleRow('<%= p.sku %>')">
+                  <td><input type="checkbox" id="chk_<%= p.sku %>" onclick="event.stopPropagation();etqToggleRow('<%= p.sku %>')"></td>
+                  <td><%= p.name %></td>
+                  <td style="font-family:var(--font-mono);color:var(--text-muted);font-size: 13.5px;"><%= p.sku %></td>
+                  <td><% if (p.category) { %><span class="etq-cat-badge"><%= p.category %></span><% } %></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Derecha: seleccionados + formato + generar -->
+        <div class="etq-panel">
+          <div class="ax-card etq-panel-card">
+            <div style="font-size: 16px;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+              <span><i class="bi bi-tags" style="margin-right:6px;color:var(--color-primary);"></i>Seleccionados</span>
+              <span id="etqCount" style="font-size: 13.5px;font-weight:700;color:var(--text-muted);">0</span>
+            </div>
+
+            <div id="etqSeleccionados">
+              <div class="etq-empty-sel">Todavía no elegiste productos.<br>Tildalos de la lista de la izquierda.</div>
+            </div>
+
+            <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);margin-top:16px;margin-bottom:2px;">
+              Formato de impresión
+            </div>
+            <div class="etq-formato-opt">
+              <input type="radio" name="etqFormato" value="A4" id="etqFmtA4">
+              <label for="etqFmtA4">Hoja A4</label>
+              <input type="radio" name="etqFormato" value="58mm" id="etqFmt58">
+              <label for="etqFmt58">Rollo 58mm</label>
+              <input type="radio" name="etqFormato" value="80mm" id="etqFmt80">
+              <label for="etqFmt80">Rollo 80mm</label>
+            </div>
+
+            <form method="POST" action="/inventario/etiquetas/imprimir" id="etqForm">
+              <input type="hidden" name="items_json" id="etqItemsJson">
+              <input type="hidden" name="formato" id="etqFormatoInput">
+              <button type="submit" class="btn-generar" id="etqBtnGenerar" disabled>
+                <i class="bi bi-printer"></i> Generar e imprimir
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+const ETQ_PRODUCTOS = <%- JSON.stringify(products.map(p => ({ sku: p.sku, name: p.name, category: p.category || '' }))) %>;
+const ticketFormatoDefault = <%- JSON.stringify(ticketFormato || '58mm') %>;
+const etqSeleccion = new Map(); // sku -> { nombre, cantidad }
+
+// Preseleccionar el formato configurado en Ajustes
+document.addEventListener('DOMContentLoaded', () => {
+  const preset = document.getElementById(
+    ticketFormatoDefault === 'A4' ? 'etqFmtA4' : (ticketFormatoDefault === '80mm' ? 'etqFmt80' : 'etqFmt58')
+  );
+  if (preset) preset.checked = true;
+  etqActualizarBotonTodos();
+});
+
+function etqFiltrar() {
+  const q = document.getElementById('etqBuscar').value.trim().toLowerCase();
+  const catActivo = document.querySelector('.etq-cat-chip.active')?.dataset.cat || '';
+  document.querySelectorAll('#etqTabla tbody tr').forEach(tr => {
+    const nombre = tr.dataset.nombre || '';
+    const sku    = (tr.dataset.sku || '').toLowerCase();
+    const cat    = tr.dataset.cat || '';
+    const matchQ   = !q || nombre.includes(q) || sku.includes(q);
+    const matchCat = !catActivo || cat === catActivo;
+    tr.style.display = (matchQ && matchCat) ? '' : 'none';
+  });
+  etqActualizarBotonTodos();
+}
+
+// Selecciona o quita TODOS los productos actualmente visibles (según
+// búsqueda/categoría activa). Si ya están todos elegidos, el mismo botón
+// los deselecciona — así el usuario puede elegir "todos" o "a mano".
+function etqToggleTodos() {
+  const filas = [...document.querySelectorAll('#etqTabla tbody tr')].filter(tr => tr.style.display !== 'none');
+  if (!filas.length) return;
+  const todosYaElegidos = filas.every(tr => etqSeleccion.has(tr.dataset.sku));
+
+  filas.forEach(tr => {
+    const sku = tr.dataset.sku;
+    const chk = document.getElementById('chk_' + sku);
+    if (todosYaElegidos) {
+      etqSeleccion.delete(sku);
+      if (chk) chk.checked = false;
+      tr.classList.remove('selected');
+    } else {
+      const p = ETQ_PRODUCTOS.find(x => x.sku === sku);
+      if (!etqSeleccion.has(sku)) etqSeleccion.set(sku, { nombre: p ? p.name : sku, cantidad: 1 });
+      if (chk) chk.checked = true;
+      tr.classList.add('selected');
+    }
+  });
+  etqRenderSeleccion();
+  etqActualizarBotonTodos();
+}
+
+function etqActualizarBotonTodos() {
+  const btn = document.getElementById('etqBtnTodos');
+  if (!btn) return;
+  const filas = [...document.querySelectorAll('#etqTabla tbody tr')].filter(tr => tr.style.display !== 'none');
+  const todosYaElegidos = filas.length > 0 && filas.every(tr => etqSeleccion.has(tr.dataset.sku));
+  btn.innerHTML = todosYaElegidos
+    ? '<i class="bi bi-x-square"></i> Deseleccionar todos'
+    : '<i class="bi bi-check2-square"></i> Seleccionar todos' + (filas.length ? ` (${filas.length})` : '');
+  btn.classList.toggle('activo', todosYaElegidos);
+}
+
+document.getElementById('etqCatChips')?.addEventListener('click', e => {
+  const chip = e.target.closest('.etq-cat-chip');
+  if (!chip) return;
+  document.querySelectorAll('.etq-cat-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  etqFiltrar();
+});
+
+function etqToggleRow(sku) {
+  const chk = document.getElementById('chk_' + sku);
+  const tr  = document.querySelector(`tr[data-sku="${CSS.escape(sku)}"]`);
+  chk.checked = !chk.checked;
+
+  if (chk.checked) {
+    const p = ETQ_PRODUCTOS.find(x => x.sku === sku);
+    etqSeleccion.set(sku, { nombre: p ? p.name : sku, cantidad: 1 });
+    tr?.classList.add('selected');
+  } else {
+    etqSeleccion.delete(sku);
+    tr?.classList.remove('selected');
+  }
+  etqRenderSeleccion();
+  etqActualizarBotonTodos();
+}
+
+// Agregar todos los productos visibles de la categoría activa con un click en el chip (doble click)
+document.getElementById('etqCatChips')?.addEventListener('dblclick', e => {
+  const chip = e.target.closest('.etq-cat-chip');
+  if (!chip) return;
+  document.querySelectorAll('#etqTabla tbody tr').forEach(tr => {
+    if (tr.style.display === 'none') return;
+    const sku = tr.dataset.sku;
+    const chk = document.getElementById('chk_' + sku);
+    if (chk && !chk.checked) {
+      chk.checked = true;
+      tr.classList.add('selected');
+      const p = ETQ_PRODUCTOS.find(x => x.sku === sku);
+      etqSeleccion.set(sku, { nombre: p ? p.name : sku, cantidad: 1 });
+    }
+  });
+  etqRenderSeleccion();
+  etqActualizarBotonTodos();
+});
+
+function etqQuitar(sku) {
+  etqSeleccion.delete(sku);
+  const chk = document.getElementById('chk_' + sku);
+  if (chk) chk.checked = false;
+  document.querySelector(`tr[data-sku="${CSS.escape(sku)}"]`)?.classList.remove('selected');
+  etqRenderSeleccion();
+  etqActualizarBotonTodos();
+}
+
+function etqCantidad(sku, val) {
+  const item = etqSeleccion.get(sku);
+  if (!item) return;
+  item.cantidad = Math.max(1, parseInt(val, 10) || 1);
+}
+
+function etqRenderSeleccion() {
+  const cont = document.getElementById('etqSeleccionados');
+  const count = document.getElementById('etqCount');
+  const btn = document.getElementById('etqBtnGenerar');
+  count.textContent = etqSeleccion.size;
+  btn.disabled = etqSeleccion.size === 0;
+
+  if (!etqSeleccion.size) {
+    cont.innerHTML = '<div class="etq-empty-sel">Todavía no elegiste productos.<br>Tildalos de la lista de la izquierda.</div>';
+    return;
+  }
+
+  cont.innerHTML = [...etqSeleccion.entries()].map(([sku, it]) => `
+    <div class="etq-sel-item">
+      <span class="etq-sel-name" title="${it.nombre.replace(/"/g,'&quot;')}">${it.nombre}</span>
+      <input type="number" min="1" value="${it.cantidad}" onchange="etqCantidad('${sku}', this.value)">
+      <button type="button" class="btn-quitar" onclick="etqQuitar('${sku}')"><i class="bi bi-x-lg"></i></button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('etqForm').addEventListener('submit', function(e) {
+  if (!etqSeleccion.size) { e.preventDefault(); return; }
+  const items = [...etqSeleccion.entries()].map(([sku, it]) => ({
+    sku, nombre: it.nombre, cantidad: it.cantidad,
+  }));
+  document.getElementById('etqItemsJson').value = JSON.stringify(items);
+  document.getElementById('etqFormatoInput').value = document.querySelector('input[name="etqFormato"]:checked')?.value || '58mm';
+});
+</script>

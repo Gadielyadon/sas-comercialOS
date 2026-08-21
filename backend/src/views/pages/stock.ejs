@@ -30,12 +30,12 @@
       <!-- TOOLBAR -->
       <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
         <div style="position:relative;flex:1;min-width:220px;">
-          <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none;"></i>
+          <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size: 16px;pointer-events:none;"></i>
           <input id="q" class="search-input" placeholder="Buscar producto…" oninput="filtrar()" autocomplete="off"
             style="padding-left:36px;width:100%;">
         </div>
         <select id="filtroCat" onchange="filtrar()"
-          style="height:38px;padding:0 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;outline:none;">
+          style="height:38px;padding:0 12px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-body);font-size: 15px;font-weight:600;cursor:pointer;outline:none;">
           <option value="">Todas las categorías</option>
           <% const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort(); %>
           <% cats.forEach(cat => { %>
@@ -53,7 +53,7 @@
         .btn-tab {
           padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border-color);
           background: var(--bg-surface); color: var(--text-secondary);
-          font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s;
+          font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
         }
         .btn-tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
         .btn-tab.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
@@ -61,14 +61,14 @@
         .stock-table { width:100%; border-collapse:collapse; }
         .stock-table thead tr { background: var(--table-head-bg); }
         .stock-table th {
-          text-align:left; padding:11px 14px; font-size:11px; font-weight:600;
+          text-align:left; padding:11px 14px; font-size: 12.5px; font-weight:600;
           color:var(--table-head-color); text-transform:uppercase; letter-spacing:.07em;
           border-bottom:none; background:transparent;
         }
         .stock-table th:first-child { border-radius:8px 0 0 8px; }
         .stock-table th:last-child  { border-radius:0 8px 8px 0; }
         .stock-table td {
-          padding:12px 14px; font-size:13.5px; color:var(--text-primary);
+          padding:12px 14px; font-size: 15.5px; color:var(--text-primary);
           border-bottom:1px solid var(--border-color); vertical-align:middle;
           transition:background .12s;
         }
@@ -78,12 +78,12 @@
         .badge-cat {
           display:inline-block; padding:3px 10px; border-radius:20px;
           background:rgba(27,79,216,0.1); color:var(--color-primary);
-          font-size:11px; font-weight:700;
+          font-size: 12.5px; font-weight:700;
         }
         .badge-pesable {
           display:inline-block; padding:3px 10px; border-radius:20px;
           background:rgba(99,102,241,0.1); color:#6366f1;
-          font-size:11px; font-weight:700;
+          font-size: 12.5px; font-weight:700;
         }
 
         /* Switch hay/no hay */
@@ -101,7 +101,7 @@
         }
         input:checked + .slider { background:#10b981; }
         input:checked + .slider:before { transform:translateX(20px); }
-        .label-hay { font-size:13px; font-weight:700; min-width:44px; }
+        .label-hay { font-size: 15px; font-weight:700; min-width:44px; }
         .label-hay.si { color:#10b981; }
         .label-hay.no { color:#ef4444; }
 
@@ -111,13 +111,13 @@
           width:80px; padding:6px 10px; border-radius:8px;
           border:1.5px solid var(--border-color); background:var(--bg-surface);
           color:var(--text-primary); font-family:var(--font-mono);
-          font-size:13px; font-weight:700; text-align:center; outline:none;
+          font-size: 15px; font-weight:700; text-align:center; outline:none;
           transition:border-color .15s;
         }
         .qty-input:focus { border-color:var(--color-primary); box-shadow:0 0 0 3px rgba(249,115,22,0.12); }
         .qty-badge {
           display:inline-block; padding:5px 14px; border-radius:20px;
-          font-size:13px; font-weight:800; font-family:var(--font-mono);
+          font-size: 15px; font-weight:800; font-family:var(--font-mono);
           min-width:56px; text-align:center;
         }
         .qty-badge.ok    { background:#10b981; color:#fff; }
@@ -126,7 +126,7 @@
         .btn-guardar {
           padding:5px 12px; border-radius:7px; border:none;
           background:var(--color-primary); color:#fff;
-          font-size:12px; font-weight:700; cursor:pointer;
+          font-size: 13.5px; font-weight:700; cursor:pointer;
           opacity:0; transition:opacity .15s; pointer-events:none;
         }
         .btn-guardar.visible { opacity:1; pointer-events:all; }
@@ -134,7 +134,7 @@
         /* Placeholder vacío */
         #sinResultados {
           display:none; text-align:center; padding:60px 20px;
-          color:var(--text-muted); font-size:14px;
+          color:var(--text-muted); font-size: 16px;
         }
         #sinResultados i { font-size:40px; display:block; margin-bottom:12px; opacity:.4; }
       </style>
@@ -163,35 +163,35 @@
                 data-sincontrol="<%= p.venta_sin_stock ? '1' : '0' %>"
               >
                 <td>
-                  <div style="font-weight:700;font-size:13.5px;"><%= p.name %></div>
-                  <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">SKU: <%= p.sku %></div>
+                  <div style="font-weight:700;font-size: 15.5px;"><%= p.name %></div>
+                  <div style="font-size: 12.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">SKU: <%= p.sku %></div>
                 </td>
                 <td>
                   <% if (p.category) { %>
                     <span class="badge-cat"><%= p.category %></span>
                   <% } else { %>
-                    <span style="color:var(--text-muted);font-size:12px;">—</span>
+                    <span style="color:var(--text-muted);font-size: 13.5px;">—</span>
                   <% } %>
                 </td>
                 <td>
                   <% if (p.venta_sin_stock) { %>
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;font-size:11.5px;font-weight:700;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(245,158,11,.12);color:#d97706;font-size: 13px;font-weight:700;">
                       <i class="bi bi-infinity"></i> Sin control
                     </span>
                   <% } else if (p.pesable) { %>
                     <span class="badge-pesable"><i class="bi bi-rulers"></i> Pesable</span>
                   <% } else { %>
-                    <span style="color:var(--text-muted);font-size:12px;font-weight:600;"><i class="bi bi-hash"></i> Cantidad</span>
+                    <span style="color:var(--text-muted);font-size: 13.5px;font-weight:600;"><i class="bi bi-hash"></i> Cantidad</span>
                   <% } %>
                 </td>
                 <td>
                   <% if (p.venta_sin_stock) { %>
                     <!-- Sin control de stock — solo info -->
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size:12px;font-weight:700;">
+                      <span style="padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.10);color:#d97706;font-size: 13.5px;font-weight:700;">
                         <i class="bi bi-cart-check"></i> Venta libre
                       </span>
-                      <span style="font-size:11px;color:var(--text-muted);">Se vende sin importar el stock</span>
+                      <span style="font-size: 12.5px;color:var(--text-muted);">Se vende sin importar el stock</span>
                     </div>
                   <% } else if (p.pesable) { %>
                     <!-- Switch Hay / No hay -->

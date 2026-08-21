@@ -4,12 +4,12 @@
   .rem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 900px) { .rem-grid { grid-template-columns: 1fr; } }
 
-  .rem-field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+  .rem-field label { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); display: block; margin-bottom: 5px; }
   .rem-field input, .rem-field textarea { width: 100%; }
 
   .item-row { display: grid; grid-template-columns: 1fr 90px 110px 36px; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .item-row input { padding: 8px 10px; font-size: 13px; }
-  .item-row .btn-quitar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+  .item-row input { padding: 8px 10px; font-size: 15px; }
+  .item-row .btn-quitar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; }
   .item-row .btn-quitar:hover { color: #ef4444; }
 
   .buscador-prod { position: relative; margin-bottom: 10px; }
@@ -17,12 +17,12 @@
   .buscador-prod i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
   .resultados-prod { position: absolute; z-index: 20; width: 100%; max-height: 260px; overflow-y: auto; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: 0 12px 30px rgba(0,0,0,.2); margin-top: 4px; display: none; }
   .resultados-prod.open { display: block; }
-  .resultado-item { padding: 9px 14px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; }
+  .resultado-item { padding: 9px 14px; cursor: pointer; font-size: 15px; display: flex; justify-content: space-between; }
   .resultado-item:hover { background: var(--bg-hover); }
-  .resultado-item span { color: var(--text-muted); font-size: 11.5px; }
+  .resultado-item span { color: var(--text-muted); font-size: 13px; }
 
-  .btn-cancel { padding: 10px 20px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
-  .btn-save   { padding: 10px 24px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { padding: 10px 20px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 15.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+  .btn-save   { padding: 10px 24px; border-radius: var(--radius-sm); border: none; background: var(--color-primary); color: #fff; font-size: 15.5px; font-weight: 700; cursor: pointer; }
 </style>
 
 <div class="app-wrapper">
@@ -33,8 +33,8 @@
 
       <% if (datosIniciales) { %>
       <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(27,79,216,.06);border:1px solid rgba(27,79,216,.2);border-radius:10px;margin-bottom:16px;">
-        <i class="bi bi-info-circle" style="color:var(--color-primary);font-size:18px;"></i>
-        <div style="font-size:13px;color:var(--text-secondary);">
+        <i class="bi bi-info-circle" style="color:var(--color-primary);font-size: 20.5px;"></i>
+        <div style="font-size: 15px;color:var(--text-secondary);">
           Este remito se generó a partir del presupuesto <strong style="color:var(--color-primary)"><%= datosIniciales.presupuesto_numero %></strong> — revisá los datos y las cantidades antes de guardar.
         </div>
       </div>
@@ -45,7 +45,7 @@
         <input type="hidden" name="items_json" id="items_json">
 
         <div class="ax-card" style="padding:20px;margin-bottom:16px;">
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px;"><i class="bi bi-person" style="margin-right:6px;color:var(--color-primary);"></i>Datos del cliente</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);margin-bottom:14px;"><i class="bi bi-person" style="margin-right:6px;color:var(--color-primary);"></i>Datos del cliente</div>
           <div class="rem-grid">
             <div class="rem-field">
               <label>Nombre / Razón social</label>
@@ -57,17 +57,51 @@
             </div>
             <div class="rem-field">
               <label>Dirección de entrega</label>
-              <input type="text" name="cliente_direccion" placeholder="Calle, número, localidad">
+              <input type="text" name="cliente_direccion" placeholder="Calle y número" value="<%= datosIniciales?.cliente_direccion || '' %>">
+            </div>
+            <div class="rem-field">
+              <label>Barrio</label>
+              <input type="text" name="cliente_barrio" placeholder="Opcional" value="<%= datosIniciales?.cliente_barrio || '' %>">
+            </div>
+            <div class="rem-field">
+              <label>Localidad</label>
+              <input type="text" name="cliente_localidad" placeholder="Ej: San Fernando del Valle" value="<%= datosIniciales?.cliente_localidad || '' %>">
             </div>
             <div class="rem-field">
               <label>Teléfono</label>
               <input type="text" name="cliente_tel" placeholder="Opcional" value="<%= datosIniciales?.cliente_tel || '' %>">
             </div>
+            <div class="rem-field">
+              <label>I.V.A.</label>
+              <% const _condCli = datosIniciales?.cliente_cond_iva || 'Consumidor Final'; %>
+              <select name="cliente_cond_iva">
+                <% ['Consumidor Final','Responsable Inscripto','Monotributista','Exento','No Responsable'].forEach(c => { %>
+                <option value="<%= c %>" <%= _condCli === c ? 'selected' : '' %>><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="rem-field">
+              <label>Condición de venta</label>
+              <% const _condVenta = datosIniciales?.condicion_venta || 'Contado'; %>
+              <select name="condicion_venta">
+                <% ['Contado','Cuenta corriente','Transferencia','Tarjeta','Cheque'].forEach(c => { %>
+                <option value="<%= c %>" <%= _condVenta === c ? 'selected' : '' %>><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="rem-field">
+              <label>Vendedor</label>
+              <input type="text" name="vendedor" placeholder="Opcional" value="<%= datosIniciales?.vendedor || (user?.name || '') %>">
+            </div>
+            <div class="rem-field">
+              <label>Validez (días)</label>
+              <input type="number" name="validez_dias" min="1" placeholder="Ej: 1" value="<%= datosIniciales?.validez_dias || '' %>">
+            </div>
           </div>
         </div>
 
         <div class="ax-card" style="padding:20px;margin-bottom:16px;">
-          <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px;"><i class="bi bi-box-seam" style="margin-right:6px;color:var(--color-primary);"></i>Mercadería a entregar</div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);margin-bottom:14px;"><i class="bi bi-box-seam" style="margin-right:6px;color:var(--color-primary);"></i>Mercadería a entregar</div>
 
           <div class="buscador-prod">
             <i class="bi bi-search"></i>
@@ -75,12 +109,12 @@
             <div class="resultados-prod" id="resultadosProd"></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 90px 110px 36px;gap:8px;padding:0 0 6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);">
+          <div style="display:grid;grid-template-columns:1fr 90px 110px 36px;gap:8px;padding:0 0 6px;font-size: 12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);">
             <span>Descripción</span><span>Cantidad</span><span>Unidad</span><span></span>
           </div>
           <div id="itemsWrap"></div>
 
-          <button type="button" onclick="agregarItemManual()" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px dashed var(--border-color);background:transparent;color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;">
+          <button type="button" onclick="agregarItemManual()" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px dashed var(--border-color);background:transparent;color:var(--text-secondary);font-size: 14px;font-weight:600;cursor:pointer;">
             <i class="bi bi-plus-lg"></i> Agregar ítem libre (sin buscar del inventario)
           </button>
         </div>

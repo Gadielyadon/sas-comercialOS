@@ -46,6 +46,8 @@ function initSalesSchema() {
     // Precio de lista antes de tocarlo a mano + marca de edición manual
     `ALTER TABLE sale_items ADD COLUMN price_original REAL    DEFAULT NULL`,
     `ALTER TABLE sale_items ADD COLUMN precio_editado INTEGER DEFAULT 0`,
+    // Costo del producto al momento de la venta (para reportes de rentabilidad real)
+    `ALTER TABLE sale_items ADD COLUMN price_cost     REAL    DEFAULT NULL`,
   ];
 
   for (const sql of salesCols) {
@@ -106,6 +108,7 @@ function getProductForSale(sku, sucursal_id = 1) {
               COALESCE(ieps, 0)            AS ieps,
               COALESCE(pesable, 0)         AS pesable,
               COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
+              price_cost,
               sucursal_id
        FROM products
        WHERE sku = ? AND sucursal_id = ?`,
@@ -120,6 +123,7 @@ function getProductForSale(sku, sucursal_id = 1) {
               COALESCE(ieps, 0)            AS ieps,
               COALESCE(pesable, 0)         AS pesable,
               COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
+              price_cost,
               sucursal_id
        FROM products
        WHERE sku = ?
@@ -136,7 +140,8 @@ function getProductForSale(sku, sucursal_id = 1) {
             COALESCE(iva, 0)             AS iva,
             COALESCE(ieps, 0)            AS ieps,
             COALESCE(pesable, 0)         AS pesable,
-            COALESCE(venta_sin_stock, 0) AS venta_sin_stock
+            COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
+            price_cost
      FROM products
      WHERE sku = ?`,
     [String(sku)]
@@ -168,8 +173,8 @@ function _ensureStmts() {
   insertSaleItemStmt = db.prepare(`
     INSERT INTO sale_items (
       sale_id, sku, name, price, qty, subtotal, iva, ieps, pesable,
-      price_original, precio_editado
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      price_original, precio_editado, price_cost
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   updateStockBySucursalStmt = db.prepare(`
     UPDATE products SET stock = stock - ? WHERE sku = ? AND sucursal_id = ?
@@ -267,7 +272,8 @@ function createSale({
           ieps,
           pesable,
           null,
-          0
+          0,
+          null
         );
 
         continue;
@@ -315,6 +321,7 @@ function createSale({
         ? toNumber(it.price_original, price)
         : toNumber(prod.price, price);
       const precioEditado = toBoolInt(it?.precio_editado, 0) && Number(priceOriginal) !== Number(price) ? 1 : 0;
+      const priceCost = prod.price_cost != null ? toNumber(prod.price_cost, 0) : null;
 
       insertSaleItemStmt.run(
         sale_id,
@@ -327,7 +334,8 @@ function createSale({
         ieps,
         pesable,
         priceOriginal,
-        precioEditado
+        precioEditado,
+        priceCost
       );
 
       // Descontar del stock de la sucursal donde se vende (motor de existencias).

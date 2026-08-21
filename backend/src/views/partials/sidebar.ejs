@@ -7,7 +7,7 @@
       <div class="logo-icon"><img src="/img/axsoft-icon.png" alt="AxSoft" style="width:100%;height:100%;object-fit:cover;border-radius:9px;"></div>
       <div class="logo-text">
         <strong>AxSoft</strong>
-        <span style="font-size:10px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;display:block;">
+        <span style="font-size: 11.5px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;display:block;">
           <%
             const _sucNombre = (typeof locals.sucursal !== 'undefined' && locals.sucursal && locals.sucursal.nombre)
               ? locals.sucursal.nombre : 'Sistema de Gestión';
@@ -22,7 +22,7 @@
   <!-- ── NOMBRE DEL LOCAL ── -->
   <% if (typeof locals.empresa_nombre !== 'undefined' && locals.empresa_nombre) { %>
   <div style="padding:8px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07);">
-    <div style="font-size:12px;font-weight:800;color:#fff;letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+    <div style="font-size: 13.5px;font-weight:800;color:#fff;letter-spacing:.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
       <%= locals.empresa_nombre %>
     </div>
   </div>
@@ -58,6 +58,11 @@
       <i class="bi bi-cash-coin"></i><span class="nav-text">Caja</span>
     </a>
     <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('clientes')) { %>
+    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
+      <i class="bi bi-people"></i><span class="nav-text">Clientes</span>
+    </a>
+    <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('presupuestos')) { %>
     <% const presupSubAbierto = (typeof active !== 'undefined' && (active === 'presupuestos' || active === 'remitos')); %>
     <div class="nav-group">
@@ -72,21 +77,24 @@
       </div>
     </div>
     <% } %>
-    <% if (typeof tienePermiso === 'undefined' || tienePermiso('clientes')) { %>
-    <a href="/clientes" class="nav-item <%= (typeof active !== 'undefined' && active === 'clientes') ? 'active' : '' %>">
-      <i class="bi bi-people"></i><span class="nav-text">Clientes</span>
-    </a>
-    <% } %>
-    <a href="/pedidos" class="nav-item <%= (typeof active !== 'undefined' && active === 'pedidos') ? 'active' : '' %>" style="position:relative;">
-      <i class="bi bi-journal-check"></i><span class="nav-text">Pedidos</span>
-      <span id="pedidosBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
-    </a>
 
     <div class="nav-section-label" style="margin-top:10px;">Administración</div>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('inventario')) { %>
-    <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
-      <i class="bi bi-box-seam"></i><span class="nav-text">Inventario</span>
-    </a>
+    <% const invSubAbierto = (typeof active !== 'undefined' && (active === 'inventario' || active === 'etiquetas' || active === 'carga-automatica')); %>
+    <div class="nav-group">
+      <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
+        <i class="bi bi-box-seam"></i><span class="nav-text">Inventario</span>
+        <i class="bi bi-chevron-down nav-caret <%= invSubAbierto ? 'open' : '' %>" onclick="event.preventDefault();event.stopPropagation();toggleNavSubmenu(this)"></i>
+      </a>
+      <div class="nav-submenu" style="<%= invSubAbierto ? 'display:block;' : 'display:none;' %>">
+        <a href="/inventario/etiquetas" class="nav-item nav-subitem <%= (typeof active !== 'undefined' && active === 'etiquetas') ? 'active' : '' %>">
+          <i class="bi bi-upc-scan"></i><span class="nav-text">Etiquetado</span>
+        </a>
+        <a href="/inventario/carga-automatica" class="nav-item nav-subitem <%= (typeof active !== 'undefined' && active === 'carga-automatica') ? 'active' : '' %>">
+          <i class="bi bi-camera"></i><span class="nav-text">Carga automática</span>
+        </a>
+      </div>
+    </div>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('stock')) { %>
     <a href="/stock" class="nav-item <%= (typeof active !== 'undefined' && active === 'stock') ? 'active' : '' %>">
@@ -96,9 +104,13 @@
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('proveedores')) { %>
     <a href="/proveedores" class="nav-item <%= (typeof active !== 'undefined' && active === 'proveedores') ? 'active' : '' %>" style="position:relative;">
       <i class="bi bi-truck"></i><span class="nav-text">Proveedores</span>
-      <span id="proveedoresBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
+      <span id="proveedoresBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size: 11.5px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
     </a>
     <% } %>
+    <a href="/pedidos" class="nav-item <%= (typeof active !== 'undefined' && active === 'pedidos') ? 'active' : '' %>" style="position:relative;">
+      <i class="bi bi-journal-check"></i><span class="nav-text">Pedidos</span>
+      <span id="pedidosBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size: 11.5px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
+    </a>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('gastos')) { %>
     <a href="/gastos" class="nav-item <%= (typeof active !== 'undefined' && active === 'gastos') ? 'active' : '' %>">
       <i class="bi bi-receipt"></i><span class="nav-text">Gastos</span>
@@ -110,11 +122,16 @@
     <a href="/sucursales" class="nav-item <%= (typeof active !== 'undefined' && active === 'sucursales') ? 'active' : '' %>">
       <i class="bi bi-building"></i><span class="nav-text">Sucursales</span>
     </a>
-    <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
-      <i class="bi bi-sliders"></i><span class="nav-text">Ajustes</span>
-    </a>
     <a href="/afip/historial" class="nav-item <%= (typeof active !== 'undefined' && active === 'facturacion') ? 'active' : '' %>">
       <i class="bi bi-file-earmark-check"></i><span class="nav-text">Facturación AFIP</span>
+    </a>
+    <a href="/auditoria" class="nav-item <%= (typeof active !== 'undefined' && active === 'auditoria') ? 'active' : '' %>">
+      <i class="bi bi-shield-check"></i><span class="nav-text">Auditoría</span>
+    </a>
+
+    <div class="nav-section-label" style="margin-top:10px;">Configuración</div>
+    <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
+      <i class="bi bi-sliders"></i><span class="nav-text">Ajustes</span>
     </a>
     <% } %>
 
@@ -131,7 +148,7 @@
       </div>
     </div>
     <a href="/logout" title="Cerrar sesión"
-       style="margin-left:auto;color:rgba(255,255,255,0.45);font-size:17px;text-decoration:none;padding:5px 7px;border-radius:6px;transition:color .15s;flex-shrink:0;"
+       style="margin-left:auto;color:rgba(255,255,255,0.45);font-size: 19.5px;text-decoration:none;padding:5px 7px;border-radius:6px;transition:color .15s;flex-shrink:0;"
        onmouseenter="this.style.color='#f87171'" onmouseleave="this.style.color='rgba(255,255,255,0.45)'">
       <i class="bi bi-box-arrow-right"></i>
     </a>
@@ -145,14 +162,14 @@
 <div id="notifPanel" style="display:none;position:fixed;top:70px;left:12px;width:320px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25),0 4px 16px rgba(0,0,0,.12);z-index:9999;overflow:hidden;">
   <div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-color);">
     <div style="display:flex;align-items:center;gap:7px;">
-      <i class="bi bi-bell-fill" style="color:var(--color-primary);font-size:13px;"></i>
-      <span style="font-size:13px;font-weight:800;color:var(--text-primary);">Notificaciones</span>
+      <i class="bi bi-bell-fill" style="color:var(--color-primary);font-size: 15px;"></i>
+      <span style="font-size: 15px;font-weight:800;color:var(--text-primary);">Notificaciones</span>
     </div>
-    <button onclick="axNotif.marcarLeidas()" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;color:var(--color-primary);padding:0;">Marcar leídas</button>
+    <button onclick="axNotif.marcarLeidas()" style="background:none;border:none;cursor:pointer;font-size: 12.5px;font-weight:600;color:var(--color-primary);padding:0;">Marcar leídas</button>
   </div>
   <div id="notifList" style="max-height:380px;overflow-y:auto;"></div>
   <div style="padding:10px 16px;border-top:1px solid var(--border-color);text-align:center;">
-    <button onclick="location.href='/novedades'" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--color-primary);padding:0;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);">
+    <button onclick="location.href='/novedades'" style="background:none;border:none;cursor:pointer;font-size: 13.5px;font-weight:700;color:var(--color-primary);padding:0;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-body);">
       <i class="bi bi-stars"></i> Ver todas las novedades
     </button>
   </div>
@@ -165,13 +182,13 @@
 .ax-nrow:last-child { border-bottom:none; }
 .ax-nrow:hover { background:var(--bg-hover); }
 .ax-nrow.leida .ax-ntitle,.ax-nrow.leida .ax-ndetail { opacity:.5; }
-.ax-nico { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0; }
-.ax-ntitle { font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.35;margin-bottom:2px; }
-.ax-ndetail { font-size:11px;color:var(--text-secondary);line-height:1.4; }
+.ax-nico { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size: 17px;flex-shrink:0; }
+.ax-ntitle { font-size: 14px;font-weight:700;color:var(--text-primary);line-height:1.35;margin-bottom:2px; }
+.ax-ndetail { font-size: 12.5px;color:var(--text-secondary);line-height:1.4; }
 .ax-nempty { padding:36px 16px;text-align:center; }
 .ax-nempty i { font-size:30px;display:block;margin-bottom:10px;color:#10b981; }
-.ax-nempty-title { font-size:13px;font-weight:700;color:var(--text-primary); }
-.ax-nempty-sub { font-size:11px;color:var(--text-muted);margin-top:3px; }
+.ax-nempty-title { font-size: 15px;font-weight:700;color:var(--text-primary); }
+.ax-nempty-sub { font-size: 12.5px;color:var(--text-muted);margin-top:3px; }
 </style>
 
 <script>
@@ -234,8 +251,8 @@ window.axNotif=(function(){
         badge.style.cssText+=';align-items:center;justify-content:center;';
       }
       // Globito: solo si hay NOVEDADES sin leer (no por deudas ni stock bajo)
-      const novedadesNuevas = data.filter(x => x.tipo === 'novedad' && !leidas.has(x.id)).length;
-      actualizarTip(novedadesNuevas);
+      const novedadesNuevasIds = data.filter(x => x.tipo === 'novedad' && !leidas.has(x.id)).map(x => x.id);
+      actualizarTip(novedadesNuevasIds);
       // Badge de deuda en proveedores
       const provBadge = document.getElementById('proveedoresBadge');
       if (provBadge) {
@@ -317,14 +334,22 @@ window.axNotif=(function(){
   }
 
   /* ── Globito de novedades ── */
-  // Se oculta por la pestaña actual: si lo cierran, no vuelve a aparecer
-  // mientras siguen trabajando, pero sí en la próxima sesión (hasta que lo lean).
-  function tipOculto(){ return sessionStorage.getItem('axTipOculto') === '1'; }
+  // Se muestra una sola vez por novedad: al cerrarlo (o abrir el panel) queda
+  // guardado en localStorage y no vuelve a aparecer, ni en otra pestaña ni en
+  // otra sesión — salvo que llegue una novedad nueva distinta a las ya vistas.
+  function idsOcultos(){
+    try{ return new Set(JSON.parse(localStorage.getItem('axTipOcultoIds')||'[]')); }
+    catch(e){ return new Set(); }
+  }
+  function tipOculto(idsActuales){
+    const ocultos = idsOcultos();
+    return idsActuales.every(id => ocultos.has(id));
+  }
 
-  function actualizarTip(cantidadNuevas){
+  function actualizarTip(idsActuales){
     const tip = document.getElementById('notifTip');
     if(!tip) return;
-    if(cantidadNuevas > 0 && !tipOculto()){
+    if(idsActuales.length > 0 && !tipOculto(idsActuales)){
       if(tip.style.display === 'none'){
         tip.style.display = 'block';
         tip.style.animation = 'axTipIn .28s cubic-bezier(.2,.8,.3,1) both';
@@ -336,7 +361,8 @@ window.axNotif=(function(){
 
   function ocultarTip(e){
     if(e) e.stopPropagation();
-    sessionStorage.setItem('axTipOculto','1');
+    const novedadesActuales = data.filter(x => x.tipo === 'novedad' && !leidas.has(x.id)).map(x => x.id);
+    localStorage.setItem('axTipOcultoIds', JSON.stringify(novedadesActuales));
     const tip = document.getElementById('notifTip');
     if(tip) tip.style.display = 'none';
   }

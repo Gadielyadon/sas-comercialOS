@@ -47,6 +47,35 @@ router.post('/', (req, res) => {
       items,
     });
 
+    // Auditoría: si algún ítem se vendió con precio editado a mano, lo registramos
+    try {
+      const auditoriaSvc = require('../services/auditoria.service');
+      const usuario = req.session?.vendedorActivo?.nombre || req.session?.user?.nombre || req.session?.user?.username || null;
+      for (const it of items) {
+        if (it.precio_editado) {
+          auditoriaSvc.registrar({
+            tipo: 'precio_manual',
+            usuario,
+            sucursal_id: sucursalFinal,
+            detalle: `${it.sku} · ${it.name || ''} — de $${Number(it.price_original ?? 0).toLocaleString('es-AR')} a $${Number(it.price).toLocaleString('es-AR')} (venta #${result.id})`,
+            entidad: it.sku,
+          });
+        }
+      }
+      // Auditoría: descuento aplicado en el cobro
+      const dPct = Number(discount_pct) || 0;
+      const dFix = Number(discount_fixed) || 0;
+      if (dPct > 0 || dFix > 0) {
+        auditoriaSvc.registrar({
+          tipo: 'descuento',
+          usuario,
+          sucursal_id: sucursalFinal,
+          detalle: `Venta #${result.id} · ${dPct > 0 ? `${dPct}%` : ''}${dPct > 0 && dFix > 0 ? ' + ' : ''}${dFix > 0 ? `$${dFix.toLocaleString('es-AR')}` : ''} de descuento (total $${Number(result.total ?? total).toLocaleString('es-AR')})`,
+          entidad: `venta_${result.id}`,
+        });
+      }
+    } catch (_) {}
+
     res.status(201).json(result);
   } catch (err) {
     console.error(err);

@@ -171,6 +171,7 @@ router.get('/', (req, res) => {
     movimientos,
     totalMovimientos: totalMov,
     historial,
+    nota: cajaSvc.getNota(suc_id),
     sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' }
   });
 });
@@ -181,13 +182,27 @@ router.get('/abrir', (req, res) => {
   const caja = cajaActual(req);
   if (caja) return res.redirect('/caja');
 
+  const suc = req.session?.user?.sucursal_id || 1;
+  const nota = cajaSvc.getNota(suc);
+
   res.render('pages/caja_abrir', {
     title: 'Abrir Caja',
     user,
     active: 'caja',
     module: 'Caja',
-    sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' }
+    sucursal: res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
+    nota
   });
+});
+
+router.post('/api/nota', (req, res) => {
+  try {
+    const suc = req.session?.user?.sucursal_id || 1;
+    const nota = cajaSvc.setNota(suc, req.body?.nota || '', getUser(req));
+    res.json({ ok: true, nota });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 /* ── POST /caja/api/abrir  →  JSON (usado por el modal en caja_turno) ── */
@@ -225,12 +240,38 @@ router.post('/abrir', (req, res) => {
 /* ── POST /caja/cerrar ── */
 router.post('/cerrar', (req, res) => {
   const suc = req.session?.user?.sucursal_id || 1;
+  const montoContado = req.body?.monto_contado;
+
+  let resultado = null;
+  try {
+    resultado = cajaSvc.close(getUser(req), suc, montoContado);
+  } catch (e) {
+    try { resultado = cajaSvc.close(getUser(req), undefined, montoContado); } catch (e2) {}
+  }
 
   try {
-    cajaSvc.close(getUser(req), suc);
-  } catch (e) {
-    try { cajaSvc.close(getUser(req)); } catch (e2) {}
-  }
+    if (resultado && resultado.ok) {
+      const auditoriaSvc = require('../services/auditoria.service');
+      const diferencia = resultado.diferencia;
+      let detalle = `Caja cerrada por ${getUser(req)}`;
+      if (resultado.contado != null) {
+        detalle += ` · Contado: $${resultado.contado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+        detalle += ` · Esperado: $${resultado.efectivoEsperado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+        detalle += diferencia === 0
+          ? ' · Sin diferencia'
+          : ` · Diferencia: ${diferencia > 0 ? '+' : ''}$${diferencia.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+      } else {
+        detalle += ' · No se registró conteo de efectivo';
+      }
+      auditoriaSvc.registrar({
+        tipo: 'cierre_caja',
+        usuario: getUser(req),
+        sucursal_id: suc,
+        detalle,
+        entidad: 'caja',
+      });
+    }
+  } catch (_) {}
 
   res.redirect('/caja');
 });

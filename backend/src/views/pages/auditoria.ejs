@@ -1,0 +1,414 @@
+<%- include('../partials/head', { title }) %>
+
+<style>
+  .au-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 18px; }
+  .au-filtro-campo { display: flex; flex-direction: column; gap: 4px; }
+  .au-filtro-campo label { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+  .au-filtro-campo select, .au-filtro-campo input {
+    padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color);
+    background: var(--bg-surface); color: var(--text-primary); font-size: 17px; font-family: var(--font-body);
+  }
+  .au-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-color); background: var(--bg-surface); color: var(--text-primary);
+    font-size: 17px; font-weight: 700; cursor: pointer; font-family: var(--font-body); }
+  .au-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+  .au-resumen { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-bottom: 18px; }
+  .au-card { padding: 16px 18px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-surface-2); }
+  .au-card-n { font-size: 28px; font-weight: 900; color: var(--text-primary); }
+  .au-card-l { font-size: 15.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .au-timeline { border-left: 2px solid var(--border-color); margin-left: 8px; }
+  .au-item { position: relative; padding: 14px 0 14px 22px; border-bottom: 1px solid var(--border-color); }
+  .au-item:last-child { border-bottom: none; }
+  .au-item::before { content:''; position:absolute; left:-7px; top:18px; width:12px; height:12px; border-radius:50%;
+    background: var(--bg-surface); border: 2px solid var(--dot-color, var(--color-primary)); }
+  .au-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+  .au-badge { font-size: 14px; font-weight: 800; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .au-item-fecha { font-size: 15.5px; color: var(--text-muted); margin-left: auto; }
+  .au-item-usuario { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+  .au-item-detalle { font-size: 17px; color: var(--text-secondary); }
+
+  .au-empty { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 17px; }
+  .au-empty i { font-size: 32px; opacity: .5; }
+
+  .au-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); }
+  .au-tab { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: none; background: none;
+    color: var(--text-muted); font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font-body);
+    border-bottom: 2.5px solid transparent; margin-bottom: -1px; }
+  .au-tab:hover { color: var(--text-primary); }
+  .au-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+  .au-rent-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+  .au-rent-table thead th { background: var(--table-head-bg); color: var(--table-head-color); font-size: 12.5px;
+    text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 12px 14px; text-align: left; }
+  .au-rent-table thead th.au-num { text-align: right; }
+  .au-rent-table tbody td { padding: 12px 14px; font-size: 16px; border-bottom: 1px solid var(--border-color); }
+  .au-rent-table tbody td.au-num { text-align: right; font-family: var(--font-mono); }
+  .au-rent-table tbody tr:last-child td { border-bottom: none; }
+  .au-rent-table tbody tr.au-rent-total td { font-weight: 800; background: var(--bg-surface-2); border-top: 2px solid var(--border-color); }
+  .au-rent-cat { font-weight: 700; color: var(--text-primary); }
+  .au-rent-margen { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-weight: 800; font-size: 14px; }
+  .au-rent-margen.pos { background: rgba(16,185,129,.14); color: #10b981; }
+  .au-rent-margen.neg { background: rgba(239,68,68,.14); color: #ef4444; }
+
+  .au-rent-bar-wrap { width: 100%; height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden; margin-top: 6px; }
+  .au-rent-bar { height: 100%; background: linear-gradient(90deg,#0f766e,#10b981); border-radius: 4px; }
+</style>
+
+<div class="app-wrapper">
+  <%- include('../partials/sidebar', { active, user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Auditoría', user }) %>
+    <div class="page-body">
+
+      <div class="page-header" style="margin-bottom:16px;">
+        <div class="page-header-title">
+          <h2>Auditoría</h2>
+          <p>Quién hizo qué en el sistema, y cuánto vale tu mercadería.</p>
+        </div>
+      </div>
+
+      <div class="au-tabs">
+        <button type="button" class="au-tab active" id="auTabBtnEventos" onclick="auCambiarTab('eventos')">
+          <i class="bi bi-clock-history"></i> Eventos
+        </button>
+        <button type="button" class="au-tab" id="auTabBtnRentabilidad" onclick="auCambiarTab('rentabilidad')">
+          <i class="bi bi-graph-up-arrow"></i> Rentabilidad
+        </button>
+      </div>
+
+      <!-- ══════════ PESTAÑA: EVENTOS ══════════ -->
+      <div id="auTabEventos">
+
+        <div class="au-filtros">
+          <div class="au-filtro-campo">
+            <label>Tipo de evento</label>
+            <select id="auFiltroTipo">
+              <option value="">Todos</option>
+              <option value="stock">Movimientos de stock</option>
+              <option value="venta_anulada">Ventas anuladas</option>
+              <option value="precio_manual">Precios cambiados a mano (POS)</option>
+              <option value="descuento">Descuentos aplicados</option>
+              <option value="cierre_caja">Cierres de caja</option>
+              <option value="inv_alta">Altas de producto</option>
+              <option value="inv_precio_editado">Precios editados (Inventario)</option>
+              <option value="inv_baja">Bajas de producto</option>
+              <option value="ajuste_config">Cambios en Ajustes</option>
+              <option value="pin_fallido">PIN incorrecto</option>
+              <option value="login">Inicios de sesión</option>
+            </select>
+          </div>
+          <div class="au-filtro-campo">
+            <label>Usuario</label>
+            <input type="text" id="auFiltroUsuario" placeholder="Nombre...">
+          </div>
+          <div class="au-filtro-campo">
+            <label>Desde</label>
+            <input type="date" id="auFiltroDesde">
+          </div>
+          <div class="au-filtro-campo">
+            <label>Hasta</label>
+            <input type="date" id="auFiltroHasta">
+          </div>
+          <button type="button" class="au-btn" onclick="auCargar()"><i class="bi bi-funnel"></i> Filtrar</button>
+          <button type="button" class="au-btn" onclick="auLimpiar()"><i class="bi bi-x-lg"></i> Limpiar</button>
+        </div>
+
+        <div class="au-resumen" id="auResumen"></div>
+
+        <div id="auContenido">
+          <div class="au-empty"><i class="bi bi-hourglass-split"></i><div style="margin-top:8px;">Cargando…</div></div>
+        </div>
+
+      </div>
+
+      <!-- ══════════ PESTAÑA: RENTABILIDAD ══════════ -->
+      <div id="auTabRentabilidad" style="display:none;">
+
+        <div class="au-filtros">
+          <div class="au-filtro-campo">
+            <label>Desde</label>
+            <input type="date" id="auRentDesde">
+          </div>
+          <div class="au-filtro-campo">
+            <label>Hasta</label>
+            <input type="date" id="auRentHasta">
+          </div>
+          <button type="button" class="au-btn" onclick="auCargarRentabilidad()"><i class="bi bi-funnel"></i> Filtrar</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="au-btn" onclick="auRentPreset('hoy')">Hoy</button>
+            <button type="button" class="au-btn" onclick="auRentPreset('semana')">Esta semana</button>
+            <button type="button" class="au-btn" onclick="auRentPreset('mes')">Este mes</button>
+            <button type="button" class="au-btn" onclick="auRentPreset('mes_pasado')">Mes pasado</button>
+            <button type="button" class="au-btn" onclick="auRentPreset('anio')">Este año</button>
+          </div>
+          <button type="button" class="au-btn" onclick="auRentLimpiar()"><i class="bi bi-x-lg"></i> Todo</button>
+          <button type="button" class="au-btn" style="margin-left:auto;border-color:#10b981;color:#10b981;" onclick="auExportarExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+          </button>
+        </div>
+
+        <div class="au-resumen" id="auRentResumen"></div>
+
+        <div id="auRentContenido">
+          <div class="au-empty"><i class="bi bi-hourglass-split"></i><div style="margin-top:8px;">Cargando…</div></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+const AU_TIPOS = {
+  stock:               { label: 'Stock',                     color: '#0f766e' },
+  venta_anulada:       { label: 'Venta anulada',              color: '#ef4444' },
+  precio_manual:       { label: 'Precio manual (POS)',        color: '#f59e0b' },
+  descuento:           { label: 'Descuento aplicado',         color: '#a855f7' },
+  cierre_caja:         { label: 'Cierre de caja',             color: '#0891b2' },
+  inv_alta:            { label: 'Alta de producto',           color: '#22c55e' },
+  inv_precio_editado:  { label: 'Precio editado (Inventario)', color: '#eab308' },
+  inv_baja:            { label: 'Baja de producto',           color: '#f97316' },
+  ajuste_config:       { label: 'Cambio en Ajustes',          color: '#6366f1' },
+  pin_fallido:         { label: 'PIN fallido',                color: '#dc2626' },
+  login:               { label: 'Inicio de sesión',           color: '#0ea5e9' },
+};
+
+function auColorFondo(hex) {
+  // versión suave del color para el fondo del badge
+  return hex + '22';
+}
+
+function auFmtFecha(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso.replace(' ', 'T'));
+  if (isNaN(d)) return iso;
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+async function auCargar() {
+  const cont = document.getElementById('auContenido');
+  cont.innerHTML = '<div class="au-empty"><i class="bi bi-hourglass-split"></i><div style="margin-top:8px;">Cargando…</div></div>';
+
+  const params = new URLSearchParams();
+  const tipo = document.getElementById('auFiltroTipo').value;
+  const usuario = document.getElementById('auFiltroUsuario').value.trim();
+  const desde = document.getElementById('auFiltroDesde').value;
+  const hasta = document.getElementById('auFiltroHasta').value;
+  if (tipo) params.set('tipo', tipo);
+  if (usuario) params.set('usuario', usuario);
+  if (desde) params.set('desde', desde);
+  if (hasta) params.set('hasta', hasta);
+
+  try {
+    const r = await fetch('/auditoria/api/eventos?' + params.toString());
+    const data = await r.json();
+    if (!data.ok) {
+      cont.innerHTML = `<div class="au-empty"><i class="bi bi-exclamation-triangle"></i><div style="margin-top:8px;">${data.error || 'Error al cargar'}</div></div>`;
+      return;
+    }
+    auRenderResumen(data.eventos);
+    auRenderTimeline(data.eventos);
+  } catch (e) {
+    cont.innerHTML = `<div class="au-empty"><i class="bi bi-exclamation-triangle"></i><div style="margin-top:8px;">Error de conexión: ${e.message}</div></div>`;
+  }
+}
+
+function auRenderResumen(eventos) {
+  const conteo = {};
+  for (const ev of eventos) conteo[ev.tipo] = (conteo[ev.tipo] || 0) + 1;
+  const box = document.getElementById('auResumen');
+  box.innerHTML = Object.keys(AU_TIPOS).map(k => `
+    <div class="au-card">
+      <div class="au-card-n" style="color:${AU_TIPOS[k].color};">${conteo[k] || 0}</div>
+      <div class="au-card-l">${AU_TIPOS[k].label}</div>
+    </div>`).join('');
+}
+
+function auRenderTimeline(eventos) {
+  const cont = document.getElementById('auContenido');
+  if (!eventos.length) {
+    cont.innerHTML = `<div class="au-empty"><i class="bi bi-inboxes"></i><div style="margin-top:8px;">No hay eventos con estos filtros.</div></div>`;
+    return;
+  }
+  cont.innerHTML = `<div class="au-timeline">${eventos.map(ev => {
+    const meta = AU_TIPOS[ev.tipo] || { label: ev.tipo_label || ev.tipo, color: '#64748b' };
+    return `
+      <div class="au-item" style="--dot-color:${meta.color};">
+        <div class="au-item-head">
+          <span class="au-badge" style="background:${auColorFondo(meta.color)};color:${meta.color};">${ev.tipo_label || meta.label}</span>
+          <span class="au-item-usuario">${ev.usuario || '—'}</span>
+          <span class="au-item-fecha">${auFmtFecha(ev.created_at)}</span>
+        </div>
+        <div class="au-item-detalle">${ev.detalle || ''}</div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+function auLimpiar() {
+  document.getElementById('auFiltroTipo').value = '';
+  document.getElementById('auFiltroUsuario').value = '';
+  document.getElementById('auFiltroDesde').value = '';
+  document.getElementById('auFiltroHasta').value = '';
+  auCargar();
+}
+
+// ── Pestañas ─────────────────────────────────────────────────
+let auRentCargada = false;
+
+function auCambiarTab(tab) {
+  const esEventos = tab === 'eventos';
+  document.getElementById('auTabEventos').style.display = esEventos ? 'block' : 'none';
+  document.getElementById('auTabRentabilidad').style.display = esEventos ? 'none' : 'block';
+  document.getElementById('auTabBtnEventos').classList.toggle('active', esEventos);
+  document.getElementById('auTabBtnRentabilidad').classList.toggle('active', !esEventos);
+  if (!esEventos && !auRentCargada) {
+    auRentCargada = true;
+    auCargarRentabilidad();
+  }
+}
+
+// ── Rentabilidad de ventas reales, por categoría y período ──
+function auFmtPesos(n) {
+  return '$' + (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function auFechaISO(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function auRentPreset(tipo) {
+  const hoy = new Date();
+  let desde, hasta;
+  if (tipo === 'hoy') {
+    desde = hasta = hoy;
+  } else if (tipo === 'semana') {
+    const diaSemana = (hoy.getDay() + 6) % 7; // lunes=0
+    desde = new Date(hoy); desde.setDate(hoy.getDate() - diaSemana);
+    hasta = hoy;
+  } else if (tipo === 'mes') {
+    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    hasta = hoy;
+  } else if (tipo === 'mes_pasado') {
+    desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  } else if (tipo === 'anio') {
+    desde = new Date(hoy.getFullYear(), 0, 1);
+    hasta = hoy;
+  }
+  document.getElementById('auRentDesde').value = auFechaISO(desde);
+  document.getElementById('auRentHasta').value = auFechaISO(hasta);
+  auCargarRentabilidad();
+}
+
+function auRentLimpiar() {
+  document.getElementById('auRentDesde').value = '';
+  document.getElementById('auRentHasta').value = '';
+  auCargarRentabilidad();
+}
+
+function auRentParams() {
+  const params = new URLSearchParams();
+  const desde = document.getElementById('auRentDesde').value;
+  const hasta = document.getElementById('auRentHasta').value;
+  if (desde) params.set('desde', desde);
+  if (hasta) params.set('hasta', hasta);
+  return params;
+}
+
+async function auCargarRentabilidad() {
+  const cont = document.getElementById('auRentContenido');
+  cont.innerHTML = '<div class="au-empty"><i class="bi bi-hourglass-split"></i><div style="margin-top:8px;">Cargando…</div></div>';
+  try {
+    const r = await fetch('/auditoria/api/rentabilidad?' + auRentParams().toString());
+    const data = await r.json();
+    if (!data.ok) {
+      cont.innerHTML = `<div class="au-empty"><i class="bi bi-exclamation-triangle"></i><div style="margin-top:8px;">${data.error || 'Error al cargar'}</div></div>`;
+      return;
+    }
+    auRenderRentResumen(data.totales);
+    auRenderRentTabla(data.categorias, data.totales);
+  } catch (e) {
+    cont.innerHTML = `<div class="au-empty"><i class="bi bi-exclamation-triangle"></i><div style="margin-top:8px;">Error de conexión: ${e.message}</div></div>`;
+  }
+}
+
+function auExportarExcel() {
+  window.location.href = '/auditoria/api/rentabilidad/export?' + auRentParams().toString();
+}
+
+function auRenderRentResumen(tot) {
+  const box = document.getElementById('auRentResumen');
+  box.innerHTML = `
+    <div class="au-card">
+      <div class="au-card-n">${tot.unidades}</div>
+      <div class="au-card-l">Unidades vendidas</div>
+    </div>
+    <div class="au-card">
+      <div class="au-card-n">${auFmtPesos(tot.costo_total)}</div>
+      <div class="au-card-l">Costo de lo vendido</div>
+    </div>
+    <div class="au-card">
+      <div class="au-card-n" style="color:var(--color-primary);">${auFmtPesos(tot.venta_total)}</div>
+      <div class="au-card-l">Total vendido</div>
+    </div>
+    <div class="au-card">
+      <div class="au-card-n" style="color:${tot.rentabilidad >= 0 ? '#10b981' : '#ef4444'};">${auFmtPesos(tot.rentabilidad)}</div>
+      <div class="au-card-l">Ganancia real (venta − costo)</div>
+    </div>
+    <div class="au-card">
+      <div class="au-card-n" style="color:${tot.margen_pct >= 0 ? '#10b981' : '#ef4444'};">${tot.margen_pct}%</div>
+      <div class="au-card-l">Margen promedio</div>
+    </div>`;
+}
+
+function auRenderRentTabla(categorias, tot) {
+  const cont = document.getElementById('auRentContenido');
+  if (!categorias.length) {
+    cont.innerHTML = `<div class="au-empty"><i class="bi bi-inboxes"></i><div style="margin-top:8px;">No hay ventas en este período.</div></div>`;
+    return;
+  }
+  const maxVenta = Math.max(...categorias.map(c => c.venta_total), 1);
+
+  cont.innerHTML = `
+    <table class="au-rent-table">
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th class="au-num">Unidades vendidas</th>
+          <th class="au-num">Costo total</th>
+          <th class="au-num">Venta total</th>
+          <th class="au-num">Rentabilidad</th>
+          <th class="au-num">Margen</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${categorias.map(c => `
+          <tr>
+            <td>
+              <div class="au-rent-cat">${c.categoria}</div>
+              <div class="au-rent-bar-wrap"><div class="au-rent-bar" style="width:${Math.max(2, (c.venta_total / maxVenta) * 100)}%;"></div></div>
+            </td>
+            <td class="au-num">${c.unidades}</td>
+            <td class="au-num">${auFmtPesos(c.costo_total)}</td>
+            <td class="au-num">${auFmtPesos(c.venta_total)}</td>
+            <td class="au-num">${auFmtPesos(c.rentabilidad)}</td>
+            <td class="au-num"><span class="au-rent-margen ${c.margen_pct >= 0 ? 'pos' : 'neg'}">${c.margen_pct}%</span></td>
+          </tr>`).join('')}
+        <tr class="au-rent-total">
+          <td>TOTAL</td>
+          <td class="au-num">${tot.unidades}</td>
+          <td class="au-num">${auFmtPesos(tot.costo_total)}</td>
+          <td class="au-num">${auFmtPesos(tot.venta_total)}</td>
+          <td class="au-num">${auFmtPesos(tot.rentabilidad)}</td>
+          <td class="au-num"><span class="au-rent-margen ${tot.margen_pct >= 0 ? 'pos' : 'neg'}">${tot.margen_pct}%</span></td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+auCargar();
+</script>
