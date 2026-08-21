@@ -24,7 +24,7 @@ function initClientesSchema() {
 }
 
 function list() {
-  return all(`SELECT * FROM clientes ORDER BY nombre ASC`);
+  return all(`SELECT * FROM clientes ORDER BY CASE WHEN id = 1 THEN 0 ELSE 1 END, nombre ASC`);
 }
 
 // Búsqueda por nombre o documento (solo columnas que existen siempre)

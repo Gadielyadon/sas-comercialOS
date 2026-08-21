@@ -107,7 +107,7 @@
                 <tr data-id="<%= c.id %>">
                   <td class="sale-id"><%= c.id %></td>
                   <td>
-                    <strong style="cursor:pointer;" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'datos')" title="Ver ficha completa"><%= c.nombre %></strong>
+                    <strong><%= c.nombre %></strong>
                     <% if (c.id === 1) { %>
                       <span style="font-size: 11.5px;padding:1px 7px;border-radius:20px;background:rgba(27,79,216,.1);color:var(--color-primary);margin-left:6px;font-weight:600;">Default</span>
                     <% } %>
@@ -146,11 +146,15 @@
                   </td>
                   <td>
                     <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
-                      <button class="btn-action btn-action-outline btn-sm" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'cuenta')" title="Ver cuenta corriente">
+                      <% if (c.id === 1) { %>
+                        <span style="color:var(--text-muted);font-size: 13.5px;">—</span>
+                      <% } else { %>
+                      <button class="btn-action btn-action-outline btn-sm" onclick="verMovimientos(<%= c.id %>, '<%= c.nombre %>', <%= c.saldo %>)" title="Ver cuenta corriente">
                         <i class="bi bi-clock-history"></i> Cuenta
                       </button>
+                      <% } %>
                       <% if (c.id !== 1) { %>
-                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirFicha(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>', 'compras')" title="Ver historial de compras"
+                        <button class="btn-action btn-action-outline btn-sm" onclick="abrirHistorialVentas(<%= c.id %>, '<%= c.nombre.replace(/'/g, "\\'") %>')" title="Ver historial de compras"
                           style="color:#6366f1;border-color:rgba(99,102,241,.3);">
                           <i class="bi bi-bag-check"></i> Compras
                         </button>
@@ -485,121 +489,116 @@
 </div>
 
 <!-- ══════════════════════════════════════════
-     FICHA DE CLIENTE (Datos / Cuenta corriente / Compras)
+     MODAL CUENTA CORRIENTE / MOVIMIENTOS
 ══════════════════════════════════════════ -->
-<style>
-.ficha-tab {
-  padding: 9px 16px; border-radius: 8px; border: none; background: transparent;
-  color: var(--text-secondary); font-size: 14.5px; font-weight: 700; cursor: pointer;
-  font-family: var(--font-body); display:flex; align-items:center; gap:7px; transition: all .15s;
-}
-.ficha-tab:hover { background: var(--bg-surface-2); color: var(--text-primary); }
-.ficha-tab.on    { background: var(--color-primary); color: #fff; }
-.ficha-dato-row  { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border-color); }
-.ficha-dato-row:last-child { border-bottom:none; }
-.ficha-dato-label { font-size: 12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-secondary); }
-.ficha-dato-valor { font-size: 15.5px; color:var(--text-primary); font-weight:600; text-align:right; }
-</style>
-<div class="sale-overlay" id="modalFicha" onclick="if(event.target.id==='modalFicha')cerrarFicha()">
-  <div style="width:100%;max-width:980px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+<div class="sale-overlay" id="modalMovimientos" onclick="if(event.target.id==='modalMovimientos')cerrarModalMovimientos()">
+  <div style="width:100%;max-width:900px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;gap:12px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-        <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 19px;flex-shrink:0;">
-          <i class="bi bi-person-fill"></i>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary),#0099b8);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 18px;">
+          <i class="bi bi-person-lines-fill"></i>
         </div>
-        <div style="min-width:0;">
-          <div style="font-size: 17.5px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="fichaClienteNombre">—</div>
-          <div style="font-size: 12.5px;" id="fichaClienteSaldoTag">—</div>
+        <div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);">Cuenta Corriente</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);" id="movClienteNombre">—</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button id="fichaBtnEditar" onclick="abrirEditar(_fichaCliente)"
-          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(27,79,216,.3);background:rgba(27,79,216,.07);color:var(--color-primary);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-          <i class="bi bi-pencil"></i> Editar
+        <button onclick="exportarEstadoCuenta('pdf')"
+          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-printer"></i> Imprimir
         </button>
-        <button onclick="cerrarFicha()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;padding:4px;line-height:1;">
+        <button onclick="exportarEstadoCuenta('csv')"
+          style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
+          <i class="bi bi-filetype-csv"></i> CSV
+        </button>
+        <button onclick="cerrarModalMovimientos()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;padding:4px;line-height:1;">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div style="display:flex;gap:6px;padding:12px 22px 0;border-bottom:1px solid var(--border-color);flex-shrink:0;">
-      <button class="ficha-tab" id="fichaTab_datos"   onclick="seleccionarTabFicha('datos')"><i class="bi bi-person-vcard"></i> Datos</button>
-      <button class="ficha-tab" id="fichaTab_cuenta"  onclick="seleccionarTabFicha('cuenta')"><i class="bi bi-wallet2"></i> Cuenta corriente</button>
-      <button class="ficha-tab" id="fichaTab_compras" onclick="seleccionarTabFicha('compras')"><i class="bi bi-bag-check-fill"></i> Compras</button>
-    </div>
+    <!-- Cuerpo dos columnas -->
+    <div style="display:grid;grid-template-columns:260px 1fr;flex:1;overflow:hidden;">
 
-    <!-- ═══ PANE: DATOS ═══ -->
-    <div id="fichaPane_datos" style="flex:1;overflow-y:auto;padding:22px;display:none;">
-      <div style="max-width:520px;margin:0 auto;background:var(--bg-surface-2);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:6px 18px;">
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Nombre / Razón social</span><span class="ficha-dato-valor" id="fd_nombre">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">CUIT / DNI</span><span class="ficha-dato-valor" id="fd_documento">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Teléfono</span><span class="ficha-dato-valor" id="fd_telefono">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Email</span><span class="ficha-dato-valor" id="fd_email">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Dirección</span><span class="ficha-dato-valor" id="fd_direccion">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Categoría</span><span class="ficha-dato-valor" id="fd_categoria">—</span></div>
-        <div class="ficha-dato-row"><span class="ficha-dato-label">Límite de crédito</span><span class="ficha-dato-valor" id="fd_limite">—</span></div>
-      </div>
-    </div>
+      <!-- IZQUIERDA: Resumen del cliente -->
+      <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-surface-2);">
 
-    <!-- ═══ PANE: CUENTA CORRIENTE ═══ -->
-    <div id="fichaPane_cuenta" style="flex:1;overflow:hidden;display:none;">
-      <div style="display:grid;grid-template-columns:260px 1fr;height:100%;">
-
-        <!-- IZQUIERDA: Resumen -->
-        <div style="padding:18px;border-right:1px solid var(--border-color);overflow-y:auto;display:flex;flex-direction:column;gap:14px;background:var(--bg-surface-2);">
-          <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
-            <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="movBannerLabel">Saldo</div>
-            <div style="font-size:32px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;line-height:1;" id="movBannerValor">$0,00</div>
-          </div>
-          <div id="movStats" style="display:flex;flex-direction:column;gap:8px;"></div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="exportarEstadoCuenta('pdf')" title="Imprimir estado de cuenta"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(99,102,241,.4);background:rgba(99,102,241,.07);color:#4f46e5;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-              <i class="bi bi-printer"></i> Imprimir
-            </button>
-            <button onclick="exportarEstadoCuenta('csv')" title="Exportar CSV"
-              style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(16,185,129,.4);background:rgba(16,185,129,.07);color:#059669;font-size: 12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);">
-              <i class="bi bi-filetype-csv"></i> CSV
-            </button>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;">
-            <button id="movBtnCargo" onclick="movIrCargo()"
-              style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
-              <i class="bi bi-plus-circle"></i> Registrar cargo
-            </button>
-            <button id="movBtnCobrar" onclick="movIrCobrar()"
-              style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size: 15px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
-              <i class="bi bi-cash-stack"></i> Registrar pago
-            </button>
-          </div>
+        <!-- Saldo grande -->
+        <div id="movBanner" style="border-radius:var(--radius-md);padding:16px;text-align:center;">
+          <div style="font-size: 11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:6px;" id="movBannerLabel">Saldo</div>
+          <div style="font-size:32px;font-weight:800;font-family:var(--font-mono);letter-spacing:-1.5px;line-height:1;" id="movBannerValor">$0,00</div>
         </div>
 
-        <!-- DERECHA: Movimientos -->
-        <div style="display:flex;flex-direction:column;overflow:hidden;">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-            <span style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial de movimientos</span>
-            <span style="font-size: 13px;color:var(--text-secondary);" id="movTotal">—</span>
-          </div>
-          <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;" id="movListado">
-            <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
-          </div>
+        <!-- Stats rápidas -->
+        <div id="movStats" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+        <!-- Acciones -->
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:auto;">
+          <button id="movBtnCargo" onclick="movIrCargo()"
+            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid #f59e0b;background:rgba(245,158,11,.1);color:#92400e;font-size: 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+            <i class="bi bi-plus-circle"></i> Registrar cargo
+          </button>
+          <button id="movBtnCobrar" onclick="movIrCobrar()"
+            style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:#10b981;color:#fff;font-size: 15px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center;gap:7px;font-family:var(--font-body);">
+            <i class="bi bi-cash-stack"></i> Registrar pago
+          </button>
+        </div>
+      </div>
+
+      <!-- DERECHA: Movimientos -->
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <span style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);">Historial de movimientos</span>
+          <span style="font-size: 13px;color:var(--text-secondary);" id="movTotal">—</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;" id="movListado">
+          <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ═══ PANE: COMPRAS ═══ -->
-    <div id="fichaPane_compras" style="flex:1;overflow-y:auto;display:none;flex-direction:column;min-height:0;">
+<!-- ══════════════════════════════════════
+     MODAL: Historial de compras del cliente
+══════════════════════════════════════ -->
+<div class="sale-overlay" id="modalHistorialVentas" onclick="if(event.target.id==='modalHistorialVentas')cerrarHistorialVentas()">
+  <div style="width:100%;max-width:980px;background:var(--bg-surface);border:1px solid var(--border-color);border-radius:var(--radius-lg);box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalPop .16s ease;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border-color);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size: 18px;">
+          <i class="bi bi-bag-check-fill"></i>
+        </div>
+        <div>
+          <div style="font-size: 17px;font-weight:700;color:var(--text-primary);">Historial de compras</div>
+          <div style="font-size: 13.5px;color:var(--text-secondary);" id="hvClienteNombre">—</div>
+        </div>
+      </div>
+      <button onclick="cerrarHistorialVentas()" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size: 23px;padding:4px;line-height:1;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body: stats arriba + tabla abajo -->
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;">
+
+      <!-- Stats cards -->
       <div id="hvStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--border-color);flex-shrink:0;"></div>
+
+      <!-- Buscador local -->
       <div style="padding:10px 20px 0;flex-shrink:0;">
         <input type="text" id="hvBuscar" placeholder="Buscar por N° de venta, producto o medio de pago…"
           oninput="filtrarHistorial()"
           style="width:100%;padding:9px 13px;border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size: 15px;outline:none;box-sizing:border-box;transition:border-color .15s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
+
+      <!-- Listado de ventas -->
       <div style="flex:1;overflow-y:auto;padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;" id="hvListado">
         <p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>
       </div>
@@ -619,67 +618,6 @@ let _cargoClienteId = null;
 let _movId          = null;
 let _movNombre      = '';
 let _movSaldo       = 0;
-let _fichaCliente   = null;
-let _fichaTabActual = 'datos';
-
-/* ════════════════════════════════════
-   FICHA DE CLIENTE (Datos / Cuenta / Compras)
-════════════════════════════════════ */
-function fmtMoneda(n) {
-  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-async function abrirFicha(id, nombre, tabInicial) {
-  document.getElementById('fichaClienteNombre').textContent = nombre;
-  document.getElementById('fichaClienteSaldoTag').textContent = '';
-  document.getElementById('fichaBtnEditar').style.display = (id === 1) ? 'none' : 'flex';
-  document.getElementById('modalFicha').classList.add('open');
-  seleccionarTabFicha(tabInicial || 'datos');
-
-  try {
-    const cliente = await fetch(`/api/clientes/${id}`).then(r => r.json());
-    _fichaCliente = cliente;
-    renderFichaDatos(cliente);
-
-    const saldo = Number(cliente.saldo || 0);
-    const tag = document.getElementById('fichaClienteSaldoTag');
-    if (saldo > 0)      { tag.textContent = 'Debe ' + fmtMoneda(saldo);        tag.style.color = '#dc2626'; }
-    else if (saldo < 0) { tag.textContent = 'A favor ' + fmtMoneda(Math.abs(saldo)); tag.style.color = '#d97706'; }
-    else                { tag.textContent = 'Al día';                          tag.style.color = '#10b981'; }
-
-    // Se cargan ambas pestañas en paralelo para que el cambio de tab sea instantáneo
-    cargarCuentaCorriente(id, nombre, saldo);
-    cargarComprasCliente(id, nombre);
-  } catch (e) {
-    console.error('Error al abrir ficha de cliente:', e);
-  }
-}
-
-function renderFichaDatos(c) {
-  document.getElementById('fd_nombre').textContent    = c.nombre || '—';
-  document.getElementById('fd_documento').textContent  = c.documento || '—';
-  document.getElementById('fd_telefono').textContent   = c.telefono || '—';
-  document.getElementById('fd_email').textContent      = c.email || '—';
-  document.getElementById('fd_direccion').textContent  = c.direccion || '—';
-  document.getElementById('fd_categoria').textContent  = c.categoria || 'Sin categoría';
-  document.getElementById('fd_limite').textContent     = c.limite_credito != null ? fmtMoneda(c.limite_credito) : 'Sin límite';
-}
-
-function seleccionarTabFicha(tab) {
-  _fichaTabActual = tab;
-  ['datos', 'cuenta', 'compras'].forEach(t => {
-    const btn  = document.getElementById('fichaTab_' + t);
-    const pane = document.getElementById('fichaPane_' + t);
-    if (btn)  btn.classList.toggle('on', t === tab);
-    if (pane) pane.style.display = (t === tab) ? (t === 'datos' ? 'block' : 'flex') : 'none';
-  });
-}
-
-function cerrarFicha() {
-  document.getElementById('modalFicha').classList.remove('open');
-  _fichaCliente = null;
-  _hvRaw = [];
-}
 
 /* ════════════════════════════════════
    CRUD CLIENTES
@@ -865,12 +803,14 @@ async function confirmarPago() {
 /* ════════════════════════════════════
    MOVIMIENTOS / CUENTA CORRIENTE
 ════════════════════════════════════ */
-async function cargarCuentaCorriente(id, nombre, saldo) {
+async function verMovimientos(id, nombre, saldo) {
   _movId     = id;
   _movNombre = nombre;
   _movSaldo  = Number(saldo);
 
+  document.getElementById('movClienteNombre').textContent = nombre;
   document.getElementById('movListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:24px 0;">Cargando…</p>';
+  document.getElementById('modalMovimientos').classList.add('open');
 
   // Banner de saldo
   const banner    = document.getElementById('movBanner');
@@ -999,11 +939,11 @@ async function cargarCuentaCorriente(id, nombre, saldo) {
   }).join('');
 }
 
-function cerrarModalMovimientos() { /* obsoleta: la ficha usa cerrarFicha() */ }
+function cerrarModalMovimientos() { document.getElementById('modalMovimientos').classList.remove('open'); }
 
 // Botones rápidos desde movimientos
-function movIrCargo()  { cerrarFicha(); setTimeout(() => abrirCargo(_movId, _movNombre), 80); }
-function movIrCobrar() { cerrarFicha(); setTimeout(() => abrirPago(_movId, _movNombre, _movSaldo), 80); }
+function movIrCargo()  { cerrarModalMovimientos(); setTimeout(() => abrirCargo(_movId, _movNombre), 80); }
+function movIrCobrar() { cerrarModalMovimientos(); setTimeout(() => abrirPago(_movId, _movNombre, _movSaldo), 80); }
 
 /* ════════════════════════════════════
    FILTRO LOCAL
@@ -1112,7 +1052,7 @@ function exportarClientesPDF() {
 
 /* ── Exportar estado de cuenta individual ── */
 function exportarEstadoCuenta(formato) {
-  const nombre = document.getElementById('fichaClienteNombre')?.textContent || 'Cliente';
+  const nombre = document.getElementById('movClienteNombre')?.textContent || 'Cliente';
   const saldo  = document.getElementById('movBannerValor')?.textContent  || '$0';
   const items  = [...document.querySelectorAll('#movListado [data-mov]')];
 
@@ -1398,11 +1338,13 @@ function fmt2(n) {
   return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function cargarComprasCliente(id, nombre) {
+async function abrirHistorialVentas(id, nombre) {
   _hvClienteId = id;
+  document.getElementById('hvClienteNombre').textContent = nombre;
   document.getElementById('hvBuscar').value = '';
   document.getElementById('hvListado').innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:32px 0;">Cargando…</p>';
   document.getElementById('hvStats').innerHTML = '';
+  document.getElementById('modalHistorialVentas').classList.add('open');
 
   try {
     const [rVentas, rStats] = await Promise.all([
@@ -1514,6 +1456,9 @@ function filtrarHistorial() {
   renderHvListado(filtered);
 }
 
-function cerrarHistorialVentas() { /* obsoleta: la ficha usa cerrarFicha() */ }
+function cerrarHistorialVentas() {
+  document.getElementById('modalHistorialVentas').classList.remove('open');
+  _hvRaw = [];
+}
 
 </script>

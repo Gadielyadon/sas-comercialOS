@@ -347,16 +347,9 @@ window.axNotif=(function(){
   }
 
   function actualizarTip(idsActuales){
+    // Cartel de "Tenés novedades" desactivado a pedido: nunca se muestra.
     const tip = document.getElementById('notifTip');
-    if(!tip) return;
-    if(idsActuales.length > 0 && !tipOculto(idsActuales)){
-      if(tip.style.display === 'none'){
-        tip.style.display = 'block';
-        tip.style.animation = 'axTipIn .28s cubic-bezier(.2,.8,.3,1) both';
-      }
-    } else {
-      tip.style.display = 'none';
-    }
+    if(tip) tip.style.display = 'none';
   }
 
   function ocultarTip(e){
