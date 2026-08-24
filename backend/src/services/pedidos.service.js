@@ -247,9 +247,12 @@ function recepcionarPedido({ pedidoId, recepciones, sucursal_id }) {
     const cantRecibida = Number(rec.cantidad_recibida) || 0;
     const recibido     = rec.recibido ? 1 : 0;
 
+    const nombreFinal = (rec.nombre !== undefined && String(rec.nombre).trim())
+      ? String(rec.nombre).trim() : item.nombre;
+
     run(
-      `UPDATE pedido_items SET cantidad_recibida=?, recibido=? WHERE id=?`,
-      [cantRecibida, recibido, Number(rec.item_id)]
+      `UPDATE pedido_items SET cantidad_recibida=?, recibido=?, nombre=? WHERE id=?`,
+      [cantRecibida, recibido, nombreFinal, Number(rec.item_id)]
     );
 
     if (!recibido || cantRecibida <= 0) {
@@ -268,6 +271,9 @@ function recepcionarPedido({ pedidoId, recepciones, sucursal_id }) {
       }
       if (rec.precio_venta !== undefined && Number(rec.precio_venta) > 0) {
         camposActualizar.price = Number(rec.precio_venta);
+      }
+      if (rec.nombre !== undefined && String(rec.nombre).trim() && String(rec.nombre).trim() !== item.nombre) {
+        camposActualizar.name = String(rec.nombre).trim();
       }
       if (Object.keys(camposActualizar).length > 0) {
         prodSvc.updateBySku(item.sku, camposActualizar, sucursal_id || null);

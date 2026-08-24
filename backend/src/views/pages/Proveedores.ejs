@@ -978,56 +978,59 @@ function abrirConfRecepcion(pedido) {
   const itemsPend = pedido.items.filter(i => !i.recibido);
   const html = `
     <div style="font-size: 15px;color:var(--text-secondary);margin-bottom:12px;">Pedido: <strong>${pedido.titulo}</strong></div>
-    <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;font-size: 15px;">
-      <thead><tr style="background:var(--bg-surface-2);">
-        <th style="padding:9px 12px;text-align:center;width:40px;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">✓</th>
-        <th style="padding:9px 12px;text-align:left;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);">Producto</th>
-        <th style="padding:9px 12px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:75px;">Pedido</th>
-        <th style="padding:9px 12px;text-align:center;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:90px;">Recibido</th>
-        <th style="padding:9px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Costo</th>
-        <th style="padding:9px 12px;text-align:right;font-size: 12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);width:110px;">P. Venta</th>
-      </tr></thead>
-      <tbody>${itemsPend.map(i => `
-        <tr style="border-bottom:1px solid var(--border-color);background:var(--bg-surface);" id="recRow-${i.id}">
-          <td style="padding:8px 12px;text-align:center;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${itemsPend.map(i => `
+        <div id="recRow-${i.id}" style="border:1px solid var(--border-color);border-radius:10px;background:var(--bg-surface);padding:12px;">
+
+          <!-- Fila 1: checkbox + nombre -->
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
             <input type="checkbox" checked id="chk-${i.id}" onchange="toggleRecItem(${i.id})"
-              style="width:16px;height:16px;accent-color:#059669;cursor:pointer;">
-          </td>
-          <td style="padding:8px 12px;">
-            <div style="font-weight:700;color:var(--text-primary);">${i.nombre}</div>
-            ${i.sku
-              ?'<div style="font-size: 12px;color:var(--text-secondary);">SKU: '+i.sku+'</div>'
-              :'<div style="font-size: 12px;color:#d97706;">🖊 Manual — podés crearlo en inventario</div>'
-                +'<div style="margin-top:6px;padding:8px;background:rgba(99,102,241,.08);border-radius:6px;border:1px dashed rgba(99,102,241,.25);">'
-                +'<div style="font-size: 12.5px;font-weight:700;color:#6366f1;margin-bottom:6px;">Crear en inventario (opcional):</div>'
-                +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">'
-                +'<input type="text" id="sku-'+i.id+'" placeholder="SKU *" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
-                +'<input type="number" id="pventa-'+i.id+'" placeholder="P. venta" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
-                +'<input type="text" id="cat-'+i.id+'" placeholder="Categoría" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;">'
-                +'</div></div>'
-            }
-          </td>
-          <td style="padding:8px 12px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);">${i.cantidad}</td>
-          <td style="padding:8px 12px;text-align:center;">
-            <input type="number" id="recCant-${i.id}" value="${i.cantidad}" min="0" step="0.001"
-              style="width:72px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:center;outline:none;"
-              onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
-          </td>
-          <td style="padding:8px 12px;text-align:right;">
-            <input type="number" id="recCosto-${i.id}" value="${i.precio_costo||0}" min="0" step="0.01"
-              style="width:88px;padding:5px 7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;text-align:right;outline:none;"
-              onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
-          </td>
-          <td style="padding:8px 12px;text-align:right;">
-            <input type="number" id="recVenta-${i.id}" value="${i.precio_venta||i.precio_costo||0}" min="0" step="0.01"
-              style="width:88px;padding:5px 7px;border:1.5px solid rgba(99,102,241,.3);border-radius:6px;background:var(--bg-body);color:#6366f1;font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:right;outline:none;"
-              title="Precio de venta al público"
-              onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,.3)'">
-          </td>
-        </tr>`).join('')}
-      </tbody>
-    </table></div>`;
+              style="width:17px;height:17px;margin-top:8px;accent-color:#059669;cursor:pointer;flex-shrink:0;">
+            <div style="flex:1;min-width:0;">
+              <input type="text" id="recNombre-${i.id}" value="${(i.nombre||'').replace(/"/g,'&quot;')}"
+                style="width:100%;padding:7px 9px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-body);font-size: 15px;font-weight:700;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
+              ${i.sku
+                ?'<div style="font-size: 12px;color:var(--text-secondary);margin-top:4px;">SKU: '+i.sku+'</div>'
+                :'<div style="font-size: 12px;color:#d97706;margin-top:4px;">🖊 Manual — podés crearlo en inventario</div>'
+                  +'<div style="margin-top:6px;padding:8px;background:rgba(99,102,241,.08);border-radius:6px;border:1px dashed rgba(99,102,241,.25);">'
+                  +'<div style="font-size: 12.5px;font-weight:700;color:#6366f1;margin-bottom:6px;">Crear en inventario (opcional):</div>'
+                  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+                  +'<input type="text" id="sku-'+i.id+'" placeholder="SKU *" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;box-sizing:border-box;">'
+                  +'<input type="text" id="cat-'+i.id+'" placeholder="Categoría" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-body);color:var(--text-primary);font-size: 13.5px;outline:none;box-sizing:border-box;">'
+                  +'</div></div>'
+              }
+            </div>
+          </div>
+
+          <!-- Fila 2: pedido / recibido / costo / venta -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;padding-left:27px;">
+            <div>
+              <div style="font-size: 11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:3px;">Pedido</div>
+              <div style="padding:7px;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--text-secondary);background:var(--bg-body);border-radius:6px;border:1.5px solid transparent;">${i.cantidad}</div>
+            </div>
+            <div>
+              <div style="font-size: 11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:3px;">Recibido</div>
+              <input type="number" id="recCant-${i.id}" value="${i.cantidad}" min="0" step="0.001"
+                style="width:100%;padding:7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:center;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            <div>
+              <div style="font-size: 11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:3px;">P. Costo</div>
+              <input type="number" id="recCosto-${i.id}" value="${i.precio_costo||0}" min="0" step="0.01"
+                style="width:100%;padding:7px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-body);color:var(--text-primary);font-family:var(--font-mono);font-size: 15px;text-align:center;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='#059669'" onblur="this.style.borderColor='var(--border-color)'">
+            </div>
+            <div>
+              <div style="font-size: 11px;font-weight:700;text-transform:uppercase;color:#6366f1;margin-bottom:3px;">P. Venta</div>
+              <input type="number" id="recVenta-${i.id}" value="${i.precio_venta||i.precio_costo||0}" min="0" step="0.01"
+                style="width:100%;padding:7px;border:1.5px solid rgba(99,102,241,.3);border-radius:6px;background:var(--bg-body);color:#6366f1;font-family:var(--font-mono);font-size: 15px;font-weight:700;text-align:center;outline:none;box-sizing:border-box;"
+                title="Precio de venta al público"
+                onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,.3)'">
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
   document.getElementById('confRecepItems').innerHTML = html;
   document.getElementById('modalPedidosProv').classList.remove('open');
   document.getElementById('modalConfRecepcion').classList.add('open');
@@ -1046,21 +1049,25 @@ function cerrarConfRecepcion() {
 
 async function recibirTodo() {
   const items = _pedActual.items.filter(i => !i.recibido);
-  const recepciones = items.map(i => ({
-    item_id:           i.id,
-    cantidad_recibida: i.cantidad,
-    recibido:          true,
-    precio_costo:      Number(document.getElementById('recCosto-'+i.id)?.value || i.precio_costo || 0),
-    precio_venta:      Number(document.getElementById('recVenta-'+i.id)?.value || i.precio_venta || 0),
-    crear_producto:    !i.sku,
-    producto_nuevo:    !i.sku ? {
-      sku:          document.getElementById('sku-'+i.id)?.value?.trim() || null,
-      nombre:       i.nombre,
-      precio_venta: Number(document.getElementById('recVenta-'+i.id)?.value || 0),
-      precio_costo: Number(document.getElementById('recCosto-'+i.id)?.value || 0),
-      categoria:    document.getElementById('cat-'+i.id)?.value?.trim() || '',
-    } : null,
-  }));
+  const recepciones = items.map(i => {
+    const nombreEd = document.getElementById('recNombre-'+i.id)?.value?.trim() || i.nombre;
+    return {
+      item_id:           i.id,
+      cantidad_recibida: i.cantidad,
+      recibido:          true,
+      nombre:            nombreEd,
+      precio_costo:      Number(document.getElementById('recCosto-'+i.id)?.value || i.precio_costo || 0),
+      precio_venta:      Number(document.getElementById('recVenta-'+i.id)?.value || i.precio_venta || 0),
+      crear_producto:    !i.sku,
+      producto_nuevo:    !i.sku ? {
+        sku:          document.getElementById('sku-'+i.id)?.value?.trim() || null,
+        nombre:       nombreEd,
+        precio_venta: Number(document.getElementById('recVenta-'+i.id)?.value || 0),
+        precio_costo: Number(document.getElementById('recCosto-'+i.id)?.value || 0),
+        categoria:    document.getElementById('cat-'+i.id)?.value?.trim() || '',
+      } : null,
+    };
+  });
   await enviarRecepcion(recepciones);
 }
 
@@ -1069,16 +1076,18 @@ async function confirmarRecepcionParcial() {
   const recepciones = items.map(i => {
     const chk = document.getElementById('chk-'+i.id);
     const recibido = chk ? chk.checked : false;
+    const nombreEd = document.getElementById('recNombre-'+i.id)?.value?.trim() || i.nombre;
     return {
       item_id:           i.id,
       cantidad_recibida: Number(document.getElementById('recCant-'+i.id)?.value || 0),
       recibido,
+      nombre:            nombreEd,
       precio_costo:      Number(document.getElementById('recCosto-'+i.id)?.value || i.precio_costo || 0),
       precio_venta:      Number(document.getElementById('recVenta-'+i.id)?.value || i.precio_venta || 0),
       crear_producto:    !i.sku && recibido,
       producto_nuevo:    !i.sku && recibido ? {
         sku:          document.getElementById('sku-'+i.id)?.value?.trim() || null,
-        nombre:       i.nombre,
+        nombre:       nombreEd,
         precio_venta: Number(document.getElementById('recVenta-'+i.id)?.value || 0),
         precio_costo: Number(document.getElementById('recCosto-'+i.id)?.value || 0),
         categoria:    document.getElementById('cat-'+i.id)?.value?.trim() || '',
