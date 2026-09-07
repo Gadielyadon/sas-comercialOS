@@ -28,6 +28,13 @@ const TIPO_CBTE = {
   C: 11,
 };
 
+// Nota de Crédito asociada — mismo tipo A/B/C, pero código distinto para AFIP
+const TIPO_CBTE_NC = {
+  A: 3,
+  B: 8,
+  C: 13,
+};
+
 const DOC_TIPO = {
   CUIT: 80,
   DNI: 96,
@@ -135,6 +142,28 @@ function initAfipSchema() {
       sign       TEXT NOT NULL,
       expira     TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )
+  `);
+
+  // Notas de Crédito — una por venta facturada que se anula. Referencian el
+  // comprobante original vía factura_id (CbtesAsoc ante AFIP).
+  run(`
+    CREATE TABLE IF NOT EXISTS notas_credito (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id         INTEGER NOT NULL,
+      factura_id      INTEGER NOT NULL,
+      tipo_cbte       INTEGER NOT NULL,
+      punto_venta     INTEGER NOT NULL,
+      nro_cbte        INTEGER NOT NULL,
+      cae             TEXT    NOT NULL,
+      cae_vto         TEXT    NOT NULL,
+      importe_total   REAL    NOT NULL,
+      importe_neto    REAL    NOT NULL,
+      importe_iva     REAL    NOT NULL,
+      motivo          TEXT,
+      created_at      TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (sale_id)    REFERENCES sales(id),
+      FOREIGN KEY (factura_id) REFERENCES facturas(id)
     )
   `);
 }
@@ -257,7 +286,9 @@ function columnExists(table, col) {
 function leerConfig() {
   const cfg = configService.getAll();
 
-  const cuit = String(cfg.afip_cuit || '').replace(/\D/g, '');
+  // El CUIT es un único dato de la empresa; si por alguna razón afip_cuit
+  // quedó vacío (instalaciones viejas), se usa el de "Datos de la empresa".
+  const cuit = String(cfg.afip_cuit || cfg.empresa_cuit || '').replace(/\D/g, '');
   const produccion = cfg.afip_env === 'produccion';
   const puntoVenta = parseInt(cfg.afip_punto_venta, 10) || 1;
   const condicionIvaEmisor = String(cfg.empresa_cond_iva || '').trim();
@@ -851,6 +882,154 @@ function getFacturaBySaleId(sale_id) {
   return get(`SELECT * FROM facturas WHERE sale_id = ?`, [Number(sale_id)]);
 }
 
+function getNotaCreditoBySaleId(sale_id) {
+  return get(`SELECT * FROM notas_credito WHERE sale_id = ?`, [Number(sale_id)]);
+}
+
+// Emite una Nota de Crédito TOTAL contra la factura ya emitida de una venta.
+// Se usa cuando se anula una venta que ya fue facturada ante AFIP: la
+// factura queda "viva" en los registros de AFIP hasta que se emite la NC
+// que la cancela — anular solo en el sistema local NO alcanza legalmente.
+async function emitirNotaCredito({ sale_id, motivo }) {
+  if (!facturacionHabilitada()) {
+    throw new Error('La facturación electrónica está deshabilitada en Ajustes');
+  }
+
+  const factura = getFacturaBySaleId(sale_id);
+  if (!factura) {
+    throw new Error(`La venta #${sale_id} no tiene una factura AFIP emitida — no corresponde nota de crédito`);
+  }
+
+  const yaTieneNC = getNotaCreditoBySaleId(sale_id);
+  if (yaTieneNC) {
+    throw new Error(`Ya se emitió la Nota de Crédito N° ${yaTieneNC.nro_cbte} para esta venta`);
+  }
+
+  const tipoLetra = Object.keys(TIPO_CBTE).find(k => TIPO_CBTE[k] === Number(factura.tipo_cbte));
+  const tipoCbteNC = TIPO_CBTE_NC[tipoLetra];
+  if (!tipoCbteNC) {
+    throw new Error(`No se pudo determinar el tipo de Nota de Crédito para el comprobante original (tipo ${factura.tipo_cbte})`);
+  }
+
+  const { cuit, certPath, keyPath, produccion } = leerConfig();
+  // Usamos el mismo punto de venta que la factura original — una NC siempre
+  // se emite desde el mismo punto de venta que el comprobante que cancela.
+  const puntoVenta = Number(factura.punto_venta);
+
+  // Recalculamos neto/IVA/exento igual que al facturar, a partir de los
+  // mismos items de la venta — así el desglose por alícuota coincide
+  // exactamente con lo que se le declaró a AFIP en su momento.
+  const items = getSaleItemsForAfip(sale_id);
+  const imp = calcularImportes(items, Number(factura.tipo_cbte));
+
+  const docInfo = buildDocInfo({ cuit: factura.cliente_cuit || '' });
+  const condicionIVAReceptorId = inferCondicionIVAReceptorId(tipoLetra, {}, docInfo);
+
+  const { token, sign } = await obtenerToken(certPath, keyPath, produccion);
+  const Auth = { Token: token, Sign: sign, Cuit: parseInt(cuit, 10) };
+
+  const wsfeUrl = produccion ? URLS.prod.wsfe : URLS.homo.wsfe;
+  const { client, agent } = await nuevoClienteAfip(wsfeUrl);
+
+  const [ultimoRes] = await afipCall(() =>
+    client.FECompUltimoAutorizadoAsync({
+      Auth,
+      PtoVta: puntoVenta,
+      CbteTipo: tipoCbteNC,
+    }, { httpsAgent: agent })
+  );
+
+  const ultimoAutorizado = Number(
+    ultimoRes?.FECompUltimoAutorizadoResult?.CbteNro ?? ultimoRes?.CbteNro ?? 0
+  );
+  const nroCbte = ultimoAutorizado + 1;
+  const hoy = yyyymmddLocal();
+
+  const detalle = {
+    Concepto: factura.concepto || 1,
+    DocTipo: docInfo.DocTipo,
+    DocNro: docInfo.DocNro,
+    CbteDesde: nroCbte,
+    CbteHasta: nroCbte,
+    CbteFch: hoy,
+    ImpTotal: imp.importeTotal,
+    ImpTotConc: 0,
+    ImpNeto: imp.importeNeto,
+    ImpOpEx: imp.importeExento,
+    ImpIVA: imp.importeIva,
+    ImpTrib: 0,
+    MonId: 'PES',
+    MonCotiz: 1,
+    CondicionIVAReceptorId: condicionIVAReceptorId,
+    CbtesAsoc: {
+      CbteAsoc: [{
+        Tipo: Number(factura.tipo_cbte),
+        PtoVta: Number(factura.punto_venta),
+        Nro: Number(factura.nro_cbte),
+      }],
+    },
+  };
+
+  if (Number(factura.concepto) === 2) {
+    detalle.FchServDesde = factura.fch_serv_desde || hoy;
+    detalle.FchServHasta = factura.fch_serv_hasta || hoy;
+    detalle.FchVtoPago   = factura.fch_vto_pago   || hoy;
+  }
+
+  if (imp.discriminaIva && imp.ivaArray.length > 0) {
+    detalle.Iva = { AlicIva: imp.ivaArray };
+  }
+
+  const [caeResp] = await afipCall(() =>
+    client.FECAESolicitarAsync({
+      Auth,
+      FeCAEReq: {
+        FeCabReq: { CantReg: 1, PtoVta: puntoVenta, CbteTipo: tipoCbteNC },
+        FeDetReq: { FECAEDetRequest: [detalle] },
+      },
+    }, { httpsAgent: agent })
+  );
+
+  const afipMsg = extraerMensajesAfip(caeResp);
+  const det = afipMsg.detalle;
+
+  if (!det?.CAE || afipMsg.resultado === 'R') {
+    const mensajes = [...afipMsg.errores, ...afipMsg.observaciones, ...afipMsg.eventos].filter(Boolean);
+    throw new Error(`AFIP rechazó la Nota de Crédito: ${mensajes.join(' | ') || 'Sin detalle en respuesta'}`);
+  }
+
+  run(
+    `
+    INSERT INTO notas_credito
+      (sale_id, factura_id, tipo_cbte, punto_venta, nro_cbte, cae, cae_vto,
+       importe_total, importe_neto, importe_iva, motivo)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    `,
+    [
+      sale_id, factura.id, tipoCbteNC, puntoVenta, nroCbte,
+      det.CAE, det.CAEFchVto,
+      imp.importeTotal, imp.importeNeto, imp.importeIva,
+      motivo || null,
+    ]
+  );
+
+  const notaCredito = getNotaCreditoBySaleId(sale_id);
+
+  return {
+    ok: true,
+    cae: det.CAE,
+    cae_vto: det.CAEFchVto,
+    nro_cbte: nroCbte,
+    punto_venta: puntoVenta,
+    tipo_cbte: tipoCbteNC,
+    tipo_letra: tipoLetra,
+    importe: imp,
+    observaciones_afip: afipMsg.observaciones,
+    eventos_afip: afipMsg.eventos,
+    nota_credito: notaCredito,
+  };
+}
+
 function listFacturas({ limit = 50, offset = 0 } = {}) {
   return all(
     `
@@ -922,10 +1101,13 @@ async function testConexion() {
 module.exports = {
   initAfipSchema,
   emitirFactura,
+  emitirNotaCredito,
   getFacturaBySaleId,
+  getNotaCreditoBySaleId,
   listFacturas,
   generarQRData,
   testConexion,
   facturacionHabilitada,
   TIPO_CBTE,
+  TIPO_CBTE_NC,
 };

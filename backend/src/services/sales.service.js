@@ -36,6 +36,8 @@ function initSalesSchema() {
     `ALTER TABLE sales ADD COLUMN monto_mixto2   REAL    DEFAULT NULL`,
     // Quién hizo la venta (para auditar descuentos y cambios de precio)
     `ALTER TABLE sales ADD COLUMN usuario        TEXT    DEFAULT NULL`,
+    // Trazabilidad: de qué presupuesto salió esta venta, si vino de "Convertir a venta"
+    `ALTER TABLE sales ADD COLUMN presupuesto_id INTEGER DEFAULT NULL`,
   ];
 
   const saleItemsCols = [
@@ -167,8 +169,8 @@ function _ensureStmts() {
     INSERT INTO sales (
       total, payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
-      monto_mixto2, usuario, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      monto_mixto2, usuario, presupuesto_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   insertSaleItemStmt = db.prepare(`
     INSERT INTO sale_items (
@@ -208,6 +210,7 @@ function createSale({
   sucursal_id,
   monto_mixto2,
   usuario,
+  presupuesto_id,
   items,
 }) {
   if (!Array.isArray(items) || !items.length) {
@@ -240,6 +243,7 @@ function createSale({
       suc,
       monto_mixto2 !== undefined && monto_mixto2 !== null ? toNumber(monto_mixto2) : null,
       usuario || null,
+      presupuesto_id ? Number(presupuesto_id) : null,
       createdAt
     );
 
@@ -477,6 +481,27 @@ function anularVenta({ sale_id, motivo, usuario }) {
   if (!sale) throw new Error(`Venta #${sale_id} no encontrada`);
   if (sale.status === 'anulada') throw new Error(`La venta #${sale_id} ya está anulada`);
 
+  // Si la venta ya tiene una factura AFIP emitida (tiene CAE), no se puede
+  // anular sin antes emitir la Nota de Crédito correspondiente — anularla
+  // solo acá adentro no la da de baja ante AFIP, y eso es una exposición
+  // fiscal real para el comercio.
+  try {
+    const factura = get(`SELECT id FROM facturas WHERE sale_id = ?`, [Number(sale_id)]);
+    if (factura) {
+      const nc = get(`SELECT id FROM notas_credito WHERE sale_id = ?`, [Number(sale_id)]);
+      if (!nc) {
+        throw new Error(
+          `La venta #${sale_id} tiene una factura AFIP emitida — primero hay que emitir la Nota de Crédito antes de anularla.`
+        );
+      }
+    }
+  } catch (e) {
+    // Si las tablas de AFIP no existen todavía (instalación sin ese módulo
+    // inicializado), no bloqueamos la anulación por esto.
+    if (String(e.message || '').includes('no such table')) { /* seguir */ }
+    else throw e;
+  }
+
   const items = all(`SELECT * FROM sale_items WHERE sale_id = ?`, [Number(sale_id)]);
 
   const tx = db.transaction(() => {
@@ -517,12 +542,27 @@ function getStatsDashboard(sucursal_id = null) {
 
     const hoyRow  = get(`SELECT COALESCE(SUM(total),0) as t, COUNT(*) as n FROM sales WHERE DATE(created_at)=? AND COALESCE(status,'completada')!='anulada' ${sW}`, [hoy]);
     const ayerRow = get(`SELECT COALESCE(SUM(total),0) as t, COUNT(*) as n FROM sales WHERE DATE(created_at)=? AND COALESCE(status,'completada')!='anulada' ${sW}`, [ayer]);
-    const stockRow = get(`SELECT COUNT(*) as n FROM products WHERE stock <= stock_min`);
+
+    // Stock bajo: aislado en su propio try/catch — el umbral vive en
+    // "existencias" (por sucursal), no en "products". Si esta consulta
+    // fallara, no debe tirar abajo el resto de las estadísticas del día.
+    let stockBajoN = 0;
+    try {
+      const stockWhere = sucursal_id ? `AND e.sucursal_id = ${Number(sucursal_id)}` : '';
+      const stockRow = get(`
+        SELECT COUNT(*) as n
+        FROM existencias e
+        WHERE e.stock_min IS NOT NULL AND e.stock <= e.stock_min ${stockWhere}
+      `);
+      stockBajoN = stockRow?.n || 0;
+    } catch (e2) {
+      console.error('getStatsDashboard (stockBajo):', e2.message);
+    }
 
     return {
       ventasHoy:  { t: hoyRow?.t  || 0, n: hoyRow?.n  || 0 },
       ventasAyer: { t: ayerRow?.t || 0, n: ayerRow?.n || 0 },
-      stockBajo:  { n: stockRow?.n || 0 },
+      stockBajo:  { n: stockBajoN },
       totalProd:  { n: 0 },
     };
   } catch(e) {
@@ -604,6 +644,10 @@ function productosMasVendidos(limit = 8, sucursal_id = null) {
   }
 }
 
+function findSaleByPresupuestoId(presupuesto_id) {
+  return get(`SELECT * FROM sales WHERE presupuesto_id = ? ORDER BY id DESC LIMIT 1`, [Number(presupuesto_id)]);
+}
+
 module.exports = {
   initSalesSchema,
   createSale,
@@ -614,4 +658,5 @@ module.exports = {
   ventasPorDia,
   ventasPorMetodo,
   productosMasVendidos,
+  findSaleByPresupuestoId,
 };

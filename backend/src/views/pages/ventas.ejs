@@ -1514,6 +1514,10 @@
           <div>
             <div class="cart-title-txt">Resumen de la Venta</div>
             <div class="cart-sub" id="cartSub">Sin productos</div>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;margin-top:4px;font-size: 11.5px;font-weight:600;color:var(--text-secondary);">
+              <input type="checkbox" id="chkMostrarNetoPos" onchange="toggleMostrarNetoPos(this)" style="width:12px;height:12px;accent-color:var(--color-primary);cursor:pointer;">
+              Mostrar precio sin IVA
+            </label>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="cart-count-badge" id="cartCount" style="display:none;">0</span>
@@ -1838,6 +1842,8 @@
           </div>
         </div>
         <script>const TIPO_COMPROBANTE_DEFAULT = <%- JSON.stringify(tipoDefaultMini) %>;</script>
+        <script>const PRESUPUESTO_ORIGEN = <%- JSON.stringify(typeof presupuestoOrigen !== 'undefined' ? presupuestoOrigen : null) %>;</script>
+        <div id="ivaFaltanteWarning" style="display:none;margin-top:12px;padding:12px 14px;border-radius:10px;background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.35);color:#b45309;font-size: 13.5px;line-height:1.5;"></div>
 
         <button class="btn-cobrar" id="btnCobrar" onclick="confirmSale()">
           <i class="bi bi-check-circle-fill"></i>
@@ -2168,6 +2174,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') confirmarCrearClienteRapido(); });
   });
+  const chkNetoPos = document.getElementById('chkMostrarNetoPos');
+  if (chkNetoPos) chkNetoPos.checked = _mostrarNetoPos;
 });
 </script>
 
@@ -2176,6 +2184,13 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 'use strict';
 let cart=[],clienteId=1,discType='pct',payMethod='efectivo',recargoVal=0,payTipo='';
+let _mostrarNetoPos = localStorage.getItem('axsoft_mostrar_neto_pos') === '1';
+function toggleMostrarNetoPos(checkbox) {
+  _mostrarNetoPos = checkbox.checked;
+  localStorage.setItem('axsoft_mostrar_neto_pos', _mostrarNetoPos ? '1' : '0');
+  renderCartList();
+  if (_lastRenderedProducts) renderGrid(_lastRenderedProducts);
+}
 let toastTimer=null,searchDeb=null,lastKeyTime=0,keyCount=0,isScanMode=false;
 let posClienteDebounce=null,allProducts=[],catActiva='';
 let mixtoActivo=false, payMethods=[], lastSaleData=null, ticketConfig=null;
@@ -2517,6 +2532,7 @@ function buildProductCard(p) {
       ${sinStockBadge}
       <div class="prod-name">${p.name}${inCartBadge}${promoBadge}</div>
       ${descHTML}
+      ${(_mostrarNetoPos && Number(p.iva) > 0) ? `<div class="prod-neto-iva" style="font-size: 11px;color:var(--text-secondary);margin-top:1px;">s/IVA: ${fmt(ep / (1 + Number(p.iva) / 100))}</div>` : ''}
     </div>
     <div class="prod-td" style="text-align:center;"><span class="prod-stock-badge ${stockCls}">${stockTxt}</span></div>
     <div class="prod-td" style="text-align:right;">${promoOld}<div class="prod-price">${fmt(ep)}</div>${mayorHint}</div>
@@ -2630,6 +2646,10 @@ function addToCart(product, qty){
       isTier: false,
       descripcion: product.descripcion || null,
       isPromo: !!(product.en_promo && product.price_promo),
+      iva: Number(product.iva) || 0,
+      // true = el producto nunca tuvo IVA cargado en Inventario (distinto de
+      // "0% a propósito"). Se usa para avisar antes de facturar con AFIP.
+      ivaSinConfigurar: (product.iva === undefined || product.iva === null || product.iva === ''),
       qty: qty
     });
     aplicarPrecioMayorista(cart[cart.length - 1]);
@@ -2688,7 +2708,7 @@ function renderCartList(){
         <div class="cart-card-name">${item.name}</div>
         <button class="btn-del" onclick="removeItem('${item.sku}')"><i class="bi bi-trash3"></i></button>
       </div>
-      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isTier ? ' <span style="color:#0f766e;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#0f766e;font-size: 10.5px;font-weight:800;">x CANTIDAD</span>' : (item.isMayorista ? ' <span style="color:#6366f1;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size: 10.5px;font-weight:800;">MAYOR</span>' : '')}${item.precioEditado ? ' <span style="color:#f59e0b;font-size: 10.5px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span></div>
+      <div class="cart-card-unit">Precio unitario: <span class="cart-price-editable" onclick="editarPrecioItem('${item.sku}', ${item.price})" title="Tocá para modificar el precio" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">${fmt(item.price)}${item.isTier ? ' <span style="color:#0f766e;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#0f766e;font-size: 10.5px;font-weight:800;">x CANTIDAD</span>' : (item.isMayorista ? ' <span style="color:#6366f1;font-size: 11.5px;font-weight:700;">c/u</span> <span style="color:#6366f1;font-size: 10.5px;font-weight:800;">MAYOR</span>' : '')}${item.precioEditado ? ' <span style="color:#f59e0b;font-size: 10.5px;font-weight:800;" title="Precio modificado manualmente">✎</span>' : ''}</span>${(_mostrarNetoPos && item.iva > 0) ? `<div style="font-size: 10.5px;color:var(--text-secondary);margin-top:1px;">s/IVA: ${fmt(item.price / (1 + item.iva / 100))}</div>` : ''}</div>
       <div class="cart-card-bottom">
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="chgQty('${item.sku}',-1)"><i class="bi bi-dash"></i></button>
@@ -2787,6 +2807,7 @@ function removeItem(sku){
 function clearCart(){
   const skus=cart.map(i=>i.sku);
   cart=[];
+  presupuestoOrigenId = null;
   skus.forEach(updateCardState);
   renderCartList();
   document.getElementById('discInput').value='';
@@ -3299,7 +3320,7 @@ async function loadPaymentMethods(){
   // Garantizar el método "Cuenta corriente": descuenta del saldo a favor del
   // cliente (o lo fía si no tiene). El backend ya respeta el límite de crédito.
   if(!payMethods.some(m => /cuenta\s*corriente/i.test(m.nombre || ''))){
-    payMethods.push({ nombre:'Cuenta corriente', icono:'bi-wallet2', tipo:'cuenta_corriente', recargo_cliente_pct:0 });
+    payMethods.push({ nombre:'Cuenta corriente (fiado)', icono:'bi-wallet2', tipo:'cuenta_corriente', recargo_cliente_pct:0 });
   }
 
   const grid=document.getElementById('pmGrid');
@@ -3555,6 +3576,16 @@ function limpiarClientePos(){
 async function confirmSale() {
   if (!cart.length) return;
 
+  // No dejar cobrar facturando si hay productos sin IVA cargado — evita que
+  // la venta salga con una factura mal armada (IVA 0% cuando en realidad
+  // nunca se configuró en Inventario).
+  chequearIvaFaltanteEnCarrito();
+  if (facturacionBloqueadaPorIva) {
+    showToast('Hay productos sin IVA cargado en Inventario — completalo o desactivá "Emitir factura"', 'error');
+    beep('error');
+    return;
+  }
+
   const isCuentaCorriente = payTipo==='cuenta_corriente' || payTipo==='fiado'
     || payMethod.toLowerCase().includes('cuenta') || payMethod.toLowerCase().includes('fiado');
   if(isCuentaCorriente && (!clienteId || clienteId===1)){
@@ -3660,6 +3691,7 @@ async function confirmSale() {
     cliente_id: clienteId || null,
     es_cuenta_corriente: isCuentaCorriente ? 1 : 0,
     sucursal_id: SUCURSAL_ID,
+    presupuesto_id: presupuestoOrigenId || null,
     items: cart.map(i => ({
       sku: i.sku,
       name: i.name,
@@ -3787,12 +3819,10 @@ function escapeHtml(str=''){
     .replaceAll("'","&#039;");
 }
 
-function imprimirTicket(){
-  if(!lastSaleData){
-    showToast('No hay ticket para imprimir','warn');
-    return;
-  }
-
+// Arma el HTML del ticket — usada tanto para el ticket normal como para la
+// copia interna, así los dos SIEMPRE tienen el mismo diseño (antes se
+// mantenían por separado y terminaban desincronizados).
+function construirHtmlTicket(esCopia) {
   const cfg = ticketConfig || {
     formato: '80mm',
     footer: '¡Gracias por su compra!',
@@ -3818,12 +3848,11 @@ function imprimirTicket(){
   const fsBase    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
   const fsSmall   = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
   const fsMeta    = fmtA4 ? '12px' : es58 ? '10px' : '11px';
-  const fsTitle   = fmtA4 ? '22px' : es58 ? '14px' : '17px';
+  const fsTitle   = fmtA4 ? '20px' : es58 ? '14px' : '16px';
   const fsItem    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
   const fsTot     = fmtA4 ? '13px' : es58 ? '12px' : '13px';
   const fsTotMain = fmtA4 ? '20px' : es58 ? '16px' : '18px';
   const fsVuelto  = fmtA4 ? '22px' : es58 ? '17px' : '20px';
-  const fsRecibo  = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
   const pageMargin = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
 
   /* ── número de recibo ── */
@@ -3832,33 +3861,31 @@ function imprimirTicket(){
 
   /* ── items ── */
   const itemsHtml = lastSaleData.items.map(it => {
-    /* badge PROMO / MAYORISTA / x CANTIDAD */
     let badgeHtml = '';
     if (it.isTier) {
-      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">X CANTIDAD</span>`;
+      badgeHtml = ` <span style="font-size:${fsSmall};font-weight:600;color:#666;">(x cantidad)</span>`;
     } else if (it.isMayorista) {
-      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">MAYORISTA</span>`;
+      badgeHtml = ` <span style="font-size:${fsSmall};font-weight:600;color:#666;">(mayorista)</span>`;
     } else if (it.isPromo) {
-      badgeHtml = `<span style="display:inline-block;font-size:${fsSmall};font-weight:900;padding:1px 5px;background:#000;color:#fff;margin-left:4px;vertical-align:middle;letter-spacing:1px;">PROMO</span>`;
+      badgeHtml = ` <span style="font-size:${fsSmall};font-weight:600;color:#666;">(promo)</span>`;
     }
 
-    /* precio: tachado + nuevo si hay descuento */
     let precioLinea = '';
     if ((it.isMayorista || it.isTier || it.isPromo) && it.price_base && it.price_base !== it.price) {
-      precioLinea = `<span style="font-size:${fsSmall};font-weight:700;text-decoration:line-through;">${fmt(it.price_base)}</span>`
-                  + `<span style="font-size:${fsSmall};font-weight:900;"> → ${fmt(it.price)} c/u</span>`;
+      precioLinea = `<span style="font-size:${fsSmall};text-decoration:line-through;color:#888;">${fmt(it.price_base)}</span>`
+                  + `<span style="font-size:${fsSmall};font-weight:600;"> → ${fmt(it.price)} c/u</span>`;
     } else {
-      precioLinea = `<span style="font-size:${fsSmall};font-weight:700;">${fmt(it.price)} c/u</span>`;
+      precioLinea = `<span style="font-size:${fsSmall};color:#666;">${fmt(it.price)} c/u</span>`;
     }
 
     return `
       <tr>
-        <td style="padding:6px 0 4px;line-height:1.4;border-bottom:1px dotted #bbb;">
-          <span style="font-size:${fsItem};font-weight:900;text-transform:uppercase;">${escapeHtml(it.name)}</span>${badgeHtml}<br>
+        <td style="padding:5px 0 3px;line-height:1.4;border-bottom:1px solid #eee;">
+          <span style="font-size:${fsItem};font-weight:600;">${escapeHtml(it.name)}</span>${badgeHtml}<br>
           ${precioLinea}
         </td>
-        <td style="padding:6px 0 4px;text-align:center;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${it.qty}</td>
-        <td style="padding:6px 0 4px;text-align:right;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${fmt(it.subtotal)}</td>
+        <td style="padding:5px 0 3px;text-align:center;font-size:${fsItem};vertical-align:top;border-bottom:1px solid #eee;">${it.qty}</td>
+        <td style="padding:5px 0 3px;text-align:right;font-size:${fsItem};font-weight:600;vertical-align:top;border-bottom:1px solid #eee;font-variant-numeric:tabular-nums;">${fmt(it.subtotal)}</td>
       </tr>`;
   }).join('');
 
@@ -3867,22 +3894,29 @@ function imprimirTicket(){
     ? `<div style="text-align:center;margin-bottom:8px;"><img src="${escapeHtml(cfg.logo)}" style="max-width:100%;max-height:120px;object-fit:contain;"></div>`
     : '';
 
-  const html = `<!DOCTYPE html>
+  // El monto realmente cobrado — si no quedó registrado (0/undefined, por
+  // ejemplo en pagos no efectivo), se muestra el total en vez de "$0,00".
+  const montoPagado = (lastSaleData.recibido && lastSaleData.recibido > 0)
+    ? lastSaleData.recibido
+    : lastSaleData.total;
+
+  return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ticket</title>
+  <title>${esCopia ? 'Copia - ' : ''}Ticket</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
     @media print { html, body { width: ${paperWidth}; } }
     body {
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
       background: #fff;
-      color: #000;
+      color: #1a1a1a;
       font-size: ${fsBase};
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      -webkit-font-smoothing: antialiased;
     }
     .ticket {
       width: 100%;
@@ -3893,15 +3927,24 @@ function imprimirTicket(){
     .center { text-align: center; }
     .right  { text-align: right; }
     .bold   { font-weight: 700; }
-    .line-solid  { border-top: 2px solid #000; margin: 7px 0; }
-    .line-dashed { border-top: 1px dashed #000; margin: 6px 0; }
-    .line-double { border-top: 3px double #000; margin: 7px 0; }
+    .line-solid  { border-top: 1px solid #1a1a1a; margin: 7px 0; }
+    .line-dashed { border-top: 1px dashed #bbb; margin: 6px 0; }
+    .copia-badge {
+      text-align: center;
+      border: 1px dashed #666;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: ${fsMeta};
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 8px;
+    }
     .nombre-negocio {
       font-size: ${fsTitle};
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      line-height: 1.2;
+      font-weight: 700;
+      line-height: 1.25;
       margin-bottom: 3px;
     }
     .meta-row {
@@ -3910,20 +3953,12 @@ function imprimirTicket(){
       font-size: ${fsMeta};
       margin: 2px 0;
     }
-    .recibo-box {
-      text-align: center;
-      font-size: ${fsMeta};
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin: 4px 0 2px;
-    }
     table { width: 100%; border-collapse: collapse; }
     th {
       font-size: ${fsSmall};
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid #000;
+      font-weight: 600;
+      color: #777;
+      border-bottom: 1px solid #1a1a1a;
       padding: 3px 0;
     }
     th:first-child  { text-align: left; }
@@ -3936,39 +3971,30 @@ function imprimirTicket(){
       align-items: baseline;
       font-size: ${fsTot};
       padding: 2px 0;
+      font-variant-numeric: tabular-nums;
     }
     .tot-main {
       font-size: ${fsTotMain};
-      font-weight: 900;
-      padding: 4px 0;
-      border-top: 2px solid #000;
-      border-bottom: 2px solid #000;
-      margin: 4px 0;
+      font-weight: 700;
+      padding: 5px 0 2px;
+      border-top: 1px solid #1a1a1a;
+      margin: 5px 0 2px;
     }
-    .vuelto-box {
-      text-align: center;
+    .vuelto-row {
       font-size: ${fsVuelto};
-      font-weight: 900;
-      border: 2px solid #000;
-      padding: 6px 4px 4px;
-      margin: 6px 0 4px;
-      letter-spacing: 0.5px;
+      font-weight: 700;
     }
     .footer-txt {
       text-align: center;
       font-size: ${fsMeta};
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin-top: 8px;
-      text-transform: uppercase;
+      font-weight: 500;
+      margin-top: 10px;
+      color: #333;
     }
-    .offline-badge {
+    .offline-txt {
       text-align:center;
       font-size:${fsSmall};
-      font-weight:900;
-      border:2px solid #000;
-      padding:2px 6px;
-      letter-spacing:2px;
+      font-weight:700;
       margin:4px 0;
     }
   </style>
@@ -3976,29 +4002,28 @@ function imprimirTicket(){
 <body>
 <div class="ticket">
 
+  ${esCopia ? `<div class="copia-badge">Copia interna</div>` : ''}
+
   ${logoHtml}
 
   <!-- NOMBRE DEL NEGOCIO -->
   <div class="center">
     <div class="nombre-negocio">${escapeHtml(cfg.nombre || 'Mi Comercio')}</div>
-    ${cfg.direccion ? `<div style="font-size:${fsMeta};">${escapeHtml(cfg.direccion)}</div>` : ''}
-    ${cfg.telefono  ? `<div style="font-size:${fsMeta};">Tel: ${escapeHtml(cfg.telefono)}</div>` : ''}
+    ${cfg.direccion ? `<div style="font-size:${fsMeta};color:#555;">${escapeHtml(cfg.direccion)}</div>` : ''}
+    ${cfg.telefono  ? `<div style="font-size:${fsMeta};color:#555;">Tel: ${escapeHtml(cfg.telefono)}</div>` : ''}
   </div>
 
   <div class="line-solid"></div>
 
-  <!-- N° RECIBO + FECHA -->
-  ${reciboTxt ? `<div class="recibo-box">N° RECIBO: ${escapeHtml(reciboTxt)}</div>` : ''}
+  <!-- N° COMPROBANTE + FECHA -->
+  ${reciboTxt ? `<div class="meta-row"><span>Comprobante N°</span><span class="bold">${escapeHtml(reciboTxt)}</span></div>` : ''}
   <div class="meta-row">
-    <span>${fechaTxt}</span>
+    <span>Fecha:</span><span>${fechaTxt}</span>
   </div>
   <div class="meta-row">
     <span>Cliente:</span><span class="bold">${escapeHtml(lastSaleData.cliente)}</span>
   </div>
-  <div class="meta-row">
-    <span>Pago:</span><span class="bold">${escapeHtml(lastSaleData.metodo)}</span>
-  </div>
-  ${lastSaleData.offline ? `<div class="offline-badge">⚠ MODO OFFLINE</div>` : ''}
+  ${lastSaleData.offline ? `<div class="offline-txt">⚠ Modo offline — pendiente de sincronizar</div>` : ''}
 
   <div class="line-dashed"></div>
 
@@ -4016,8 +4041,6 @@ function imprimirTicket(){
     </tbody>
   </table>
 
-  <div class="line-solid"></div>
-
   <!-- TOTALES -->
   ${lastSaleData.subtotal !== lastSaleData.total || lastSaleData.descuento > 0
     ? `<div class="tot-row"><span>Subtotal</span><span>${fmt(lastSaleData.subtotal)}</span></div>` : ''}
@@ -4025,19 +4048,32 @@ function imprimirTicket(){
     ? `<div class="tot-row"><span>Descuento</span><span>- ${fmt(lastSaleData.descuento)}</span></div>` : ''}
 
   <div class="tot-row tot-main">
-    <span>TOTAL</span>
+    <span>Total</span>
     <span>${fmt(lastSaleData.total)}</span>
   </div>
 
   <div class="line-dashed"></div>
 
+  <!-- PAGOS -->
+  <div class="meta-row bold"><span>Pagos:</span><span></span></div>
+  <div class="meta-row">
+    <span>${escapeHtml(lastSaleData.metodo)}</span>
+    <span>${fmt(montoPagado)}</span>
+  </div>
+  ${lastSaleData.vuelto > 0
+    ? `<div class="meta-row vuelto-row"><span>Vuelto</span><span>${fmt(lastSaleData.vuelto)}</span></div>` : ''}
+
+  <div class="line-dashed"></div>
+
   <!-- FOOTER -->
-  <div class="footer-txt">${escapeHtml(cfg.footer || '¡Gracias por su compra!')}</div>
+  <div class="footer-txt">${esCopia ? 'Uso interno' : escapeHtml(cfg.footer || '¡Gracias por su compra!')}</div>
 
 </div>
 </body>
 </html>`;
+}
 
+function _abrirEImprimirTicket(html, winWidth, esCopia) {
   const w = window.open('', '_blank', `width=${winWidth},height=900,left=0,top=0`);
   if(!w){
     showToast('Permití ventanas emergentes para imprimir','warn');
@@ -4047,14 +4083,24 @@ function imprimirTicket(){
   w.document.write(html);
   w.document.close();
   w.focus();
-  // Después de imprimir, cerrar la ventana automáticamente
   setTimeout(() => {
     w.print();
     setTimeout(() => {
       w.close();
-      mostrarModalCopia();
+      if (!esCopia) mostrarModalCopia();
     }, 800);
   }, 300);
+}
+
+function imprimirTicket(){
+  if(!lastSaleData){
+    showToast('No hay ticket para imprimir','warn');
+    return;
+  }
+  const html = construirHtmlTicket(false);
+  const formato = String((ticketConfig||{}).formato || '80mm').toLowerCase();
+  const winWidth = formato === '58mm' ? 245 : formato === '80mm' ? 345 : 900;
+  _abrirEImprimirTicket(html, winWidth, false);
 }
 
 function mostrarModalCopia() {
@@ -4072,146 +4118,10 @@ function cerrarModalCopia() {
 function imprimirCopiaTicket() {
   cerrarModalCopia();
   if (!lastSaleData) return;
-
-  const cfg = ticketConfig || {
-    formato: '80mm', footer: 'Gracias por su compra!',
-    nombre: 'Mi Comercio', direccion: '', telefono: '', logo: ''
-  };
-
-  const fechaTxt = lastSaleData.fecha.toLocaleString('es-AR', {
-    day:'2-digit', month:'2-digit', year:'numeric',
-    hour:'2-digit', minute:'2-digit'
-  });
-
-  const formato    = String(cfg.formato || '80mm').toLowerCase();
-  const es58       = formato === '58mm';
-  const es80       = formato === '80mm';
-  const fmtA4      = formato === 'a4';
-  const paperWidth = es58 ? '58mm' : es80 ? '80mm' : '210mm';
-  const winWidth   = es58 ? 245    : es80 ? 345    : 900;
-
-  const fsBase    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
-  const fsSmall   = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
-  const fsMeta    = fmtA4 ? '12px' : es58 ? '10px' : '11px';
-  const fsTitle   = fmtA4 ? '22px' : es58 ? '14px' : '17px';
-  const fsItem    = fmtA4 ? '13px' : es58 ? '11px' : '12px';
-  const fsTot     = fmtA4 ? '13px' : es58 ? '12px' : '13px';
-  const fsTotMain = fmtA4 ? '20px' : es58 ? '16px' : '18px';
-  const pageMargin = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
-
-  const reciboNum = lastSaleData.reciboNum || lastSaleData.recibo || lastSaleData.orden_id || '';
-  const reciboTxt = reciboNum ? String(reciboNum).padStart(8,'0') : '';
-
-  const itemsHtml = lastSaleData.items.map(it => `
-    <tr>
-      <td style="padding:6px 0 4px;line-height:1.4;border-bottom:1px dotted #bbb;">
-        <span style="font-size:${fsItem};font-weight:900;text-transform:uppercase;">${escapeHtml(it.name)}</span><br>
-        <span style="font-size:${fsSmall};font-weight:700;">${fmt(it.price)} c/u</span>
-      </td>
-      <td style="padding:6px 0 4px;text-align:center;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${it.qty}</td>
-      <td style="padding:6px 0 4px;text-align:right;font-size:${fsItem};font-weight:900;vertical-align:top;border-bottom:1px dotted #bbb;">${fmt(it.subtotal)}</td>
-    </tr>`).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Copia - Ticket</title>
-  <style>
-    * { box-sizing:border-box; margin:0; padding:0; }
-    @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
-    @media print { html, body { width: ${paperWidth}; } }
-    body {
-      font-family: 'Courier New', Courier, monospace;
-      background: #fff; color: #000;
-      font-size: ${fsBase};
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .ticket { width:100%; max-width:${fmtA4 ? '200mm' : paperWidth}; margin:0 auto; padding:${fmtA4 ? '10px 14px' : '6px 4px'}; }
-    .center { text-align:center; }
-    .bold { font-weight:700; }
-    .line-solid  { border-top:2px solid #000; margin:7px 0; }
-    .line-dashed { border-top:1px dashed #000; margin:6px 0; }
-    .copia-badge {
-      text-align:center;
-      border:2px dashed #000;
-      padding:4px 8px;
-      font-size:${fsMeta};
-      font-weight:900;
-      letter-spacing:3px;
-      text-transform:uppercase;
-      margin-bottom:8px;
-    }
-    .nombre-negocio { font-size:${fsTitle};font-weight:900;letter-spacing:0.5px;text-transform:uppercase;line-height:1.2;margin-bottom:3px; }
-    .meta-row { display:flex;justify-content:space-between;font-size:${fsMeta};margin:2px 0; }
-    .recibo-box { text-align:center;font-size:${fsMeta};font-weight:700;letter-spacing:1px;margin:4px 0 2px; }
-    table { width:100%;border-collapse:collapse; }
-    th { font-size:${fsSmall};font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #000;padding:3px 0; }
-    th:first-child { text-align:left; } th:nth-child(2) { text-align:center;width:28px; } th:last-child { text-align:right; }
-    td:nth-child(2) { width:28px; }
-    .tot-row { display:flex;justify-content:space-between;align-items:baseline;font-size:${fsTot};padding:2px 0; }
-    .tot-main { font-size:${fsTotMain};font-weight:900;padding:4px 0;border-top:2px solid #000;border-bottom:2px solid #000;margin:4px 0; }
-    .footer-txt { text-align:center;font-size:${fsMeta};font-weight:700;letter-spacing:1px;margin-top:8px;text-transform:uppercase; }
-  </style>
-</head>
-<body>
-<div class="ticket">
-
-  <!-- BADGE COPIA -->
-  <div class="copia-badge">*** COPIA LOCAL ***</div>
-
-  <!-- NOMBRE -->
-  <div class="center">
-    <div class="nombre-negocio">${escapeHtml(cfg.nombre || 'Mi Comercio')}</div>
-    ${cfg.direccion ? `<div style="font-size:${fsMeta};">${escapeHtml(cfg.direccion)}</div>` : ''}
-    ${cfg.telefono  ? `<div style="font-size:${fsMeta};">Tel: ${escapeHtml(cfg.telefono)}</div>` : ''}
-  </div>
-
-  <div class="line-solid"></div>
-
-  ${reciboTxt ? `<div class="recibo-box">N deg RECIBO: ${escapeHtml(reciboTxt)}</div>` : ''}
-  <div class="meta-row"><span>${fechaTxt}</span></div>
-  <div class="meta-row"><span>Cliente:</span><span class="bold">${escapeHtml(lastSaleData.cliente)}</span></div>
-  <div class="meta-row"><span>Pago:</span><span class="bold">${escapeHtml(lastSaleData.metodo)}</span></div>
-
-  <div class="line-dashed"></div>
-
-  <!-- PRODUCTOS -->
-  <table>
-    <thead>
-      <tr>
-        <th>Producto</th>
-        <th style="text-align:center;">Cant</th>
-        <th style="text-align:right;">Total</th>
-      </tr>
-    </thead>
-    <tbody>${itemsHtml}</tbody>
-  </table>
-
-  <div class="line-solid"></div>
-
-  ${lastSaleData.descuento > 0 ? `<div class="tot-row"><span>Subtotal</span><span>${fmt(lastSaleData.subtotal)}</span></div><div class="tot-row"><span>Descuento</span><span>- ${fmt(lastSaleData.descuento)}</span></div>` : ''}
-
-  <div class="tot-row tot-main">
-    <span>TOTAL</span>
-    <span>${fmt(lastSaleData.total)}</span>
-  </div>
-
-  <div class="line-dashed"></div>
-  <div class="footer-txt">USO INTERNO</div>
-
-</div>
-</body>
-</html>`;
-
-  const w = window.open('', '_blank', `width=${winWidth},height=900,left=0,top=0`);
-  if (!w) { showToast('Permiti ventanas emergentes para imprimir', 'warn'); return; }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(() => { w.print(); setTimeout(() => w.close(), 800); }, 300);
+  const html = construirHtmlTicket(true);
+  const formato = String((ticketConfig||{}).formato || '80mm').toLowerCase();
+  const winWidth = formato === '58mm' ? 245 : formato === '80mm' ? 345 : 900;
+  _abrirEImprimirTicket(html, winWidth, true);
 }
 
 function nuevaVenta(){
@@ -4507,9 +4417,61 @@ function filtrarCards(q){
   ));
 }
 
+// ── "Convertir a venta" desde un Presupuesto aprobado ──
+// Llega vía /ventas?desde_presupuesto=ID — precarga el carrito con los
+// mismos ítems y el nombre del cliente, respetando el precio pactado en
+// el presupuesto (no el precio de lista actual, que puede haber cambiado).
+let presupuestoOrigenId = null;
+function cargarDesdePresupuesto() {
+  if (!PRESUPUESTO_ORIGEN) return;
+  presupuestoOrigenId = PRESUPUESTO_ORIGEN.id;
+
+  const sinMatch = [];
+  (PRESUPUESTO_ORIGEN.items || []).forEach((it, idx) => {
+    const qty = Number(it.cantidad) || 1;
+    const precioPactado = Number(it.precio_unitario) || 0;
+    const encontrado = it.sku ? allProducts.find(p => p.sku === it.sku) : null;
+
+    const product = encontrado || {
+      sku: `PPTO-${PRESUPUESTO_ORIGEN.id}-${idx}`,
+      name: it.nombre || 'Ítem del presupuesto',
+      price: precioPactado,
+      stock: 9999,
+      en_promo: 0,
+      price_promo: null,
+    };
+
+    addToCart(product, qty);
+    // Se respeta el precio del presupuesto, no el de lista actual —
+    // y se marca "precio editado" para que no se pise si cambia la cantidad.
+    const item = cart.find(c => c.sku === product.sku);
+    if (item) {
+      item.price = precioPactado;
+      item.precioEditado = true;
+      item.isMayorista = false;
+      item.isTier = false;
+    }
+    if (!encontrado) sinMatch.push(it.nombre);
+  });
+
+  if (PRESUPUESTO_ORIGEN.cliente_nombre && PRESUPUESTO_ORIGEN.cliente_nombre !== 'Sin nombre') {
+    const inp = document.getElementById('posClienteSearch');
+    if (inp) inp.value = PRESUPUESTO_ORIGEN.cliente_nombre;
+  }
+
+  renderCartList();
+  updateTotals();
+
+  showToast(`Presupuesto ${PRESUPUESTO_ORIGEN.numero} cargado en el carrito`, 'success');
+  if (sinMatch.length) {
+    showToast(`⚠ ${sinMatch.length===1?'Este producto ya no está':'Estos productos ya no están'} en Inventario, se cargó igual con el precio del presupuesto: ${sinMatch.join(', ')}`, 'warn');
+  }
+}
+
 document.addEventListener('DOMContentLoaded',async()=>{
   await Promise.all([loadCatalog(),loadPaymentMethods(),loadTicketConfig()]);
   limpiarClientePos();
+  cargarDesdePresupuesto();
   const input=document.getElementById('barcodeInput'),dot=document.getElementById('scanDot');
 
   // ── Navegación por teclado en la grilla de productos ──
@@ -4854,8 +4816,35 @@ let afipSaleId           = null;
 let afipEmitido          = false;
 let afipFacturaExistente = null;
 let facturarEnCobro      = false;
+let facturacionBloqueadaPorIva = false;
 // El default lo define el server según config.empresa_cond_iva (ver ventas.ejs)
 let tipoMiniSel          = (typeof TIPO_COMPROBANTE_DEFAULT !== 'undefined' && TIPO_COMPROBANTE_DEFAULT) || 'C';
+
+// Tipo C (Monotributo/Exento) no discrimina IVA por ítem — ahí no hace
+// falta que los productos tengan IVA cargado. Tipo A/B sí lo necesitan.
+function facturaRequiereIvaPorItem() {
+  return facturarEnCobro && tipoMiniSel !== 'C';
+}
+
+function chequearIvaFaltanteEnCarrito() {
+  const warnBox = document.getElementById('ivaFaltanteWarning');
+  if (!facturaRequiereIvaPorItem()) {
+    facturacionBloqueadaPorIva = false;
+    if (warnBox) warnBox.style.display = 'none';
+    return;
+  }
+  const faltantes = cart.filter(i => i.ivaSinConfigurar).map(i => i.name);
+  facturacionBloqueadaPorIva = faltantes.length > 0;
+  if (!warnBox) return;
+  if (faltantes.length) {
+    warnBox.style.display = 'block';
+    warnBox.innerHTML = '⚠️ <strong>' + faltantes.join(', ') + '</strong> no ' +
+      (faltantes.length === 1 ? 'tiene' : 'tienen') +
+      ' IVA cargado en Inventario. Completalo antes de cobrar, o la factura va a salir mal.';
+  } else {
+    warnBox.style.display = 'none';
+  }
+}
 
 function toggleServicioMini(activo) {
   const wrap = document.getElementById('servicioMiniWrap');
@@ -4876,6 +4865,7 @@ function toggleFacturacionEnCobro(activo) {
     label.style.color = '';
     opts.style.display = 'none';
   }
+  chequearIvaFaltanteEnCarrito();
 }
 
 function selTipoMini(tipo) {
@@ -4886,6 +4876,7 @@ function selTipoMini(tipo) {
   });
   const cuitWrap = document.getElementById('cuitMiniWrap');
   if (cuitWrap) cuitWrap.style.display = tipo === 'A' ? 'block' : 'none';
+  chequearIvaFaltanteEnCarrito();
 }
 
 /* Resetear el toggle al abrir el modal de cobro — se llama directamente desde openCobroModal */

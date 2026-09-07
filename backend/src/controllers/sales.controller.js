@@ -1,18 +1,28 @@
 // src/controllers/sales.controller.js
 const salesService = require('../services/sales.service');
+const { tieneAccion } = require('../middlewares/auth.middleware');
 
 exports.create = async (req, res) => {
   try {
     const {
       payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct,
-      cliente_id, items, es_cuenta_corriente, monto_mixto2
+      cliente_id, items, es_cuenta_corriente, monto_mixto2,
+      presupuesto_id
     } = req.body;
 
     if (!payment_method)
       return res.status(400).json({ error: 'payment_method es requerido' });
     if (!Array.isArray(items) || !items.length)
       return res.status(400).json({ error: 'items es requerido y debe tener al menos 1 producto' });
+
+    // El descuento manual al cobrar es una acción sensible — si el empleado
+    // no la tiene habilitada, no se acepta la venta con descuento aplicado
+    // (evita que alguien lo mande igual llamando a la API directamente).
+    const pideDescuento = (Number(discount_pct) || 0) > 0 || (Number(discount_fixed) || 0) > 0;
+    if (pideDescuento && !tieneAccion(req.session?.user, 'dar_descuentos')) {
+      return res.status(403).json({ error: 'No tenés permiso para aplicar descuentos — pedile a un administrador que te lo habilite en Ajustes → Usuarios' });
+    }
 
     // Sucursal del usuario autenticado
     const sucursal_id = req.session?.user?.sucursal_id || res.locals?.sucursal_id || 1;
@@ -38,6 +48,7 @@ exports.create = async (req, res) => {
       monto_mixto2:         monto_mixto2 != null ? Number(monto_mixto2) : null,
       sucursal_id,
       usuario:              req.session?.vendedorActivo?.nombre || req.session?.user?.name || req.session?.user?.username || null,
+      presupuesto_id:       presupuesto_id ? Number(presupuesto_id) : null,
       items
     });
 

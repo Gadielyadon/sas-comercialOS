@@ -58,9 +58,9 @@ router.get('/:id', (req, res) => {
 // POST /api/clientes
 router.post('/', (req, res) => {
   try {
-    const { nombre, documento, cuit, telefono, email, direccion, limite_credito } = req.body;
+    const { nombre, documento, cuit, telefono, email, direccion, limite_credito, cond_iva, localidad } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
-    const nuevo = svc.create({ nombre, documento: documento || cuit || null, telefono, email, direccion, limite_credito });
+    const nuevo = svc.create({ nombre, documento: documento || cuit || null, telefono, email, direccion, limite_credito, cond_iva, localidad });
     res.status(201).json(nuevo);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -68,8 +68,8 @@ router.post('/', (req, res) => {
 // PUT /api/clientes/:id
 router.put('/:id', (req, res) => {
   try {
-    const { nombre, documento, telefono, email, direccion, limite_credito } = req.body;
-    svc.update(Number(req.params.id), { nombre, documento, telefono, email, direccion, limite_credito });
+    const { nombre, documento, telefono, email, direccion, limite_credito, cond_iva, localidad } = req.body;
+    svc.update(Number(req.params.id), { nombre, documento, telefono, email, direccion, limite_credito, cond_iva, localidad });
     res.json(svc.findById(Number(req.params.id)));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

@@ -7,12 +7,20 @@ const cajaService     = require('../services/caja.service');
 const { get, all, run, db } = require('../db');
 const reportesCtrl    = require('../controllers/reportes.controller');
 
-// requirePermiso — si auth.middleware falla, usar passthrough
+// requirePermiso / requireAuth / requireAdmin — si auth.middleware falla, usar passthrough
 let requirePermiso = (_sec) => (_req, _res, next) => next();
+let requireAdmin = (_req, _res, next) => next();
+let requireAuth = (_req, _res, next) => next();
 try {
   const authMw = require('../middlewares/auth.middleware');
   if (typeof authMw.requirePermiso === 'function') {
     requirePermiso = authMw.requirePermiso;
+  }
+  if (typeof authMw.requireAdmin === 'function') {
+    requireAdmin = authMw.requireAdmin;
+  }
+  if (typeof authMw.requireAuth === 'function') {
+    requireAuth = authMw.requireAuth;
   }
 } catch(e) { console.warn('[main.routes] auth.middleware no disponible:', e.message); }
 
@@ -99,8 +107,11 @@ function getStats(sucursal_id) {
     const hoy   = fechaArg(0);
     const ayer  = fechaArg(-1);
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+    const ccWhere = `AND NOT EXISTS (SELECT 1 FROM cuenta_corriente cc WHERE cc.sale_id = sales.id AND cc.tipo = 'cargo')`;
     const v     = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [hoy]);
     const vAyer = get(`SELECT COALESCE(SUM(total),0) as total, COUNT(*) as count FROM sales WHERE DATE(created_at)=? ${where}`, [ayer]);
+    const cobrado = get(`SELECT COALESCE(SUM(total),0) as total FROM sales WHERE DATE(created_at)=? ${where} ${ccWhere}`, [hoy]);
+    const fiadoHoy = v.total - cobrado.total;
     const ticket = v.count > 0 ? v.total / v.count : 0;
     const sb    = get(`SELECT COUNT(*) as count FROM products WHERE stock <= 5 ${sucursal_id ? `AND sucursal_id=${Number(sucursal_id)}` : ''}`);
     const fmt   = n => '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 });
@@ -108,7 +119,8 @@ function getStats(sucursal_id) {
     const diffPct  = vAyer.total > 0 ? Math.round((diff / vAyer.total) * 100) : null;
     const trendVta = diffPct !== null ? (diffPct >= 0 ? `▲ ${diffPct}% vs ayer` : `▼ ${Math.abs(diffPct)}% vs ayer`) : `${v.count} transacciones`;
     return [
-      { label: 'Vendido hoy',     value: fmt(v.total), trend: trendVta,                                                icon: 'bi-cash-coin' },
+      { label: 'Vendido hoy',     value: fmt(v.total),       trend: trendVta,                                                icon: 'bi-cash-coin' },
+      { label: 'Cobrado hoy',     value: fmt(cobrado.total), trend: fiadoHoy > 0 ? `${fmt(fiadoHoy)} quedó a cta. cte.` : 'sin ventas fiadas hoy', icon: 'bi-wallet2' },
       { label: 'Ticket promedio', value: fmt(ticket),  trend: 'promedio por venta hoy',                                icon: 'bi-receipt' },
       { label: 'Ventas del día',  value: v.count,      trend: `${vAyer.count} ayer`,                                   icon: 'bi-bag-check' },
       { label: 'Stock crítico',   value: sb.count,     trend: sb.count > 0 ? 'productos con poco stock' : '✓ Todo ok', icon: 'bi-exclamation-triangle' },
@@ -495,12 +507,26 @@ router.post('/inventario/carga-automatica/api/confirmar', requirePermiso('invent
 router.get('/ventas', requirePermiso('ventas'), (req, res) => {
   let config = {};
   try { config = require('../services/config.service').getAll(); } catch(e) {}
+
+  // Si venimos de "Convertir a venta" desde un Presupuesto aprobado,
+  // precargamos sus items y datos de cliente en el carrito.
+  let presupuestoOrigen = null;
+  if (req.query.desde_presupuesto) {
+    try {
+      const presupuestosSvc = require('../services/presupuestos.service');
+      presupuestoOrigen = presupuestosSvc.findById(req.query.desde_presupuesto) || null;
+    } catch (e) {
+      console.warn('[ventas] No se pudo cargar el presupuesto de origen:', e.message);
+    }
+  }
+
   res.render('pages/ventas', {
     title: 'Ventas', user: req.session?.user || { name: 'Admin' },
     active: 'ventas', module: 'Punto de Venta',
     empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'), config,
     sucursal_id: res.locals.sucursal_id || 1,
     sucursal:    res.locals.sucursal    || { id: 1, nombre: 'Casa Central' },
+    presupuestoOrigen,
   });
 });
 
@@ -598,8 +624,8 @@ router.get('/clientes', requirePermiso('clientes'), (req, res) => {
   });
 });
 
-// ── Ajustes ───────────────────────────────────────────────────
-router.get('/ajustes', (req, res) => {
+// ── Ajustes — solo admin: acá vive AFIP, usuarios, backups, email ──
+router.get('/ajustes', requireAuth, requireAdmin, (req, res) => {
   const user = req.session?.user || { name: 'Admin', role: 'admin' };
   const empresa = {
     nombre:    getConfigValue('empresa_nombre',   'Mi Comercio'),
@@ -776,6 +802,16 @@ router.get('/api/reportes/ventas', (req, res) => {
       [desde, hasta]
     );
 
+    const cobrado = get(
+      `SELECT COALESCE(SUM(s.total),0) as total
+       FROM sales s
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
+         AND NOT EXISTS (SELECT 1 FROM cuenta_corriente cc WHERE cc.sale_id = s.id AND cc.tipo = 'cargo')`,
+      [desde, hasta]
+    );
+    const total_fiado = (resumen?.total || 0) - (cobrado?.total || 0);
+
     const productos = all(
       `SELECT si.name, COALESCE(p.category,'Sin categoría') as category,
               COALESCE(SUM(si.qty),0) as cantidad,
@@ -836,6 +872,8 @@ router.get('/api/reportes/ventas', (req, res) => {
     res.json({
       ok: true,
       total_ventas: resumen?.total || 0,
+      total_cobrado: cobrado?.total || 0,
+      total_fiado,
       count_ventas: resumen?.count || 0,
       productos,
       categorias,
@@ -844,6 +882,37 @@ router.get('/api/reportes/ventas', (req, res) => {
     });
   } catch(e) {
     console.error('API reporte ventas:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// API: datos JSON para el reporte de Cuenta Corriente / Fiado
+// No depende de rango de fechas: es una foto del estado actual de deuda.
+router.get('/api/reportes/cuenta-corriente', (req, res) => {
+  try {
+    const sucursal_id = res.locals?.sucursal_filtro ?? null;
+    const sWhere = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
+
+    const resumen = get(
+      `SELECT COALESCE(SUM(saldo),0) as total, COUNT(*) as n
+       FROM clientes WHERE saldo > 0 ${sWhere}`
+    );
+
+    const clientes = all(
+      `SELECT id, nombre, telefono, saldo
+       FROM clientes WHERE saldo > 0 ${sWhere}
+       ORDER BY saldo DESC LIMIT 200`
+    );
+
+    res.json({
+      ok: true,
+      total_deuda: resumen?.total || 0,
+      count_clientes: resumen?.n || 0,
+      mayor_deudor: clientes[0] || null,
+      clientes,
+    });
+  } catch(e) {
+    console.error('API reporte cuenta corriente:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });

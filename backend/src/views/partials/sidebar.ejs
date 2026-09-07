@@ -116,6 +116,11 @@
       <i class="bi bi-receipt"></i><span class="nav-text">Gastos</span>
     </a>
     <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('importar')) { %>
+    <a href="/importar" class="nav-item <%= (typeof active !== 'undefined' && active === 'importar') ? 'active' : '' %>">
+      <i class="bi bi-file-earmark-arrow-up"></i><span class="nav-text">Importar</span>
+    </a>
+    <% } %>
 
     <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
     <div class="nav-section-label" style="margin-top:10px;">Sistema</div>
@@ -130,6 +135,9 @@
     </a>
 
     <div class="nav-section-label" style="margin-top:10px;">Configuración</div>
+    <a href="/catalogo" class="nav-item <%= (typeof active !== 'undefined' && active === 'catalogo') ? 'active' : '' %>">
+      <i class="bi bi-shop"></i><span class="nav-text">Catálogo</span>
+    </a>
     <a href="/ajustes" class="nav-item <%= (typeof active !== 'undefined' && active === 'ajustes') ? 'active' : '' %>">
       <i class="bi bi-sliders"></i><span class="nav-text">Ajustes</span>
     </a>

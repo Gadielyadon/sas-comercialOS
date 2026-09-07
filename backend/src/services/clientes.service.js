@@ -9,6 +9,10 @@ function initClientesSchema() {
   ['telefono TEXT', 'email TEXT', 'direccion TEXT', 'limite_credito REAL DEFAULT NULL', 'categoria TEXT DEFAULT NULL'].forEach(col => {
     try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
   });
+  // Mismos datos que ya se cargaban en Presupuestos, ahora también en la ficha del cliente
+  ['cond_iva TEXT DEFAULT NULL', 'localidad TEXT DEFAULT NULL'].forEach(col => {
+    try { run(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch(e) {}
+  });
 
   run(`CREATE TABLE IF NOT EXISTS clientes_movimientos (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,12 +47,12 @@ function findById(id) {
   return get(`SELECT * FROM clientes WHERE id = ?`, [Number(id)]);
 }
 
-function create({ nombre, documento, telefono, email, direccion, limite_credito, categoria }) {
+function create({ nombre, documento, telefono, email, direccion, limite_credito, categoria, cond_iva, localidad }) {
   const r = run(
-    `INSERT INTO clientes (nombre, documento, telefono, email, direccion, limite_credito, categoria) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO clientes (nombre, documento, telefono, email, direccion, limite_credito, categoria, cond_iva, localidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [String(nombre), documento || null, telefono || null, email || null, direccion || null,
      limite_credito != null && limite_credito !== '' ? Number(limite_credito) : null,
-     categoria || null]
+     categoria || null, cond_iva || null, localidad || null]
   );
   return findById(r.lastInsertRowid);
 }
@@ -56,7 +60,7 @@ function create({ nombre, documento, telefono, email, direccion, limite_credito,
 function update(id, fields) {
   const c = findById(id);
   if (!c) return null;
-  run(`UPDATE clientes SET nombre=?, documento=?, telefono=?, email=?, direccion=?, limite_credito=?, categoria=? WHERE id=?`,
+  run(`UPDATE clientes SET nombre=?, documento=?, telefono=?, email=?, direccion=?, limite_credito=?, categoria=?, cond_iva=?, localidad=? WHERE id=?`,
     [
       fields.nombre     ?? c.nombre,
       fields.documento  ?? c.documento,
@@ -67,6 +71,8 @@ function update(id, fields) {
         ? (fields.limite_credito === '' || fields.limite_credito === null ? null : Number(fields.limite_credito))
         : c.limite_credito,
       fields.categoria !== undefined ? (fields.categoria || null) : (c.categoria || null),
+      fields.cond_iva   !== undefined ? (fields.cond_iva  || null) : (c.cond_iva || null),
+      fields.localidad  !== undefined ? (fields.localidad || null) : (c.localidad || null),
       Number(id)
     ]);
   return findById(id);

@@ -261,6 +261,10 @@
       <div id="anularInfo" style="background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;font-size: 15px;">
       </div>
 
+      <!-- Aviso de Nota de Crédito (solo si la venta ya está facturada) -->
+      <div id="anularAvisoNC" style="display:none;background:rgba(27,79,216,.06);border:1.5px solid rgba(27,79,216,.25);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size: 14px;color:var(--color-primary);gap:8px;">
+      </div>
+
       <!-- Advertencia -->
       <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:16px;font-size: 14px;color:#92400e;display:flex;gap:8px;">
         <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;margin-top:1px;"></i>
@@ -488,6 +492,10 @@ function renderTabla(ventas) {
       ? `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(27,79,216,.10);color:var(--color-primary);">Factura ${v.factura_tipo_letra}</span>`
       : `<span style="padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:600;background:var(--bg-surface-2);color:var(--text-muted);">Ticket</span>`;
 
+    const badgeNC = v.tiene_nc
+      ? `<span title="Nota de crédito emitida a AFIP" style="margin-left:5px;padding:3px 10px;border-radius:20px;font-size: 12.5px;font-weight:700;background:rgba(239,68,68,.10);color:#dc2626;">NC ${v.nc_tipo_letra||''}</span>`
+      : '';
+
     const badgeCC = v.es_cuenta_corriente
       ? `<span title="${v.cliente_nombre ? 'Cliente: '+v.cliente_nombre : 'Venta a cuenta corriente'}" style="margin-left:5px;padding:2px 8px;border-radius:20px;font-size: 11.5px;font-weight:800;background:rgba(245,158,11,.12);color:#b45309;white-space:nowrap;">
            <i class="bi bi-wallet2"></i> CC
@@ -570,6 +578,7 @@ function renderTabla(ventas) {
         : (!esMixto && v.cash_received ? `Recibido: <strong>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null),
       !esMixto && v.cash_received ? `Vuelto: <strong>$${Number(v.change_amount||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</strong>` : null,
       v.facturada ? `CAE: <strong style="font-family:var(--font-mono)">${v.factura_cae||'-'}</strong>` : null,
+      v.tiene_nc ? `<span style="color:#dc2626;">Nota de Crédito ${v.nc_tipo_letra||''}: <strong style="font-family:var(--font-mono)">CAE ${v.nc_cae||'-'}</strong></span>` : null,
       esAnulada && v.anulacion_motivo ? `<span style="color:#dc2626;">Motivo anulación: <strong>${v.anulacion_motivo}</strong></span>` : null,
       esAnulada && v.anulada_by ? `<span style="color:var(--text-muted);">Anulada por: ${v.anulada_by}</span>` : null,
     ].filter(Boolean);
@@ -591,7 +600,7 @@ function renderTabla(ventas) {
           }
         </td>
         <td class="hist-td">${chipVendedor}</td>
-        <td class="hist-td">${badgeFact}${badgeCC}</td>
+        <td class="hist-td">${badgeFact}${badgeNC}${badgeCC}</td>
         <td class="hist-td">${badgeEstado}</td>
         <td class="hist-td" style="text-align:right;">${chipDesc}${chipEdit}</td>
         <td class="hist-td" style="text-align:right;font-size: 16px;${totalStyle}">${fmt(v.total)}</td>
@@ -651,6 +660,18 @@ function abrirAnular(id) {
     <div style="font-size: 13.5px;color:var(--text-secondary);">${fecha} · ${v.payment_method}</div>
     <div style="font-size: 13.5px;color:var(--text-secondary);margin-top:4px;">${itemsTexto}${masItems}</div>`;
 
+  // Si la venta ya tiene factura AFIP (y todavía no tiene NC), avisamos que
+  // se va a emitir automáticamente la Nota de Crédito antes de anular.
+  const avisoNC = document.getElementById('anularAvisoNC');
+  if (v.facturada && !v.tiene_nc) {
+    avisoNC.style.display = 'flex';
+    avisoNC.innerHTML = `<i class="bi bi-file-earmark-minus-fill" style="flex-shrink:0;margin-top:1px;"></i>
+      <span>Esta venta tiene <strong>Factura ${v.factura_tipo_letra} (CAE ${v.factura_cae||'-'})</strong>.
+      Antes de anularla, el sistema va a emitir automáticamente la <strong>Nota de Crédito</strong> correspondiente ante AFIP.</span>`;
+  } else {
+    avisoNC.style.display = 'none';
+  }
+
   document.getElementById('anularOverlay').classList.add('open');
   setTimeout(() => document.getElementById('anularMotivo').focus(), 150);
 }
@@ -671,11 +692,25 @@ async function confirmarAnulacion() {
   }
   errEl.style.display = 'none';
 
+  const v = _ventas.find(x => x.id === _anularId);
+  const necesitaNC = !!(v && v.facturada && !v.tiene_nc);
+
   const btn = document.getElementById('btnConfirmarAnular');
   btn.disabled = true;
-  btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Anulando...';
 
   try {
+    if (necesitaNC) {
+      btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Emitiendo Nota de Crédito a AFIP...';
+      const rNC = await fetch('/afip/nota-credito', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sale_id: _anularId, motivo })
+      });
+      const dNC = await rNC.json();
+      if (!rNC.ok) throw new Error('No se pudo emitir la Nota de Crédito: ' + (dNC.error || 'error desconocido') + '. La venta NO fue anulada.');
+    }
+
+    btn.innerHTML = '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Anulando...';
     const r = await fetch(`/api/ventas/${_anularId}/anular`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -718,16 +753,94 @@ async function reimprimirTicket(id) {
   const v = _ventas.find(x => x.id === id);
   if (!v) return;
   const cfg = await loadTicketCfg();
-  const es80 = String(cfg.formato||'80mm').toLowerCase() === '80mm';
+  const formato = String(cfg.formato || '80mm').toLowerCase();
+  const es58 = formato === '58mm';
+  const es80 = formato === '80mm';
+  const fmtA4 = formato === 'a4';
+  const paperWidth = es58 ? '58mm' : es80 ? '80mm' : '210mm';
+  const winWidth = es58 ? 245 : es80 ? 345 : 900;
+  const fsBase  = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsSmall = fmtA4 ? '11px' : es58 ? '9px'  : '10px';
+  const fsMeta  = fmtA4 ? '12px' : es58 ? '10px' : '11px';
+  const fsTitle = fmtA4 ? '22px' : es58 ? '14px' : '17px';
+  const fsItem  = fmtA4 ? '13px' : es58 ? '11px' : '12px';
+  const fsTot   = fmtA4 ? '13px' : es58 ? '12px' : '13px';
+  const fsTotMain = fmtA4 ? '20px' : es58 ? '16px' : '18px';
+  const pageMargin = fmtA4 ? '12mm' : es58 ? '1mm 2mm' : '2mm 3mm';
   const fechaTxt = parseFecha(v.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const items = (v.items||[]).map(it =>
-    `<tr><td style="padding:4px 0;">${escHtml(it.name)}</td><td style="padding:4px 0;text-align:center;">${it.qty}</td><td style="padding:4px 0;text-align:right;">$${Number(it.subtotal).toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr>`
-  ).join('');
-  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ticket #${v.id}</title>
-    <style>@page{size:${es80?'80mm auto':'A4'};margin:6mm;}body{font-family:monospace;margin:0;padding:0;background:#fff;color:#000;font-size:${es80?'11px':'13px'};}.t{width:${es80?'72mm':'180mm'};max-width:100%;margin:0 auto;}.c{text-align:center;}.l{border-top:1px dashed #000;margin:10px 0;}.r{display:flex;justify-content:space-between;font-size:${es80?'12px':'13px'};margin:4px 0;}.r.m{font-weight:700;font-size:${es80?'14px':'16px'};}table{width:100%;border-collapse:collapse;font-size:${es80?'10px':'12px'};}</style></head>
-    <body><div class="t">${cfg.logo?`<div class="c"><img src="${escHtml(cfg.logo)}" style="max-width:100%;max-height:60px;"></div>`:''}<div class="c"><div style="font-size:${es80?'18px':'24px'};font-weight:700;">${escHtml(cfg.nombre)}</div>${cfg.direccion?`<div style="font-size: 11.5px;">${escHtml(cfg.direccion)}</div>`:''}</div><div class="l"></div><div>Venta: #${v.id}</div><div>Fecha: ${escHtml(fechaTxt)}</div><div>Método: ${escHtml(v.payment_method||'-')}</div>${v.status==='anulada'?`<div style="color:red;font-weight:700;">*** VENTA ANULADA ***</div>`:''}
-    <div class="l"></div><table><thead><tr><th style="text-align:left;">Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Sub</th></tr></thead><tbody>${items}</tbody></table><div class="l"></div><div class="r m"><span>TOTAL:</span><span>$${Number(v.total).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>${v.cash_received?`<div class="r"><span>Recibido:</span><span>$${Number(v.cash_received).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>`:''}<div class="l"></div><div class="c" style="font-size: 11.5px;">${escHtml(cfg.footer)}</div></div></body></html>`;
-  const w = window.open('','_blank',`width=${es80?420:900},height=700`);
+  const money = n => '$' + Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+  const vuelto = v.cash_received ? Math.max(0, Number(v.cash_received) - Number(v.total)) : 0;
+  const cliente = v.cliente_nombre || 'Consumidor Final';
+
+  const itemsHtml = (v.items || []).map(it => `
+    <tr>
+      <td style="padding:5px 0 3px;border-bottom:1px dotted #ddd;font-size:${fsItem};font-weight:700;">${escHtml(it.name)}</td>
+      <td style="padding:5px 0 3px;border-bottom:1px dotted #ddd;text-align:center;font-size:${fsItem};">${it.qty}</td>
+      <td style="padding:5px 0 3px;border-bottom:1px dotted #ddd;text-align:right;font-size:${fsItem};font-weight:700;">${money(it.subtotal)}</td>
+    </tr>`).join('');
+
+  const logoHtml = cfg.logo
+    ? `<div style="text-align:center;margin-bottom:8px;"><img src="${escHtml(cfg.logo)}" style="max-width:100%;max-height:120px;object-fit:contain;"></div>`
+    : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ticket #${v.id}</title>
+<style>
+  * { box-sizing:border-box;margin:0;padding:0; }
+  @page { size: ${paperWidth} auto; margin: ${pageMargin}; }
+  @media print { html, body { width: ${paperWidth}; } }
+  body { font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background:#fff;color:#1a1a1a;font-size:${fsBase};-webkit-font-smoothing:antialiased; }
+  .ticket { width:100%;max-width:${fmtA4?'200mm':paperWidth};margin:0 auto;padding:${fmtA4?'10px 14px':'6px 4px'}; }
+  .center { text-align:center; }
+  .bold { font-weight:700; }
+  .line-solid { border-top:1px solid #1a1a1a;margin:7px 0; }
+  .line-dashed { border-top:1px dashed #999;margin:6px 0; }
+  .nombre-negocio { font-size:${fsTitle};font-weight:700;line-height:1.25;margin-bottom:3px; }
+  .meta-row { display:flex;justify-content:space-between;font-size:${fsMeta};margin:2px 0; }
+  table { width:100%;border-collapse:collapse; }
+  th { font-size:${fsSmall};font-weight:700;color:#555;border-bottom:1px solid #000;padding:3px 0; }
+  th:first-child { text-align:left; }
+  th:nth-child(2) { text-align:center;width:28px; }
+  th:last-child { text-align:right; }
+  .tot-row { display:flex;justify-content:space-between;font-size:${fsTot};padding:2px 0; }
+  .tot-main { font-size:${fsTotMain};font-weight:700;padding:5px 0 2px;border-top:1px solid #000;margin:5px 0 2px; }
+  .footer-txt { text-align:center;font-size:${fsMeta};font-weight:600;margin-top:10px; }
+  .anulada-txt { text-align:center;font-size:${fsMeta};font-weight:700;color:#c00;margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="ticket">
+  ${logoHtml}
+  <div class="center">
+    <div class="nombre-negocio">${escHtml(cfg.nombre)}</div>
+    ${cfg.direccion ? `<div style="font-size:${fsMeta};">${escHtml(cfg.direccion)}</div>` : ''}
+    ${cfg.telefono ? `<div style="font-size:${fsMeta};">Tel: ${escHtml(cfg.telefono)}</div>` : ''}
+  </div>
+  <div class="line-solid"></div>
+  <div class="meta-row"><span>Comprobante N°</span><span class="bold">${v.id}</span></div>
+  <div class="meta-row"><span>Fecha:</span><span>${escHtml(fechaTxt)}</span></div>
+  <div class="meta-row"><span>Cliente:</span><span class="bold">${escHtml(cliente)}</span></div>
+  ${v.status === 'anulada' ? `<div class="anulada-txt">*** VENTA ANULADA ***</div>` : ''}
+  <div class="line-dashed"></div>
+  <table>
+    <thead><tr><th>Producto</th><th style="text-align:center;">Cant</th><th style="text-align:right;">Total</th></tr></thead>
+    <tbody>${itemsHtml}</tbody>
+  </table>
+  <div class="tot-row tot-main"><span>Total</span><span>${money(v.total)}</span></div>
+  <div class="line-dashed"></div>
+  <div class="meta-row bold"><span>Pagos:</span><span></span></div>
+  <div class="meta-row"><span>${escHtml(v.payment_method || '-')}</span><span>${money(v.cash_received || v.total)}</span></div>
+  ${vuelto > 0 ? `<div class="meta-row bold"><span>Vuelto</span><span>${money(vuelto)}</span></div>` : ''}
+  <div class="line-dashed"></div>
+  <div class="footer-txt">${escHtml(cfg.footer)}</div>
+</div>
+</body>
+</html>`;
+
+  const w = window.open('','_blank',`width=${winWidth},height=900`);
   if (!w) { alert('Permití ventanas emergentes'); return; }
   w.document.open(); w.document.write(html); w.document.close();
   w.focus(); setTimeout(()=>w.print(),250);

@@ -1,6 +1,10 @@
 'use strict';
 const express = require('express');
 const router  = express.Router();
+const { requireAuth } = require('../middlewares/auth.middleware');
+
+// Cobrar con Mercado Pago Point es una acción real de caja — requiere sesión.
+router.use(requireAuth);
 
 function getCfg() {
   try { return require('../services/config.service').getAll(); } catch(e) { return {}; }

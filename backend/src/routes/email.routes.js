@@ -2,6 +2,9 @@
 const express = require('express');
 const router  = express.Router();
 const { enviarComprobante } = require('../services/email.service');
+const { requireAuth } = require('../middlewares/auth.middleware');
+
+router.use(requireAuth);
 
 // POST /api/email/comprobante
 // Body: { sale_id, email_destino }

@@ -3,6 +3,9 @@ const express = require('express');
 const router  = express.Router();
 const svc     = require('../services/pedidos.service');
 const configSvc = require('../services/config.service');
+const { requireAuth } = require('../middlewares/auth.middleware');
+
+router.use(requireAuth);
 
 svc.initPedidosSchema();
 

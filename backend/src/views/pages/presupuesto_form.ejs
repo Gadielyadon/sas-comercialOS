@@ -263,29 +263,38 @@
                 <div class="section-title"><i class="bi bi-person-lines-fill"></i> Datos del cliente</div>
               </div>
               <div class="section-body">
+                <div class="field" style="position:relative;margin-bottom:14px;">
+                  <label><i class="bi bi-search"></i> Buscar cliente cargado</label>
+                  <input type="text" id="pptoClienteBuscar" autocomplete="off"
+                    placeholder="Escribí el nombre o CUIT/DNI para autocompletar…"
+                    oninput="buscarClientePpto(this.value)"
+                    onfocus="if(this.value.trim().length===0) buscarClientePpto('')">
+                  <div id="pptoClienteResultados" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:var(--bg-surface);border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;max-height:260px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+                  <div style="font-size: 12px;color:var(--text-muted);margin-top:4px;">Completa los campos de abajo con los datos ya guardados en Clientes. Podés editarlos igual para este presupuesto puntual.</div>
+                </div>
                 <div class="field-row">
                   <div class="field">
                     <label>Nombre / Razón social *</label>
-                    <input type="text" name="cliente_nombre" placeholder="Ej: Juan García" value="<%= presupuesto?.cliente_nombre || '' %>" required>
+                    <input type="text" name="cliente_nombre" id="ppto_cliente_nombre" placeholder="Ej: Juan García" value="<%= presupuesto?.cliente_nombre || '' %>" required>
                   </div>
                   <div class="field">
                     <label>CUIT / DNI</label>
-                    <input type="text" name="cliente_cuit" placeholder="20-12345678-9" value="<%= presupuesto?.cliente_cuit || '' %>">
+                    <input type="text" name="cliente_cuit" id="ppto_cliente_cuit" placeholder="20-12345678-9" value="<%= presupuesto?.cliente_cuit || '' %>">
                   </div>
                 </div>
                 <div class="field-row triple">
                   <div class="field">
                     <label>Email</label>
-                    <input type="email" name="cliente_email" placeholder="cliente@email.com" value="<%= presupuesto?.cliente_email || '' %>">
+                    <input type="email" name="cliente_email" id="ppto_cliente_email" placeholder="cliente@email.com" value="<%= presupuesto?.cliente_email || '' %>">
                   </div>
                   <div class="field">
                     <label>Teléfono</label>
-                    <input type="text" name="cliente_tel" placeholder="0381-4..." value="<%= presupuesto?.cliente_tel || '' %>">
+                    <input type="text" name="cliente_tel" id="ppto_cliente_tel" placeholder="0381-4..." value="<%= presupuesto?.cliente_tel || '' %>">
                   </div>
                   <div class="field">
                     <label>Condición IVA del cliente</label>
                     <% const _condCli = presupuesto?.cliente_cond_iva || 'Consumidor Final'; %>
-                    <select name="cliente_cond_iva">
+                    <select name="cliente_cond_iva" id="ppto_cliente_cond_iva">
                       <% ['Consumidor Final','Responsable Inscripto','Monotributista','Exento','No Responsable'].forEach(c => { %>
                       <option value="<%= c %>" <%= _condCli === c ? 'selected' : '' %>><%= c %></option>
                       <% }) %>
@@ -295,11 +304,11 @@
                 <div class="field-row">
                   <div class="field">
                     <label>Dirección</label>
-                    <input type="text" name="cliente_direccion" placeholder="Calle y número" value="<%= presupuesto?.cliente_direccion || '' %>">
+                    <input type="text" name="cliente_direccion" id="ppto_cliente_direccion" placeholder="Calle y número" value="<%= presupuesto?.cliente_direccion || '' %>">
                   </div>
                   <div class="field">
                     <label>Localidad</label>
-                    <input type="text" name="cliente_localidad" placeholder="Ej: San Fernando del Valle" value="<%= presupuesto?.cliente_localidad || '' %>">
+                    <input type="text" name="cliente_localidad" id="ppto_cliente_localidad" placeholder="Ej: San Fernando del Valle" value="<%= presupuesto?.cliente_localidad || '' %>">
                   </div>
                 </div>
               </div>
@@ -604,6 +613,61 @@ const escHTML = s => String(s || '')
   .replace(/"/g, '&quot;')
   .replace(/</g, '&lt;')
   .replace(/>/g, '&gt;');
+
+// ── Buscador de cliente (autocompleta desde la base de Clientes) ──
+let _pptoClienteDebounce = null;
+function buscarClientePpto(q) {
+  clearTimeout(_pptoClienteDebounce);
+  _pptoClienteDebounce = setTimeout(async () => {
+    try {
+      const url = q && q.trim() ? '/api/clientes?q=' + encodeURIComponent(q.trim()) : '/api/clientes';
+      const r = await fetch(url);
+      const list = r.ok ? await r.json() : [];
+      renderPptoClienteResultados(list.slice(0, 8), q);
+    } catch (e) { /* silencioso: si falla, el usuario sigue tipeando a mano */ }
+  }, 200);
+}
+
+function renderPptoClienteResultados(list, q) {
+  const drop = document.getElementById('pptoClienteResultados');
+  if (!list || !list.length) {
+    drop.innerHTML = `<div style="padding:10px 12px;font-size: 13px;color:var(--text-secondary);">Sin clientes guardados${q ? ` para "${escHTML(q)}"` : ''}. Completá los datos manualmente abajo.</div>`;
+    drop.style.display = 'block';
+    return;
+  }
+  drop.innerHTML = list.map(c => {
+    const nom = c.nombre || '';
+    const doc = c.documento || '';
+    return `<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-color);font-size: 14px;" onmouseenter="this.style.background='rgba(0,0,0,.03)'" onmouseleave="this.style.background=''" onmousedown="elegirClientePpto(${c.id})">
+      <div style="font-weight:700;">${escHTML(nom)}</div>
+      ${doc ? `<div style="font-size: 12px;color:var(--text-secondary);">${escHTML(doc)}</div>` : ''}
+    </div>`;
+  }).join('');
+  drop.style.display = 'block';
+}
+
+async function elegirClientePpto(id) {
+  document.getElementById('pptoClienteResultados').style.display = 'none';
+  try {
+    const r = await fetch('/api/clientes/' + id);
+    if (!r.ok) return;
+    const c = await r.json();
+    document.getElementById('ppto_cliente_nombre').value    = c.nombre    || '';
+    document.getElementById('ppto_cliente_cuit').value      = c.documento || '';
+    document.getElementById('ppto_cliente_email').value     = c.email     || '';
+    document.getElementById('ppto_cliente_tel').value       = c.telefono  || '';
+    document.getElementById('ppto_cliente_direccion').value = c.direccion || '';
+    document.getElementById('ppto_cliente_localidad').value = c.localidad || '';
+    if (c.cond_iva) document.getElementById('ppto_cliente_cond_iva').value = c.cond_iva;
+    document.getElementById('pptoClienteBuscar').value = c.nombre || '';
+  } catch (e) { /* si falla la carga, no rompe el formulario */ }
+}
+
+document.addEventListener('click', (e) => {
+  const drop = document.getElementById('pptoClienteResultados');
+  const buscar = document.getElementById('pptoClienteBuscar');
+  if (drop && !drop.contains(e.target) && e.target !== buscar) drop.style.display = 'none';
+});
 
 // ── Datos del servidor ──
 const PRODUCTOS_SISTEMA = <%- JSON.stringify(productos) %>;

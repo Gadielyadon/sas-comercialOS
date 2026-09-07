@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= empresaNombre || 'Catálogo' %></title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0C0E14;color:#f4f4f5;font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  h1{font-size:18px;font-weight:800;margin-bottom:8px;}
+  p{color:#a1a1aa;font-size:14px;}
+</style>
+</head>
+<body>
+  <div>
+    <h1><%= empresaNombre || 'Este catálogo' %></h1>
+    <p>El catálogo todavía no está disponible.</p>
+  </div>
+</body>
+</html>

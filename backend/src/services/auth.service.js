@@ -10,6 +10,10 @@ const SECCIONES = [
   'inventario', 'stock', 'proveedores', 'gastos'
 ];
 
+// Acciones sensibles — a diferencia de las secciones, estas NO se habilitan
+// solas: un empleado nuevo arranca SIN ninguna, hay que dárselas a mano.
+const ACCIONES = ['anular_ventas', 'ver_costos', 'dar_descuentos'];
+
 // Permisos por defecto para empleados nuevos
 const PERMISOS_DEFAULT_EMPLEADO = ['dashboard', 'ventas', 'historial', 'caja'];
 
@@ -31,6 +35,9 @@ function initUsersTable() {
   try { run(`ALTER TABLE users ADD COLUMN permisos    TEXT    DEFAULT NULL`); } catch(e) {}
   try { run(`ALTER TABLE users ADD COLUMN sucursal_id INTEGER DEFAULT 1`);   } catch(e) {}
   try { run(`ALTER TABLE users ADD COLUMN pin         TEXT    DEFAULT NULL`); } catch(e) {}
+  // Acciones sensibles (anular ventas, ver costos, dar descuentos) — deniegan
+  // por defecto, a diferencia de "permisos" que por defecto dan acceso libre.
+  try { run(`ALTER TABLE users ADD COLUMN acciones    TEXT    DEFAULT NULL`); } catch(e) {}
 
   // Insertar admin inicial solo si no existe ningún usuario
   const existe = get('SELECT id FROM users LIMIT 1');
@@ -55,6 +62,18 @@ function parsePermisos(user) {
   }
 }
 
+/* ── Parsear acciones JSON → array — a diferencia de permisos, sin */
+/* ninguna cargada significa NINGUNA autorizada (deniega por defecto) ── */
+function parseAcciones(user) {
+  if (user.role === 'admin') return ACCIONES.slice(); // admin puede todo
+  try {
+    if (!user.acciones) return [];
+    return JSON.parse(user.acciones);
+  } catch(e) {
+    return [];
+  }
+}
+
 /* ── Verificar credenciales → devuelve user sin password ── */
 function login(username, password) {
   const user = get(
@@ -66,37 +85,44 @@ function login(username, password) {
   if (!ok) return null;
   const { password: _, ...safe } = user;
   safe.permisosArray = parsePermisos(safe);
+  safe.accionesArray = parseAcciones(safe);
   return safe;
 }
 
 /* ── CRUD usuarios ── */
 function listUsers() {
-  return all('SELECT id, username, nombre, role, activo, permisos, sucursal_id, created_at FROM users ORDER BY id');
+  return all('SELECT id, username, nombre, role, activo, permisos, acciones, sucursal_id, created_at FROM users ORDER BY id');
 }
 
 function findById(id) {
-  return get('SELECT id, username, nombre, role, activo, permisos, sucursal_id FROM users WHERE id = ?', [id]);
+  return get('SELECT id, username, nombre, role, activo, permisos, acciones, sucursal_id FROM users WHERE id = ?', [id]);
 }
 
-function createUser({ username, password, nombre, role, permisos, sucursal_id, pin }) {
+function createUser({ username, password, nombre, role, permisos, acciones, sucursal_id, pin }) {
   const existing = get('SELECT id FROM users WHERE username = ?', [username.trim().toLowerCase()]);
   if (existing) throw new Error('El nombre de usuario ya existe');
   const hash = bcrypt.hashSync(password, SALT_ROUNDS);
   const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
     ? JSON.stringify(permisos)
     : null;
+  const accionesJSON = (role === 'empleado' && Array.isArray(acciones))
+    ? JSON.stringify(acciones)
+    : null;
   const sucId = sucursal_id ? Number(sucursal_id) : 1;
   const pinLimpio = normalizarPin(pin);
   const r = run(
-    'INSERT INTO users (username, password, nombre, role, permisos, sucursal_id, pin) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON, sucId, pinLimpio]
+    'INSERT INTO users (username, password, nombre, role, permisos, acciones, sucursal_id, pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [username.trim().toLowerCase(), hash, nombre || username, role || 'empleado', permisosJSON, accionesJSON, sucId, pinLimpio]
   );
   return findById(r.lastInsertRowid);
 }
 
-function updateUser(id, { nombre, role, activo, permisos, sucursal_id, pin }) {
+function updateUser(id, { nombre, role, activo, permisos, acciones, sucursal_id, pin }) {
   const permisosJSON = (role === 'empleado' && Array.isArray(permisos))
     ? JSON.stringify(permisos)
+    : (role === 'admin' ? null : undefined);
+  const accionesJSON = (role === 'empleado' && Array.isArray(acciones))
+    ? JSON.stringify(acciones)
     : (role === 'admin' ? null : undefined);
 
   const sucId = sucursal_id !== undefined ? Number(sucursal_id) : null;
@@ -108,6 +134,7 @@ function updateUser(id, { nombre, role, activo, permisos, sucursal_id, pin }) {
       activo       = COALESCE(?, activo),
       sucursal_id  = COALESCE(?, sucursal_id),
       permisos = CASE WHEN ? IS NOT NULL THEN ? ELSE permisos END,
+      acciones = CASE WHEN ? IS NOT NULL THEN ? ELSE acciones END,
       pin = CASE WHEN ? = 1 THEN ? ELSE pin END
     WHERE id = ?`,
     [
@@ -117,6 +144,8 @@ function updateUser(id, { nombre, role, activo, permisos, sucursal_id, pin }) {
       sucId,
       permisosJSON !== undefined ? permisosJSON : null,
       permisosJSON !== undefined ? permisosJSON : null,
+      accionesJSON !== undefined ? accionesJSON : null,
+      accionesJSON !== undefined ? accionesJSON : null,
       pinLimpio !== undefined ? 1 : 0,
       pinLimpio !== undefined ? pinLimpio : null,
       id
@@ -171,6 +200,6 @@ function deleteUser(id) {
 module.exports = {
   initUsersTable, login, listUsers, findById,
   createUser, updateUser, changePassword, deleteUser,
-  parsePermisos, SECCIONES, PERMISOS_DEFAULT_EMPLEADO,
+  parsePermisos, parseAcciones, SECCIONES, ACCIONES, PERMISOS_DEFAULT_EMPLEADO,
   listEmpleadosActivos, verificarPin
 };

@@ -7,6 +7,11 @@ const path = require('path');
 const afipSvc = require('../services/afip.service');
 const configService = require('../services/config.service');
 const { get, all } = require('../db');
+const { requireAuth, requireAccion } = require('../middlewares/auth.middleware');
+
+// Emitir facturas/NC ante AFIP es una acción fiscal real — no puede quedar
+// abierta a cualquiera que le pegue a la URL sin haber iniciado sesión.
+router.use(requireAuth);
 
 function facturacionHabilitada() {
   const cfg = configService.getAll();
@@ -31,6 +36,8 @@ function getAfipErrorStatus(message = '') {
 
   if (
     msg.includes('ya tiene factura emitida') ||
+    msg.includes('no tiene una factura afip emitida') ||
+    msg.includes('ya se emitió la nota de crédito') ||
     msg.includes('venta no encontrada') ||
     msg.includes('no tiene items') ||
     msg.includes('tipo inválido') ||
@@ -149,6 +156,49 @@ router.post('/emitir', async (req, res) => {
   } catch (e) {
     console.error('AFIP emitir error:', e.message);
     res.status(getAfipErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /afip/nota-credito
+// Emite la Nota de Crédito TOTAL de una venta ya facturada — se usa antes
+// de anular una venta que tiene CAE, para no dejarla "viva" en AFIP.
+// ─────────────────────────────────────────────────────────────
+router.post('/nota-credito', requireAccion('anular_ventas'), async (req, res) => {
+  try {
+    if (!facturacionHabilitada()) {
+      return res.status(403).json({
+        error: 'La facturación electrónica está deshabilitada en Ajustes',
+      });
+    }
+
+    const { sale_id, motivo } = req.body;
+    if (!sale_id) {
+      return res.status(400).json({ error: 'sale_id requerido' });
+    }
+
+    const resultado = await afipSvc.emitirNotaCredito({
+      sale_id: Number(sale_id),
+      motivo: motivo || null,
+    });
+
+    res.json(resultado);
+  } catch (e) {
+    console.error('AFIP nota-credito error:', e.message);
+    res.status(getAfipErrorStatus(e.message)).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// GET /afip/nota-credito/:sale_id
+// Devuelve la Nota de Crédito emitida para una venta (o null)
+// ─────────────────────────────────────────────────────────────
+router.get('/nota-credito/:sale_id', (req, res) => {
+  try {
+    const nc = afipSvc.getNotaCreditoBySaleId(Number(req.params.sale_id));
+    res.json(nc || null);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

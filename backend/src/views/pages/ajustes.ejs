@@ -193,6 +193,7 @@
         <a href="#sec-afip"><i class="bi bi-file-earmark-text"></i> AFIP/ARCA</a>
         <a href="#sec-email"><i class="bi bi-envelope"></i> Email</a>
         <a href="#sec-balanza"><i class="bi bi-speedometer2"></i> Balanza</a>
+        <a href="#sec-backups"><i class="bi bi-hdd-fill"></i> Backups</a>
         <a href="#sec-apariencia"><i class="bi bi-moon-stars"></i> Apariencia</a>
       </div>
 
@@ -248,7 +249,7 @@
             <div class="aj-field">
               <label>CUIT</label>
               <input type="text" id="aj_cuit" placeholder="Ej: 27-26433670-3">
-              <span style="font-size: 12px;color:var(--text-muted);margin-top:3px;">Si AFIP está conectado, se usa el CUIT de AFIP.</span>
+              <span style="font-size: 12px;color:var(--text-muted);margin-top:3px;">Este CUIT es el que se usa también para AFIP/ARCA.</span>
             </div>
             <div class="aj-field">
               <label>Inicio de actividades</label>
@@ -461,7 +462,8 @@
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>CUIT del emisor</label>
-                <input type="text" id="afip_cuit" placeholder="20-12345678-9" maxlength="13" value="<%= config.afip_cuit || '' %>"/>
+                <div id="afip_cuit_display" style="padding:9px 12px;border-radius:8px;border:1.5px dashed var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size: 15px;">—</div>
+                <span style="font-size: 12px;color:var(--text-muted);margin-top:3px;">Es el mismo CUIT de <a href="#sec-empresa" style="color:var(--color-primary);font-weight:600;">Datos de la empresa</a>. Se edita ahí, una sola vez.</span>
               </div>
               <div class="aj-field">
                 <label>Punto de venta (nro.)</label>
@@ -498,12 +500,8 @@
             <div class="aj-grid aj-grid-2" style="margin-bottom:14px;">
               <div class="aj-field">
                 <label>Condición IVA del emisor</label>
-                <select id="empresa_cond_iva">
-                  <option value="Monotributista"      <%= (config.empresa_cond_iva||'').includes('Mono') ? 'selected' : '' %>>Monotributista</option>
-                  <option value="Responsable Inscripto" <%= (config.empresa_cond_iva||'').includes('Responsable') || !config.empresa_cond_iva ? 'selected' : '' %>>Responsable Inscripto</option>
-                  <option value="Exento"              <%= (config.empresa_cond_iva||'').includes('Exento') ? 'selected' : '' %>>Exento</option>
-                  <option value="No Responsable"      <%= (config.empresa_cond_iva||'').includes('No Responsable') ? 'selected' : '' %>>No Responsable</option>
-                </select>
+                <div id="empresa_cond_iva_display" style="padding:9px 12px;border-radius:8px;border:1.5px dashed var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-size: 15px;">—</div>
+                <span style="font-size: 12px;color:var(--text-muted);margin-top:3px;">Determina qué tipo de comprobante (A/B/C) podés emitir. Se edita en <a href="#sec-empresa" style="color:var(--color-primary);font-weight:600;">Datos de la empresa</a>.</span>
               </div>
               <div class="aj-field">
                 <label>Ambiente AFIP</label>
@@ -638,6 +636,38 @@
         </div>
       </div>
 
+      <!-- ══ BACKUPS ══ -->
+      <div class="aj-section" id="sec-backups">
+        <div class="aj-section-header">
+          <div class="aj-section-icon" style="background:linear-gradient(135deg,#0d9488,#0f766e);">
+            <i class="bi bi-hdd-fill"></i>
+          </div>
+          <div>
+            <div class="aj-section-title">Copias de seguridad</div>
+            <div class="aj-section-desc">Todo tu negocio vive en un archivo. Estas copias te salvan si el servidor falla.</div>
+          </div>
+        </div>
+        <div class="aj-section-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:14px;">
+            <div>
+              <div style="font-size: 15.5px;font-weight:700;color:var(--text-primary);">Generar copia cuando quieras</div>
+              <div style="font-size: 13px;color:var(--text-secondary);margin-top:2px;">No se genera nada solo — vos decidís cuándo. Un buen hábito: una copia antes de un cambio grande, o cada tanto sin más.</div>
+            </div>
+            <button onclick="generarBackupAhora()" id="btnBackupAhora" style="flex-shrink:0;padding:9px 16px;border-radius:8px;border:none;background:var(--color-primary);color:#fff;font-size: 14px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              <i class="bi bi-plus-circle"></i> Generar copia ahora
+            </button>
+          </div>
+
+          <div id="backupsLista" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="text-align:center;padding:20px;color:var(--text-muted);font-size: 14px;">Cargando copias…</div>
+          </div>
+
+          <div style="margin-top:12px;font-size: 12.5px;color:var(--text-muted);">
+            <i class="bi bi-info-circle"></i> Descargá una copia de vez en cuando y guardala en otro lugar (tu PC, Google Drive) — si el servidor se rompe del todo, las copias que están solo ahí adentro se pierden con él.
+          </div>
+        </div>
+      </div>
+
       <!-- ══ APARIENCIA ══ -->
       <div class="aj-section" id="sec-apariencia">
         <div class="aj-section-header">
@@ -754,6 +784,7 @@
           {key:'stock',        label:'Stock',       icon:'bi-clipboard2-check'},
           {key:'proveedores',  label:'Proveedores', icon:'bi-truck'},
           {key:'gastos',       label:'Gastos',      icon:'bi-receipt'},
+          {key:'importar',     label:'Importar',    icon:'bi-file-earmark-arrow-up'},
         ];
         %>
         <div id="permisosGrid">
@@ -776,6 +807,31 @@
             style="flex:1;padding:6px;border:1px solid var(--border-color);border-radius:6px;background:transparent;font-size: 12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:var(--font-body);">
             ✕ Quitar todos
           </button>
+        </div>
+
+        <!-- ── ACCIONES — apagadas por defecto, hay que habilitarlas a mano ── -->
+        <label style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary);display:block;margin:16px 0 6px;">Acciones sensibles</label>
+        <div style="font-size: 12px;color:var(--text-muted);margin-bottom:8px;">Estas empiezan APAGADAS para todo empleado nuevo — se habilitan una por una, a propósito.</div>
+        <%
+        const _acciones = [
+          {key:'anular_ventas',  label:'Anular ventas',        icon:'bi-x-octagon',      desc:'Puede anular ventas propias y ajenas (emite Nota de Crédito si ya estaban facturadas).'},
+          {key:'ver_costos',     label:'Ver costos y márgenes',icon:'bi-graph-up-arrow', desc:'Ve el costo y la ganancia de cada producto en Inventario.'},
+          {key:'dar_descuentos', label:'Dar descuentos',       icon:'bi-percent',        desc:'Puede aplicar descuentos manuales al cobrar una venta.'},
+        ];
+        %>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <% _acciones.forEach(a => { %>
+          <label id="accion_lbl_<%= a.key %>"
+            onclick="toggleAccion('<%= a.key %>')"
+            style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .18s;user-select:none;">
+            <input type="checkbox" id="accion_<%= a.key %>" value="<%= a.key %>" style="display:none;">
+            <i class="bi <%= a.icon %>" style="font-size: 19px;color:var(--text-secondary);flex-shrink:0;"></i>
+            <div style="min-width:0;">
+              <div style="font-size: 14px;font-weight:700;color:var(--text-primary);"><%= a.label %></div>
+              <div style="font-size: 12px;color:var(--text-muted);"><%= a.desc %></div>
+            </div>
+          </label>
+          <% }) %>
         </div>
       </div>
 
@@ -895,6 +951,17 @@ function syncFacturacionUI() {
   if (chk) toggleFacturacionHabilitada(chk);
 }
 
+// Muestra en la sección AFIP el CUIT y la condición IVA cargados arriba, en
+// "Datos de la empresa" — son el mismo dato, no hay que cargarlo dos veces.
+function actualizarDisplaysAfip() {
+  const cuitEl = document.getElementById('aj_cuit');
+  const condEl = document.getElementById('aj_cond_iva_presup');
+  const cuitDisplay = document.getElementById('afip_cuit_display');
+  const condDisplay = document.getElementById('empresa_cond_iva_display');
+  if (cuitDisplay) cuitDisplay.textContent = (cuitEl?.value || '').trim() || 'Sin cargar — completalo en Datos de la empresa';
+  if (condDisplay) condDisplay.textContent = condEl?.value || 'Responsable Inscripto';
+}
+
 async function cargarConfig() {
   try { const r = await fetch('/api/config'); _config = await r.json(); } catch(e) { _config = {}; }
 
@@ -911,12 +978,12 @@ async function cargarConfig() {
   const _condPresup = document.getElementById('aj_cond_iva_presup');
   if (_condPresup) {
     _condPresup.value = _config.empresa_cond_iva || 'Responsable Inscripto';
-    // Mantener sincronizado con el selector de la sección AFIP
-    _condPresup.addEventListener('change', () => {
-      const afipSel = document.getElementById('empresa_cond_iva');
-      if (afipSel) afipSel.value = _condPresup.value;
-    });
+    // La sección AFIP solo MUESTRA estos datos (de lectura) — se editan acá,
+    // una sola vez, para no tener el CUIT / condición IVA cargados dos veces.
+    _condPresup.addEventListener('change', actualizarDisplaysAfip);
   }
+  if (_cuitEl) _cuitEl.addEventListener('input', actualizarDisplaysAfip);
+  actualizarDisplaysAfip();
 
   const formato = _config.ticket_formato || '58mm';
   document.getElementById('aj_fmt58').checked = formato === '58mm';
@@ -1024,12 +1091,14 @@ async function guardarAjustes() {
     balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
     balanza_prefijo:              document.getElementById('balanza_prefijo')?.value || '2',
     balanza_digitos_plu:          document.getElementById('balanza_digitos_plu')?.value || '5',
-    afip_cuit:                    (document.getElementById('afip_cuit')?.value        || '').trim(),
+    // El CUIT y la condición IVA para AFIP son los mismos que "Datos de la
+    // empresa" — un solo lugar donde cargarlos, sin duplicar.
+    afip_cuit:                    (document.getElementById('aj_cuit')?.value || '').trim(),
     afip_punto_venta:             (document.getElementById('afip_punto_venta')?.value || '1').trim(),
     afip_cert_path:               (document.getElementById('afip_cert_path')?.value   || 'certs/cert.crt').trim(),
     afip_key_path:                (document.getElementById('afip_key_path')?.value    || 'certs/private.key').trim(),
     afip_env:                     document.getElementById('afip_env')?.value || 'homologacion',
-    empresa_cond_iva:             (document.getElementById('empresa_cond_iva')?.value || 'Responsable Inscripto').trim(),
+    empresa_cond_iva:             (document.getElementById('aj_cond_iva_presup')?.value || 'Responsable Inscripto').trim(),
     email_gmail:                  (document.getElementById('email_gmail')?.value      || '').trim(),
     email_app_pass:               (document.getElementById('email_app_pass')?.value   || '').trim(),
   };
@@ -1330,6 +1399,42 @@ function getPermisosSeleccionados() {
   });
 }
 
+// ── Acciones sensibles (anular ventas / ver costos / dar descuentos) ──
+const ACCIONES_KEYS = ['anular_ventas', 'ver_costos', 'dar_descuentos'];
+
+function toggleAccion(key) {
+  const chk = document.getElementById('accion_' + key);
+  if (!chk) return;
+  chk.checked = !chk.checked;
+  aplicarEstiloAccion(key, chk.checked);
+}
+
+function aplicarEstiloAccion(key, activo) {
+  const lbl = document.getElementById('accion_lbl_' + key);
+  if (!lbl) return;
+  if (activo) {
+    lbl.style.borderColor = '#dc2626';
+    lbl.style.background  = 'rgba(239,68,68,.06)';
+  } else {
+    lbl.style.borderColor = 'var(--border-color)';
+    lbl.style.background  = '';
+  }
+}
+
+function setAccionesActivas(lista) {
+  ACCIONES_KEYS.forEach(k => {
+    const chk = document.getElementById('accion_' + k);
+    if (chk) { chk.checked = (lista||[]).includes(k); aplicarEstiloAccion(k, chk.checked); }
+  });
+}
+
+function getAccionesSeleccionadas() {
+  return ACCIONES_KEYS.filter(k => {
+    const chk = document.getElementById('accion_' + k);
+    return chk && chk.checked;
+  });
+}
+
 function setRol(rol) {
   document.getElementById('u_role_admin').checked    = rol === 'admin';
   document.getElementById('u_role_empleado').checked = rol === 'empleado';
@@ -1360,6 +1465,7 @@ async function abrirModalUsuario() {
   document.getElementById('u_pass_label').textContent      = 'Contraseña';
   setRol('empleado');
   setPermisosActivos(['dashboard','ventas','historial','caja']);
+  setAccionesActivas([]); // arranca sin ninguna acción sensible habilitada
   document.getElementById('modalUsuario').classList.add('open');
   await cargarSucursalesEnSelect(1);
   setTimeout(() => document.getElementById('u_username').focus(), 80);
@@ -1382,6 +1488,10 @@ async function abrirEditarUsuario(u) {
     let perms = ['ventas','historial','caja'];
     try { if (u.permisos) perms = JSON.parse(u.permisos); } catch(e) {}
     setPermisosActivos(perms);
+
+    let acciones = [];
+    try { if (u.acciones) acciones = JSON.parse(u.acciones); } catch(e) {}
+    setAccionesActivas(acciones);
   }
   document.getElementById('modalUsuario').classList.add('open');
   await cargarSucursalesEnSelect(u.sucursal_id || 1);
@@ -1396,6 +1506,7 @@ async function guardarUsuario() {
   const password = document.getElementById('u_password').value;
   const pin      = document.getElementById('u_pin')?.value.trim() || '';
   const permisos = role === 'empleado' ? getPermisosSeleccionados() : null;
+  const acciones = role === 'empleado' ? getAccionesSeleccionadas() : null;
 
   if (pin && (pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin))) {
     showToast('El PIN debe tener entre 4 y 6 números', false);
@@ -1403,7 +1514,7 @@ async function guardarUsuario() {
   }
 
   if (_uEditId) {
-    const body = {nombre, role, permisos, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)};
+    const body = {nombre, role, permisos, acciones, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)};
     if (pin) body.pin = pin;
     const r = await fetch(`/api/users/${_uEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
     if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
@@ -1415,7 +1526,7 @@ async function guardarUsuario() {
     const username = document.getElementById('u_username').value.trim();
     if (!username) { showToast('El nombre de usuario es obligatorio', false); return; }
     if (!password || password.length < 4) { showToast('La contraseña debe tener al menos 4 caracteres', false); return; }
-    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, nombre:nombre||username, role, password, permisos, pin: pin || undefined, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)}) });
+    const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username, nombre:nombre||username, role, password, permisos, acciones, pin: pin || undefined, sucursal_id: Number(document.getElementById('u_sucursal_id')?.value||1)}) });
     if (!r.ok) { const e = await r.json(); showToast(e.error||'Error', false); return; }
   }
   cerrarModalUsuario();
@@ -1560,6 +1671,81 @@ document.addEventListener('DOMContentLoaded', () => {
   const temaActual = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
   actualizarBtnsTema(temaActual);
 });
+
+// ── Copias de seguridad ──────────────────────────────────────
+function _fmtTamanioBackup(bytes) {
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function _fmtFechaBackup(iso) {
+  return new Date(iso).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+async function cargarBackups() {
+  const cont = document.getElementById('backupsLista');
+  try {
+    const r = await fetch('/api/backups');
+    if (!r.ok) throw new Error('No se pudo obtener la lista');
+    const backups = await r.json();
+
+    if (!backups.length) {
+      cont.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size: 14px;">Todavía no hay copias generadas. La primera se va a crear sola en un rato, o generá una ahora con el botón de arriba.</div>`;
+      return;
+    }
+
+    cont.innerHTML = backups.map(b => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-surface);">
+        <div style="min-width:0;">
+          <div style="font-size: 14px;font-weight:700;color:var(--text-primary);">
+            ${b.filename.startsWith('manual_') ? '<i class="bi bi-hand-index-thumb" title="Generada a mano"></i> ' : '<i class="bi bi-clock-history" title="Automática"></i> '}
+            ${_fmtFechaBackup(b.created_at)}
+          </div>
+          <div style="font-size: 12px;color:var(--text-muted);">${_fmtTamanioBackup(b.size)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <a href="/api/backups/${encodeURIComponent(b.filename)}/download" style="padding:6px 12px;border-radius:7px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 13px;font-weight:700;text-decoration:none;">
+            <i class="bi bi-download"></i> Descargar
+          </a>
+          <button onclick="borrarBackup('${b.filename.replace(/'/g,"")}')" style="padding:6px 10px;border-radius:7px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;font-size: 13px;font-weight:700;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    cont.innerHTML = `<div style="text-align:center;padding:20px;color:#dc2626;font-size: 14px;">No se pudo cargar la lista de copias: ${e.message}</div>`;
+  }
+}
+
+async function generarBackupAhora() {
+  const btn = document.getElementById('btnBackupAhora');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
+  try {
+    const r = await fetch('/api/backups', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error al generar la copia');
+    await cargarBackups();
+  } catch (e) {
+    alert('No se pudo generar la copia: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-plus-circle"></i> Generar copia ahora';
+  }
+}
+
+async function borrarBackup(filename) {
+  if (!confirm('¿Borrar esta copia de seguridad? No se puede deshacer.')) return;
+  try {
+    const r = await fetch('/api/backups/' + encodeURIComponent(filename), { method: 'DELETE' });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Error al borrar'); }
+    await cargarBackups();
+  } catch (e) {
+    alert('No se pudo borrar: ' + e.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', cargarBackups);
 
 // ── Sucursales en modal de usuario ──────────────────────────
 let _sucursalesCache = [];

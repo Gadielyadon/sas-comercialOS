@@ -1,4 +1,17 @@
 const productsService = require('../services/products.service');
+const { tieneAccion } = require('../middlewares/auth.middleware');
+
+// Costo y margen son datos sensibles — solo se devuelven si el usuario
+// logueado tiene la acción "ver_costos" habilitada (admin siempre la tiene).
+function ocultarCostosSiCorresponde(data, req) {
+  const puedeVerCostos = tieneAccion(req.session?.user, 'ver_costos');
+  if (puedeVerCostos) return data;
+  const limpiar = (p) => {
+    if (p && typeof p === 'object') { delete p.price_cost; delete p.margen; }
+    return p;
+  };
+  return Array.isArray(data) ? data.map(limpiar) : limpiar(data);
+}
 
 exports.list = (req, res) => {
   try {
@@ -10,9 +23,9 @@ exports.list = (req, res) => {
       ? Number(sucIdQuery)
       : (res.locals.sucursal_filtro ?? null);
     if (q) {
-      return res.json(productsService.search(q, limit ? parseInt(limit, 10) : 8, sucursal_id));
+      return res.json(ocultarCostosSiCorresponde(productsService.search(q, limit ? parseInt(limit, 10) : 8, sucursal_id), req));
     }
-    res.json(productsService.list(sucursal_id));
+    res.json(ocultarCostosSiCorresponde(productsService.list(sucursal_id), req));
   } catch (err) {
     console.error('products.controller.list =>', err);
     res.status(500).json({ error: 'Error al listar productos' });
@@ -43,6 +56,8 @@ exports.create = (req, res) => {
       price_tarjeta,
       hay,
       price_tiers,
+      publicar_vidriera,
+      stock_min,
     } = req.body || {};
 
     if (!sku || !name || price === undefined) {
@@ -71,6 +86,8 @@ exports.create = (req, res) => {
       price_mayorista: price_mayorista !== undefined && price_mayorista !== null && price_mayorista !== '' ? Number(price_mayorista) : null, // ← AGREGADO
       qty_mayorista:   qty_mayorista   !== undefined && qty_mayorista   !== null && qty_mayorista   !== '' ? Number(qty_mayorista)   : null, // ← AGREGADO
       price_tiers: price_tiers !== undefined ? price_tiers : null, // ← escalones (precios por cantidad)
+      publicar_vidriera: publicar_vidriera !== undefined ? (publicar_vidriera ? 1 : 0) : 1,
+      stock_min: stock_min !== undefined && stock_min !== null && stock_min !== '' ? Number(stock_min) : null,
     });
 
     res.status(201).json(created);
@@ -87,9 +104,12 @@ exports.create = (req, res) => {
 
 exports.getBySku = (req, res) => {
   try {
-    const row = productsService.findBySku(req.params.sku);
+    const sucursal_id = req.query.sucursal_id
+      ? Number(req.query.sucursal_id)
+      : (res.locals.sucursal_filtro ?? res.locals.sucursal_id ?? null);
+    const row = productsService.findBySku(req.params.sku, sucursal_id);
     if (!row) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json(row);
+    res.json(ocultarCostosSiCorresponde(row, req));
   } catch (err) {
     console.error('products.controller.getBySku =>', err);
     res.status(500).json({ error: 'Error al buscar producto' });
@@ -121,6 +141,8 @@ exports.update = (req, res) => {
       price_tarjeta,
       hay,
       price_tiers,
+      publicar_vidriera,
+      stock_min,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -163,6 +185,8 @@ exports.update = (req, res) => {
           ? (price_tarjeta === null || price_tarjeta === '' ? null : Number(price_tarjeta))
           : undefined,
       price_tiers: price_tiers !== undefined ? price_tiers : undefined, // ← escalones (precios por cantidad)
+      publicar_vidriera: publicar_vidriera !== undefined ? (publicar_vidriera ? 1 : 0) : undefined,
+      stock_min: stock_min !== undefined ? (stock_min === null || stock_min === '' ? null : Number(stock_min)) : undefined,
     });
 
     if (!updated) return res.status(404).json({ error: 'Producto no encontrado' });

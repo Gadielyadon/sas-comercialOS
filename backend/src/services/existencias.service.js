@@ -118,7 +118,35 @@ function movimientos(sku, limit = 30) {
     [String(sku), Number(limit)]);
 }
 
+function getStockMin(sku, sucursal_id) {
+  const r = get(`SELECT stock_min FROM existencias WHERE sku = ? AND sucursal_id = ?`,
+    [String(sku), Number(sucursal_id)]);
+  return r ? r.stock_min : null;
+}
+
+// Fija (o borra, con null) el umbral de stock mínimo de un producto en un lugar
+function setStockMin(sku, sucursal_id, stock_min) {
+  const v = (stock_min === '' || stock_min === undefined || stock_min === null) ? null : Number(stock_min);
+  run(`INSERT INTO existencias (sku, sucursal_id, stock_min) VALUES (?, ?, ?)
+       ON CONFLICT(sku, sucursal_id) DO UPDATE SET stock_min = excluded.stock_min, updated_at = datetime('now','localtime')`,
+    [String(sku), Number(sucursal_id), v]);
+  return { stock_min: v };
+}
+
+// Productos en o por debajo de su stock mínimo, en un lugar puntual (o todos)
+function listStockBajo(sucursal_id = null) {
+  const where = sucursal_id ? `AND e.sucursal_id = ${Number(sucursal_id)}` : '';
+  return all(`
+    SELECT e.sku, e.sucursal_id, e.stock, e.stock_min, p.name, p.category
+    FROM existencias e
+    JOIN products p ON p.sku = e.sku
+    WHERE e.stock_min IS NOT NULL AND e.stock <= e.stock_min ${where}
+    ORDER BY (e.stock - e.stock_min) ASC
+  `);
+}
+
 module.exports = {
   getStock, getStockTodos, mapaSucursal, ensureRow,
   setStock, adjustStock, transferStock, movimientos,
+  getStockMin, setStockMin, listStockBajo,
 };

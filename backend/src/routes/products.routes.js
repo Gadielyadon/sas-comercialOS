@@ -60,6 +60,7 @@ router.post('/', (req, res) => {
       en_promo = 0,
       imagen = null,
       price_tarjeta = null,
+      stock_min = null,
     } = req.body || {};
 
     if (!sku || !name || price === undefined || stock === undefined) {
@@ -75,6 +76,7 @@ router.post('/', (req, res) => {
       venta_sin_stock: req.body.venta_sin_stock  ?? 0,
       price_tarjeta,
       price_tiers: req.body.price_tiers ?? null,
+      stock_min,
     });
 
     try {
@@ -115,6 +117,7 @@ router.put('/:sku', (req, res) => {
       price_cost, margen, price_promo, en_promo,
       sucursal_id, imagen, price_mayorista,
       qty_mayorista, venta_sin_stock, price_tarjeta, price_tiers,
+      stock_min,
     } = req.body || {};
 
     const updated = productsService.updateBySku(sku, {
@@ -122,6 +125,7 @@ router.put('/:sku', (req, res) => {
       price_cost, margen, price_promo, en_promo, sucursal_id,
       imagen: imagen !== undefined ? imagen : undefined,
       price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, price_tiers,
+      stock_min,
     });
 
     try {

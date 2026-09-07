@@ -122,7 +122,11 @@ app.use((req, res, next) => {
 // ── Protección de rutas: redirige al login si no hay sesión ───
 app.use((req, res, next) => {
   const openPaths = ['/login', '/logout'];
-  if (openPaths.includes(req.path)) return next();
+  // La vidriera digital (catálogo público) y su panel oculto de activación
+  // no requieren sesión — son para clientes finales y para vos por URL secreta.
+  if (openPaths.includes(req.path) || req.path === '/vidriera' || req.path.startsWith('/admin/vidriera')) {
+    return next();
+  }
 
   // Si no hay sesión, redirigir al login
   if (!req.session.user) {
@@ -315,6 +319,13 @@ try {
   console.log('✅  Gastos routes OK');
 } catch(e) { console.log('⚠️   gastos.routes no encontrado:', e.message); }
 
+// Importar
+try {
+  const importarRoutes = require('./routes/importar.routes');
+  app.use('/importar', importarRoutes);
+  console.log('✅  Importar routes OK');
+} catch(e) { console.log('⚠️   importar.routes no encontrado:', e.message); }
+
 // Presupuestos
 try {
   const presupuestosRoutes = require('./routes/presupuestos.routes');
@@ -355,6 +366,20 @@ try {
   app.use('/api/email', emailRoutes);
   console.log('✅  Email routes OK');
 } catch(e) { console.log('⚠️   email.routes error:', e.message); }
+
+// Vidriera digital — catálogo público sin login
+try {
+  const vidrieraRoutes = require('./routes/vidriera.routes');
+  app.use('/', vidrieraRoutes);
+  console.log('✅  Vidriera routes OK');
+} catch(e) { console.log('⚠️   vidriera.routes error:', e.message); }
+
+// Copias de seguridad de la base de datos
+try {
+  const backupRoutes = require('./routes/backup.routes');
+  app.use('/api/backups', backupRoutes);
+  console.log('✅  Backups routes OK — generación manual desde Ajustes');
+} catch(e) { console.log('⚠️   backup.routes error:', e.message); }
 
 // Main (dashboard, ventas, inventario, sucursales)
 const mainRoutes = require('./routes/main.routes');

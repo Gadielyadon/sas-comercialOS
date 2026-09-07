@@ -12,6 +12,7 @@ const RUTA_PERMISO = {
   '/stock':           'stock',
   '/proveedores':     'proveedores',
   '/gastos':          'gastos',
+  '/importar':        'importar',
 };
 
 /* ── Requiere estar logueado ── */
@@ -67,6 +68,42 @@ function requirePermiso(seccion) {
   };
 }
 
+/* ── Verifica una acción sensible puntual (anular ventas, ver costos, dar
+   descuentos). A diferencia de requirePermiso, acá "sin nada cargado" NO
+   habilita — un empleado nuevo arranca sin poder hacer ninguna de estas ── */
+function _accionesDe(user) {
+  if (Array.isArray(user.accionesArray)) return user.accionesArray;
+  if (typeof user.acciones === 'string') {
+    try { return JSON.parse(user.acciones); } catch(e) { return []; }
+  }
+  if (Array.isArray(user.acciones)) return user.acciones;
+  return [];
+}
+
+function tieneAccion(user, accion) {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  return _accionesDe(user).includes(accion);
+}
+
+function requireAccion(accion) {
+  return (req, res, next) => {
+    const user = req.session?.user;
+    if (!user) {
+      if (req.originalUrl.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado' });
+      return res.redirect('/login');
+    }
+    if (tieneAccion(user, accion)) return next();
+
+    if (req.originalUrl.startsWith('/api/')) {
+      return res.status(403).json({ error: 'No tenés permiso para esta acción — pedile a un administrador que te lo habilite en Ajustes → Usuarios' });
+    }
+    return res.status(403).render('pages/403', {
+      title: 'Acceso denegado', user, active: '', module: 'Error'
+    });
+  };
+}
+
 /* ── Inyecta user y permisos en todas las vistas ── */
 function injectUser(req, res, next) {
   const user = req.session?.user || null;
@@ -87,11 +124,13 @@ function injectUser(req, res, next) {
       if (!permisos || permisos.length === 0) return true;
       return Array.isArray(permisos) && permisos.includes(sec);
     };
+    res.locals.tieneAccion = (accion) => tieneAccion(user, accion);
   } else {
     res.locals.permisosEmpleado = null;
     res.locals.tienePermiso = () => false;
+    res.locals.tieneAccion = () => false;
   }
   next();
 }
 
-module.exports = { requireAuth, requireAdmin, requirePermiso, injectUser, RUTA_PERMISO };
+module.exports = { requireAuth, requireAdmin, requirePermiso, requireAccion, tieneAccion, injectUser, RUTA_PERMISO };

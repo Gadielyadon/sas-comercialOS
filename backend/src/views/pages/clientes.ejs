@@ -243,6 +243,26 @@
           style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
           onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Condición IVA</label>
+          <select id="c_cond_iva"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;cursor:pointer;">
+            <option value="">Sin especificar</option>
+            <option value="Consumidor Final">Consumidor Final</option>
+            <option value="Responsable Inscripto">Responsable Inscripto</option>
+            <option value="Monotributista">Monotributista</option>
+            <option value="Exento">Exento</option>
+            <option value="No Responsable">No Responsable</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">Localidad</label>
+          <input type="text" id="c_localidad" placeholder="Ej: San Fernando del Valle"
+            style="width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;"
+            onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+        </div>
+      </div>
       <!-- Categoría -->
       <div>
         <label style="font-size: 13.5px;font-weight:700;color:var(--text-primary);display:block;margin-bottom:6px;">
@@ -637,6 +657,8 @@ function abrirNuevo() {
   document.getElementById('c_telefono').value  = '';
   document.getElementById('c_email').value     = '';
   document.getElementById('c_direccion').value = '';
+  document.getElementById('c_cond_iva').value  = '';
+  document.getElementById('c_localidad').value = '';
   document.getElementById('c_limite_check').checked = false;
   toggleLimiteCredito(document.getElementById('c_limite_check'));
   document.getElementById('c_limite_credito').value = '';
@@ -655,6 +677,8 @@ function abrirEditar(c) {
   document.getElementById('c_telefono').value  = c.telefono  || '';
   document.getElementById('c_email').value     = c.email     || '';
   document.getElementById('c_direccion').value = c.direccion || '';
+  document.getElementById('c_cond_iva').value  = c.cond_iva  || '';
+  document.getElementById('c_localidad').value = c.localidad || '';
   const tieneLimit = c.limite_credito != null;
   document.getElementById('c_limite_check').checked = tieneLimit;
   toggleLimiteCredito(document.getElementById('c_limite_check'));
@@ -673,6 +697,8 @@ async function guardarCliente() {
   const telefono  = document.getElementById('c_telefono').value.trim();
   const email     = document.getElementById('c_email').value.trim();
   const direccion = document.getElementById('c_direccion').value.trim();
+  const cond_iva  = document.getElementById('c_cond_iva').value || '';
+  const localidad = document.getElementById('c_localidad').value.trim();
   const tieneLimit = document.getElementById('c_limite_check').checked;
   const limite_credito = tieneLimit ? (parseFloat(document.getElementById('c_limite_credito').value.replace(/\./g,'').replace(',','.')) || null) : null;
   if (!nombre) { alert('El nombre es obligatorio'); return; }
@@ -680,7 +706,7 @@ async function guardarCliente() {
   const url    = _editClienteId ? `/api/clientes/${_editClienteId}` : '/api/clientes';
   const method = _editClienteId ? 'PUT' : 'POST';
   const r = await fetch(url, { method, headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ nombre, documento, telefono, email, direccion, limite_credito, categoria: categoria || null }) });
+    body: JSON.stringify({ nombre, documento, telefono, email, direccion, limite_credito, categoria: categoria || null, cond_iva, localidad }) });
   if (!r.ok) { const e = await r.json().catch(()=>({})); alert(e.error || 'Error'); return; }
   location.reload();
 }

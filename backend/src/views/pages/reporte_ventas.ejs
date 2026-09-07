@@ -97,6 +97,11 @@
           <div class="rv-stat-sub" id="stPeriodo"></div>
         </div>
         <div class="rv-stat">
+          <div class="rv-stat-label">Cobrado (real)</div>
+          <div class="rv-stat-val" id="stCobrado" style="color:#059669;">-</div>
+          <div class="rv-stat-sub" id="stFiadoSub">excluye cuenta corriente</div>
+        </div>
+        <div class="rv-stat">
           <div class="rv-stat-label">Transacciones</div>
           <div class="rv-stat-val" id="stCount">-</div>
           <div class="rv-stat-sub">ventas en el período</div>
@@ -130,6 +135,9 @@
           </button>
           <button class="stab" onclick="showTab('descuentos')">
             <i class="bi bi-percent"></i> Descuentos
+          </button>
+          <button class="stab" onclick="showTab('cuentacorriente')">
+            <i class="bi bi-wallet2"></i> Cuenta corriente
           </button>
         </div>
 
@@ -269,6 +277,41 @@
           </div>
         </div>
 
+        <!-- Tab: Cuenta corriente / Fiado -->
+        <div id="tabCuentacorriente" style="display:none;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
+            <div class="rv-stat">
+              <div class="rv-stat-label">Total por cobrar</div>
+              <div class="rv-stat-val" id="ccTotal" style="color:#dc2626;">-</div>
+              <div class="rv-stat-sub">suma de saldos deudores</div>
+            </div>
+            <div class="rv-stat">
+              <div class="rv-stat-label">Clientes con deuda</div>
+              <div class="rv-stat-val" id="ccCount">-</div>
+              <div class="rv-stat-sub">cuentas corrientes abiertas</div>
+            </div>
+            <div class="rv-stat">
+              <div class="rv-stat-label">Mayor deudor</div>
+              <div class="rv-stat-val" id="ccMayor" style="font-size:16px;">-</div>
+              <div class="rv-stat-sub" id="ccMayorMonto"></div>
+            </div>
+          </div>
+          <div class="rv-table-wrap">
+            <table class="rv-table">
+              <thead><tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Teléfono</th>
+                <th>Debe</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="tbodyCuentacorriente">
+                <tr><td colspan="5" class="rv-empty">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -323,13 +366,53 @@ function set(desde, hasta) {
   document.getElementById('fechaHasta').value = hasta;
 }
 
+let _ccCargada = false;
+
 function showTab(tab) {
-  ['Productos','Categorias','Metodos','Departamentos','Descuentos'].forEach(t => {
+  ['Productos','Categorias','Metodos','Departamentos','Descuentos','Cuentacorriente'].forEach(t => {
     document.getElementById('tab'+t).style.display = t.toLowerCase() === tab ? '' : 'none';
   });
   document.querySelectorAll('.stab').forEach((b, i) => {
-    b.classList.toggle('on', ['productos','categorias','metodos','departamentos','descuentos'][i] === tab);
+    b.classList.toggle('on', ['productos','categorias','metodos','departamentos','descuentos','cuentacorriente'][i] === tab);
   });
+  if (tab === 'cuentacorriente' && !_ccCargada) {
+    cargarCuentaCorriente();
+  }
+}
+
+async function cargarCuentaCorriente() {
+  try {
+    const r = await fetch('/api/reportes/cuenta-corriente');
+    const data = await r.json();
+    if (!data.ok) return;
+    _ccCargada = true;
+
+    document.getElementById('ccTotal').textContent = fmtPesos(data.total_deuda);
+    document.getElementById('ccCount').textContent = fmtNum(data.count_clientes);
+    if (data.mayor_deudor) {
+      document.getElementById('ccMayor').textContent = data.mayor_deudor.nombre;
+      document.getElementById('ccMayorMonto').textContent = fmtPesos(data.mayor_deudor.saldo);
+    } else {
+      document.getElementById('ccMayor').textContent = '—';
+    }
+
+    const tbody = document.getElementById('tbodyCuentacorriente');
+    if (!data.clientes.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="rv-empty">No hay clientes con cuenta corriente pendiente 🎉</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.clientes.map((c, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${c.nombre}</td>
+        <td>${c.telefono || '—'}</td>
+        <td style="color:#dc2626;font-weight:700;">${fmtPesos(c.saldo)}</td>
+        <td><a href="/clientes?buscar=${encodeURIComponent(c.nombre)}" class="btn-action btn-action-outline btn-sm">Ver cliente</a></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('cuenta corriente:', e);
+  }
 }
 
 async function buscar() {
@@ -441,6 +524,10 @@ function renderResumen(data) {
   document.getElementById('stCount').textContent  = fmtNum(data.count_ventas);
   document.getElementById('stTicket').textContent = fmtPesos(ticket);
   document.getElementById('stProds').textContent  = fmtNum(data.productos?.length || 0);
+  document.getElementById('stCobrado').textContent = fmtPesos(data.total_cobrado || 0);
+  document.getElementById('stFiadoSub').textContent = data.total_fiado > 0
+    ? `${fmtPesos(data.total_fiado)} quedó a cuenta corriente`
+    : 'sin ventas fiadas en el período';
   document.getElementById('stPeriodo').textContent = 'en el período seleccionado';
 
   // Productos
@@ -520,6 +607,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const hoy = hoyStr();
   document.getElementById('fechaDesde').value = hoy;
   document.getElementById('fechaHasta').value = hoy;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('tab') === 'cuentacorriente') {
+    showTab('cuentacorriente');
+  }
 });
 </script>
 

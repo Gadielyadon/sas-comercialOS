@@ -22,6 +22,14 @@ function setMany(obj) {
     const val = obj[key] !== undefined && obj[key] !== null ? String(obj[key]) : '';
     setValue(key, val);
   }
+
+  // El CUIT de la empresa es un único dato — si se guarda "empresa_cuit" y
+  // no vino "afip_cuit" en el mismo pedido, lo espejamos para que AFIP
+  // siempre use el mismo CUIT que el resto del sistema (tickets, PDFs, etc.)
+  // sin tener que cargarlo dos veces en Ajustes.
+  if (obj.empresa_cuit !== undefined && obj.afip_cuit === undefined) {
+    setValue('afip_cuit', String(obj.empresa_cuit || ''));
+  }
 }
 
 module.exports = { getAll, getValue, setValue, setMany };

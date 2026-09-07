@@ -3,6 +3,9 @@ const router   = express.Router();
 const cajaSvc  = require('../services/caja.service');
 const salesSvc = require('../services/sales.service');
 const { run, get, all } = require('../db');
+const { requireAuth } = require('../middlewares/auth.middleware');
+
+router.use(requireAuth);
 
 const getUser = req => req.session?.user?.name || req.session?.user?.username || 'Admin';
 

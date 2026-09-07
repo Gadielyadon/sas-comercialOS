@@ -1,0 +1,236 @@
+<%- include('../partials/head') %>
+<div class="app-layout">
+  <%- include('../partials/sidebar') %>
+  <main class="main-content">
+    <%- include('../partials/header') %>
+
+    <div style="max-width:820px;margin:0 auto;padding:24px;">
+      <h1 style="font-size:20px;font-weight:800;color:#1B4FD8;margin-bottom:6px;">Importar Ventas y Gastos</h1>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px;">
+        Subí cualquier Excel de ventas o gastos, indicá qué es cada columna, y cargalo de una sola vez.
+      </p>
+
+      <div style="border:2px dashed #cbd5e1;border-radius:10px;padding:24px;text-align:center;margin-bottom:20px;">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="margin-bottom:8px;">
+        <div style="font-size:12px;color:#9ca3af;">Subí cualquier Excel de ventas o gastos — después vas a indicar qué es cada columna</div>
+      </div>
+
+      <div id="msgError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;"></div>
+
+      <div id="mapeoBox" style="display:none;background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:18px;margin-bottom:20px;"></div>
+
+      <div id="preview" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;">Ventas a importar</div>
+            <div id="ventasCantidad" style="font-size:22px;font-weight:900;color:#1d4ed8;"></div>
+            <div id="ventasTotal" style="font-size:12px;color:#6b7280;"></div>
+          </div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#b91c1c;text-transform:uppercase;">Gastos a importar</div>
+            <div id="gastosCantidad" style="font-size:22px;font-weight:900;color:#b91c1c;"></div>
+            <div id="gastosTotal" style="font-size:12px;color:#6b7280;"></div>
+          </div>
+        </div>
+
+        <div id="categoriasNuevasBox" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;"></div>
+
+        <div id="erroresBox" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:#991b1b;max-height:200px;overflow-y:auto;"></div>
+
+        <button id="btnConfirmar" style="padding:10px 20px;background:#059669;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
+          ✅ Confirmar e importar
+        </button>
+      </div>
+
+      <div id="resultadoOk" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#065f46;padding:16px;border-radius:8px;font-size:13px;"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+let archivoBase64 = null;
+let analisisActual = null;
+let hojaElegida = null;
+let tipoElegido = 'ventas';
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  ocultarTodo();
+  const reader = new FileReader();
+  reader.onload = async () => {
+    archivoBase64 = reader.result.split(',')[1];
+    await analizar();
+  };
+  reader.readAsDataURL(file);
+});
+
+function ocultarTodo() {
+  document.getElementById('msgError').style.display = 'none';
+  document.getElementById('mapeoBox').style.display = 'none';
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('resultadoOk').style.display = 'none';
+}
+
+async function analizar() {
+  try {
+    const resp = await fetch('/importar/api/analizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64: archivoBase64 }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al leer el archivo');
+    analisisActual = data;
+    hojaElegida = data.hojas[0].nombre;
+    renderMapeo();
+  } catch (err) {
+    mostrarError(err.message);
+  }
+}
+
+function mostrarError(msg) {
+  const msgBox = document.getElementById('msgError');
+  msgBox.style.display = 'block';
+  msgBox.textContent = msg;
+}
+
+function renderMapeo() {
+  const hoja = analisisActual.hojas.find(h => h.nombre === hojaElegida);
+  const campos = tipoElegido === 'ventas' ? analisisActual.camposVentas : analisisActual.camposGastos;
+  const sugerencia = tipoElegido === 'ventas' ? hoja.sugerenciaVentas : hoja.sugerenciaGastos;
+
+  const opcionesHojas = analisisActual.hojas.map(h =>
+    `<option value="${h.nombre}" ${h.nombre === hojaElegida ? 'selected' : ''}>${h.nombre}</option>`
+  ).join('');
+
+  const filasMapeo = campos.map(c => {
+    const opciones = ['<option value="">— No usar —</option>'].concat(
+      hoja.headers.map((h, i) =>
+        `<option value="${i}" ${sugerencia[c.key] === i ? 'selected' : ''}>${h}</option>`
+      )
+    ).join('');
+    return `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:220px;font-size:13px;font-weight:${c.requerido ? '800' : '500'};color:${c.requerido ? '#b91c1c' : '#374151'};">
+          ${c.label}${c.requerido ? ' *' : ''}
+        </div>
+        <select data-campo="${c.key}" class="campo-mapeo" style="flex:1;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+          ${opciones}
+        </select>
+      </div>`;
+  }).join('');
+
+  document.getElementById('mapeoBox').innerHTML = `
+    <div style="display:flex;gap:16px;margin-bottom:16px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#374151;">Hoja del archivo</label><br>
+        <select id="selectHoja" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;">${opcionesHojas}</select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#374151;">¿Qué es esta hoja?</label><br>
+        <select id="selectTipo" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;">
+          <option value="ventas" ${tipoElegido === 'ventas' ? 'selected' : ''}>Ventas</option>
+          <option value="gastos" ${tipoElegido === 'gastos' ? 'selected' : ''}>Gastos</option>
+        </select>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+      Indicá qué columna de tu Excel corresponde a cada campo del sistema. Ya sugerimos lo más probable — revisalo y corregí si hace falta.
+    </div>
+    ${filasMapeo}
+    <button id="btnPrevisualizar" style="margin-top:12px;padding:9px 18px;background:#1B4FD8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
+      Previsualizar importación →
+    </button>
+  `;
+  document.getElementById('mapeoBox').style.display = 'block';
+
+  document.getElementById('selectHoja').addEventListener('change', (e) => { hojaElegida = e.target.value; renderMapeo(); });
+  document.getElementById('selectTipo').addEventListener('change', (e) => { tipoElegido = e.target.value; renderMapeo(); });
+  document.getElementById('btnPrevisualizar').addEventListener('click', previsualizar);
+}
+
+function leerMapeoActual() {
+  const mapeo = {};
+  document.querySelectorAll('.campo-mapeo').forEach(sel => {
+    if (sel.value !== '') mapeo[sel.dataset.campo] = Number(sel.value);
+  });
+  return mapeo;
+}
+
+async function previsualizar() {
+  try {
+    const mapeo = leerMapeoActual();
+    const resp = await fetch('/importar/api/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64: archivoBase64, hoja: hojaElegida, tipo: tipoElegido, mapeo }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al leer el archivo');
+
+    document.getElementById('ventasCantidad').textContent = data.ventas.cantidad;
+    document.getElementById('ventasTotal').textContent = '$' + data.ventas.total.toLocaleString('es-AR');
+    document.getElementById('gastosCantidad').textContent = data.gastos.cantidad;
+    document.getElementById('gastosTotal').textContent = '$' + data.gastos.total.toLocaleString('es-AR');
+
+    const catNuevas = data.gastos.categoriasNuevas || [];
+    const catBox = document.getElementById('categoriasNuevasBox');
+    if (catNuevas.length) {
+      catBox.style.display = 'block';
+      catBox.innerHTML = '⚠ Se van a crear estas categorías nuevas: <b>' + catNuevas.join(', ') + '</b>';
+    } else {
+      catBox.style.display = 'none';
+    }
+
+    const todosErrores = [...(data.ventas.errores||[]).map(e => 'Ventas · Fila ' + e.fila + ': ' + e.motivo),
+                           ...(data.gastos.errores||[]).map(e => 'Gastos · Fila ' + e.fila + ': ' + e.motivo)];
+    const errBox = document.getElementById('erroresBox');
+    if (todosErrores.length) {
+      errBox.style.display = 'block';
+      errBox.innerHTML = '<b>Estas filas NO se van a importar:</b><br>' + todosErrores.join('<br>');
+    } else {
+      errBox.style.display = 'none';
+    }
+
+    document.getElementById('preview').style.display = 'block';
+  } catch (err) {
+    const msgBox = document.getElementById('msgError');
+    msgBox.style.display = 'block';
+    msgBox.textContent = err.message;
+  }
+}
+
+document.getElementById('btnConfirmar').addEventListener('click', async () => {
+  const btn = document.getElementById('btnConfirmar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  try {
+    const mapeo = leerMapeoActual();
+    const resp = await fetch('/importar/api/confirmar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64: archivoBase64, hoja: hojaElegida, tipo: tipoElegido, mapeo }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al importar');
+
+    document.getElementById('preview').style.display = 'none';
+    const ok = document.getElementById('resultadoOk');
+    ok.style.display = 'block';
+    ok.innerHTML = `✅ Se importaron <b>${data.ventasInsertadas}</b> ventas y <b>${data.gastosInsertados}</b> gastos.` +
+      (data.categoriasCreadas ? ` Se crearon <b>${data.categoriasCreadas}</b> categorías nuevas.` : '');
+  } catch (err) {
+    const msgBox = document.getElementById('msgError');
+    msgBox.style.display = 'block';
+    msgBox.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmar e importar';
+  }
+});
+</script>
+
+<%- include('../partials/scripts') %>
+<%- include('../partials/footer') %>

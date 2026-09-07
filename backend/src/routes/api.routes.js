@@ -1,6 +1,14 @@
 // src/routes/api.routes.js
 const express = require('express');
 const router  = express.Router();
+const { requireAuth, requireAdmin, requireAccion } = require('../middlewares/auth.middleware');
+
+// Toda la API requiere estar logueado — antes cualquiera que supiera la URL
+// (incluso sin sesión) podía leer/crear/borrar clientes, productos, ventas,
+// configuración de AFIP, etc. Cada empleado sigue viendo solo lo que su rol
+// y sus permisos de sección le permiten (eso se resuelve en cada ruta),
+// pero ya no queda nada de esto abierto a cualquiera en internet.
+router.use(requireAuth);
 
 const productsCtrl = require('../controllers/products.controller');
 const salesCtrl    = require('../controllers/sales.controller');
@@ -170,14 +178,19 @@ router.get('/ventas/buscar', (req, res) => {
         f.cae         AS factura_cae,
         f.cae_vto     AS factura_cae_vto,
         f.created_at  AS factura_created_at,
+        nc.id         AS nc_id,
+        nc.tipo_cbte  AS nc_tipo_cbte,
+        nc.nro_cbte   AS nc_nro_cbte,
+        nc.cae        AS nc_cae,
         EXISTS (
           SELECT 1 FROM cuenta_corriente ccx
           WHERE ccx.sale_id = s.id AND ccx.tipo = 'cargo'
         ) AS es_cuenta_corriente
       FROM sales s
-      LEFT JOIN sale_items si ON si.sale_id = s.id
-      LEFT JOIN facturas f    ON f.sale_id = s.id
-      LEFT JOIN clientes c    ON c.id = s.cliente_id
+      LEFT JOIN sale_items si    ON si.sale_id = s.id
+      LEFT JOIN facturas f       ON f.sale_id = s.id
+      LEFT JOIN clientes c       ON c.id = s.cliente_id
+      LEFT JOIN notas_credito nc ON nc.sale_id = s.id
       ${where}
       ORDER BY s.id DESC
       LIMIT ? OFFSET ?
@@ -204,6 +217,8 @@ router.get('/ventas/buscar', (req, res) => {
       return {
         ...v,
         facturada: !!v.factura_id,
+        tiene_nc: !!v.nc_id,
+        nc_tipo_letra: ({3:'A',8:'B',13:'C'})[Number(v.nc_tipo_cbte)] || null,
         es_cuenta_corriente: !!v.es_cuenta_corriente,
         factura_tipo_letra: tipoLetra,
         subtotal: Math.round(subtotal * 100) / 100,
@@ -222,7 +237,7 @@ router.get('/ventas/buscar', (req, res) => {
 });
 
 // ── POST /api/ventas/:id/anular ────────────────────────────────
-router.post('/ventas/:id/anular', (req, res) => {
+router.post('/ventas/:id/anular', requireAccion('anular_ventas'), (req, res) => {
   try {
     const { anularVenta } = require('../services/sales.service');
     const sale_id = Number(req.params.id);
@@ -535,7 +550,7 @@ router.get('/config', (req, res) => {
   } catch(e) { res.json({}); }
 });
 
-router.put('/config', (req, res) => {
+router.put('/config', requireAdmin, (req, res) => {
   try {
     const { run } = require('../db');
     run(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)`);
@@ -552,7 +567,7 @@ router.put('/config', (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/config', (req, res) => {
+router.post('/config', requireAdmin, (req, res) => {
   try {
     const { run } = require('../db');
     run(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)`);
@@ -1051,22 +1066,17 @@ router.get('/notificaciones', (req, res) => {
       });
     } catch(e) {}
 
-    // ── Fiados pendientes (cuentas corrientes sin saldar) ──
+    // ── Cuenta corriente / fiado pendiente de cobro (fuente real: clientes.saldo) ──
     try {
-      const fiados = all(`
-        SELECT COUNT(*) as n, COALESCE(SUM(total),0) as total
-        FROM sales WHERE payment_method = 'Fiado'
-          AND COALESCE(status,'completada') = 'completada'
-          AND DATE(created_at) >= DATE('now','-30 days')
-      `);
-      if (fiados[0]?.n > 0) {
+      const cc = dbGet(`SELECT COUNT(*) as n, COALESCE(SUM(saldo),0) as total FROM clientes WHERE saldo > 0`);
+      if (cc?.n > 0) {
         notifs.push({
           tipo: 'fiado',
           icono: 'bi-cash-coin',
           color: '#6366f1',
-          titulo: `${fiados[0].n} venta${fiados[0].n > 1 ? 's' : ''} fiada${fiados[0].n > 1 ? 's' : ''} (últimos 30 días)`,
-          detalle: `Total: $${Number(fiados[0].total).toLocaleString('es-AR',{minimumFractionDigits:2})}`,
-          link: '/historial',
+          titulo: `${cc.n} cliente${cc.n > 1 ? 's' : ''} con cuenta corriente pendiente`,
+          detalle: `Total a cobrar: $${Number(cc.total).toLocaleString('es-AR',{minimumFractionDigits:2})}`,
+          link: '/reportes/ventas?tab=cuentacorriente',
           id: 'fiados_pendientes',
         });
       }

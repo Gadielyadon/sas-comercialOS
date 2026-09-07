@@ -87,6 +87,12 @@ router.get('/ver/:id', (req, res) => {
   if (!p) return res.redirect('/presupuestos');
   const config = configSvc.getAll();
 
+  let ventaGenerada = null;
+  try {
+    const salesSvc = require('../services/sales.service');
+    ventaGenerada = salesSvc.findSaleByPresupuestoId(p.id) || null;
+  } catch (e) { /* si el módulo de ventas no está disponible, seguimos sin el aviso */ }
+
   res.render('pages/presupuesto_ver', {
     title: p.numero,
     active: 'presupuestos',
@@ -94,6 +100,7 @@ router.get('/ver/:id', (req, res) => {
     user: req.session.user,
     presupuesto: p,
     config,
+    ventaGenerada,
     sucursal: res.locals.sucursal || { id: 1, nombre: 'Casa Central' }
   });
 });

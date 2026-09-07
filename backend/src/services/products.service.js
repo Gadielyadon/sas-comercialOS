@@ -18,6 +18,8 @@ function initPromoSchema() {
   try { run(`ALTER TABLE products ADD COLUMN price_tarjeta REAL DEFAULT NULL`); } catch (_) {}
   // Precios por cantidad (escalones): JSON [{"min":5,"price":21000}, ...]
   try { run(`ALTER TABLE products ADD COLUMN price_tiers TEXT DEFAULT NULL`); } catch (_) {}
+  // Vidriera digital: si el producto se muestra en el catálogo público (default: sí)
+  try { run(`ALTER TABLE products ADD COLUMN publicar_vidriera INTEGER DEFAULT 1`); } catch (_) {}
   // Índice en sku para acelerar findBySku
   try { run(`CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku)`); } catch (_) {}
 }
@@ -74,7 +76,8 @@ function baseSelect() {
       COALESCE(hay, 1) AS hay,
       COALESCE(venta_sin_stock, 0) AS venta_sin_stock,
       COALESCE(price_tarjeta, NULL) AS price_tarjeta,
-      COALESCE(price_tiers, NULL) AS price_tiers
+      COALESCE(price_tiers, NULL) AS price_tiers,
+      COALESCE(publicar_vidriera, 1) AS publicar_vidriera
     FROM products
   `;
 }
@@ -139,7 +142,10 @@ function findBySku(sku, sucursal_id = null) {
   if (!p) return null;
   // Catálogo global: el producto existe en todas las sucursales.
   // El stock real viene de existencias para la sucursal pedida.
-  if (sucursal_id) p.stock = existencias.getStock(String(sku), Number(sucursal_id));
+  if (sucursal_id) {
+    p.stock = existencias.getStock(String(sku), Number(sucursal_id));
+    p.stock_min = existencias.getStockMin(String(sku), Number(sucursal_id));
+  }
   return withPrecioEfectivo(p);
 }
 
@@ -151,7 +157,8 @@ function create({
   price_promo = null, en_promo = 0,
   imagen = null, price_mayorista = null,
   qty_mayorista = null, venta_sin_stock = 0, hay = 1,
-  price_tarjeta = null, price_tiers = null,
+  price_tarjeta = null, price_tiers = null, publicar_vidriera = 1,
+  stock_min = null,
 }) {
   const suc = Number(sucursal_id || 1);
   run(
@@ -159,8 +166,9 @@ function create({
       sku, name, price, category, stock,
       iva, ieps, pesable, descripcion, sucursal_id,
       price_cost, margen, price_promo, en_promo, imagen,
-      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, hay, price_tiers
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      price_mayorista, qty_mayorista, venta_sin_stock, price_tarjeta, hay, price_tiers,
+      publicar_vidriera
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       String(sku), String(name), toNumber(price),
       category || null, toNumber(stock),
@@ -173,10 +181,14 @@ function create({
       toBoolInt(venta_sin_stock, 0), toNullableNumber(price_tarjeta),
       hay !== undefined ? toBoolInt(hay, 1) : 1,
       toTiersJson(price_tiers),
+      toBoolInt(publicar_vidriera, 1),
     ]
   );
   // El alta crea la existencia del producto en su sucursal
   existencias.ensureRow(String(sku), suc, toNumber(stock));
+  if (stock_min !== undefined && stock_min !== null && stock_min !== '') {
+    existencias.setStockMin(String(sku), suc, stock_min);
+  }
   // Una sola findBySku al final — sin verificación previa
   return findBySku(sku, suc);
 }
@@ -200,7 +212,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       price_promo = ?, en_promo = ?,
       sucursal_id = ?, imagen = ?,
       price_mayorista = ?, qty_mayorista = ?, venta_sin_stock = ?,
-      price_tarjeta = ?, hay = ?, price_tiers = ?
+      price_tarjeta = ?, hay = ?, price_tiers = ?, publicar_vidriera = ?
     WHERE sku = ? AND sucursal_id = ?`,
     [
       newSku,
@@ -224,6 +236,7 @@ function updateBySku(sku, fields, sucursal_id = null) {
       fields.price_tarjeta   !== undefined ? toNullableNumber(fields.price_tarjeta)   : p.price_tarjeta,
       fields.hay             !== undefined ? toBoolInt(fields.hay, 1)                 : (p.hay != null ? toBoolInt(p.hay, 1) : 1),
       fields.price_tiers     !== undefined ? toTiersJson(fields.price_tiers)          : (p.price_tiers || null),
+      fields.publicar_vidriera !== undefined ? toBoolInt(fields.publicar_vidriera, 1) : toBoolInt(p.publicar_vidriera, 1),
       String(sku),
       p.sucursal_id || 1,
     ]
@@ -238,6 +251,11 @@ function updateBySku(sku, fields, sucursal_id = null) {
   // Si se editó el stock, reflejarlo en existencias (la fuente de verdad por sucursal)
   if (fields.stock !== undefined) {
     existencias.setStock(newSku, targetSucursal, toNumber(fields.stock), { tipo: 'ajuste', motivo: 'Edición de producto' });
+  }
+
+  // Umbral de stock mínimo (para la alerta de "stock bajo") — vive en existencias
+  if (fields.stock_min !== undefined) {
+    existencias.setStockMin(newSku, targetSucursal, fields.stock_min);
   }
 
   // Una sola findBySku al final — sin segunda verificación
@@ -311,21 +329,35 @@ function exportXlsxData(sucursal_id = null) {
   }));
 }
 
+// Productos en (o por debajo) de su stock mínimo. Usa el umbral configurado
+// por producto (existencias.stock_min); si no se configuró ninguno, cae a
+// un umbral genérico de 5 unidades para que la alerta siga sirviendo.
 function listLowStock(limit = 10, sucursal_id = null) {
-  if (sucursal_id) {
-    return all(
-      `SELECT name, stock FROM products WHERE stock <= 5 AND sucursal_id = ? ORDER BY stock ASC LIMIT ?`,
-      [Number(sucursal_id), limit]
-    );
-  }
+  const where = sucursal_id ? `AND e.sucursal_id = ${Number(sucursal_id)}` : '';
   return all(
-    `SELECT name, stock FROM products WHERE stock <= 5 ORDER BY stock ASC LIMIT ?`,
+    `SELECT p.sku, p.name, e.stock, e.stock_min
+     FROM existencias e
+     JOIN products p ON p.sku = e.sku
+     WHERE e.stock <= COALESCE(e.stock_min, 5) ${where}
+     ORDER BY (e.stock - COALESCE(e.stock_min, 5)) ASC
+     LIMIT ?`,
     [limit]
+  );
+}
+
+// Productos visibles en la vidriera digital pública de una sucursal:
+// publicados, y con stock disponible (o venta sin control de stock activada).
+function listVidriera(sucursal_id = 1) {
+  const rows = list(sucursal_id);
+  return rows.filter(p =>
+    (p.hay == null || p.hay) &&
+    (p.publicar_vidriera == null || p.publicar_vidriera) &&
+    (p.venta_sin_stock || Number(p.stock) > 0)
   );
 }
 
 module.exports = {
   initPromoSchema, list, search, findBySku,
   create, updateBySku, adjustStock, remove,
-  exportCsv, exportXlsxData, listLowStock,
+  exportCsv, exportXlsxData, listLowStock, listVidriera,
 };

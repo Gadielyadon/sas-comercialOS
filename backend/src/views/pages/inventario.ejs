@@ -139,6 +139,10 @@
           <button id="btnListaTar" onclick="setListaInventario('tarjeta')" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size: 13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);transition:all .15s;"><i class="bi bi-credit-card"></i> Tarjeta</button>
         </div>
         <span id="listaInfoTxt" style="font-size: 12.5px;color:var(--text-muted);"></span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-size: 13px;font-weight:600;color:var(--text-secondary);">
+          <input type="checkbox" id="chkMostrarNeto" onchange="toggleMostrarNeto(this)" style="width:14px;height:14px;accent-color:var(--color-primary);cursor:pointer;">
+          Mostrar precio sin IVA
+        </label>
       </div>
 
       <div class="card-panel">
@@ -262,7 +266,7 @@
           </div>
           <div><label class="form-lbl">Nombre *</label><input type="text" id="m_name" placeholder="Nombre del producto" style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"></div>
         
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
           <div>
             <label class="form-lbl">Categoría</label>
             <div style="position:relative;">
@@ -275,6 +279,11 @@
             </div>
           </div>
           <div><label class="form-lbl">Stock inicial</label><input type="number" id="m_stock" placeholder="0" min="0" step="1" value="0" style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"><div id="m_stock_edit_wrap" style="margin-top:6px;"></div></div>
+          <div>
+            <label class="form-lbl">Stock mínimo <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label>
+            <input type="number" id="m_stock_min" placeholder="Ej: 5" min="0" step="1" style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 15px;outline:none;transition:border .2s;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'">
+            <div style="font-size: 11px;color:var(--text-muted);margin-top:3px;">Avisa en el Dashboard cuando el stock llegue a este número o menos.</div>
+          </div>
         </div>
         <div><label class="form-lbl">Descripción <span style="font-weight:400;text-transform:none;font-size: 11.5px;">(opcional)</span></label><textarea id="m_descripcion" placeholder="Ej: Pack de 10 unidades..." rows="2" style="width:100%;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size: 14px;outline:none;transition:border .2s;font-family:var(--font-body);resize:vertical;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--border-color)'"></textarea></div>
         <div>
@@ -302,6 +311,10 @@
         <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;" for="m_venta_sin_stock"><i class="bi bi-cart-check" style="color:#f59e0b;font-size: 18px;"></i><div><div style="font-size: 14px;font-weight:600;color:var(--text-primary);">Vender sin control de stock</div><div style="font-size: 12.5px;color:var(--text-secondary);">Permite vender aunque el stock esté en 0 — útil para fiambres, productos a granel, etc.</div></div></label>
           <div style="position:relative;width:40px;height:22px;flex-shrink:0;"><input type="checkbox" id="m_venta_sin_stock" style="opacity:0;width:0;height:0;position:absolute;" onchange="toggleVentaSinStock(this)"><label for="m_venta_sin_stock" id="m_vss_track" style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;"><span id="m_vss_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span></label></div>
+        </div>
+        <div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;" for="m_publicar_vidriera"><i class="bi bi-shop" style="color:#25D366;font-size: 18px;"></i><div><div style="font-size: 14px;font-weight:600;color:var(--text-primary);">Publicar en la vidriera digital</div><div style="font-size: 12.5px;color:var(--text-secondary);">Aplica si el catálogo está en modo "Desde Inventario" o "Ambos combinados"</div></div></label>
+          <div style="position:relative;width:40px;height:22px;flex-shrink:0;"><input type="checkbox" id="m_publicar_vidriera" checked style="opacity:0;width:0;height:0;position:absolute;" onchange="togglePublicarVidriera(this)"><label for="m_publicar_vidriera" id="m_pv_track" style="position:absolute;inset:0;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;"><span id="m_pv_thumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);display:block;"></span></label></div>
         </div>
         <div style="border-top:1px solid var(--border-color);padding-top:12px;">
           <% if (esRI) { %>
@@ -404,6 +417,13 @@ let _editSku = null;
 let _allProducts = <%- JSON.stringify(products) %>;
 const _fmt = n => '$' + Number(n).toLocaleString('es-AR', {minimumFractionDigits:2});
 let _listaInv = 'minorista';
+let _mostrarNeto = localStorage.getItem('axsoft_mostrar_neto') === '1';
+
+function toggleMostrarNeto(checkbox) {
+  _mostrarNeto = checkbox.checked;
+  localStorage.setItem('axsoft_mostrar_neto', _mostrarNeto ? '1' : '0');
+  renderTable(_allProducts);
+}
 
 function setListaInventario(lista) {
   _listaInv = lista;
@@ -477,7 +497,11 @@ function renderTable(list) {
     } else if (_listaInv === 'tarjeta') {
       precioCell = p.price_tarjeta && Number(p.price_tarjeta) > 0 ? `<strong style="font-family:var(--font-mono);color:#d97706;">${_fmt(p.price_tarjeta)}</strong>` : `<span style="color:var(--text-muted);font-size: 13.5px;font-style:italic;">Sin precio</span>`;
     } else {
-      precioCell = `<strong style="font-family:var(--font-mono);">${_fmt(p.price)}</strong>`;
+      const ivaPct = Number(p.iva) || 0;
+      const netoLine = (_mostrarNeto && ivaPct > 0)
+        ? `<div style="font-size: 11px;color:var(--text-secondary);margin-top:1px;font-family:var(--font-mono);">s/IVA: ${_fmt(Number(p.price) / (1 + ivaPct / 100))}</div>`
+        : '';
+      precioCell = `<strong style="font-family:var(--font-mono);">${_fmt(p.price)}</strong>${netoLine}`;
     }
     const costoTd  = esMini ? `<td style="font-family:var(--font-mono);font-size: 15px;color:var(--text-secondary)">${p.price_cost?_fmt(p.price_cost):'—'}</td>` : '';
     let ivaTd = '';
@@ -590,6 +614,10 @@ function togglePesable(cb) {
   document.getElementById('m_pesable_track').style.background = cb.checked ? 'var(--color-primary)' : 'var(--border-color)';
   document.getElementById('m_pesable_thumb').style.transform = cb.checked ? 'translateX(20px)' : 'translateX(0)';
 }
+function togglePublicarVidriera(cb) {
+  document.getElementById('m_pv_track').style.background = cb.checked ? '#25D366' : 'var(--border-color)';
+  document.getElementById('m_pv_thumb').style.transform  = cb.checked ? 'translateX(20px)' : 'translateX(0)';
+}
 function toggleVentaSinStock(cb) {
   document.getElementById('m_vss_track').style.background = cb.checked ? '#f59e0b' : 'var(--border-color)';
   document.getElementById('m_vss_thumb').style.transform  = cb.checked ? 'translateX(20px)' : 'translateX(0)';
@@ -683,6 +711,8 @@ const SUCURSAL_ID     = <%- typeof sucursal_id !== 'undefined' ? sucursal_id : 1
 const SUCURSAL_NOMBRE = '<%- typeof sucursal !== "undefined" && sucursal ? sucursal.nombre.replace(/'/g, "\'") : "Casa Central" %>';
 
 document.addEventListener('DOMContentLoaded', () => {
+  const chkNeto = document.getElementById('chkMostrarNeto');
+  if (chkNeto) chkNeto.checked = _mostrarNeto;
   const priceInput = document.getElementById('m_price');
   if (priceInput) {
     priceInput.addEventListener('input', () => {
@@ -721,6 +751,7 @@ function abrirModal(prefillSku = '') {
   document.getElementById('m_price').value    = '';
   document.getElementById('m_category').value = '';
   document.getElementById('m_stock').value    = '0';
+  document.getElementById('m_stock_min').value = '';
   if (document.getElementById('m_price_cost'))  document.getElementById('m_price_cost').value  = '';
   if (document.getElementById('m_margen'))       document.getElementById('m_margen').value       = '50';
   if (document.getElementById('m_en_promo'))   { document.getElementById('m_en_promo').checked = false; togglePromo(document.getElementById('m_en_promo')); }
@@ -736,6 +767,8 @@ function abrirModal(prefillSku = '') {
   togglePesable(document.getElementById('m_pesable'));
   document.getElementById('m_venta_sin_stock').checked = false;
   toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
+  document.getElementById('m_publicar_vidriera').checked = true;
+  togglePublicarVidriera(document.getElementById('m_publicar_vidriera'));
   setTimeout(() => setHayModal(window._hayModalVal != null ? window._hayModalVal : 1), 0);
   document.getElementById('m_preview').style.display = 'none';
   document.getElementById('m_mayorista_check').checked = false;
@@ -760,6 +793,7 @@ function abrirEditar(p) {
   document.getElementById('m_price').value    = p.price;
   document.getElementById('m_category').value = p.category || '';
   document.getElementById('m_stock').value    = p.stock;
+  document.getElementById('m_stock_min').value = (p.stock_min !== undefined && p.stock_min !== null) ? p.stock_min : '';
   if (document.getElementById('m_price_cost')) document.getElementById('m_price_cost').value = p.price_cost || '';
   if (document.getElementById('m_margen'))     document.getElementById('m_margen').value     = p.margen || 50;
   const enPromo = p.en_promo === 1 || p.en_promo === true;
@@ -779,6 +813,8 @@ function abrirEditar(p) {
   togglePesable(document.getElementById('m_pesable'));
   document.getElementById('m_venta_sin_stock').checked = Boolean(p.venta_sin_stock);
   toggleVentaSinStock(document.getElementById('m_venta_sin_stock'));
+  document.getElementById('m_publicar_vidriera').checked = (p.publicar_vidriera == null || p.publicar_vidriera) ? true : false;
+  togglePublicarVidriera(document.getElementById('m_publicar_vidriera'));
   // Cargar hay
   const hayActual = (p.hay == null || p.hay == 1) ? 1 : 0;
   window._hayModalVal = hayActual;
@@ -868,6 +904,8 @@ async function guardarProducto() {
   const price       = parseFloat(document.getElementById('m_price').value) || 0;
   const category    = document.getElementById('m_category').value.trim();
   const stock       = parseInt(document.getElementById('m_stock').value) || 0;
+  const stockMinRaw = document.getElementById('m_stock_min').value.trim();
+  const stock_min   = stockMinRaw !== '' ? (parseInt(stockMinRaw) || 0) : null;
   const ivaCheck    = document.getElementById('m_iva_check').checked;
   const iepsCheck   = document.getElementById('m_ieps_check').checked;
   const iva         = ivaCheck  ? (parseFloat(document.getElementById('m_iva').value)  || 0) : 0;
@@ -886,17 +924,18 @@ async function guardarProducto() {
   const _tarjetaVal = document.getElementById('m_price_tarjeta')?.value.trim();
   const price_tarjeta = _tarjetaVal ? (parseFloat(_tarjetaVal) || null) : null;
   const price_tiers = leerTiers();
+  const publicar_vidriera = document.getElementById('m_publicar_vidriera')?.checked ? 1 : 0;
   if (!sku || !name) { alert('SKU y Nombre son obligatorios.'); return; }
   try {
     let saved;
     if (_editSku) {
-      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers }) });
+      const r = await fetch(`/api/products/${encodeURIComponent(_editSku)}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, price_cost, margen, en_promo, price_promo, imagen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers, publicar_vidriera, stock_min }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error editando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       const idx = _allProducts.findIndex(p => p.sku === _editSku);
       if (idx !== -1) _allProducts[idx] = saved; else _allProducts.push(saved);
     } else {
-      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers }) });
+      const r = await fetch('/api/products', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ sku, name, price, category, stock, iva, ieps, pesable, venta_sin_stock, sucursal_id: (typeof SUCURSAL_ID !== 'undefined' ? SUCURSAL_ID : 1), hay: (()=>{ const v = document.getElementById('m_hay_val'); return v && v.value !== '' ? Number(v.value) : (window._hayModalVal != null ? window._hayModalVal : 1); })(), descripcion, imagen, price_cost, margen, price_mayorista, qty_mayorista, price_tarjeta, price_tiers, publicar_vidriera, stock_min }) });
       if (!r.ok) { const e = await r.json().catch(()=>({error:`HTTP ${r.status}`})); alert('Error creando: ' + (e.error || r.status)); return; }
       saved = await r.json();
       _allProducts.push(saved);
