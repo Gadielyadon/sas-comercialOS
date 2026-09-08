@@ -6,6 +6,11 @@
 
 set -e  # Parar si hay error
 
+# ── Tu clave fija para activar/administrar el Catálogo digital en CUALQUIER
+#    cliente. La ponés una sola vez acá, y cada instalación nueva ya la usa
+#    sola — no hace falta tocar el .env a mano en cada cliente.
+CLAVE_CATALOGO_AXSOFT="poné-aca-tu-clave-y-no-la-cambies-mas"
+
 echo ""
 echo "🚀  Instalando ComercialOS en la VPS..."
 echo ""
@@ -39,7 +44,9 @@ if [ ! -f .env ]; then
   # Generar SESSION_SECRET automáticamente
   SECRET=$(node -e "console.log(require('crypto').randomBytes(48).toString('hex'))")
   sed -i "s/cambia-esto-por-un-string-largo-y-aleatorio/$SECRET/" .env
-  echo "✅  .env creado con SESSION_SECRET aleatorio"
+  # Completar tu clave fija del catálogo (la misma en todos los clientes)
+  sed -i "s/^VIDRIERA_ADMIN_KEY=.*/VIDRIERA_ADMIN_KEY=$CLAVE_CATALOGO_AXSOFT/" .env
+  echo "✅  .env creado con SESSION_SECRET aleatorio y tu clave de catálogo"
   echo "⚠️   Revisá y completá el archivo .env antes de continuar"
 else
   echo "ℹ️   .env ya existe, no se sobreescribe"

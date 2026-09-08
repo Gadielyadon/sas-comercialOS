@@ -81,6 +81,8 @@
   .prod-precio-original{font-size:12px;color:var(--text-muted);text-decoration:line-through;font-weight:600;}
   .badge-oferta{position:absolute;top:8px;left:8px;background:#ef4444;color:#fff;font-size:10.5px;font-weight:800;
     padding:3px 8px;border-radius:999px;letter-spacing:.3px;z-index:2;}
+  .badge-agotado{position:absolute;top:8px;right:8px;background:#374151;color:#fff;font-size:10px;font-weight:800;
+    padding:3px 8px;border-radius:999px;letter-spacing:.3px;z-index:2;}
   .prod-footer{margin-top:auto;display:flex;align-items:center;gap:6px;}
   .btn-add{width:30px;height:30px;border-radius:9px;border:none;background:var(--accent);color:#fff;font-size:16px;
     display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-left:auto;}
@@ -203,7 +205,8 @@
       <% promos.forEach(function(p){ %>
         <div class="prod-card" data-id="<%= p.id %>" data-nombre="<%= p.nombre.toLowerCase() %>" onclick="abrirDetalle('<%= p.id %>')">
           <span class="badge-oferta">OFERTA</span>
-          <div class="prod-img">
+          <% if (p.agotado) { %><span class="badge-agotado">AGOTADO</span><% } %>
+          <div class="prod-img" style="<%= p.agotado ? 'opacity:.45;' : '' %>">
             <% if (p.imagen) { %><img src="<%= p.imagen %>" alt=""><% } else { %><i class="bi bi-box"></i><% } %>
           </div>
           <div class="prod-body">
@@ -212,7 +215,13 @@
               <div class="prod-precio-original">$<%= Number(p.precio || 0).toLocaleString('es-AR') %></div>
               <div class="prod-precio">$<%= Number(p.precio_efectivo || 0).toLocaleString('es-AR') %></div>
             <% } %>
-            <div class="prod-footer"><button class="btn-add" onclick="event.stopPropagation();agregarPorId('<%= p.id %>')"><i class="bi bi-plus-lg"></i></button></div>
+            <div class="prod-footer">
+              <% if (p.agotado) { %>
+                <button class="btn-add" disabled style="opacity:.4;cursor:not-allowed;" onclick="event.stopPropagation();">✕</button>
+              <% } else { %>
+                <button class="btn-add" onclick="event.stopPropagation();agregarPorId('<%= p.id %>')"><i class="bi bi-plus-lg"></i></button>
+              <% } %>
+            </div>
           </div>
         </div>
       <% }) %>
@@ -231,7 +240,8 @@
         <% g.productos.forEach(function(p){ %>
           <div class="prod-card" data-id="<%= p.id %>" data-nombre="<%= p.nombre.toLowerCase() %>" onclick="abrirDetalle('<%= p.id %>')">
             <% if (p.en_promo && p.precio_promo) { %><span class="badge-oferta">OFERTA</span><% } %>
-            <div class="prod-img">
+            <% if (p.agotado) { %><span class="badge-agotado">AGOTADO</span><% } %>
+            <div class="prod-img" style="<%= p.agotado ? 'opacity:.45;' : '' %>">
               <% if (p.imagen) { %><img src="<%= p.imagen %>" alt=""><% } else { %><i class="bi bi-box"></i><% } %>
             </div>
             <div class="prod-body">
@@ -242,7 +252,13 @@
                 <% } %>
                 <div class="prod-precio">$<%= Number(p.precio_efectivo || 0).toLocaleString('es-AR') %></div>
               <% } %>
-              <div class="prod-footer"><button class="btn-add" onclick="event.stopPropagation();agregarPorId('<%= p.id %>')"><i class="bi bi-plus-lg"></i></button></div>
+              <div class="prod-footer">
+                <% if (p.agotado) { %>
+                  <button class="btn-add" disabled style="opacity:.4;cursor:not-allowed;" onclick="event.stopPropagation();">✕</button>
+                <% } else { %>
+                  <button class="btn-add" onclick="event.stopPropagation();agregarPorId('<%= p.id %>')"><i class="bi bi-plus-lg"></i></button>
+                <% } %>
+              </div>
             </div>
           </div>
         <% }) %>
@@ -286,6 +302,7 @@
         <div class="detalle-nombre" id="detalleNombre"></div>
         <div id="detallePrecios"></div>
         <div class="detalle-desc" id="detalleDesc"></div>
+        <div id="detalleVariantes"></div>
         <div class="detalle-qty">
           <button onclick="cambiarQtyDetalle(-1)">-</button>
           <span id="detalleQty">1</span>
@@ -313,7 +330,8 @@ const PRODUCTOS_DATA = {};
     nombre: p.nombre, precio: p.precio, precio_efectivo: p.precio_efectivo,
     en_promo: !!(p.en_promo && p.precio_promo), imagen: p.imagen || null,
     imagenes: (p.imagenes && p.imagenes.length) ? p.imagenes : (p.imagen ? [p.imagen] : []),
-    descripcion: p.descripcion || '',
+    descripcion: p.descripcion || '', agotado: !!p.agotado,
+    variantes: (p.variantes && p.variantes.length) ? p.variantes : [],
   }) %>;
 <% }) %>
 
@@ -333,15 +351,65 @@ function leerCarrito(){
   if (huboLimpieza) localStorage.setItem(LS_KEY, JSON.stringify(c));
   return c;
 }
-function guardarCarrito(c){ localStorage.setItem(LS_KEY, JSON.stringify(c)); actualizarFab(); }
+function guardarCarrito(c){
+  localStorage.setItem(LS_KEY, JSON.stringify(c));
+  actualizarFab();
+  sincronizarCarritoServidor(c);
+}
+
+let _syncTimeout = null;
+function sincronizarCarritoServidor(c){
+  // Debounced: si agregan varios ítems seguidos, no spammeamos el servidor.
+  clearTimeout(_syncTimeout);
+  _syncTimeout = setTimeout(() => {
+    try {
+      fetch('/vidriera/api/carrito', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: c }),
+      });
+    } catch (e) { /* si falla, el carrito sigue vivo en localStorage igual */ }
+  }, 400);
+}
+
+// Al entrar, traemos el carrito guardado en el servidor (por si el navegador
+// perdió el localStorage) y lo mezclamos con lo que haya localmente, sin
+// perder cantidades de ninguno de los dos lados.
+async function restaurarCarritoDelServidor(){
+  try {
+    const r = await fetch('/vidriera/api/carrito');
+    if (!r.ok) return;
+    const { items: itemsServidor } = await r.json();
+    if (!itemsServidor || !Object.keys(itemsServidor).length) return;
+
+    const local = leerCarrito();
+    let cambio = false;
+    Object.keys(itemsServidor).forEach(id => {
+      const si = itemsServidor[id];
+      if (!si || !si.nombre || !si.cantidad) return;
+      if (!local[id]) { local[id] = si; cambio = true; }
+      else if (si.cantidad > local[id].cantidad) { local[id] = si; cambio = true; }
+    });
+    if (cambio) {
+      localStorage.setItem(LS_KEY, JSON.stringify(local));
+      actualizarFab();
+    }
+  } catch (e) { /* sin conexión o error de red: seguimos solo con localStorage */ }
+}
 
 function agregarPorId(id){
   const p = PRODUCTOS_DATA[id];
   if (!p) return;
+  if (p.agotado) return;
+  if (p.variantes && p.variantes.length) { abrirDetalle(id); return; }
   const carrito = leerCarrito();
   if (!carrito[id]) carrito[id] = { nombre: p.nombre, precio: p.precio_efectivo || 0, cantidad: 0 };
   carrito[id].cantidad += 1;
   guardarCarrito(carrito);
+  registrarEvento('agregar_carrito');
+}
+
+function registrarEvento(tipo){
+  try { fetch('/vidriera/api/evento', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tipo }) }); } catch(e) {}
 }
 
 function agregar(btn){
@@ -430,7 +498,7 @@ function quitar(id){ const c = leerCarrito(); delete c[id]; guardarCarrito(c); r
 function abrirModal(){ renderModal(); document.getElementById('modalOverlay').classList.add('show'); }
 function cerrarModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
 
-function enviarWhatsapp(){
+async function enviarWhatsapp(){
   const carrito = leerCarrito();
   const ids = Object.keys(carrito);
   if (!ids.length) return;
@@ -441,10 +509,22 @@ function enviarWhatsapp(){
     return l;
   });
   let texto = (MENSAJE_BASE ? MENSAJE_BASE + '\n\n' : '') + lineas.join('\n');
+  const total = Object.values(carrito).reduce((a,i)=>a+i.precio*i.cantidad,0);
   if (MOSTRAR_PRECIOS) {
-    const total = Object.values(carrito).reduce((a,i)=>a+i.precio*i.cantidad,0);
     texto += `\n\nTotal: $${total.toLocaleString('es-AR')}`;
   }
+
+  // Guardar el pedido en el sistema ANTES de abrir WhatsApp — así queda
+  // registrado aunque el cliente termine no mandando el mensaje.
+  try {
+    const items = ids.map(id => ({ nombre: carrito[id].nombre, cantidad: carrito[id].cantidad, precio: carrito[id].precio }));
+    await fetch('/vidriera/api/pedido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, total }),
+    });
+  } catch (e) { /* si falla el guardado, igual dejamos que mande el WhatsApp */ }
+
   const numero = WHATSAPP_NUM ? WHATSAPP_NUM : '';
   const url = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
   window.open(url, '_blank');
@@ -505,6 +585,7 @@ function abrirDetalle(id){
   _detalleActual = id;
   _detalleQty = 1;
   _detalleImgIdx = 0;
+  _detalleVariantesSel = {};
   document.getElementById('detalleQty').textContent = '1';
   document.getElementById('detalleNombre').textContent = p.nombre;
   document.getElementById('detalleDesc').textContent = p.descripcion || '';
@@ -517,8 +598,52 @@ function abrirDetalle(id){
   }
   document.getElementById('detallePrecios').innerHTML = preciosHtml;
 
+  renderVariantesDetalle(p);
+
+  const btnAgregar = document.querySelector('.btn-wa[onclick="agregarDesdeDetalle()"]');
+  if (btnAgregar) {
+    if (p.agotado) {
+      btnAgregar.disabled = true;
+      btnAgregar.style.opacity = '.5';
+      btnAgregar.style.cursor = 'not-allowed';
+      btnAgregar.innerHTML = '<i class="bi bi-x-circle"></i> Agotado';
+    } else {
+      btnAgregar.disabled = false;
+      btnAgregar.style.opacity = '';
+      btnAgregar.style.cursor = '';
+      btnAgregar.innerHTML = '<i class="bi bi-cart-plus"></i> Agregar a la consulta';
+    }
+  }
+
   renderDetalleGaleria();
   document.getElementById('detalleOverlay').classList.add('show');
+}
+
+let _detalleVariantesSel = {};
+
+function renderVariantesDetalle(p){
+  const cont = document.getElementById('detalleVariantes');
+  if (!p.variantes || !p.variantes.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = p.variantes.map((g, gi) => `
+    <div style="margin:12px 0 4px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">${g.nombre}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${g.opciones.map(op => `
+          <button type="button" class="variante-chip" data-grupo="${gi}" data-valor="${op}" onclick="elegirVariante(${gi}, '${op.replace(/'/g,"\\'")}', '${g.nombre.replace(/'/g,"\\'")}')" style="padding:6px 13px;border-radius:999px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:12.5px;font-weight:600;cursor:pointer;">${op}</button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function elegirVariante(grupoIdx, valor, nombreGrupo){
+  _detalleVariantesSel[nombreGrupo] = valor;
+  document.querySelectorAll(`.variante-chip[data-grupo="${grupoIdx}"]`).forEach(btn => {
+    const on = btn.dataset.valor === valor;
+    btn.style.background = on ? 'var(--accent)' : 'var(--bg-surface-2)';
+    btn.style.color = on ? '#fff' : 'var(--text-primary)';
+    btn.style.borderColor = on ? 'var(--accent)' : 'var(--border-color)';
+  });
 }
 
 function renderDetalleGaleria(){
@@ -542,15 +667,34 @@ function cambiarQtyDetalle(delta){
 function agregarDesdeDetalle(){
   const p = PRODUCTOS_DATA[_detalleActual];
   if (!p) return;
+  if (p.agotado) return;
+
+  if (p.variantes && p.variantes.length) {
+    const faltantes = p.variantes.filter(g => !_detalleVariantesSel[g.nombre]);
+    if (faltantes.length) {
+      alert('Elegí ' + faltantes.map(g => g.nombre).join(' y ') + ' antes de agregar.');
+      return;
+    }
+  }
+
+  const varianteTxt = Object.keys(_detalleVariantesSel).length
+    ? Object.entries(_detalleVariantesSel).map(([k,v]) => `${k}: ${v}`).join(', ')
+    : '';
+  // Cada combinación de variante es un ítem de carrito aparte (id compuesto),
+  // así "Peluca / Rubio" y "Peluca / Negro" no se pisan entre sí.
+  const itemId = varianteTxt ? (_detalleActual + '__' + varianteTxt) : _detalleActual;
+
   const carrito = leerCarrito();
-  if (!carrito[_detalleActual]) carrito[_detalleActual] = { nombre: p.nombre, precio: p.precio_efectivo || 0, cantidad: 0 };
-  carrito[_detalleActual].cantidad += _detalleQty;
+  if (!carrito[itemId]) carrito[itemId] = { nombre: p.nombre + (varianteTxt ? ` (${varianteTxt})` : ''), precio: p.precio_efectivo || 0, cantidad: 0 };
+  carrito[itemId].cantidad += _detalleQty;
   guardarCarrito(carrito);
+  registrarEvento('agregar_carrito');
   cerrarDetalle();
 }
 function cerrarDetalle(){ document.getElementById('detalleOverlay').classList.remove('show'); }
 
 actualizarFab();
+restaurarCarritoDelServidor();
 </script>
 </body>
 </html>

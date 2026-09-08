@@ -44,6 +44,7 @@ function leerHojaComoFilas(wb, nombreHoja) {
 // ── Campos del sistema que se pueden mapear ──────────────────
 const CAMPOS_VENTAS = [
   { key: 'fecha',          label: 'Fecha',                 requerido: true },
+  { key: 'cliente',        label: 'Cliente',                requerido: false },
   { key: 'detalle',        label: 'Detalle / producto',    requerido: false },
   { key: 'cantidad',       label: 'Cantidad',               requerido: false },
   { key: 'precio_unitario',label: 'Precio unitario',        requerido: false },
@@ -66,6 +67,7 @@ const CAMPOS_GASTOS = [
 // Alias para sugerir automáticamente el mapeo por nombre de columna
 const ALIAS = {
   fecha: ['fecha', 'date'],
+  cliente: ['cliente', 'clienta', 'consumidor'],
   detalle: ['detalle', 'producto', 'item', 'descripcion del item'],
   cantidad: ['cantidad', 'cant'],
   precio_unitario: ['precio unitario', 'precio'],
@@ -119,6 +121,26 @@ function analizarArchivo(base64) {
 // ── Categorías de gasto: matchear o marcar como nuevas ───────
 function getCategoriasExistentes(sucursal_id) {
   return all('SELECT * FROM categorias_gasto WHERE sucursal_id = ? AND activa = 1', [sucursal_id]);
+}
+
+// ── Valores reales del sistema, para validar/avisar contra la plantilla ──
+function getMediosPagoValidos() {
+  try {
+    return all('SELECT COALESCE(nombre, name) as nombre FROM payment_methods WHERE activo = 1')
+      .map(r => r.nombre).filter(Boolean);
+  } catch (e) { return []; }
+}
+
+function getClientesValidos() {
+  try {
+    return all('SELECT nombre FROM clientes').map(r => r.nombre).filter(Boolean);
+  } catch (e) { return []; }
+}
+
+function buscarClienteId(nombre) {
+  if (!nombre) return null;
+  const row = get('SELECT id FROM clientes WHERE LOWER(nombre) = LOWER(?)', [nombre]);
+  return row ? row.id : null;
 }
 
 function crearCategoriaSiNoExiste(nombre, sucursal_id, cache) {
@@ -183,6 +205,7 @@ function parsearVentas(filas, mapeo) {
     ok.push({
       fila: filaNro,
       fecha: excelFechaToSql(fecha),
+      cliente: clean(val(row, mapeo, 'cliente')),
       detalle: clean(val(row, mapeo, 'detalle')),
       categoria: clean(val(row, mapeo, 'categoria')),
       precio: montoTotal,
@@ -237,11 +260,23 @@ function previsualizar({ base64, hoja, tipo, mapeo }, sucursal_id) {
 
   if (tipo === 'ventas') {
     const ventas = parsearVentas(filas, mapeo);
+    const mediosValidos = getMediosPagoValidos().map(m => m.toLowerCase());
+    const clientesValidos = getClientesValidos().map(c => c.toLowerCase());
+
+    const mediosNoReconocidos = mediosValidos.length ? [...new Set(
+      ventas.ok.flatMap(v => v.medioPago.split(' + ')).filter(m => m && !mediosValidos.includes(m.toLowerCase()))
+    )] : [];
+    const clientesNoEncontrados = [...new Set(
+      ventas.ok.map(v => v.cliente).filter(c => c && !clientesValidos.includes(c.toLowerCase()))
+    )];
+
     return {
       ventas: {
         cantidad: ventas.ok.length,
         total: ventas.ok.reduce((s, v) => s + v.precio, 0),
         errores: ventas.errores,
+        mediosNoReconocidos,
+        clientesNoEncontrados,
       },
       gastos: { cantidad: 0, total: 0, errores: [], categoriasNuevas: [] },
     };
@@ -252,6 +287,10 @@ function previsualizar({ base64, hoja, tipo, mapeo }, sucursal_id) {
   const categoriasNuevas = [...new Set(
     gastos.ok.map(g => g.categoria).filter(c => !categoriasExistentes.includes(c.toLowerCase()))
   )];
+  const mediosValidosG = getMediosPagoValidos().map(m => m.toLowerCase());
+  const mediosNoReconocidosG = mediosValidosG.length ? [...new Set(
+    gastos.ok.map(g => g.metodoPago).filter(m => m && !mediosValidosG.includes(m.toLowerCase()))
+  )] : [];
 
   return {
     ventas: { cantidad: 0, total: 0, errores: [] },
@@ -260,6 +299,7 @@ function previsualizar({ base64, hoja, tipo, mapeo }, sucursal_id) {
       total: gastos.ok.reduce((s, g) => s + g.monto, 0),
       errores: gastos.errores,
       categoriasNuevas,
+      mediosNoReconocidos: mediosNoReconocidosG,
     },
   };
 }
@@ -279,7 +319,7 @@ function confirmar({ base64, hoja, tipo, mapeo }, { sucursal_id, usuario }) {
   const db = require('../db').db; // instancia better-sqlite3 (ver export abajo)
   const insertSale = db.prepare(`
     INSERT INTO sales (total, payment_method, cliente_id, status, sucursal_id, created_at)
-    VALUES (?, ?, 1, 'completada', ?, ?)
+    VALUES (?, ?, ?, 'completada', ?, ?)
   `);
   const insertSaleItem = db.prepare(`
     INSERT INTO sale_items (sale_id, sku, name, price, qty, subtotal)
@@ -294,7 +334,8 @@ function confirmar({ base64, hoja, tipo, mapeo }, { sucursal_id, usuario }) {
     for (const v of ventas.ok) {
       const nombreItem = [v.categoria, v.detalle].filter(Boolean).join(' - ') || 'Venta importada';
       const createdAt = `${v.fecha} 12:00:00`;
-      const info = insertSale.run(v.precio, v.medioPago, sucursal_id, createdAt);
+      const clienteId = buscarClienteId(v.cliente) || 1; // 1 = Consumidor Final
+      const info = insertSale.run(v.precio, v.medioPago, clienteId, sucursal_id, createdAt);
       insertSaleItem.run(info.lastInsertRowid, nombreItem, v.precio, v.precio);
     }
     for (const g of gastos.ok) {
@@ -319,8 +360,43 @@ function confirmar({ base64, hoja, tipo, mapeo }, { sucursal_id, usuario }) {
   };
 }
 
+// ── Plantilla personalizada con los valores reales de ESTE negocio ───
+// No usa desplegables de Excel (la librería gratuita no los soporta al
+// escribir) — en cambio, trae una hoja "Valores válidos" de referencia con
+// los medios de pago y categorías reales, para que quien complete el Excel
+// sepa exactamente qué escribir y no invente nada.
+function generarPlantilla(sucursal_id) {
+  const wb = XLSX.utils.book_new();
+
+  const wsVentas = XLSX.utils.aoa_to_sheet([
+    ['Fecha', 'Cliente', 'Detalle / producto', 'Cantidad', 'Precio unitario', 'Medio de pago'],
+    ['2026-07-17', '', 'Ej: Corte de cabello', 1, 15000, 'Efectivo'],
+  ]);
+  const wsGastos = XLSX.utils.aoa_to_sheet([
+    ['Fecha', 'Categoría', 'Monto', 'Descripción', 'Método de pago'],
+    ['2026-07-17', '', 5000, 'Ej: Insumos de librería', 'Efectivo'],
+  ]);
+
+  const medios = getMediosPagoValidos();
+  const categorias = getCategoriasExistentes(sucursal_id).map(c => c.nombre);
+  const clientes = getClientesValidos();
+  const maxFilas = Math.max(medios.length, categorias.length, clientes.length, 1);
+  const refRows = [['Medios de pago disponibles', 'Categorías de gasto disponibles', 'Clientes existentes']];
+  for (let i = 0; i < maxFilas; i++) {
+    refRows.push([medios[i] || '', categorias[i] || '', clientes[i] || '']);
+  }
+  const wsRef = XLSX.utils.aoa_to_sheet(refRows);
+
+  XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas');
+  XLSX.utils.book_append_sheet(wb, wsGastos, 'Gastos');
+  XLSX.utils.book_append_sheet(wb, wsRef, 'Valores válidos');
+
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+}
+
 module.exports = {
   analizarArchivo,
   previsualizar,
   confirmar,
+  generarPlantilla,
 };

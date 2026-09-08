@@ -47,6 +47,21 @@
     background: var(--bg-surface-2); color: var(--text-primary); font-size: 14px; font-family: inherit; }
   .cat-field textarea { resize: vertical; min-height: 60px; }
 
+  .pfilter { border: 1.5px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-secondary);
+    padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .pfilter.on { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+  .pedido-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .pedido-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .pedido-fecha { font-size: 11.5px; color: var(--text-secondary); }
+  .pedido-total { font-weight: 800; color: var(--text-primary); }
+  .pedido-items { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
+  .pedido-estado { font-size: 10.5px; font-weight: 800; padding: 2px 9px; border-radius: 999px; text-transform: uppercase; }
+  .pedido-estado.nuevo { background: #fef3c7; color: #92400e; }
+  .pedido-estado.atendido { background: #d1fae5; color: #065f46; }
+  .pedido-estado.descartado { background: #f3f4f6; color: #6b7280; }
+  .pedido-acciones { display: flex; gap: 6px; }
+  .pedido-acciones button { font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--border-color); background: var(--bg-surface-2); color: var(--text-primary); cursor: pointer; }
+
   .cat-logo-zone { border: 2px dashed var(--border-color); border-radius: 12px; padding: 18px; text-align: center; cursor: pointer; }
   .cat-logo-zone img { max-height: 130px; border-radius: 8px; margin-bottom: 8px; }
   .cat-logo-zone.small { padding: 10px; }
@@ -75,7 +90,7 @@
   .btn-nuevo-prod { background: var(--color-primary); color: #fff; border: none; border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
   .prod-card-admin { background: var(--bg-surface-2); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
-  .prod-card-admin .pimg { width: 100%; aspect-ratio: 1.4/1; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .prod-card-admin .pimg { position: relative; width: 100%; aspect-ratio: 1.4/1; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .prod-card-admin .pimg img { width: 100%; height: 100%; object-fit: cover; }
   .prod-card-admin .pimg i { font-size: 24px; opacity: .3; }
   .prod-card-admin .pbody { padding: 10px 12px; }
@@ -118,6 +133,35 @@
           </div>
         </div>
       <% } else { %>
+
+        <div class="cat-section">
+          <div class="cat-section-header">
+            <div class="cat-section-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"><i class="bi bi-graph-up"></i></div>
+            <div class="cat-section-title">Cómo se está usando el catálogo</div>
+          </div>
+          <div class="cat-section-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;" id="metricasGrid">
+              <div style="text-align:center;padding:10px;color:var(--text-secondary);font-size:13px;grid-column:1/-1;">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cat-section">
+          <div class="cat-section-header">
+            <div class="cat-section-icon" style="background:linear-gradient(135deg,#059669,#047857);"><i class="bi bi-bag-check"></i></div>
+            <div class="cat-section-title">Pedidos recibidos</div>
+            <span id="pedidosBadgeNuevos" style="display:none;background:#ef4444;color:#fff;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;"></span>
+          </div>
+          <div class="cat-section-body">
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+              <button class="pfilter on" data-estado="" onclick="filtrarPedidos('', this)">Todos</button>
+              <button class="pfilter" data-estado="nuevo" onclick="filtrarPedidos('nuevo', this)">Nuevos</button>
+              <button class="pfilter" data-estado="atendido" onclick="filtrarPedidos('atendido', this)">Atendidos</button>
+              <button class="pfilter" data-estado="descartado" onclick="filtrarPedidos('descartado', this)">Descartados</button>
+            </div>
+            <div id="pedidosLista"><div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">Cargando...</div></div>
+          </div>
+        </div>
 
         <div class="cat-section">
           <div class="cat-section-header">
@@ -292,6 +336,16 @@
         <label>Precio de promoción</label>
         <input type="number" id="p_precio_promo" placeholder="0" min="0" step="0.01">
       </div>
+      <div class="cat-row-toggle" style="padding-top:0;">
+        <div><div class="lbl">Agotado</div><div class="desc">Se ve en el catálogo pero no se puede agregar al pedido</div></div>
+        <label class="cat-switch"><input type="checkbox" id="p_agotado"><span class="slider"></span></label>
+      </div>
+      <div class="cat-field">
+        <label>Variantes (opcional)</label>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Ej: un grupo "Color" con opciones "Rubio, Negro, Castaño". El cliente elige una opción de cada grupo antes de pedir.</div>
+        <div id="variantesGrupos"></div>
+        <button type="button" onclick="agregarGrupoVariante()" style="width:100%;border:1.5px dashed var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);border-radius:9px;padding:9px;font-size:12.5px;cursor:pointer;"><i class="bi bi-plus-lg"></i> Agregar grupo de variantes</button>
+      </div>
       <div class="cat-field">
         <label>Foto principal</label>
         <div class="cat-logo-zone small" id="prodLogoZone">
@@ -404,6 +458,28 @@ async function guardar(){
 // ── Productos del catálogo propio (ABM) ─────────────
 let _productosPropios = [];
 let _prodImagenBase64 = null;
+let _variantesGrupos = [];
+
+function renderVariantesGrupos(){
+  const cont = document.getElementById('variantesGrupos');
+  cont.innerHTML = _variantesGrupos.map((g, i) => `
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-start;">
+      <input type="text" placeholder="Ej: Color" value="${g.nombre || ''}" oninput="_variantesGrupos[${i}].nombre = this.value" style="width:110px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;">
+      <input type="text" placeholder="Opciones separadas por coma: Rubio, Negro, Castaño" value="${(g.opciones||[]).join(', ')}" oninput="_variantesGrupos[${i}].opciones = this.value.split(',').map(s=>s.trim()).filter(Boolean)" style="flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-primary);font-size:13px;">
+      <button type="button" onclick="quitarGrupoVariante(${i})" style="background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;padding:6px;"><i class="bi bi-trash3"></i></button>
+    </div>
+  `).join('');
+}
+
+function agregarGrupoVariante(){
+  _variantesGrupos.push({ nombre: '', opciones: [] });
+  renderVariantesGrupos();
+}
+
+function quitarGrupoVariante(i){
+  _variantesGrupos.splice(i, 1);
+  renderVariantesGrupos();
+}
 
 async function cargarProductosPropios(){
   const grid = document.getElementById('prodGrid');
@@ -423,7 +499,7 @@ function renderProductosPropios(){
   empty.style.display = 'none';
   grid.innerHTML = _productosPropios.map(p => `
     <div class="prod-card-admin">
-      <div class="pimg">${p.imagen ? `<img src="${p.imagen}">` : '<i class="bi bi-box"></i>'}</div>
+      <div class="pimg">${p.imagen ? `<img src="${p.imagen}">` : '<i class="bi bi-box"></i>'}${p.agotado ? '<span style="position:absolute;top:6px;right:6px;background:#374151;color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;">AGOTADO</span>' : ''}</div>
       <div class="pbody">
         <div class="pnombre">${p.nombre}</div>
         <div class="pcat">${p.categoria || 'Sin categoría'}</div>
@@ -459,6 +535,9 @@ function abrirModalProducto(){
   document.getElementById('p_descripcion').value = '';
   document.getElementById('p_en_promo').checked = false;
   document.getElementById('p_precio_promo').value = '';
+  document.getElementById('p_agotado').checked = false;
+  _variantesGrupos = [];
+  renderVariantesGrupos();
   document.getElementById('prodImgPreview').style.display = 'none';
   document.getElementById('prodLogoZoneTxt').style.display = 'block';
   _prodImagenBase64 = null;
@@ -480,6 +559,9 @@ function editarProductoPropio(id){
   document.getElementById('p_descripcion').value = p.descripcion || '';
   document.getElementById('p_en_promo').checked = !!p.en_promo;
   document.getElementById('p_precio_promo').value = p.precio_promo || '';
+  document.getElementById('p_agotado').checked = !!p.agotado;
+  _variantesGrupos = Array.isArray(p.variantes) ? JSON.parse(JSON.stringify(p.variantes)) : [];
+  renderVariantesGrupos();
   if (p.imagen) { document.getElementById('prodImgPreview').src = p.imagen; document.getElementById('prodImgPreview').style.display = 'block'; document.getElementById('prodLogoZoneTxt').style.display = 'none'; }
   else { document.getElementById('prodImgPreview').style.display = 'none'; document.getElementById('prodLogoZoneTxt').style.display = 'block'; }
   _prodImagenBase64 = null;
@@ -542,6 +624,8 @@ async function guardarProductoPropio(){
     descripcion: document.getElementById('p_descripcion').value.trim() || null,
     en_promo: document.getElementById('p_en_promo').checked ? 1 : 0,
     precio_promo: document.getElementById('p_en_promo').checked ? (parseFloat(document.getElementById('p_precio_promo').value) || null) : null,
+    agotado: document.getElementById('p_agotado').checked ? 1 : 0,
+    variantes: _variantesGrupos.filter(g => g.nombre && g.opciones && g.opciones.length),
     imagenes: _galeriaImagenes,
   };
   if (_prodImagenBase64) body.imagen = _prodImagenBase64;
@@ -623,4 +707,102 @@ async function borrarBanner(id){
 }
 
 cargarBanners();
+
+// ── Pedidos recibidos desde la vidriera ─────────────
+let _pedidos = [];
+let _pedidosEstadoActual = '';
+
+async function cargarPedidos(){
+  const lista = document.getElementById('pedidosLista');
+  if (!lista) return;
+  try {
+    const q = _pedidosEstadoActual ? ('?estado=' + _pedidosEstadoActual) : '';
+    const r = await fetch('/catalogo/api/pedidos' + q);
+    if (!r.ok) return;
+    _pedidos = await r.json();
+    renderPedidos();
+    actualizarBadgeNuevos();
+  } catch(e) { /* silencioso */ }
+}
+
+async function actualizarBadgeNuevos(){
+  try {
+    const r = await fetch('/catalogo/api/pedidos/nuevos-count');
+    const { n } = await r.json();
+    const badge = document.getElementById('pedidosBadgeNuevos');
+    if (n > 0) { badge.style.display = 'inline-block'; badge.textContent = n + ' nuevo' + (n > 1 ? 's' : ''); }
+    else badge.style.display = 'none';
+  } catch(e) { /* silencioso */ }
+}
+
+function filtrarPedidos(estado, btn){
+  _pedidosEstadoActual = estado;
+  document.querySelectorAll('.pfilter').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  cargarPedidos();
+}
+
+function renderPedidos(){
+  const lista = document.getElementById('pedidosLista');
+  if (!_pedidos.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">No hay pedidos para mostrar.</div>';
+    return;
+  }
+  lista.innerHTML = _pedidos.map(p => {
+    const fecha = new Date(p.created_at.replace(' ', 'T')).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const itemsTxt = p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+    return `
+      <div class="pedido-card">
+        <div class="pedido-head">
+          <span class="pedido-estado ${p.estado}">${p.estado}</span>
+          <span class="pedido-fecha">${fecha}</span>
+        </div>
+        <div class="pedido-items">${itemsTxt}</div>
+        <div class="pedido-head" style="margin-bottom:0;">
+          <span class="pedido-total">$${Number(p.total || 0).toLocaleString('es-AR')}</span>
+          <div class="pedido-acciones">
+            ${p.estado !== 'atendido' ? `<button onclick="cambiarEstadoPedido(${p.id}, 'atendido')"><i class="bi bi-check2"></i> Atendido</button>` : ''}
+            ${p.estado !== 'descartado' ? `<button onclick="cambiarEstadoPedido(${p.id}, 'descartado')"><i class="bi bi-x"></i> Descartar</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function cambiarEstadoPedido(id, estado){
+  try {
+    const r = await fetch('/catalogo/api/pedidos/' + id + '/estado', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado }),
+    });
+    if (!r.ok) { alert('No se pudo actualizar.'); return; }
+    await cargarPedidos();
+  } catch(e) { alert('Error de red: ' + e.message); }
+}
+
+cargarPedidos();
+
+// ── Métricas ─────────────────────────────────────────
+async function cargarMetricas(){
+  const grid = document.getElementById('metricasGrid');
+  if (!grid) return;
+  try {
+    const r = await fetch('/catalogo/api/metricas');
+    if (!r.ok) return;
+    const m = await r.json();
+    const item = (label, value, sub) => `
+      <div style="text-align:center;padding:12px 8px;background:var(--bg-surface-2);border-radius:10px;">
+        <div style="font-size:22px;font-weight:900;color:var(--text-primary);">${value}</div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">${label}</div>
+        ${sub ? `<div style="font-size:10.5px;color:var(--text-secondary);opacity:.8;">${sub}</div>` : ''}
+      </div>`;
+    grid.innerHTML =
+      item('Visitas hoy', m.visitasHoy, '') +
+      item('Visitas (7 días)', m.visitas7d, '') +
+      item('Agregaron al carrito', m.agregados7d, 'últimos 7 días') +
+      item('Pedidos', m.pedidos7d, 'últimos 7 días') +
+      item('Conversión', m.conversion7d != null ? m.conversion7d + '%' : '—', 'visitas → pedido');
+  } catch(e) { /* silencioso */ }
+}
+cargarMetricas();
 </script>

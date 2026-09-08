@@ -20,13 +20,17 @@ function initSchema() {
   // Ficha de producto: descripción larga + galería de fotos extra (JSON array)
   try { run(`ALTER TABLE catalogo_productos ADD COLUMN descripcion TEXT`); } catch (_) {}
   try { run(`ALTER TABLE catalogo_productos ADD COLUMN imagenes TEXT`); } catch (_) {}
+  try { run(`ALTER TABLE catalogo_productos ADD COLUMN agotado INTEGER DEFAULT 0`); } catch (_) {}
+  try { run(`ALTER TABLE catalogo_productos ADD COLUMN variantes TEXT`); } catch (_) {}
 }
 
 function parseImagenes(row) {
   if (!row) return row;
   let imagenes = [];
   try { imagenes = row.imagenes ? JSON.parse(row.imagenes) : []; } catch (_) { imagenes = []; }
-  return { ...row, imagenes };
+  let variantes = [];
+  try { variantes = row.variantes ? JSON.parse(row.variantes) : []; } catch (_) { variantes = []; }
+  return { ...row, imagenes, variantes };
 }
 
 function list() {
@@ -52,11 +56,24 @@ function toImagenesJson(imagenes) {
   return limpio.length ? JSON.stringify(limpio) : null;
 }
 
-function create({ nombre, categoria = null, precio = 0, en_promo = 0, precio_promo = null, imagen = null, activo = 1, descripcion = null, imagenes = [] }) {
+function toVariantesJson(variantes) {
+  if (!Array.isArray(variantes)) return null;
+  const limpio = variantes
+    .filter(v => v && v.nombre && Array.isArray(v.opciones) && v.opciones.length)
+    .slice(0, 4) // máximo 4 grupos (ej: Color, Talle, Largo, Material)
+    .map(v => ({
+      nombre: String(v.nombre).trim().slice(0, 30),
+      opciones: v.opciones.map(o => String(o).trim()).filter(Boolean).slice(0, 15),
+    }))
+    .filter(v => v.opciones.length);
+  return limpio.length ? JSON.stringify(limpio) : null;
+}
+
+function create({ nombre, categoria = null, precio = 0, en_promo = 0, precio_promo = null, imagen = null, activo = 1, descripcion = null, imagenes = [], agotado = 0, variantes = [] }) {
   const info = run(
-    `INSERT INTO catalogo_productos (nombre, categoria, precio, en_promo, precio_promo, imagen, activo, descripcion, imagenes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [String(nombre), categoria || null, Number(precio) || 0, en_promo ? 1 : 0, precio_promo != null && precio_promo !== '' ? Number(precio_promo) : null, imagen || null, activo ? 1 : 0, descripcion || null, toImagenesJson(imagenes)]
+    `INSERT INTO catalogo_productos (nombre, categoria, precio, en_promo, precio_promo, imagen, activo, descripcion, imagenes, agotado, variantes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [String(nombre), categoria || null, Number(precio) || 0, en_promo ? 1 : 0, precio_promo != null && precio_promo !== '' ? Number(precio_promo) : null, imagen || null, activo ? 1 : 0, descripcion || null, toImagenesJson(imagenes), agotado ? 1 : 0, toVariantesJson(variantes)]
   );
   return findById(info.lastInsertRowid);
 }
@@ -66,7 +83,7 @@ function update(id, fields) {
   if (!p) return null;
   run(
     `UPDATE catalogo_productos SET
-      nombre = ?, categoria = ?, precio = ?, en_promo = ?, precio_promo = ?, imagen = ?, activo = ?, descripcion = ?, imagenes = ?
+      nombre = ?, categoria = ?, precio = ?, en_promo = ?, precio_promo = ?, imagen = ?, activo = ?, descripcion = ?, imagenes = ?, agotado = ?, variantes = ?
      WHERE id = ?`,
     [
       fields.nombre !== undefined ? String(fields.nombre) : p.nombre,
@@ -78,6 +95,8 @@ function update(id, fields) {
       fields.activo !== undefined ? (fields.activo ? 1 : 0) : p.activo,
       fields.descripcion !== undefined ? (fields.descripcion || null) : p.descripcion,
       fields.imagenes !== undefined ? toImagenesJson(fields.imagenes) : toImagenesJson(p.imagenes),
+      fields.agotado !== undefined ? (fields.agotado ? 1 : 0) : (p.agotado || 0),
+      fields.variantes !== undefined ? toVariantesJson(fields.variantes) : toVariantesJson(p.variantes),
       id,
     ]
   );

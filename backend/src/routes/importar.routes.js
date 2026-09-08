@@ -13,6 +13,16 @@ router.get('/', (req, res) => {
   });
 });
 
+// ── Descargar plantilla personalizada con los valores reales de este negocio ──
+router.get('/plantilla', (req, res) => {
+  const svc = require('../services/importar.service');
+  const sucursal_id = res.locals.sucursal_id || 1;
+  const buffer = svc.generarPlantilla(sucursal_id);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla-importacion.xlsx"');
+  res.send(buffer);
+});
+
 // ── Paso 1: analizar archivo (hojas, encabezados, sugerencia de mapeo) ──
 router.post('/api/analizar', (req, res) => {
   try {
