@@ -9,7 +9,7 @@ set -e  # Parar si hay error
 # ── Tu clave fija para activar/administrar el Catálogo digital en CUALQUIER
 #    cliente. La ponés una sola vez acá, y cada instalación nueva ya la usa
 #    sola — no hace falta tocar el .env a mano en cada cliente.
-CLAVE_CATALOGO_AXSOFT="poné-aca-tu-clave-y-no-la-cambies-mas"
+CLAVE_CATALOGO_AXSOFT="axsoftt2026"
 
 echo ""
 echo "🚀  Instalando ComercialOS en la VPS..."
