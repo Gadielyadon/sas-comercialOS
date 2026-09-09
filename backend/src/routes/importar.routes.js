@@ -17,9 +17,11 @@ router.get('/', (req, res) => {
 router.get('/plantilla', (req, res) => {
   const svc = require('../services/importar.service');
   const sucursal_id = res.locals.sucursal_id || 1;
-  const buffer = svc.generarPlantilla(sucursal_id);
+  const tipo = ['ventas', 'gastos', 'catalogo'].includes(req.query.tipo) ? req.query.tipo : 'ventas';
+  const buffer = svc.generarPlantilla(sucursal_id, tipo);
+  const nombres = { ventas: 'plantilla-ventas.xlsx', gastos: 'plantilla-gastos.xlsx', catalogo: 'plantilla-catalogo.xlsx' };
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="plantilla-importacion.xlsx"');
+  res.setHeader('Content-Disposition', `attachment; filename="${nombres[tipo]}"`);
   res.send(buffer);
 });
 

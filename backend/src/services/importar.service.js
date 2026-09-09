@@ -64,14 +64,25 @@ const CAMPOS_GASTOS = [
   { key: 'metodo_pago',  label: 'Método de pago',        requerido: false },
 ];
 
+const CAMPOS_CATALOGO = [
+  { key: 'nombre',       label: 'Nombre del producto',   requerido: true },
+  { key: 'categoria',    label: 'Categoría',              requerido: false },
+  { key: 'precio',       label: 'Precio',                 requerido: true }, // elegís vos qué columna de precio usar
+  { key: 'descripcion',  label: 'Descripción',            requerido: false },
+  { key: 'stock',        label: 'Stock (0 = se marca Agotado)', requerido: false },
+];
+
 // Alias para sugerir automáticamente el mapeo por nombre de columna
 const ALIAS = {
   fecha: ['fecha', 'date'],
   cliente: ['cliente', 'clienta', 'consumidor'],
+  nombre: ['nombre', 'producto', 'item', 'nombre del producto'],
+  stock: ['stock actual', 'stock', 'cantidad'],
   detalle: ['detalle', 'producto', 'item', 'descripcion del item'],
   cantidad: ['cantidad', 'cant'],
   precio_unitario: ['precio unitario', 'precio'],
   monto: ['monto', 'total', 'precio'],
+  precio: ['precio', 'precio minorista', 'precio unitario', 'precio venta'],
   medio_pago: ['medio', 'medio de pago', 'metodo de pago', 'metodo'],
   monto_2: ['monto2', 'monto 2'],
   medio_pago_2: ['medio2', 'medio 2', 'med2', 'med'],
@@ -113,9 +124,10 @@ function analizarArchivo(base64) {
       muestra,
       sugerenciaVentas: sugerirMapeo(headers, CAMPOS_VENTAS),
       sugerenciaGastos: sugerirMapeo(headers, CAMPOS_GASTOS),
+      sugerenciaCatalogo: sugerirMapeo(headers, CAMPOS_CATALOGO),
     };
   });
-  return { hojas, camposVentas: CAMPOS_VENTAS, camposGastos: CAMPOS_GASTOS };
+  return { hojas, camposVentas: CAMPOS_VENTAS, camposGastos: CAMPOS_GASTOS, camposCatalogo: CAMPOS_CATALOGO };
 }
 
 // ── Categorías de gasto: matchear o marcar como nuevas ───────
@@ -252,6 +264,43 @@ function parsearGastos(filas, mapeo) {
   return { ok, errores };
 }
 
+// ── Parseo de productos del Catálogo ──────────────────────────
+function parsearCatalogo(filas, mapeo) {
+  const ok = [];
+  const errores = [];
+  for (let i = 1; i < filas.length; i++) {
+    const row = filas[i] || [];
+    const vacia = row.every(c => c === null || c === undefined || String(c).trim() === '');
+    if (vacia) continue;
+
+    const filaNro = i + 1;
+    const errsFila = [];
+    const nombre = clean(val(row, mapeo, 'nombre'));
+    const precio = val(row, mapeo, 'precio');
+
+    if (!nombre) errsFila.push('Falta el nombre del producto');
+    if (precio === null || precio === undefined || precio === '' || isNaN(Number(precio))) errsFila.push('Precio inválido');
+
+    if (errsFila.length) {
+      errores.push({ fila: filaNro, motivo: errsFila.join(', ') });
+      continue;
+    }
+
+    const stockVal = val(row, mapeo, 'stock');
+    const stock = (stockVal === null || stockVal === undefined || stockVal === '') ? null : Number(stockVal);
+
+    ok.push({
+      fila: filaNro,
+      nombre,
+      categoria: clean(val(row, mapeo, 'categoria')),
+      precio: Number(precio),
+      descripcion: clean(val(row, mapeo, 'descripcion')),
+      agotado: (stock !== null && !isNaN(stock) && stock <= 0) ? 1 : 0,
+    });
+  }
+  return { ok, errores };
+}
+
 // ── Paso 2: previsualizar (no escribe nada) ──────────────────
 function previsualizar({ base64, hoja, tipo, mapeo }, sucursal_id) {
   const wb = leerLibro(base64);
@@ -279,6 +328,21 @@ function previsualizar({ base64, hoja, tipo, mapeo }, sucursal_id) {
         clientesNoEncontrados,
       },
       gastos: { cantidad: 0, total: 0, errores: [], categoriasNuevas: [] },
+    };
+  }
+
+  if (tipo === 'catalogo') {
+    const catalogo = parsearCatalogo(filas, mapeo);
+    const categoriasDetectadas = [...new Set(catalogo.ok.map(p => p.categoria).filter(Boolean))];
+    return {
+      ventas: { cantidad: 0, total: 0, errores: [] },
+      gastos: { cantidad: 0, total: 0, errores: [], categoriasNuevas: [] },
+      catalogo: {
+        cantidad: catalogo.ok.length,
+        agotados: catalogo.ok.filter(p => p.agotado).length,
+        errores: catalogo.errores,
+        categoriasDetectadas,
+      },
     };
   }
 
@@ -312,6 +376,23 @@ function confirmar({ base64, hoja, tipo, mapeo }, { sucursal_id, usuario }) {
 
   const ventas = tipo === 'ventas' ? parsearVentas(filas, mapeo) : { ok: [] };
   const gastos = tipo === 'gastos' ? parsearGastos(filas, mapeo) : { ok: [] };
+  const catalogo = tipo === 'catalogo' ? parsearCatalogo(filas, mapeo) : { ok: [] };
+
+  if (tipo === 'catalogo') {
+    const catalogoProductosService = require('./catalogo_productos.service');
+    catalogoProductosService.initSchema();
+    for (const prod of catalogo.ok) {
+      catalogoProductosService.create({
+        nombre: prod.nombre,
+        categoria: prod.categoria || null,
+        precio: prod.precio,
+        descripcion: prod.descripcion || null,
+        agotado: prod.agotado,
+        activo: 1,
+      });
+    }
+    return { productosInsertados: catalogo.ok.length };
+  }
 
   const cacheCategorias = new Map();
   let categoriasCreadas = 0;
@@ -365,32 +446,58 @@ function confirmar({ base64, hoja, tipo, mapeo }, { sucursal_id, usuario }) {
 // escribir) — en cambio, trae una hoja "Valores válidos" de referencia con
 // los medios de pago y categorías reales, para que quien complete el Excel
 // sepa exactamente qué escribir y no invente nada.
-function generarPlantilla(sucursal_id) {
+function generarPlantilla(sucursal_id, tipo = 'ventas') {
   const wb = XLSX.utils.book_new();
 
+  if (tipo === 'catalogo') {
+    const wsProductos = XLSX.utils.aoa_to_sheet([
+      ['Nombre', 'Categoría', 'Precio', 'Descripción', 'Stock'],
+      ['Ej: Extensiones kanekalon 60cm', '', 15000, 'Descripción opcional del producto', 10],
+    ]);
+    const catalogoProductosService = require('./catalogo_productos.service');
+    catalogoProductosService.initSchema();
+    const categoriasCatalogo = catalogoProductosService.listCategorias();
+    const refRows = [['Categorías ya usadas en tu catálogo']];
+    categoriasCatalogo.forEach(c => refRows.push([c]));
+    if (!categoriasCatalogo.length) refRows.push(['(todavía no tenés categorías cargadas)']);
+    const wsRef = XLSX.utils.aoa_to_sheet(refRows);
+
+    XLSX.utils.book_append_sheet(wb, wsProductos, 'Productos');
+    XLSX.utils.book_append_sheet(wb, wsRef, 'Valores válidos');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  if (tipo === 'gastos') {
+    const wsGastos = XLSX.utils.aoa_to_sheet([
+      ['Fecha', 'Categoría', 'Monto', 'Descripción', 'Método de pago'],
+      ['2026-07-17', '', 5000, 'Ej: Insumos de librería', 'Efectivo'],
+    ]);
+    const medios = getMediosPagoValidos();
+    const categorias = getCategoriasExistentes(sucursal_id).map(c => c.nombre);
+    const maxFilas = Math.max(medios.length, categorias.length, 1);
+    const refRows = [['Categorías de gasto disponibles', 'Métodos de pago disponibles']];
+    for (let i = 0; i < maxFilas; i++) refRows.push([categorias[i] || '', medios[i] || '']);
+    const wsRef = XLSX.utils.aoa_to_sheet(refRows);
+
+    XLSX.utils.book_append_sheet(wb, wsGastos, 'Gastos');
+    XLSX.utils.book_append_sheet(wb, wsRef, 'Valores válidos');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  // tipo === 'ventas' (default)
   const wsVentas = XLSX.utils.aoa_to_sheet([
     ['Fecha', 'Cliente', 'Detalle / producto', 'Cantidad', 'Precio unitario', 'Medio de pago'],
     ['2026-07-17', '', 'Ej: Corte de cabello', 1, 15000, 'Efectivo'],
   ]);
-  const wsGastos = XLSX.utils.aoa_to_sheet([
-    ['Fecha', 'Categoría', 'Monto', 'Descripción', 'Método de pago'],
-    ['2026-07-17', '', 5000, 'Ej: Insumos de librería', 'Efectivo'],
-  ]);
-
   const medios = getMediosPagoValidos();
-  const categorias = getCategoriasExistentes(sucursal_id).map(c => c.nombre);
   const clientes = getClientesValidos();
-  const maxFilas = Math.max(medios.length, categorias.length, clientes.length, 1);
-  const refRows = [['Medios de pago disponibles', 'Categorías de gasto disponibles', 'Clientes existentes']];
-  for (let i = 0; i < maxFilas; i++) {
-    refRows.push([medios[i] || '', categorias[i] || '', clientes[i] || '']);
-  }
+  const maxFilas = Math.max(medios.length, clientes.length, 1);
+  const refRows = [['Medios de pago disponibles', 'Clientes existentes']];
+  for (let i = 0; i < maxFilas; i++) refRows.push([medios[i] || '', clientes[i] || '']);
   const wsRef = XLSX.utils.aoa_to_sheet(refRows);
 
   XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas');
-  XLSX.utils.book_append_sheet(wb, wsGastos, 'Gastos');
   XLSX.utils.book_append_sheet(wb, wsRef, 'Valores válidos');
-
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 }
 
