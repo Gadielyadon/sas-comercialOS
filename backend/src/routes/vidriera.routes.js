@@ -98,47 +98,18 @@ router.post('/vidriera/api/pedido', (req, res) => {
 });
 
 // ── Sección "Catálogo" dentro del sistema (requiere login) ─────────
-// Gateada por una licencia: hasta que se active con la clave, muestra
-// un mensaje de "no disponible, contactate con tu operador".
-function licenciaActiva() {
-  return configService.getValue('vidriera_licencia_activada') === '1';
-}
-
 router.get('/catalogo', (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/login');
-  const activada = licenciaActiva();
   const settings = vidrieraService.getSettings();
   res.render('pages/catalogo', {
-    activada,
+    activada: true,
     settings,
     user: req.session.user,
   });
 });
 
-// La clave de activación NUNCA tiene un default hardcodeado: si el .env de
-// este cliente no define VIDRIERA_ADMIN_KEY, no hay forma de activar el
-// catálogo hasta que se configure. Antes había un fallback fijo ('axsoft2026')
-// que era el mismo para TODOS los clientes que no configuraran su propia clave.
-function getClaveConfigurada() {
-  return process.env.VIDRIERA_ADMIN_KEY || null;
-}
-
-router.post('/catalogo/activar', (req, res) => {
-  if (!req.session || !req.session.user) return res.status(401).json({ ok: false });
-  const claveCorrecta = getClaveConfigurada();
-  if (!claveCorrecta) {
-    console.warn('⚠️  VIDRIERA_ADMIN_KEY no está configurada en .env — el catálogo no se puede activar hasta definirla.');
-    return res.status(500).json({ ok: false, error: 'No configurado. Contactá a tu operador.' });
-  }
-  const clave = (req.body && req.body.clave) || '';
-  if (clave !== claveCorrecta) return res.json({ ok: false });
-  configService.setValue('vidriera_licencia_activada', '1');
-  res.json({ ok: true });
-});
-
 router.post('/catalogo/api/guardar', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false });
-  if (!licenciaActiva()) return res.status(403).json({ ok: false, error: 'Catálogo no activado' });
   try {
     const settings = vidrieraService.saveSettings(req.body || {});
     res.json({ ok: true, settings });
@@ -150,7 +121,6 @@ router.post('/catalogo/api/guardar', (req, res) => {
 // ── Productos del catálogo (ABM independiente del Inventario) ─────
 function requireCatalogoAuth(req, res, next) {
   if (!req.session || !req.session.user) return res.status(401).json({ error: 'No autorizado' });
-  if (!licenciaActiva()) return res.status(403).json({ error: 'Catálogo no activado' });
   next();
 }
 
@@ -220,6 +190,10 @@ router.delete('/catalogo/api/banners/:id', requireCatalogoAuth, (req, res) => {
 // ── Panel oculto por URL con clave (backup, sin necesidad de login) ──
 // Pensado para vos: activar/configurar el catálogo de un cliente por link
 // directo, sin tener que loguearte como admin de ese negocio.
+function getClaveConfigurada() {
+  return process.env.VIDRIERA_ADMIN_KEY || null;
+}
+
 function claveValida(req) {
   const clave = getClaveConfigurada();
   if (!clave) return false;

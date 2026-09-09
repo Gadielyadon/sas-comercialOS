@@ -121,19 +121,6 @@
     <%- include('../partials/header', { module: 'Catálogo', user }) %>
     <div class="page-body">
 
-      <% if (!activada) { %>
-        <div class="lock-wrap">
-          <div class="lock-card">
-            <div class="lock-icon"><i class="bi bi-shop-window"></i></div>
-            <h2>Esta opción no está disponible</h2>
-            <p>El catálogo digital es una función adicional. Contactate con tu operador para activarla, o ingresá la clave de activación si ya la tenés.</p>
-            <input type="text" id="claveInput" placeholder="Clave de activación">
-            <button onclick="activar()">Activar</button>
-            <div class="lock-err" id="lockErr">Clave incorrecta.</div>
-          </div>
-        </div>
-      <% } else { %>
-
         <div class="cat-section">
           <div class="cat-section-header">
             <div class="cat-section-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"><i class="bi bi-graph-up"></i></div>
@@ -298,8 +285,6 @@
           </div>
         </div>
 
-      <% } %>
-
     </div>
   </div>
 </div>
@@ -380,17 +365,6 @@ function copiarUrl(){
 function mostrarToast(msg){
   const t = document.getElementById('toastOk'); t.textContent = msg || 'Guardado ✓'; t.style.display='block';
   setTimeout(()=>{ t.style.display='none'; }, 1800);
-}
-
-async function activar(){
-  const clave = document.getElementById('claveInput').value.trim();
-  if (!clave) return;
-  try {
-    const r = await fetch('/catalogo/activar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ clave }) });
-    const data = await r.json();
-    if (data.ok) { window.location.reload(); }
-    else { document.getElementById('lockErr').style.display = 'block'; }
-  } catch(e) { document.getElementById('lockErr').style.display = 'block'; }
 }
 
 // ── Origen ──────────────────────────────────────────
