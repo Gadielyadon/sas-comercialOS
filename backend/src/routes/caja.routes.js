@@ -71,11 +71,23 @@ function enviarResumenCaja(req, res) {
     );
 
     const desglose = {};
-    ventas.forEach(v => {
-      const m = v.payment_method || 'Otro';
+    function sumarDesglose(nombre, monto) {
+      const m = (nombre || 'Otro').trim();
       if (!desglose[m]) desglose[m] = { total: 0, cantidad: 0 };
-      desglose[m].total += Number(v.total || 0);
+      desglose[m].total += Number(monto) || 0;
       desglose[m].cantidad += 1;
+    }
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Otro').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumarDesglose(partes[0], v.cash_received);
+          sumarDesglose(partes[1], v.monto_mixto2);
+          return;
+        }
+      }
+      sumarDesglose(raw, v.total);
     });
 
     const desgloseArr = Object.entries(desglose).map(([metodo, d]) => ({
@@ -146,7 +158,16 @@ router.get('/', (req, res) => {
 
   const porMetodo = {};
   ventas.forEach(v => {
-    porMetodo[v.payment_method] = (porMetodo[v.payment_method] || 0) + v.total;
+    const raw = (v.payment_method || 'Sin método').trim();
+    if (raw.includes('+')) {
+      const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+      if (partes.length === 2) {
+        porMetodo[partes[0]] = (porMetodo[partes[0]] || 0) + (Number(v.cash_received) || 0);
+        porMetodo[partes[1]] = (porMetodo[partes[1]] || 0) + (Number(v.monto_mixto2) || 0);
+        return;
+      }
+    }
+    porMetodo[raw] = (porMetodo[raw] || 0) + Number(v.total || 0);
   });
 
   let movimientos = [];

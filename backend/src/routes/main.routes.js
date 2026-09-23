@@ -70,7 +70,25 @@ function getVentasPorMetodo(sucursal_id) {
   try {
     const hoy   = fechaArg(0);
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    return all(`SELECT payment_method, COALESCE(SUM(total), 0) as total FROM sales WHERE DATE(created_at) = ? ${where} GROUP BY payment_method`, [hoy]);
+    const ventas = all(`SELECT payment_method, cash_received, monto_mixto2, total FROM sales WHERE DATE(created_at) = ? ${where}`, [hoy]);
+    const mapa = {};
+    function sumar(nombre, monto) {
+      const m = (nombre || 'Sin método').trim();
+      mapa[m] = (mapa[m] || 0) + (Number(monto) || 0);
+    }
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Sin método').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumar(partes[0], v.cash_received);
+          sumar(partes[1], v.monto_mixto2);
+          return;
+        }
+      }
+      sumar(raw, v.total);
+    });
+    return Object.entries(mapa).map(([payment_method, total]) => ({ payment_method, total }));
   } catch(e) { return []; }
 }
 
@@ -842,17 +860,35 @@ router.get('/api/reportes/ventas', (req, res) => {
       [desde, hasta]
     );
 
-    const metodos = all(
-      `SELECT COALESCE(payment_method,'Sin método') as payment_method,
-              COUNT(*) as count,
-              COALESCE(SUM(total),0) as total
+    const _ventasMetodo = all(
+      `SELECT payment_method, cash_received, monto_mixto2, total
        FROM sales s
        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
-         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
-       GROUP BY payment_method
-       ORDER BY total DESC`,
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
       [desde, hasta]
     );
+    const _mapaMetodos = {};
+    (function() {
+      function sumar(nombre, monto) {
+        const m = (nombre || 'Sin método').trim();
+        if (!_mapaMetodos[m]) _mapaMetodos[m] = { payment_method: m, count: 0, total: 0 };
+        _mapaMetodos[m].total += Number(monto) || 0;
+        _mapaMetodos[m].count += 1;
+      }
+      _ventasMetodo.forEach(v => {
+        const raw = (v.payment_method || 'Sin método').trim();
+        if (raw.includes('+')) {
+          const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+          if (partes.length === 2) {
+            sumar(partes[0], v.cash_received);
+            sumar(partes[1], v.monto_mixto2);
+            return;
+          }
+        }
+        sumar(raw, v.total);
+      });
+    })();
+    const metodos = Object.values(_mapaMetodos).sort((a, b) => b.total - a.total);
 
     const departamentos = all(
       `SELECT si.name AS departamento,
@@ -1090,17 +1126,35 @@ router.get('/api/reportes/ventas/export', (req, res) => {
       [desde, hasta]
     );
 
-    const metodos = all(
-      `SELECT COALESCE(payment_method,'Sin método') as "Método de pago",
-              COUNT(*) as Transacciones,
-              COALESCE(SUM(total),0) as "Total $"
+    const _ventasMetodo2 = all(
+      `SELECT payment_method, cash_received, monto_mixto2, total
        FROM sales s
        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
-         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
-       GROUP BY payment_method
-       ORDER BY "Total $" DESC`,
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
       [desde, hasta]
     );
+    const _mapaMetodos2 = {};
+    (function() {
+      function sumar(nombre, monto) {
+        const m = (nombre || 'Sin método').trim();
+        if (!_mapaMetodos2[m]) _mapaMetodos2[m] = { 'Método de pago': m, Transacciones: 0, 'Total $': 0 };
+        _mapaMetodos2[m]['Total $'] += Number(monto) || 0;
+        _mapaMetodos2[m].Transacciones += 1;
+      }
+      _ventasMetodo2.forEach(v => {
+        const raw = (v.payment_method || 'Sin método').trim();
+        if (raw.includes('+')) {
+          const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+          if (partes.length === 2) {
+            sumar(partes[0], v.cash_received);
+            sumar(partes[1], v.monto_mixto2);
+            return;
+          }
+        }
+        sumar(raw, v.total);
+      });
+    })();
+    const metodos = Object.values(_mapaMetodos2).sort((a, b) => b['Total $'] - a['Total $']);
 
     const XLSX = require('xlsx');
     const wb   = XLSX.utils.book_new();

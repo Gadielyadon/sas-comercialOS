@@ -99,13 +99,32 @@ function getStats(sucursal_id = null) {
     ORDER BY dia ASC
   `);
 
-  const porMetodo = all(`
-    SELECT payment_method, COALESCE(SUM(total),0) as total, COUNT(*) as count
+  const ventasParaMetodo = all(`
+    SELECT payment_method, cash_received, monto_mixto2, total
     FROM sales s
     ${where}
     AND DATE(s.created_at) = ?
-    GROUP BY payment_method
   `, [hoy]);
+  const mapaMetodo = {};
+  function sumarMetodo(nombre, monto) {
+    const m = (nombre || 'Sin método').trim();
+    if (!mapaMetodo[m]) mapaMetodo[m] = { payment_method: m, total: 0, count: 0 };
+    mapaMetodo[m].total += Number(monto) || 0;
+    mapaMetodo[m].count += 1;
+  }
+  ventasParaMetodo.forEach(v => {
+    const raw = (v.payment_method || 'Sin método').trim();
+    if (raw.includes('+')) {
+      const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+      if (partes.length === 2) {
+        sumarMetodo(partes[0], v.cash_received);
+        sumarMetodo(partes[1], v.monto_mixto2);
+        return;
+      }
+    }
+    sumarMetodo(raw, v.total);
+  });
+  const porMetodo = Object.values(mapaMetodo);
 
   return { ventasHoy, ventasSemana, porMetodo };
 }

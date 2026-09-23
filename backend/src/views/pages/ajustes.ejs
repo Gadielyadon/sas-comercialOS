@@ -580,59 +580,146 @@
           </div>
           <div>
             <div class="aj-section-title">Balanza electrónica</div>
-            <div class="aj-section-desc">Soporte para balanzas que imprimen etiquetas con código EAN-13 (prefijo 2).</div>
+            <div class="aj-section-desc">Elegí cómo tu balanza le pasa el peso al sistema.</div>
           </div>
         </div>
         <div class="aj-section-body">
-          <div class="aj-grid aj-grid-2" style="align-items:start;">
-            <div style="display:flex;flex-direction:column;gap:14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
-                <div>
-                  <div style="font-size: 15.5px;font-weight:700;color:var(--text-primary);">Activar soporte de balanza</div>
-                  <div style="font-size: 13px;color:var(--text-secondary);margin-top:2px;">Se mostrará el chip ⚖️ en el punto de venta</div>
-                </div>
-                <label class="pm-toggle" style="flex-shrink:0;">
-                  <input type="checkbox" id="balanza_habilitada">
-                  <span class="pm-toggle-slider"></span>
-                </label>
-              </div>
-              <div class="aj-field">
-                <label>Modo del código EAN-13</label>
-                <select id="balanza_modo">
-                  <option value="precio">Precio — los últimos 5 dígitos son el precio (más común)</option>
-                  <option value="peso">Peso — los últimos 5 dígitos son el peso en gramos</option>
-                </select>
-                <div class="field-hint">Consultá el manual de tu balanza. La mayoría usa <strong>modo precio</strong>.</div>
-              </div>
-              <div class="aj-field">
-                <label>Prefijo EAN-13</label>
-                <input type="number" id="balanza_prefijo" value="2" min="2" max="29" step="1" style="width:80px;" placeholder="2">
-                <div class="field-hint">Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.</div>
-              </div>
-              <div class="aj-field">
-                <label>Dígitos del PLU</label>
-                <select id="balanza_digitos_plu" style="width:120px;">
-                  <option value="5">5 dígitos (ej: 00027)</option>
-                  <option value="6">6 dígitos (ej: 000027)</option>
-                </select>
-                <div class="field-hint">Depende del modelo de balanza. La mayoría usa <strong>5 dígitos</strong>.</div>
-              </div>
+
+          <!-- ── Selector de tipo de conexión ── -->
+          <div style="margin-bottom:18px;">
+            <div class="aj-field" style="margin-bottom:0;"><label>Tipo de conexión</label></div>
+            <div class="formato-options" style="margin-top:8px;">
+              <label class="formato-card" id="balModoTicketCard" onclick="selBalanzaModo(this,'ticket')">
+                <input type="radio" name="bal_conexion" value="ticket" id="balModoTicket">
+                <div class="formato-icon">🏷️</div>
+                <div class="formato-name">Ticket con código de barras</div>
+                <div class="formato-desc">La balanza imprime una etiqueta EAN-13 y se escanea</div>
+              </label>
+              <label class="formato-card" id="balModoDirectaCard" onclick="selBalanzaModo(this,'directa')">
+                <input type="radio" name="bal_conexion" value="directa" id="balModoDirecta">
+                <div class="formato-icon">🔌</div>
+                <div class="formato-name">Conexión directa</div>
+                <div class="formato-desc">La balanza está cableada a la PC y el peso se ve en vivo</div>
+              </label>
             </div>
-            <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
-              <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
-              <div style="font-size: 14px;color:var(--text-primary);line-height:1.7;">
-                La balanza imprime etiquetas con un <strong>código EAN-13</strong>. Al escanearlo en ventas, el sistema detecta automáticamente el PLU y el precio/peso.<br><br>
-                <span style="font-family:monospace;font-size: 15px;background:rgba(0,0,0,.05);padding:4px 8px;border-radius:5px;display:inline-block;margin-bottom:8px;letter-spacing:1px;">
-                  2 <span style="color:#6366f1;">00123</span> <span style="color:#10b981;">01599</span> 4
-                </span><br>
-                <span style="font-size: 13px;color:var(--text-secondary);">
-                  <span style="color:#6366f1;">■</span> PLU del producto (00123)<br>
-                  <span style="color:#10b981;">■</span> Precio $15,99 (01599)<br>
-                  ■ Dígito de control (4)
-                </span>
+          </div>
+
+          <!-- ── Modo TICKET (EAN-13) ── -->
+          <div id="balanza-panel-ticket">
+            <div class="aj-grid aj-grid-2" style="align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);">
+                  <div>
+                    <div style="font-size: 15.5px;font-weight:700;color:var(--text-primary);">Activar soporte de balanza</div>
+                    <div style="font-size: 13px;color:var(--text-secondary);margin-top:2px;">Se mostrará el chip ⚖️ en el punto de venta</div>
+                  </div>
+                  <label class="pm-toggle" style="flex-shrink:0;">
+                    <input type="checkbox" id="balanza_habilitada">
+                    <span class="pm-toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="aj-field">
+                  <label>Modo del código EAN-13</label>
+                  <select id="balanza_modo">
+                    <option value="precio">Precio — los últimos 5 dígitos son el precio (más común)</option>
+                    <option value="peso">Peso — los últimos 5 dígitos son el peso en gramos</option>
+                  </select>
+                  <div class="field-hint">Consultá el manual de tu balanza. La mayoría usa <strong>modo precio</strong>.</div>
+                </div>
+                <div class="aj-field">
+                  <label>Prefijo EAN-13</label>
+                  <input type="number" id="balanza_prefijo" value="2" min="2" max="29" step="1" style="width:80px;" placeholder="2">
+                  <div class="field-hint">Normalmente es <strong>2</strong>. Cambiá solo si tu balanza usa otro prefijo.</div>
+                </div>
+                <div class="aj-field">
+                  <label>Dígitos del PLU</label>
+                  <select id="balanza_digitos_plu" style="width:120px;">
+                    <option value="5">5 dígitos (ej: 00027)</option>
+                    <option value="6">6 dígitos (ej: 000027)</option>
+                  </select>
+                  <div class="field-hint">Depende del modelo de balanza. La mayoría usa <strong>5 dígitos</strong>.</div>
+                </div>
+              </div>
+              <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
+                <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
+                <div style="font-size: 14px;color:var(--text-primary);line-height:1.7;">
+                  La balanza imprime etiquetas con un <strong>código EAN-13</strong>. Al escanearlo en ventas, el sistema detecta automáticamente el PLU y el precio/peso.<br><br>
+                  <span style="font-family:monospace;font-size: 15px;background:rgba(0,0,0,.05);padding:4px 8px;border-radius:5px;display:inline-block;margin-bottom:8px;letter-spacing:1px;">
+                    2 <span style="color:#6366f1;">00123</span> <span style="color:#10b981;">01599</span> 4
+                  </span><br>
+                  <span style="font-size: 13px;color:var(--text-secondary);">
+                    <span style="color:#6366f1;">■</span> PLU del producto (00123)<br>
+                    <span style="color:#10b981;">■</span> Precio $15,99 (01599)<br>
+                    ■ Dígito de control (4)
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- ── Modo DIRECTA (peso en vivo) ── -->
+          <div id="balanza-panel-directa" style="display:none;">
+            <div class="aj-grid aj-grid-2" style="align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="aj-field">
+                  <label>Marca / protocolo de balanza</label>
+                  <select id="balanza_marca">
+                    <option value="kretz">Kretz (Report LT / Report Nx)</option>
+                    <option value="cas">CAS</option>
+                    <option value="toledo">Toledo</option>
+                    <option value="systel">Systel</option>
+                    <option value="otra">Otra / genérica</option>
+                  </select>
+                  <div class="field-hint">Define qué protocolo usa el agente local para hablar con la balanza.</div>
+                </div>
+                <div class="aj-field">
+                  <label>Tipo de puerto</label>
+                  <select id="balanza_puerto_tipo" onchange="syncBalanzaPuertoUI()">
+                    <option value="serial">Serial (RS-232)</option>
+                    <option value="usb">USB</option>
+                  </select>
+                </div>
+                <div class="aj-field">
+                  <label>Puerto</label>
+                  <div style="display:flex;gap:8px;">
+                    <select id="balanza_puerto" style="flex:1;">
+                      <option value="">— Detectar puertos —</option>
+                    </select>
+                    <button type="button" onclick="detectarPuertosBalanza()" style="white-space:nowrap;padding:9px 14px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-surface-2);color:var(--text-secondary);font-family:var(--font-body);font-size: 14px;font-weight:600;cursor:pointer;">
+                      <i class="bi bi-arrow-clockwise"></i> Detectar
+                    </button>
+                  </div>
+                  <div class="field-hint" id="balanza_puerto_hint">Necesita el agente local corriendo en esta PC para listar los puertos.</div>
+                </div>
+                <div class="aj-field">
+                  <label>Velocidad (baudrate)</label>
+                  <select id="balanza_baudrate" style="width:140px;">
+                    <option value="2400">2400</option>
+                    <option value="4800">4800</option>
+                    <option value="9600" selected>9600</option>
+                    <option value="19200">19200</option>
+                  </select>
+                  <div class="field-hint">Si no sabés cuál es, dejá 9600 (el más común) y probá la conexión.</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+                  <button type="button" onclick="probarConexionBalanza()" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;background:var(--color-primary);color:#fff;font-family:var(--font-body);font-size: 14.5px;font-weight:700;cursor:pointer;">
+                    <i class="bi bi-broadcast"></i> Probar conexión
+                  </button>
+                  <span id="balanza_test_resultado" style="font-size:14px;color:var(--text-secondary);"></span>
+                </div>
+              </div>
+              <div style="background:var(--bg-surface-2);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:16px;">
+                <div style="font-size: 12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:12px;">¿Cómo funciona?</div>
+                <div style="font-size: 14px;color:var(--text-primary);line-height:1.7;">
+                  La balanza queda conectada por cable a la PC del punto de venta. Un <strong>agente local</strong> instalado en esa máquina lee el peso y se lo pasa al sistema, que lo muestra en vivo al lado del buscador de productos en Ventas.<br><br>
+                  <span style="font-size:13px;color:var(--text-secondary);">
+                    ⚠️ Requiere instalar el agente local en la PC donde está conectada la balanza — sin eso, "Detectar" y "Probar conexión" no van a encontrar nada.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1008,6 +1095,34 @@ async function cargarConfig() {
   const balDigitos = document.getElementById('balanza_digitos_plu');
   if (balDigitos) balDigitos.value = _config.balanza_digitos_plu || '5';
 
+  // ── Balanza: tipo de conexión + campos de conexión directa ──
+  const balMarca = document.getElementById('balanza_marca');
+  if (balMarca) balMarca.value = _config.balanza_marca || 'kretz';
+  const balPuertoTipo = document.getElementById('balanza_puerto_tipo');
+  if (balPuertoTipo) balPuertoTipo.value = _config.balanza_puerto_tipo || 'serial';
+  const balPuerto = document.getElementById('balanza_puerto');
+  if (balPuerto && _config.balanza_puerto) {
+    // Si el puerto guardado todavía no está en la lista (agente no detectó nada
+    // aún en esta sesión), lo agregamos igual para no perder el valor guardado.
+    if (![...balPuerto.options].some(o => o.value === _config.balanza_puerto)) {
+      const opt = document.createElement('option');
+      opt.value = _config.balanza_puerto;
+      opt.textContent = _config.balanza_puerto;
+      balPuerto.appendChild(opt);
+    }
+    balPuerto.value = _config.balanza_puerto;
+  }
+  const balBaud = document.getElementById('balanza_baudrate');
+  if (balBaud) balBaud.value = _config.balanza_baudrate || '9600';
+
+  const conexionGuardada = _config.balanza_conexion || 'ticket';
+  document.getElementById('balModoTicket').checked  = conexionGuardada === 'ticket';
+  document.getElementById('balModoDirecta').checked = conexionGuardada === 'directa';
+  document.getElementById('balModoTicketCard').classList.toggle('selected', conexionGuardada === 'ticket');
+  document.getElementById('balModoDirectaCard').classList.toggle('selected', conexionGuardada === 'directa');
+  document.getElementById('balanza-panel-ticket').style.display  = conexionGuardada === 'ticket'  ? '' : 'none';
+  document.getElementById('balanza-panel-directa').style.display = conexionGuardada === 'directa' ? '' : 'none';
+
   if (_config.empresa_logo) mostrarLogoPreview(_config.empresa_logo);
   actualizarPreview();
   syncFacturacionUI();
@@ -1019,6 +1134,73 @@ function selFormatoCard(label, value) {
   label.classList.add('selected');
   label.querySelector('input').checked = true;
   actualizarPreview();
+}
+
+// ── Balanza: modo ticket vs. conexión directa ──────────────────
+
+// URL del agente local que corre en la PC donde está conectada la balanza
+// (serial/USB no se puede leer desde el navegador ni desde el servidor
+// remoto, por eso hace falta este agente instalado en esa máquina).
+const BALANZA_AGENT_URL = 'http://localhost:4455';
+
+function selBalanzaModo(label, value) {
+  document.querySelectorAll('#balModoTicketCard, #balModoDirectaCard').forEach(c => c.classList.remove('selected'));
+  label.classList.add('selected');
+  label.querySelector('input').checked = true;
+  document.getElementById('balanza-panel-ticket').style.display  = value === 'ticket'  ? '' : 'none';
+  document.getElementById('balanza-panel-directa').style.display = value === 'directa' ? '' : 'none';
+}
+
+function syncBalanzaPuertoUI() {
+  const tipo = document.getElementById('balanza_puerto_tipo')?.value;
+  const hint = document.getElementById('balanza_puerto_hint');
+  if (hint) {
+    hint.innerHTML = tipo === 'usb'
+      ? 'Conectá la balanza por USB y tocá "Detectar" — Windows la va a mostrar como un puerto COM.'
+      : 'Si tu PC no tiene puerto serial físico, vas a necesitar un adaptador USB-Serial.';
+  }
+}
+
+async function detectarPuertosBalanza() {
+  const select = document.getElementById('balanza_puerto');
+  const hint = document.getElementById('balanza_puerto_hint');
+  try {
+    const r = await fetch(`${BALANZA_AGENT_URL}/puertos`);
+    if (!r.ok) throw new Error('agente respondió con error');
+    const puertos = await r.json(); // se espera un array de strings, ej: ["COM3","COM4"]
+    select.innerHTML = '<option value="">— Elegir puerto —</option>';
+    (puertos || []).forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      select.appendChild(opt);
+    });
+    if (hint) hint.textContent = (puertos && puertos.length)
+      ? `${puertos.length} puerto(s) encontrado(s).`
+      : 'El agente respondió pero no encontró puertos conectados.';
+  } catch (err) {
+    if (hint) hint.textContent = 'No se pudo contactar al agente local — verificá que esté instalado y corriendo en esta PC.';
+    showToast('No se encontró el agente local de la balanza', false);
+  }
+}
+
+async function probarConexionBalanza() {
+  const resultado = document.getElementById('balanza_test_resultado');
+  const puerto = document.getElementById('balanza_puerto')?.value;
+  const marca = document.getElementById('balanza_marca')?.value;
+  const baudrate = document.getElementById('balanza_baudrate')?.value;
+  if (!puerto) { showToast('Elegí un puerto primero', false); return; }
+  resultado.textContent = 'Probando…';
+  resultado.style.color = 'var(--text-secondary)';
+  try {
+    const r = await fetch(`${BALANZA_AGENT_URL}/peso?puerto=${encodeURIComponent(puerto)}&marca=${marca}&baudrate=${baudrate}`);
+    if (!r.ok) throw new Error('sin respuesta de la balanza');
+    const data = await r.json(); // se espera { peso: 0.950, estable: true }
+    resultado.textContent = `✅ Conectado — peso actual: ${data.peso} kg${data.estable ? '' : ' (inestable)'}`;
+    resultado.style.color = '#10b981';
+  } catch (err) {
+    resultado.textContent = '❌ No se pudo leer la balanza — revisá el puerto, el cable y que el agente esté corriendo.';
+    resultado.style.color = '#ef4444';
+  }
 }
 
 function handleLogoFile(file) {
@@ -1091,6 +1273,11 @@ async function guardarAjustes() {
     balanza_modo:                 document.getElementById('balanza_modo')?.value || 'precio',
     balanza_prefijo:              document.getElementById('balanza_prefijo')?.value || '2',
     balanza_digitos_plu:          document.getElementById('balanza_digitos_plu')?.value || '5',
+    balanza_conexion:             document.querySelector('input[name="bal_conexion"]:checked')?.value || 'ticket',
+    balanza_marca:                document.getElementById('balanza_marca')?.value || 'kretz',
+    balanza_puerto_tipo:          document.getElementById('balanza_puerto_tipo')?.value || 'serial',
+    balanza_puerto:               document.getElementById('balanza_puerto')?.value || '',
+    balanza_baudrate:             document.getElementById('balanza_baudrate')?.value || '9600',
     // El CUIT y la condición IVA para AFIP son los mismos que "Datos de la
     // empresa" — un solo lugar donde cargarlos, sin duplicar.
     afip_cuit:                    (document.getElementById('aj_cuit')?.value || '').trim(),

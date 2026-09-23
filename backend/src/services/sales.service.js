@@ -455,7 +455,7 @@ function listToday(sucursal_id = null) {
       : '';
 
     const sales = all(
-      `SELECT s.id, s.total, s.payment_method, s.created_at
+      `SELECT s.id, s.total, s.payment_method, s.cash_received, s.monto_mixto2, s.created_at
        FROM sales s
        WHERE DATE(s.created_at) = ?
        ${sWhere}
@@ -604,16 +604,33 @@ function ventasPorMetodo(sucursal_id = null) {
   try {
     const hoy = nowArgentina().substring(0, 10);
     const sW  = (sucursal_id && HAS_SALES_SUCURSAL) ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    const rows = all(
-      `SELECT payment_method, COALESCE(SUM(total),0) as total, COUNT(*) as count
+    const ventas = all(
+      `SELECT payment_method, cash_received, monto_mixto2, total
        FROM sales
        WHERE DATE(created_at) = ?
-         AND COALESCE(status,'completada') != 'anulada' ${sW}
-       GROUP BY payment_method
-       ORDER BY total DESC`,
+         AND COALESCE(status,'completada') != 'anulada' ${sW}`,
       [hoy]
     );
-    return rows;
+    const mapa = {};
+    function sumar(nombre, monto) {
+      const m = (nombre || 'Sin método').trim();
+      if (!mapa[m]) mapa[m] = { payment_method: m, total: 0, count: 0 };
+      mapa[m].total += Number(monto) || 0;
+      mapa[m].count += 1;
+    }
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Sin método').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumar(partes[0], v.cash_received);
+          sumar(partes[1], v.monto_mixto2);
+          return;
+        }
+      }
+      sumar(raw, v.total);
+    });
+    return Object.values(mapa).sort((a, b) => b.total - a.total);
   } catch(e) {
     console.error('ventasPorMetodo:', e.message);
     return [];

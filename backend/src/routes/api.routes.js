@@ -651,7 +651,7 @@ router.get('/reporte/metodos', (req, res) => {
     if (!desde || !hasta) return res.status(400).json({ error: 'desde y hasta son requeridos' });
 
     const ventas = all(`
-      SELECT id, total, payment_method, created_at
+      SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
       FROM sales
       WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
       ORDER BY id DESC
@@ -663,11 +663,29 @@ router.get('/reporte/metodos', (req, res) => {
     pms.forEach(p => { comisionMap[p.nombre] = p.comision_interna_pct || 0; });
 
     const mapa = {};
-    ventas.forEach(v => {
-      const m = v.payment_method || 'Sin método';
+    function sumarMetodo(nombre, monto, contarTransaccion) {
+      const m = (nombre || 'Sin método').trim();
       if (!mapa[m]) mapa[m] = { metodo: m, total: 0, cantidad: 0, comision_pct: comisionMap[m] || 0 };
-      mapa[m].total    += Number(v.total);
-      mapa[m].cantidad += 1;
+      mapa[m].total += Number(monto) || 0;
+      if (contarTransaccion) mapa[m].cantidad += 1;
+    }
+
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Sin método').trim();
+      // Pago mixto: viene como "Método1 + Método2" — el monto real de cada
+      // uno está en cash_received (método 1) y monto_mixto2 (método 2), no
+      // en v.total (que es la suma de los dos juntos). Si los sumáramos
+      // como una sola fila con v.total, se pisaría cuánto entró realmente
+      // por cada método (ej: el efectivo real del día quedaría de menos).
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumarMetodo(partes[0], v.cash_received, true);
+          sumarMetodo(partes[1], v.monto_mixto2, true);
+          return;
+        }
+      }
+      sumarMetodo(raw, v.total, true);
     });
 
     // Calcular comisión neta
@@ -697,7 +715,7 @@ router.get('/reporte/metodos.xlsx', (req, res) => {
     if (!desde || !hasta) return res.status(400).json({ error: 'desde y hasta son requeridos' });
 
     const ventas = all(`
-      SELECT id, total, payment_method, created_at
+      SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
       FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
       ORDER BY id DESC
     `, [desde, hasta]);
@@ -707,11 +725,23 @@ router.get('/reporte/metodos.xlsx', (req, res) => {
     pms.forEach(p => { comisionMap[p.nombre] = p.comision_interna_pct || 0; });
 
     const mapa = {};
-    ventas.forEach(v => {
-      const m = v.payment_method || 'Sin método';
+    function sumarMetodo(nombre, monto, contarTransaccion) {
+      const m = (nombre || 'Sin método').trim();
       if (!mapa[m]) mapa[m] = { metodo: m, total: 0, cantidad: 0, comision_pct: comisionMap[m] || 0 };
-      mapa[m].total    += Number(v.total);
-      mapa[m].cantidad += 1;
+      mapa[m].total += Number(monto) || 0;
+      if (contarTransaccion) mapa[m].cantidad += 1;
+    }
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Sin método').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumarMetodo(partes[0], v.cash_received, true);
+          sumarMetodo(partes[1], v.monto_mixto2, true);
+          return;
+        }
+      }
+      sumarMetodo(raw, v.total, true);
     });
     Object.values(mapa).forEach(m => {
       m.comision_monto = m.total * (m.comision_pct / 100);
@@ -941,11 +971,23 @@ router.get('/historial.xlsx', (req, res) => {
     // HOJA 4 — Resumen por método de pago
     // ══════════════════════════════════════════════
     const metodMap = {};
-    ventas.forEach(v => {
-      const m = v.payment_method || 'Sin método';
+    function sumarMetod(nombre, monto) {
+      const m = (nombre || 'Sin método').trim();
       if (!metodMap[m]) metodMap[m] = { ventas: 0, total: 0 };
       metodMap[m].ventas++;
-      metodMap[m].total += fmt(v.total);
+      metodMap[m].total += fmt(monto);
+    }
+    ventas.forEach(v => {
+      const raw = (v.payment_method || 'Sin método').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          sumarMetod(partes[0], v.cash_received);
+          sumarMetod(partes[1], v.monto_mixto2);
+          return;
+        }
+      }
+      sumarMetod(raw, v.total);
     });
     const h4 = [['Método de pago','Cantidad de ventas','Total recaudado']];
     Object.entries(metodMap).sort((a,b)=>b[1].total-a[1].total).forEach(([m,d])=>{

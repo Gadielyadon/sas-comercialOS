@@ -101,6 +101,7 @@ router.get('/ver/:id', (req, res) => {
     presupuesto: p,
     config,
     ventaGenerada,
+    U: require('../public/js/unidades'),
     sucursal: res.locals.sucursal || { id: 1, nombre: 'Casa Central' }
   });
 });
@@ -259,6 +260,7 @@ function parsearItems(body) {
         precio_unitario:    Number(it.precio_unitario ?? it.price ?? 0),
         descuento_item_pct: Number(it.descuento_item_pct || 0),
         pct_iva:            (it.pct_iva === '' || it.pct_iva === undefined) ? null : it.pct_iva,
+        unidad:             it.unidad || null,
       }));
     }
   } catch (e) {}
@@ -270,6 +272,7 @@ function parsearItems(body) {
   const tipos = [].concat(body.item_tipo || []);
   const skus = [].concat(body.item_sku || []);
   const ivas = [].concat(body.item_pct_iva || []);
+  const unidades = [].concat(body.item_unidad || []);
 
   return nombres.map((n, i) => ({
     nombre: n,
@@ -279,6 +282,7 @@ function parsearItems(body) {
     tipo: tipos[i] || 'custom',
     sku: skus[i] || null,
     pct_iva: ivas[i] === '' || ivas[i] === undefined ? null : Number(ivas[i]),
+    unidad: unidades[i] || null,
   })).filter(it => it.nombre?.trim());
 }
 

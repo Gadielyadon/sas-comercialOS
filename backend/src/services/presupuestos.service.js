@@ -92,6 +92,8 @@ function initPresupuestosSchema() {
   try { run(`ALTER TABLE presupuesto_items ADD COLUMN cantidad REAL DEFAULT 1`); } catch (e) {}
   try { run(`ALTER TABLE presupuesto_items ADD COLUMN precio_unitario REAL DEFAULT 0`); } catch (e) {}
   try { run(`ALTER TABLE presupuesto_items ADD COLUMN subtotal REAL DEFAULT 0`); } catch (e) {}
+  // Unidad de medida del ítem (Litro, m², cm). Vacío = unidad, como siempre
+  try { run(`ALTER TABLE presupuesto_items ADD COLUMN unidad TEXT`); } catch (e) {}
   // presupuestos
   try { run(`ALTER TABLE presupuestos ADD COLUMN condicion_pago_obs TEXT`); } catch (e) {}
   try { run(`ALTER TABLE presupuestos ADD COLUMN cliente_nombre TEXT`); } catch (e) {}
@@ -256,6 +258,7 @@ function create({ cliente_nombre, cliente_cuit, cliente_email, cliente_tel, clie
     add('descuento_item_pct', descItem);
     add('pct_iva', pctIva);
     add('subtotal', sub);
+    add('unidad', item.unidad || null);
 
     run(`INSERT INTO presupuesto_items (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`, vals);
   }
@@ -301,8 +304,8 @@ function update(id, datos) {
       const precio   = Number(item.precio_unitario || 0);
       const descItem = Number(item.descuento_item_pct || 0);
       const pctIva   = (item.pct_iva !== null && item.pct_iva !== undefined && item.pct_iva !== '') ? Number(item.pct_iva) : null;
-      run(`INSERT INTO presupuesto_items (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, descuento_item_pct, pct_iva, subtotal) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        [Number(id), item.tipo || 'custom', item.sku || null, String(item.nombre || ''), item.descripcion || null, qty, precio, descItem, pctIva, qty * precio * (1 - descItem / 100)]);
+      run(`INSERT INTO presupuesto_items (presupuesto_id, tipo, sku, nombre, descripcion, cantidad, precio_unitario, descuento_item_pct, pct_iva, subtotal, unidad) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [Number(id), item.tipo || 'custom', item.sku || null, String(item.nombre || ''), item.descripcion || null, qty, precio, descItem, pctIva, qty * precio * (1 - descItem / 100), item.unidad || null]);
     }
   }
 

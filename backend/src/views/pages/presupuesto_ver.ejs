@@ -289,7 +289,10 @@
                     <div class="item-nombre"><%= item.nombre %></div>
                     <% if (item.descripcion) { %><div class="item-desc"><%= item.descripcion %></div><% } %>
                   </td>
-                  <td><%= item.cant.toLocaleString('es-AR') %></td>
+                  <td>
+                    <%= item.cant.toLocaleString('es-AR') %>
+                    <% if (U.nombre(item.unidad, item.cant)) { %><div class="item-desc"><%= U.nombre(item.unidad, item.cant) %></div><% } %>
+                  </td>
                   <td>
                     <% if (item.descPct > 0) { %>
                       <span class="precio-tachado">$<%= item.precioBase.toLocaleString('es-AR', {minimumFractionDigits:2}) %></span>
@@ -369,6 +372,7 @@
 </div>
 
 <%- include('../partials/scripts') %>
+<script src="/js/unidades.js"></script>
 <script>
 const presupuesto = <%- JSON.stringify(presupuesto) %>;
 const config      = <%- JSON.stringify(config) %>;
@@ -483,7 +487,7 @@ function imprimirTermica() {
       ${i.descripcion ? `<div style="font-size: 14px;color:#111;font-weight:700;">${i.descripcion}</div>` : ''}
       ${desc > 0 ? `<div style="font-size: 13px;color:#111;font-weight:800;">Desc. ${desc}%</div>` : ''}
       <div style="display:flex;justify-content:space-between;font-size: 13.5px;margin-top:2px;">
-        <span>${Number(i.cantidad||0).toLocaleString('es-AR')} x ${fmt0(precio)}</span>
+        <span>${AxUnidades.etiqueta(i.cantidad||0, i.unidad)} x ${fmt0(precio)}</span>
         <strong>${fmt0(sub)}</strong>
       </div>
     </div><div style="border-top:1px dashed #ccc;margin:4px 0;"></div>`;
