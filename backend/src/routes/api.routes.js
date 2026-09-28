@@ -103,6 +103,33 @@ router.get('/products.xlsx',         productsCtrl.exportXlsx);
 router.post('/sales',       salesCtrl.create);
 router.get('/sales/recent', salesCtrl.recent);
 
+// Lista de métodos para el filtro del Historial: los configurados + los que ya
+// aparecieron en ventas (incluye las partes de pagos mixtos). Sin duplicados.
+router.get('/ventas/metodos', (req, res) => {
+  try {
+    const { all } = require('../db');
+    const norm = x => String(x || '').toLowerCase().replace(/\s+/g, '');
+    const vistos = new Map();
+    const agregar = n => {
+      const nombre = String(n || '').trim();
+      if (!nombre) return;
+      const k = norm(nombre);
+      if (!vistos.has(k)) vistos.set(k, nombre);
+    };
+    try {
+      all(`SELECT COALESCE(NULLIF(nombre,''), name) AS n FROM payment_methods WHERE activo = 1 ORDER BY id ASC`)
+        .forEach(r => agregar(r.n));
+    } catch (e) {
+      try { all(`SELECT nombre AS n FROM payment_methods WHERE activo = 1 ORDER BY id ASC`).forEach(r => agregar(r.n)); } catch (e2) {}
+    }
+    all(`SELECT DISTINCT payment_method AS pm FROM sales WHERE payment_method IS NOT NULL`)
+      .forEach(r => String(r.pm).split('+').forEach(agregar));
+    res.json({ metodos: [...vistos.values()] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/ventas/buscar', (req, res) => {
   try {
     const { all } = require('../db');
@@ -115,7 +142,15 @@ router.get('/ventas/buscar', (req, res) => {
 
     if (desde)  { conditions.push(`DATE(s.created_at) >= ?`); params.push(desde); }
     if (hasta)  { conditions.push(`DATE(s.created_at) <= ?`); params.push(hasta); }
-    if (metodo) { conditions.push(`s.payment_method = ?`);    params.push(metodo); }
+    // Incluye pagos simples ("Efectivo") y mixtos ("Efectivo + Débito" / "Transferencia + Efectivo")
+    // La comparación ignora espacios y mayúsculas ("Mercado Pago" = "MercadoPago").
+    const _normMetodo = x => String(x || '').toLowerCase().replace(/\s+/g, '');
+    const metodoKey = metodo ? _normMetodo(metodo) : '';
+    if (metodo) {
+      const nExpr = `REPLACE(LOWER(TRIM(s.payment_method)),' ','')`;
+      conditions.push(`(${nExpr} = ? OR ${nExpr} LIKE ? OR ${nExpr} LIKE ?)`);
+      params.push(metodoKey, `${metodoKey}+%`, `%+${metodoKey}`);
+    }
     if (status && status !== 'todas') {
       conditions.push(`COALESCE(s.status,'completada') = ?`);
       params.push(status);
@@ -156,6 +191,39 @@ router.get('/ventas/buscar', (req, res) => {
       ${where}
     `, params)[0];
     const total = totalRow?.total || 0;
+
+    // Resumen sobre TODO el filtro (no solo la página visible).
+    // Si hay filtro por método, calcula cuánto entró realmente por ese método
+    // (en pagos mixtos solo la parte que corresponde a ese método).
+    const _partePorMetodo = (v, nombre) => {
+      const raw = (v.payment_method || '').trim();
+      if (raw.includes('+')) {
+        const partes = raw.split('+').map(x => x.trim()).filter(Boolean);
+        if (partes.length === 2) {
+          let t = 0;
+          if (_normMetodo(partes[0]) === _normMetodo(nombre)) t += Number(v.cash_received) || 0;
+          if (_normMetodo(partes[1]) === _normMetodo(nombre)) t += Number(v.monto_mixto2) || 0;
+          return t;
+        }
+      }
+      return _normMetodo(raw) === _normMetodo(nombre) ? Number(v.total) || 0 : 0;
+    };
+    const filasResumen = all(`
+      SELECT s.id, s.total, s.payment_method, s.cash_received, s.monto_mixto2,
+             COALESCE(s.status,'completada') AS status
+      FROM sales s
+      LEFT JOIN sale_items si ON si.sale_id = s.id
+      LEFT JOIN facturas f    ON f.sale_id = s.id
+      ${where}
+      GROUP BY s.id
+    `, params);
+    const vigentes = filasResumen.filter(v => v.status !== 'anulada');
+    const resumen = {
+      total:    vigentes.reduce((a, v) => a + (Number(v.total) || 0), 0),
+      cantidad: vigentes.length,
+      anuladas: filasResumen.length - vigentes.length,
+      total_metodo: metodo ? vigentes.reduce((a, v) => a + _partePorMetodo(v, metodo), 0) : null,
+    };
 
     const ventas = all(`
       SELECT DISTINCT
@@ -216,6 +284,7 @@ router.get('/ventas/buscar', (req, res) => {
 
       return {
         ...v,
+        monto_metodo: metodo ? _partePorMetodo(v, metodo) : null,
         facturada: !!v.factura_id,
         tiene_nc: !!v.nc_id,
         nc_tipo_letra: ({3:'A',8:'B',13:'C'})[Number(v.nc_tipo_cbte)] || null,
@@ -229,7 +298,7 @@ router.get('/ventas/buscar', (req, res) => {
       };
     });
 
-    res.json({ ventas: ventasConItems, total, page: Number(page), limit });
+    res.json({ ventas: ventasConItems, total, resumen, page: Number(page), limit });
   } catch(e) {
     console.error('Error en /api/ventas/buscar:', e.message);
     res.status(500).json({ error: e.message });
@@ -654,6 +723,7 @@ router.get('/reporte/metodos', (req, res) => {
       SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
       FROM sales
       WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+        AND COALESCE(status,'completada') != 'anulada'
       ORDER BY id DESC
     `, [desde, hasta]);
 

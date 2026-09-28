@@ -564,7 +564,8 @@ function renderResumen(data) {
         </tr>`).join('');
 
   // Métodos
-  const maxM = data.metodos?.[0]?.total || 1;
+  // Participación = % sobre la suma de todos los métodos (suma 100%)
+  const sumM = (data.metodos || []).reduce((a, m) => a + (Number(m.total) || 0), 0) || 1;
   document.getElementById('tbodyMetodos').innerHTML = (data.metodos || []).length === 0
     ? '<tr><td colspan="4" class="rv-empty">Sin datos</td></tr>'
     : (data.metodos || []).map(m => `
@@ -573,8 +574,8 @@ function renderResumen(data) {
           <td>${fmtNum(m.count)}</td>
           <td>${fmtPesos(m.total)}</td>
           <td>
-            <div style="font-size: 12.5px;color:var(--text-muted);">${((m.total/maxM)*100).toFixed(0)}%</div>
-            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(m.total/maxM)*100}%;background:#f59e0b;"></div></div>
+            <div style="font-size: 12.5px;color:var(--text-muted);">${((m.total/sumM)*100).toFixed(1)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(m.total/sumM)*100}%;background:#f59e0b;"></div></div>
           </td>
         </tr>`).join('');
 

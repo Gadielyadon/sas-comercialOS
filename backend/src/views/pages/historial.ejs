@@ -156,10 +156,6 @@
           <!-- Método de pago -->
           <select class="hist-input" id="filtroMetodo" onchange="buscar(1)" style="min-width:130px;">
             <option value="">Todos los métodos</option>
-            <option>Efectivo</option>
-            <option>Débito</option>
-            <option>Crédito</option>
-            <option>Transferencia</option>
           </select>
 
           <!-- Estado de facturación -->
@@ -409,6 +405,25 @@ function limpiar() {
   buscar(1);
 }
 
+async function cargarMetodosFiltro() {
+  const sel = document.getElementById('filtroMetodo');
+  if (!sel) return;
+  try {
+    const r = await fetch('/api/ventas/metodos');
+    const d = await r.json();
+    (d.metodos || []).forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    });
+  } catch (e) {
+    ['Efectivo','Débito','Crédito','Transferencia','Fiado'].forEach(m => {
+      const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o);
+    });
+  }
+}
+cargarMetodosFiltro();
+
 async function buscar(page = 1) {
   _paginaActual = page;
   const tbody = document.getElementById('histTbody');
@@ -450,14 +465,18 @@ async function buscar(page = 1) {
     renderTabla(_ventas);
 
     // Resumen
-    const completadas = _ventas.filter(v => v.status !== 'anulada');
-    const anuladas    = _ventas.filter(v => v.status === 'anulada');
-    const totalPeriodo = completadas.reduce((s, v) => s + Number(v.total), 0);
+    // Totales calculados por el servidor sobre TODO el filtro (no solo la página).
+    // Con filtro por método: solo lo que entró por ese método (pagos mixtos incluidos).
+    const rs = data.resumen || {};
+    const anuladasN = rs.anuladas != null ? rs.anuladas : _ventas.filter(v => v.status === 'anulada').length;
+    const totalPeriodo = (metodo && rs.total_metodo != null)
+      ? rs.total_metodo
+      : (rs.total != null ? rs.total : _ventas.filter(v => v.status !== 'anulada').reduce((s, v) => s + Number(v.total), 0));
 
     document.getElementById('resTotal').textContent  = fmt(totalPeriodo);
-    document.getElementById('resCant').textContent   = data.total || _ventas.length;
-    document.getElementById('resAnuladas').textContent = anuladas.length;
-    document.getElementById('resAnuladasWrap').style.display = anuladas.length ? 'flex' : 'none';
+    document.getElementById('resCant').textContent   = rs.cantidad != null ? rs.cantidad : (data.total || _ventas.length);
+    document.getElementById('resAnuladas').textContent = anuladasN;
+    document.getElementById('resAnuladasWrap').style.display = anuladasN ? 'flex' : 'none';
     document.getElementById('infoResultados').textContent = `${data.total} resultado${data.total!==1?'s':''}`;
     document.getElementById('histResumen').style.display = 'flex';
 
