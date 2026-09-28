@@ -219,6 +219,21 @@ function createSale({
 
   const suc = sucursal_id ? Number(sucursal_id) : 1;
 
+  // ── Defensa: en pagos mixtos el 2° monto nunca puede ser mucho mayor que el total.
+  // (Un bug del POS lo guardaba x100 cuando venía con decimales.) Si pasa, se corrige.
+  if (String(payment_method || '').includes('+') && monto_mixto2 !== undefined && monto_mixto2 !== null) {
+    const tot = toNumber(total);
+    const m1  = toNumber(cash_received, 0);
+    let   m2  = toNumber(monto_mixto2, 0);
+    if (tot > 0 && m2 > tot * 2) {
+      const m2b = Math.round((m2 / 100) * 100) / 100;
+      m2 = (m2b <= tot * 2) ? m2b : Math.max(0, Math.round((tot - m1) * 100) / 100);
+      monto_mixto2  = m2;
+      change_amount = 0;
+      console.warn('[createSale] monto_mixto2 fuera de rango, corregido a', m2);
+    }
+  }
+
   _ensureStmts();
 
   const tx = db.transaction(() => {
@@ -364,22 +379,34 @@ function createSale({
       const cli = getClienteStmt.get(Number(cliente_id));
       if (cli) {
         if (esCuentaCorrienteFinal) {
-          // Venta fiada — suma al saldo
+          // Venta fiada — suma al saldo SOLO lo que quedó fiado.
+          // En pago mixto ("Efectivo + Fiado") es la parte del método fiado, no el total.
+          let montoCargo = toNumber(total);
+          const pmRaw = String(payment_method || '');
+          if (pmRaw.includes('+')) {
+            const partes = pmRaw.split('+').map(x => x.trim().toLowerCase());
+            const esFiado = x => x.includes('fiado') || x.includes('cuenta corriente');
+            if (partes.length === 2) {
+              if (esFiado(partes[1]) && !esFiado(partes[0])) montoCargo = toNumber(monto_mixto2, 0);
+              else if (esFiado(partes[0]) && !esFiado(partes[1])) montoCargo = toNumber(cash_received, 0);
+              montoCargo = Math.min(montoCargo, toNumber(total));
+            }
+          }
           insertCuentaCorrienteStmt.run(
             Number(cliente_id),
-            toNumber(total),
+            montoCargo,
             `Venta #${sale_id} — Fiado`,
             sale_id
           );
-          updateClienteSaldoStmt.run(toNumber(total), Number(cliente_id));
+          updateClienteSaldoStmt.run(montoCargo, Number(cliente_id));
           // Historial unificado: que la venta fiada también figure en "Cuenta"
           run(
             `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, sale_id, saldo_post)
              VALUES (?, 'cargo', ?, ?, ?, ?)`,
-            [Number(cliente_id), toNumber(total),
+            [Number(cliente_id), montoCargo,
              `Venta #${sale_id} — Fiado`,
              sale_id,
-             Number(cli.saldo || 0) + toNumber(total)]
+             Number(cli.saldo || 0) + montoCargo]
           );
         } else {
           // Venta pagada — registrar en historial como cargo informativo sin afectar saldo

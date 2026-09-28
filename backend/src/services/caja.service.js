@@ -165,27 +165,34 @@ function close(user, sucursal_id = 1, monto_contado = null) {
   try {
     const hasta = nowArgentina();
 
-    const r = get(
-      `SELECT COALESCE(SUM(total), 0) AS total
-       FROM sales
-       WHERE sucursal_id = ?
-         AND created_at >= ?
-         AND created_at <= ?`,
-      [Number(sucursal_id), cajaAbierta.opened_at, hasta]
-    );
-    totalVentas = Number(r?.total || 0);
-
-    const rEf = get(
-      `SELECT COALESCE(SUM(total), 0) AS total
+    // Ventas vigentes del turno (las anuladas no cuentan ni como venta ni como efectivo)
+    const ventasTurno = all(
+      `SELECT total, payment_method, cash_received, monto_mixto2
        FROM sales
        WHERE sucursal_id = ?
          AND created_at >= ?
          AND created_at <= ?
-         AND payment_method LIKE '%fectivo%'
          AND COALESCE(status,'completada') != 'anulada'`,
       [Number(sucursal_id), cajaAbierta.opened_at, hasta]
     );
-    totalEfectivo = Number(rEf?.total || 0);
+
+    totalVentas = ventasTurno.reduce((a, v) => a + (Number(v.total) || 0), 0);
+
+    // Efectivo real: en un pago mixto solo cuenta la parte cobrada en efectivo,
+    // no el total de la venta (igual criterio que la pantalla del turno y los Reportes).
+    totalEfectivo = ventasTurno.reduce((a, v) => {
+      const pm = String(v.payment_method || '').trim().toLowerCase();
+      if (pm.includes('+')) {
+        const partes = pm.split('+').map(x => x.trim());
+        if (partes.length === 2) {
+          let t = 0;
+          if (partes[0] === 'efectivo') t += Number(v.cash_received) || 0;
+          if (partes[1] === 'efectivo') t += Number(v.monto_mixto2) || 0;
+          return a + t;
+        }
+      }
+      return a + (pm === 'efectivo' ? Number(v.total) || 0 : 0);
+    }, 0);
   } catch (e) {
     totalVentas = 0;
   }

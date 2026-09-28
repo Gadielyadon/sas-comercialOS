@@ -3198,6 +3198,14 @@ function fmtMixtoInput(inp){
 }
 function getMixtoVal(inp){
   if(!inp) return 0;
+  // El campo "segundo medio" se completa por código con decimales con punto
+  // (ej: "85600.00"). Antes se le sacaban los puntos y quedaba x100 (8560000).
+  if(inp.id === 'mixtoMonto2'){
+    const v = String(inp.value || '').trim();
+    if(!v) return 0;
+    if(v.includes(',')) return parseFloat(v.replace(/\./g,'').replace(',','.')) || 0; // formato es-AR tipeado
+    return parseFloat(v) || 0;                                                        // formato con punto decimal
+  }
   const raw = (inp._rawVal || inp.value.replace(/\./g,'').replace(/,/g,'.')).replace(/[^0-9.]/g,'');
   return parseFloat(raw)||0;
 }

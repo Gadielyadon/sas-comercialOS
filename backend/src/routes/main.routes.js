@@ -820,15 +820,19 @@ router.get('/api/reportes/ventas', (req, res) => {
       [desde, hasta]
     );
 
-    const cobrado = get(
-      `SELECT COALESCE(SUM(s.total),0) as total
-       FROM sales s
-       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
-         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}
-         AND NOT EXISTS (SELECT 1 FROM cuenta_corriente cc WHERE cc.sale_id = s.id AND cc.tipo = 'cargo')`,
+    // Fiado = suma de los cargos a cuenta corriente de esas ventas (en un pago mixto
+    // es solo la parte fiada). Cobrado = total vendido - fiado.
+    const fiadoRow = get(
+      `SELECT COALESCE(SUM(cc.monto),0) as total
+       FROM cuenta_corriente cc
+       JOIN sales s ON s.id = cc.sale_id
+       WHERE cc.tipo = 'cargo'
+         AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
       [desde, hasta]
     );
-    const total_fiado = (resumen?.total || 0) - (cobrado?.total || 0);
+    const total_fiado = Math.min(fiadoRow?.total || 0, resumen?.total || 0);
+    const cobrado = { total: (resumen?.total || 0) - total_fiado };
 
     const productos = all(
       `SELECT si.name, COALESCE(p.category,'Sin categoría') as category,
