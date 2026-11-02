@@ -1,0 +1,24 @@
+QUITAR "CARGA AUTOMATICA" DEL SISTEMA
+=====================================
+
+1) COPIAR estos archivos sobre tu proyecto (reemplazan a los actuales):
+     backend/src/routes/main.routes.js        (se sacaron las 3 rutas de Carga automatica)
+     backend/src/views/partials/sidebar.ejs   (se sacó la entrada del menu Inventario)
+     backend/.env.example                     (se sacó la explicacion de ANTHROPIC_API_KEY)
+     backend/tests/sin_carga_automatica.test.js   (NUEVO: verifica que ya no existe)
+
+2) BORRAR estos 2 archivos de tu proyecto:
+     backend/src/services/carga_automatica.service.js
+     backend/src/views/pages/carga_automatica.ejs
+
+3) Reiniciar el sistema.
+
+OPCIONAL
+- En el archivo .env real del servidor podés borrar ANTHROPIC_API_KEY (y ANTHROPIC_MODEL_ESCANEO si
+  existe): solo se usaba para esta funcion. Dejarlas no hace ningun dano.
+- No se toco la base de datos. Los movimientos de stock que ya se cargaron con esta funcion siguen
+  en el historial (motivo "Carga automatica (escaneo de factura)"): es historia real, no se borra.
+- El resto de Inventario (Etiquetado, ajustes de stock, importar Excel, Carga rapida) no se modifico.
+
+PRUEBAS
+Desde backend:  node --test

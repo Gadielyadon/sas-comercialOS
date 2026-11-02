@@ -80,7 +80,7 @@
 
     <div class="nav-section-label" style="margin-top:10px;">Administración</div>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('inventario')) { %>
-    <% const invSubAbierto = (typeof active !== 'undefined' && (active === 'inventario' || active === 'etiquetas' || active === 'carga-automatica')); %>
+    <% const invSubAbierto = (typeof active !== 'undefined' && (active === 'inventario' || active === 'etiquetas')); %>
     <div class="nav-group">
       <a href="/inventario" class="nav-item <%= (typeof active !== 'undefined' && active === 'inventario') ? 'active' : '' %>">
         <i class="bi bi-box-seam"></i><span class="nav-text">Inventario</span>
@@ -90,15 +90,17 @@
         <a href="/inventario/etiquetas" class="nav-item nav-subitem <%= (typeof active !== 'undefined' && active === 'etiquetas') ? 'active' : '' %>">
           <i class="bi bi-upc-scan"></i><span class="nav-text">Etiquetado</span>
         </a>
-        <a href="/inventario/carga-automatica" class="nav-item nav-subitem <%= (typeof active !== 'undefined' && active === 'carga-automatica') ? 'active' : '' %>">
-          <i class="bi bi-camera"></i><span class="nav-text">Carga automática</span>
-        </a>
       </div>
     </div>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('stock')) { %>
     <a href="/stock" class="nav-item <%= (typeof active !== 'undefined' && active === 'stock') ? 'active' : '' %>">
       <i class="bi bi-clipboard2-check"></i><span class="nav-text">Stock</span>
+    </a>
+    <% } %>
+    <% if (typeof tienePermiso === 'undefined' || tienePermiso('stock')) { %>
+    <a href="/vencimientos" class="nav-item <%= (typeof active !== 'undefined' && active === 'vencimientos') ? 'active' : '' %>">
+      <i class="bi bi-hourglass-split"></i><span class="nav-text">Vencimientos</span>
     </a>
     <% } %>
     <% if (typeof tienePermiso === 'undefined' || tienePermiso('proveedores')) { %>

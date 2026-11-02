@@ -372,6 +372,40 @@
           </div>
           <% } %>
         </div>
+
+        <% if (typeof porVencer !== 'undefined' && porVencer.hayLotes) { %>
+        <div class="dash-card fade-up" style="animation-delay:.36s;">
+          <div class="dash-card-header">
+            <span class="dash-card-title"><i class="bi bi-hourglass-split" style="color:#ea580c;"></i> Por vencer</span>
+            <a href="/vencimientos" style="font-size: 13px;color:var(--color-primary);font-weight:600;text-decoration:none;">Ver todo →</a>
+          </div>
+          <% if (!porVencer.lista.length) { %>
+          <div style="padding:28px;text-align:center;color:var(--text-secondary);">
+            <i class="bi bi-check-circle" style="color:#10b981;font-size:28px;display:block;margin-bottom:8px;"></i>
+            <div style="font-size: 15px;font-weight:600;">Nada vence pronto</div>
+            <div style="font-size: 13.5px;margin-top:3px;">Ningún lote vence en los próximos 15 días</div>
+          </div>
+          <% } else { %>
+          <div style="overflow-y:auto;max-height:260px;">
+            <% porVencer.lista.forEach(l => { const venc = l.dias < 0; %>
+            <div class="stock-alert-item">
+              <span style="font-size: 14px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="<%=l.name||l.sku%>">
+                <%=(l.name||l.sku).length>22?(l.name||l.sku).slice(0,20)+'…':(l.name||l.sku)%>
+              </span>
+              <span style="font-size: 13.5px;font-weight:800;padding:3px 10px;border-radius:20px;flex-shrink:0;background:<%=venc||l.dias<=7?'#dc2626':'#eab308'%>;color:<%=venc||l.dias<=7?'#fff':'#422006'%>;">
+                <%= venc ? 'Vencido' : (l.dias === 0 ? 'Hoy' : l.dias + ' d') %>
+              </span>
+            </div>
+            <% }) %>
+          </div>
+          <div style="padding:10px 16px;border-top:1px solid var(--border-color);">
+            <div style="font-size: 13.5px;color:var(--text-secondary);text-align:center;">
+              <%=porVencer.vencidos%> vencido<%=porVencer.vencidos!==1?'s':''%> · <%=porVencer.d7%> vence<%=porVencer.d7!==1?'n':''%> esta semana
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
       </div>
 
       <!-- VENTAS POR VENDEDOR HOY -->

@@ -56,6 +56,7 @@ router.post('/api/preview', (req, res) => {
 
 // ── Paso 3: confirmar (inserta de verdad) ──────────────────
 router.post('/api/confirmar', (req, res) => {
+  try { require('../services/backup_auto.service').antesDeCambioGrande('importar-excel'); } catch (e) { console.error('[backup] copia previa:', e.message); }
   try {
     const { base64, hoja, tipo, mapeo } = req.body || {};
     if (!base64 || !hoja || !tipo || !mapeo) return res.status(400).json({ error: 'Faltan datos del mapeo' });

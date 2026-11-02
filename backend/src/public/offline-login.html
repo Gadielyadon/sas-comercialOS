@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iniciar sesión sin internet · AxSoft</title>
+<style>
+  :root{color-scheme:light dark}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f5f9;color:#111827}
+  @media (prefers-color-scheme:dark){body{background:#0f172a;color:#e5e7eb}.card{background:#1e293b!important}input{background:#0f172a!important;color:#e5e7eb!important;border-color:#334155!important}}
+  .card{background:#fff;border-radius:18px;padding:30px 26px;max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+  .aviso{display:flex;gap:8px;align-items:center;background:rgba(245,158,11,.12);color:#b45309;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:700;margin-bottom:18px}
+  h1{font-size:21px;margin:0 0 4px}
+  p.sub{margin:0 0 18px;color:#6b7280;font-size:14px;line-height:1.45}
+  label{display:block;font-size:12px;font-weight:700;margin:12px 0 5px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}
+  input{width:100%;padding:13px 14px;border:1.5px solid #d1d5db;border-radius:10px;font-size:15px;outline:none}
+  input:focus{border-color:#1A5CFF}
+  button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:10px;background:#1A5CFF;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  #msg{display:none;margin-top:14px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;background:rgba(220,38,38,.1);color:#dc2626}
+  small{display:block;margin-top:16px;color:#9ca3af;font-size:12px;line-height:1.4;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="aviso">📡 Sin conexión con el servidor</div>
+  <h1>Iniciar sesión</h1>
+  <p class="sub">Podés entrar igual con tu usuario y contraseña. Tus ventas se guardan y se envían solas cuando vuelva internet.</p>
+  <form id="f" autocomplete="on">
+    <label for="u">Usuario</label>
+    <input id="u" name="username" autocomplete="username" autofocus required>
+    <label for="p">Contraseña</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="b" type="submit">Entrar sin internet</button>
+  </form>
+  <div id="msg"></div>
+  <small>Solo pueden entrar usuarios que ya iniciaron sesión con internet en este equipo.</small>
+</div>
+<script src="/js/axauth.js"></script>
+<script>
+  var PROTEGIDAS = ['/ventas', '/stock', '/inventario'];
+  var DESTINO = PROTEGIDAS.indexOf(location.pathname) >= 0 ? location.pathname : '/ventas';
+  var msg = document.getElementById('msg');
+  function error(t) { msg.textContent = t; msg.style.display = 'block'; }
+
+  // ¿Hay una copia guardada de esta pantalla para este usuario?
+  async function hayCopia(uid, ruta) {
+    var keys = await caches.keys();
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].indexOf('axsoft-pages-') !== 0) continue;
+      var hit = await (await caches.open(keys[i])).match('/__u/' + uid + ruta);
+      if (hit) return true;
+    }
+    return false;
+  }
+
+  // Si ya hay una sesión vigente (no venció), se entra directo
+  (async function () {
+    var s = await AxAuth.sesionVigente();
+    if (s && await hayCopia(s.uid, DESTINO)) location.replace(DESTINO);
+  })();
+
+  document.getElementById('f').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    msg.style.display = 'none';
+    var b = document.getElementById('b'); b.disabled = true; b.textContent = 'Verificando…';
+    try {
+      var r = await AxAuth.verificar(document.getElementById('u').value, document.getElementById('p').value);
+      if (r.error === 'bloqueado') error('Demasiados intentos. Esperá ' + r.segundos + ' segundos.');
+      else if (r.error === 'desconocido') error('Este usuario nunca inició sesión con internet en este equipo. Conectate una vez para poder entrar sin internet.');
+      else if (r.error === 'vencido') error('Pasaron más de 30 días sin conectarte. Iniciá sesión con internet para renovar el acceso.');
+      else if (r.error === 'sin_soporte') error('Este navegador no permite el ingreso sin internet. Usá Chrome o Edge actualizado.');
+      else if (r.error) error('Usuario o contraseña incorrectos');
+      else {
+        var destino = DESTINO;
+        if (!(await hayCopia(r.usuario.id, destino))) destino = '/ventas';
+        if (!(await hayCopia(r.usuario.id, destino))) {
+          error('No hay datos guardados de este usuario en este equipo. Conectate a internet, iniciá sesión y abrí Ventas una vez.');
+        } else {
+          await AxAuth.iniciarSesionLocal(r.usuario);
+          location.replace(destino);
+          return;
+        }
+      }
+    } catch (err) { error('No se pudo verificar: ' + (err && err.message || err)); }
+    b.disabled = false; b.textContent = 'Entrar sin internet';
+    document.getElementById('p').value = ''; document.getElementById('p').focus();
+  });
+
+  // Si vuelve internet mientras está esta pantalla, se pasa al ingreso normal
+  window.addEventListener('online', function () { location.reload(); });
+</script>
+</body>
+</html>

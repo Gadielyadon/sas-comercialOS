@@ -1,0 +1,63 @@
+MODO SIN INTERNET - AXSoft (punto de venta, stock, inventario e inicio de sesión)
+==================================================================================
+
+COMO INSTALAR
+1. Hacé una copia de seguridad de la base de datos (backend/src/db/*.sqlite).
+2. Copiá estos archivos sobre tu proyecto, respetando las carpetas (reemplazan a los actuales;
+   son NUEVOS: services/offline.service.js, public/js/axauth.js y public/offline-login.html).
+3. Reiniciá el sistema. La base se actualiza sola al arrancar (2 columnas en "sales" y una tabla chica).
+4. En cada PC de cliente: iniciar sesión CON internet y abrir Ventas (y Stock / Inventario si los usan).
+   Ahí queda guardado todo lo necesario. Cada usuario que quiera entrar sin internet tiene que haber
+   iniciado sesión con internet al menos una vez en esa PC.
+
+REQUISITO: el sistema debe abrirse por https (o localhost). Con https://axsoft-sistema.comercialos.com
+se cumple. El certificado debe ser válido (sin advertencia en el navegador).
+
+COMO PROBARLO
+Con el sistema abierto: apagar el wifi / desenchufar el cable. Recargar. Vender. Ajustar stock.
+Para probar el inicio de sesión: cerrar sesión (o esperar a otro día), quedarse sin internet y abrir
+la dirección del sistema: aparece "Iniciar sesión sin internet".
+
+INICIO DE SESION SIN INTERNET
+- Con internet, al iniciar sesión, la PC guarda una verificación de la contraseña (PBKDF2-SHA256 con sal
+  aleatoria, 150.000 vueltas). La contraseña en sí NUNCA se guarda.
+- Sin internet, al abrir el sistema (o /login, o Ventas) con la sesión vencida o cerrada, aparece una
+  pantalla de usuario y contraseña que se verifica en la PC. Si es correcta, entra a las pantallas guardadas.
+- La sesión sin internet dura hasta la medianoche, igual que la normal.
+- Las pantallas y datos guardados están SEPARADOS POR USUARIO: cada uno ve solo lo suyo.
+- 5 contraseñas incorrectas seguidas bloquean el ingreso 1 minuto.
+- Pasados 30 días sin iniciar sesión con internet en esa PC, el usuario debe conectarse para renovar.
+- Al volver internet, la pantalla pasa sola al ingreso normal. Las ventas hechas sin internet esperan y
+  se envían solas cuando el usuario inicia sesión con internet.
+- Cerrar sesión ya NO borra las pantallas guardadas: quedan detrás del login de cada usuario, así el
+  cajero puede volver a entrar al día siguiente aunque no haya internet.
+
+LIMITES DE SEGURIDAD (importante saberlos)
+- Los datos guardados (catálogo, precios, clientes) están en el almacenamiento del navegador de esa PC,
+  sin cifrar. El login sin internet protege el uso normal del sistema, no a alguien con acceso técnico
+  a la PC. Usar PC con usuario de Windows propio y no compartidas con extraños.
+- Si se cambia la contraseña o se desactiva a un usuario, esa PC lo sabe recién cuando el usuario inicie
+  sesión con internet (hasta 30 días como máximo).
+- No hay "olvidé mi contraseña" sin internet.
+
+VENTAS
+- Las ventas sin internet se guardan en la PC y se envían solas al volver la conexión (reintenta cada 30 s).
+  Cada venta tiene ID único: si el envío se corta a mitad, NO se duplica.
+- Conservan la fecha y hora reales y quedan a nombre del vendedor que estaba atendiendo.
+- Nunca se rechazan por falta de stock (el producto ya se entregó); el stock puede quedar negativo para revisar.
+- Si la sesión venció, las ventas NO se pierden: aviso rojo para volver a iniciar sesión.
+- Si el servidor rechaza una (ej: producto borrado), queda en rojo con el motivo: Reintentar / Descartar.
+- Si la conexión se cuelga (hay "internet" pero no responde), el cobro no se traba: a los 12 s se guarda en la PC.
+- No se puede cerrar la caja mientras haya ventas sin enviar.
+INVENTARIO
+- Los ajustes de stock (botones +/- y modal de stock) funcionan sin internet: se guardan, se reflejan en
+  pantalla (también al recargar) y se aplican solos al volver internet como DIFERENCIA (+5, -2).
+- Sin duplicados (ID único) y con su fecha real. Sin internet se aceptan aunque dejen el stock negativo;
+  con internet un ajuste que deja stock negativo se sigue rechazando.
+
+NO FUNCIONA SIN INTERNET (por naturaleza o todavía no)
+- Facturación AFIP, Mercado Pago, abrir/cerrar caja, enviar mails, crear/editar productos, cambiar precios,
+  importar, transferir entre sucursales, cambiar de vendedor con PIN (se verifica en el servidor).
+
+PRUEBAS
+backend/tests/offline.test.js  ->  desde backend:  node --test   (28 pruebas nuevas)

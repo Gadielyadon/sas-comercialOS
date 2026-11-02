@@ -42,3 +42,8 @@ Thumbs.db
 backend/src/db/sessions.sqlite
 backend/src/db/sessions.sqlite-shm
 backend/src/db/sessions.sqlite-wal
+
+# Copias automáticas a Google Drive: conexión y estado de cada instalación
+backend/backup-drive.json
+backend/backup-estado.json
+backend/backup-*.tmp

@@ -1,0 +1,25 @@
+ACTUALIZACION COMPLETA AXSOFT (acumulativa)
+===========================================
+Este paquete incluye TODO lo entregado hasta ahora. Si ya instalaste los paquetes anteriores, no hay
+problema: los archivos repetidos son los mismos o su version mas nueva.
+
+INSTALAR
+1) Backup de la base de datos (backend/src/db/*.sqlite).
+2) Copiar el contenido de este zip sobre tu proyecto (respetando carpetas).
+3) BORRAR a mano estos 2 archivos (Carga automatica, ya sacada del sistema):
+     backend/src/services/carga_automatica.service.js
+     backend/src/views/pages/carga_automatica.ejs
+4) Reiniciar el sistema. La base se actualiza sola al arrancar.
+
+QUE INCLUYE
+A) NUEVO - Copias de seguridad automaticas a Google Drive  -> ver GUIA-BACKUPS-DRIVE.txt
+B) Modo sin internet: punto de venta, stock/inventario e inicio de sesion
+   (requiere https o localhost; cada PC debe iniciar sesion una vez con internet).
+C) Seccion "Carga automatica" sacada del sistema.
+
+PRUEBAS
+Desde backend:  node --test     (99 pruebas: tus 49 originales + 50 nuevas)
+
+NOTAS DE LA VERSION (copias)
+- Corregido: dos copias pedidas en el mismo segundo (doble clic en "Generar copia") ya no fallan.
+- Ajustes > Copias de seguridad ahora muestra si cada copia es Manual, Automatica o "Antes de un cambio".

@@ -88,6 +88,9 @@
       </div>
     </div>
 
+    <!-- Aviso de coherencia (solo aparece si hay algo raro en los pagos del período) -->
+    <div id="avisoCoherencia" style="display:none;margin:0 0 14px;padding:12px 16px;border-radius:12px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.5);color:#f59e0b;font-size:13px;font-weight:600;line-height:1.5;"></div>
+
     <!-- Resumen -->
     <div id="secResumen" style="display:none;">
       <div class="rv-stats">
@@ -116,6 +119,11 @@
           <div class="rv-stat-val" id="stProds">-</div>
           <div class="rv-stat-sub">artículos vendidos</div>
         </div>
+        <div class="rv-stat">
+          <div class="rv-stat-label">Ganancia estimada</div>
+          <div class="rv-stat-val" id="stGanancia" style="color:#059669;">-</div>
+          <div class="rv-stat-sub" id="stGananciaSub">venta − costo</div>
+        </div>
       </div>
 
       <!-- Tabs -->
@@ -143,6 +151,17 @@
 
         <!-- Tab: Productos -->
         <div id="tabProductos">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;">
+            <label for="ordenProductos" style="font-size:13px;font-weight:700;color:var(--text-muted);">Ordenar por</label>
+            <select id="ordenProductos" onchange="renderProductos()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);">
+              <option value="cantidad">Más vendidos</option>
+              <option value="total">Más facturación</option>
+              <option value="ganancia">Más ganancia ($)</option>
+              <option value="margen">Mejor margen (%)</option>
+              <option value="menos_ganancia">Menos ganancia / pérdida</option>
+            </select>
+            <span id="notaCosto" style="font-size:12.5px;color:#f59e0b;font-weight:600;"></span>
+          </div>
           <div class="rv-table-wrap">
             <table class="rv-table">
               <thead><tr>
@@ -151,10 +170,12 @@
                 <th>Categoría</th>
                 <th>Cant. vendida</th>
                 <th>Total $</th>
+                <th>Ganancia $</th>
+                <th>Margen</th>
                 <th style="min-width:120px;">Participación</th>
               </tr></thead>
               <tbody id="tbodyProductos">
-                <tr><td colspan="6" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
+                <tr><td colspan="8" class="rv-empty">Seleccioná un período y presioná Consultar</td></tr>
               </tbody>
             </table>
           </div>
@@ -444,10 +465,37 @@ async function buscar() {
 
     // Descuentos: se carga aparte, con el mismo rango de fechas
     cargarDescuentos(desde, hasta);
+    chequearCoherencia(desde, hasta);
   } catch(e) {
     sp.style.display = 'none';
     alert('Error de conexión');
   }
+}
+
+// ── Aviso si hay pagos mixtos mal cargados en el período ─────────
+async function chequearCoherencia(desde, hasta) {
+  const box = document.getElementById('avisoCoherencia');
+  box.style.display = 'none';
+  try {
+    const r = await fetch(`/api/control/pagos?desde=${desde}&hasta=${hasta}`);
+    const d = await r.json();
+    if (d.error || d.ok) return;
+    const A = d.anomalias || [];
+    const ids = arr => arr.slice(0, 5).map(a => '#' + a.id).join(', ') + (arr.length > 5 ? '…' : '');
+    const inflado = A.filter(a => a.tipo === 'monto_inflado' || a.tipo === 'monto_faltante');
+    const sinCli  = A.filter(a => a.tipo === 'fiado_sin_cliente');
+    const viejas  = A.filter(a => a.tipo === 'sin_segundo_monto');
+    const deudaAnul = A.filter(a => a.tipo === 'deuda_de_venta_anulada');
+    let msg = '';
+    if (inflado.length) msg += `⚠ ${inflado.length} venta(s) con pago mixto parecen mal cargadas (${ids(inflado)}): los montos por método de esos días pueden no coincidir. `;
+    if (sinCli.length)  msg += `⚠ ${sinCli.length} venta(s) fiada(s) sin cliente (${ids(sinCli)}): esa deuda no está anotada en ninguna cuenta. `;
+    if (deudaAnul.length) msg += `⚠ ${deudaAnul.length} venta(s) anulada(s) siguen cargadas como deuda al cliente (${ids(deudaAnul)}).`+' ';
+    if (viejas.length)  msg += `${viejas.length} venta(s) mixta(s) antigua(s) no guardaron el detalle del segundo pago. `;
+    if (!d.coincide) msg += 'El efectivo calculado no coincide entre pantallas: avisá a soporte.';
+    if (!msg) return;
+    box.textContent = msg.trim();
+    box.style.display = '';
+  } catch (e) { /* el aviso es opcional: si falla, no molesta */ }
 }
 
 // ── Pestaña Descuentos ────────────────────────────────────────
@@ -518,6 +566,52 @@ function renderDescuentos(d) {
     : `<tr><td colspan="7" class="rv-empty">No hubo descuentos ni precios modificados en este período.</td></tr>`;
 }
 
+let _productosData = [];
+function renderProductos() {
+  const modo = (document.getElementById('ordenProductos') || {}).value || 'cantidad';
+  const lista = _productosData.slice();
+  const g = p => (p.ganancia === null || p.ganancia === undefined) ? null : p.ganancia;
+  const m = p => (p.margen_pct === null || p.margen_pct === undefined) ? null : p.margen_pct;
+  // los que no tienen costo van siempre al final cuando se ordena por ganancia/margen
+  const porNum = (f, dir) => lista.sort((a, b) => {
+    const x = f(a), y = f(b);
+    if (x === null && y === null) return b.cantidad - a.cantidad;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return dir * (y - x);
+  });
+  if (modo === 'total')               lista.sort((a, b) => b.total - a.total);
+  else if (modo === 'ganancia')       porNum(g, 1);
+  else if (modo === 'margen')         porNum(m, 1);
+  else if (modo === 'menos_ganancia') porNum(g, -1);
+  else                                lista.sort((a, b) => b.cantidad - a.cantidad);
+
+  const maxP = Math.max(...lista.map(p => p.cantidad), 1);
+  document.getElementById('tbodyProductos').innerHTML = lista.length === 0
+    ? '<tr><td colspan="8" class="rv-empty">Sin datos</td></tr>'
+    : lista.map((p, i) => {
+        const tiene = p.ganancia !== null && p.ganancia !== undefined;
+        const parcial = tiene && p.venta_sin_costo > 0;
+        const gan = tiene
+          ? `<span style="color:${p.ganancia >= 0 ? '#059669' : '#dc2626'};font-weight:700;">${fmtPesos(p.ganancia)}</span>${parcial ? ' <span title="Parte de las ventas de este producto no tiene costo cargado" style="color:#f59e0b;">*</span>' : ''}`
+          : '<span style="color:#f59e0b;font-size:12.5px;font-weight:600;">Sin costo</span>';
+        const mar = tiene ? `${p.margen_pct}%` : '—';
+        return `
+        <tr>
+          <td><span class="rank-num">${i+1}</span></td>
+          <td style="font-weight:600;">${p.name}</td>
+          <td><span class="cat-badge">${p.category || 'Sin cat.'}</span></td>
+          <td>${fmtNum(p.cantidad)}</td>
+          <td>${fmtPesos(p.total)}</td>
+          <td>${gan}</td>
+          <td>${mar}</td>
+          <td>
+            <div style="font-size: 12.5px;color:var(--text-muted);">${((p.cantidad/maxP)*100).toFixed(0)}%</div>
+            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(p.cantidad/maxP)*100}%"></div></div>
+          </td>
+        </tr>`; }).join('');
+}
+
 function renderResumen(data) {
   const ticket = data.count_ventas > 0 ? data.total_ventas / data.count_ventas : 0;
   document.getElementById('stTotal').textContent  = fmtPesos(data.total_ventas);
@@ -530,22 +624,24 @@ function renderResumen(data) {
     : 'sin ventas fiadas en el período';
   document.getElementById('stPeriodo').textContent = 'en el período seleccionado';
 
-  // Productos
-  const maxP = data.productos?.[0]?.cantidad || 1;
-  document.getElementById('tbodyProductos').innerHTML = (data.productos || []).length === 0
-    ? '<tr><td colspan="6" class="rv-empty">Sin datos</td></tr>'
-    : (data.productos || []).map((p, i) => `
-        <tr>
-          <td><span class="rank-num">${i+1}</span></td>
-          <td style="font-weight:600;">${p.name}</td>
-          <td><span class="cat-badge">${p.category || 'Sin cat.'}</span></td>
-          <td>${fmtNum(p.cantidad)}</td>
-          <td>${fmtPesos(p.total)}</td>
-          <td>
-            <div style="font-size: 12.5px;color:var(--text-muted);">${((p.cantidad/maxP)*100).toFixed(0)}%</div>
-            <div class="rv-bar-bg"><div class="rv-bar-fg" style="width:${(p.cantidad/maxP)*100}%"></div></div>
-          </td>
-        </tr>`).join('');
+  // Ganancia (solo sobre lo que tiene costo cargado)
+  const g = data.ganancia || {};
+  const gEl = document.getElementById('stGanancia');
+  if (g.margen_pct === null || g.margen_pct === undefined) {
+    gEl.textContent = '—';
+    document.getElementById('stGananciaSub').textContent = 'cargá el costo de los productos';
+  } else {
+    gEl.textContent = fmtPesos(g.ganancia);
+    gEl.style.color = g.ganancia >= 0 ? '#059669' : '#dc2626';
+    document.getElementById('stGananciaSub').textContent =
+      `margen ${g.margen_pct}% · costo cargado en el ${g.cobertura_pct}% de lo vendido`;
+  }
+  document.getElementById('notaCosto').textContent = g.venta_sin_costo > 0
+    ? `⚠ ${fmtPesos(g.venta_sin_costo)} vendidos sin costo cargado: no suman a la ganancia`
+    : '';
+
+  _productosData = data.productos || [];
+  renderProductos();
 
   // Categorías
   const maxC = data.categorias?.[0]?.total || 1;

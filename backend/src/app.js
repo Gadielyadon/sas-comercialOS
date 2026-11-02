@@ -9,9 +9,11 @@ const app     = express();
 // versión nueva sin que el cliente tenga que borrar el caché.
 try {
   const fs = require('fs');
-  app.locals.assetVersion = Math.floor(
-    fs.statSync(path.join(__dirname, 'public', 'css', 'styles.css')).mtimeMs
-  );
+  app.locals.assetVersion = Math.floor(Math.max(
+    fs.statSync(path.join(__dirname, 'public', 'css', 'styles.css')).mtimeMs,
+    fs.statSync(path.join(__dirname, 'public', 'js', 'offline.js')).mtimeMs,
+    fs.statSync(path.join(__dirname, 'public', 'js', 'axauth.js')).mtimeMs
+  ));
 } catch (e) {
   app.locals.assetVersion = Date.now();
 }
@@ -31,6 +33,17 @@ try {
 // ── Views ─────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// ── Service Worker (modo sin internet) ────────────────────────
+// Va ANTES del static para que el navegador siempre revise si hay versión nueva.
+app.get('/sw.js', (req, res) => {
+  res.set({
+    'Content-Type': 'application/javascript; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Service-Worker-Allowed': '/',
+  });
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
 
 // ── Middlewares base ──────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -128,8 +141,12 @@ app.use((req, res, next) => {
     return next();
   }
 
-  // Si no hay sesión, redirigir al login
+  // Si no hay sesión: las llamadas a la API reciben un 401 en JSON (no una redirección al
+  // login, que el navegador seguiría y tomaría como respuesta exitosa).
   if (!req.session.user) {
+    if (req.path.startsWith('/api/') || (req.headers.accept || '').includes('application/json')) {
+      return res.status(401).json({ error: 'Sesión vencida. Iniciá sesión de nuevo.', sesion_vencida: true });
+    }
     req.session.returnTo = req.originalUrl;
     return res.redirect('/login');
   }
@@ -140,6 +157,9 @@ app.use((req, res, next) => {
     u.name = u.nombre || u.username || 'Usuario';
     req.session.user = u;
   }
+
+  // El Service Worker usa esto para guardar las pantallas por usuario (modo sin internet)
+  res.set('X-AX-User', String(u.id));
 
   next();
 });
@@ -192,6 +212,7 @@ try {
 // Sales
 const salesSvc = require('./services/sales.service');
 salesSvc.initSalesSchema();
+require('./services/offline.service').ensureSchema();   // ids de operaciones hechas sin internet
 
 // Auth — usuarios
 try {
@@ -312,6 +333,14 @@ try {
   console.log('✅  Proveedores routes OK');
 } catch(e) { console.log('⚠️   proveedores.routes no encontrado:', e.message); }
 
+// Vencimientos (lotes con fecha de vencimiento)
+try {
+  const lotesSvc = require('./services/lotes.service');
+  lotesSvc.ensureSchema();
+  app.use('/vencimientos', require('./routes/vencimientos.routes'));
+  console.log('✅  Vencimientos routes OK');
+} catch(e) { console.log('⚠️   vencimientos no disponible:', e.message); }
+
 // Gastos
 try {
   const gastosRoutes = require('./routes/gastos.routes');
@@ -381,6 +410,18 @@ try {
   console.log('✅  Backups routes OK — generación manual desde Ajustes');
 } catch(e) { console.log('⚠️   backup.routes error:', e.message); }
 
+// Asistente de ayuda — registra preguntas que no supo responder
+try {
+  const _fs = require('fs');
+  // Versión para el caché del navegador: cambia sola cuando editás ayuda-base.js (al reiniciar el sistema)
+  app.locals.ayudaVersion = Math.floor(Math.max(
+    _fs.statSync(path.join(__dirname, 'public', 'js', 'ayuda-base.js')).mtimeMs,
+    _fs.statSync(path.join(__dirname, 'public', 'js', 'ayuda-bot.js')).mtimeMs
+  ));
+  app.use('/api/ayuda', require('./routes/ayuda.routes'));
+  console.log('✅  Asistente de ayuda OK');
+} catch(e) { console.log('⚠️   ayuda.routes error:', e.message); }
+
 // Main (dashboard, ventas, inventario, sucursales)
 const mainRoutes = require('./routes/main.routes');
 app.use('/', mainRoutes);
@@ -409,4 +450,9 @@ process.on('uncaughtException', (err) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\n🚀  ComercialOS en http://localhost:${PORT}\n`);
+  // Copias de seguridad automáticas (las pruebas automáticas usan DB_PATH y no las activan)
+  if (!process.env.DB_PATH || process.env.AXSOFT_SCHEDULER === '1') {
+    try { require('./services/backup_auto.service').iniciarPlanificador(); }
+    catch (e) { console.log('⚠️   Copias automáticas no iniciadas:', e.message); }
+  }
 });

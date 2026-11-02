@@ -199,7 +199,7 @@ exports.update = (req, res) => {
 
 exports.adjustStock = (req, res) => {
   try {
-    const { delta } = req.body || {};
+    const { delta, client_uuid, offline, fecha_ajuste } = req.body || {};
 
     if (delta === undefined || Number.isNaN(Number(delta))) {
       return res.status(400).json({ error: 'delta es obligatorio (número)' });
@@ -207,9 +207,29 @@ exports.adjustStock = (req, res) => {
 
     const suc = res.locals.sucursal_id || 1;
     const usuario = req.session && req.session.user ? req.session.user.name : null;
-    const result = productsService.adjustStock(String(req.params.sku), Number(delta), suc, { usuario });
+    const offlineSvc = require('../services/offline.service');
+    const uuid = offlineSvc.uuidValido(client_uuid);
+    const esOffline = !!offline;
+
+    // Reintento de un ajuste que ya se aplicó (se cortó la conexión antes de recibir la respuesta):
+    // no se aplica dos veces.
+    if (uuid && offlineSvc.yaAplicada(uuid)) {
+      const actual = productsService.findBySku(String(req.params.sku), suc);
+      return res.json({ ...(actual || {}), duplicada: true });
+    }
+
+    // Un ajuste hecho sin internet ya ocurrió en la realidad (se tiró mercadería, se contó, etc.):
+    // se acepta aunque el stock quede negativo, para que se revise, y conserva su fecha real.
+    const opts = { usuario };
+    if (esOffline) {
+      opts.permitirNegativo = true;
+      opts.fecha = require('../services/sales.service').fechaVentaOffline(fecha_ajuste);
+      opts.motivo = 'ajuste manual (hecho sin internet)';
+    }
+    const result = productsService.adjustStock(String(req.params.sku), Number(delta), suc, opts);
     if (result.error) return res.status(400).json(result);
 
+    if (uuid) offlineSvc.marcarAplicada(uuid, 'ajuste_stock');
     res.json(result);
   } catch (err) {
     console.error('products.controller.adjustStock =>', err);

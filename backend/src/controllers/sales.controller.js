@@ -8,7 +8,7 @@ exports.create = async (req, res) => {
       payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct,
       cliente_id, items, es_cuenta_corriente, monto_mixto2,
-      presupuesto_id
+      presupuesto_id, client_uuid, fecha_venta, offline, vendedor
     } = req.body;
 
     if (!payment_method)
@@ -47,12 +47,19 @@ exports.create = async (req, res) => {
       es_cuenta_corriente:  es_cuenta_corriente ? 1 : 0,
       monto_mixto2:         monto_mixto2 != null ? Number(monto_mixto2) : null,
       sucursal_id,
-      usuario:              req.session?.vendedorActivo?.nombre || req.session?.user?.name || req.session?.user?.username || null,
+      // Una venta sin internet se hizo antes de sincronizar: el vendedor es el que estaba atendiendo
+      // en ese momento (el navegador lo guarda), no quien inicie sesión después.
+      usuario:              (offline && typeof vendedor?.nombre === 'string' && vendedor.nombre.trim())
+                              ? vendedor.nombre.trim().slice(0, 80)
+                              : (req.session?.vendedorActivo?.nombre || req.session?.user?.name || req.session?.user?.username || null),
       presupuesto_id:       presupuesto_id ? Number(presupuesto_id) : null,
+      client_uuid:          (typeof client_uuid === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(client_uuid)) ? client_uuid : null,
+      fecha_venta:          typeof fecha_venta === 'string' ? fecha_venta : null,
+      offline:              offline ? 1 : 0,
       items
     });
 
-    res.status(201).json(result);
+    res.status(result.duplicada ? 200 : 201).json(result);
   } catch (err) {
     console.error('Error creando venta:', err.message);
     res.status(400).json({ error: err.message || 'Error al registrar venta' });

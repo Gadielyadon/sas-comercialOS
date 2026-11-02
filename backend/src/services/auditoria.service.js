@@ -262,13 +262,15 @@ function rentabilidadVentas({ sucursal_id = null, desde = null, hasta = null } =
   );
 
   const porCategoria = {};
-  let totCosto = 0, totVenta = 0, totUnidades = 0;
+  let totCosto = 0, totVenta = 0, totUnidades = 0, ventaSinCosto = 0;
 
   for (const r of rows) {
     const cat = r.category;
     const qty = Number(r.qty) || 0;
     const venta = Number(r.subtotal) || 0;
     const costo = (Number(r.price_cost) || 0) * qty;
+    // Sin costo cargado: no se cuenta como ganancia (inflaba el margen al 100%)
+    if (!(Number(r.price_cost) > 0)) { ventaSinCosto += venta; continue; }
 
     if (!porCategoria[cat]) {
       porCategoria[cat] = { categoria: cat, unidades: 0, costo_total: 0, venta_total: 0 };
@@ -303,6 +305,8 @@ function rentabilidadVentas({ sucursal_id = null, desde = null, hasta = null } =
       venta_total: Math.round(totVenta * 100) / 100,
       rentabilidad: Math.round(totRentabilidad * 100) / 100,
       margen_pct: totVenta > 0 ? Math.round((totRentabilidad / totVenta) * 1000) / 10 : 0,
+      venta_sin_costo: Math.round(ventaSinCosto * 100) / 100,
+      cobertura_pct: (totVenta + ventaSinCosto) > 0 ? Math.round((totVenta / (totVenta + ventaSinCosto)) * 100) : 0,
     },
   };
 }

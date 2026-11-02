@@ -116,6 +116,7 @@ router.post('/:id/check-limite', (req, res) => {
 
 // POST /api/clientes/importar — importación masiva
 router.post('/importar', (req, res) => {
+  try { require('../services/backup_auto.service').antesDeCambioGrande('importar-clientes'); } catch (e) { console.error('[backup] copia previa:', e.message); }
   try {
     const { rows } = req.body;
     if (!Array.isArray(rows) || !rows.length) return res.status(400).json({ error: 'Sin datos' });

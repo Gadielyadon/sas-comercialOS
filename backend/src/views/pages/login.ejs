@@ -257,6 +257,7 @@
 
   </div>
 
+  <script src="/js/axauth.js"></script>
   <script>
     function togglePass() {
       const input = document.getElementById('inp_pass');
@@ -264,10 +265,21 @@
       if (input.type === 'password') { input.type = 'text'; icon.className = 'bi bi-eye-slash'; }
       else { input.type = 'password'; icon.className = 'bi bi-eye'; }
     }
-    document.getElementById('loginForm').addEventListener('submit', function () {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const form = this;
       const btn = document.getElementById('btnLogin');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Ingresando…';
+      // Guarda en este equipo una verificación de la contraseña (nunca la contraseña) para poder
+      // volver a entrar sin internet. Si algo falla, el ingreso normal sigue igual.
+      try {
+        await Promise.race([
+          window.AxAuth ? AxAuth.prepararLogin(document.getElementById('inp_user').value, document.getElementById('inp_pass').value) : null,
+          new Promise(r => setTimeout(r, 3000)),
+        ]);
+      } catch (_) {}
+      form.submit();
     });
   </script>
 </body>

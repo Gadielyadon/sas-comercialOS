@@ -1,5 +1,6 @@
 // src/services/sucursales.service.js
 const { get, all, run } = require('../db');
+const pagos = require('./pagos.service');
 
 // ─────────────────────────────────────────────────────────────
 // INIT — crea tablas y agrega columnas si no existen
@@ -100,31 +101,13 @@ function getStats(sucursal_id = null) {
   `);
 
   const ventasParaMetodo = all(`
-    SELECT payment_method, cash_received, monto_mixto2, total
+    SELECT payment_method, cash_received, monto_mixto2, total,
+           COALESCE(s.status,'completada') AS status
     FROM sales s
     ${where}
     AND DATE(s.created_at) = ?
   `, [hoy]);
-  const mapaMetodo = {};
-  function sumarMetodo(nombre, monto) {
-    const m = (nombre || 'Sin método').trim();
-    if (!mapaMetodo[m]) mapaMetodo[m] = { payment_method: m, total: 0, count: 0 };
-    mapaMetodo[m].total += Number(monto) || 0;
-    mapaMetodo[m].count += 1;
-  }
-  ventasParaMetodo.forEach(v => {
-    const raw = (v.payment_method || 'Sin método').trim();
-    if (raw.includes('+')) {
-      const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-      if (partes.length === 2) {
-        sumarMetodo(partes[0], v.cash_received);
-        sumarMetodo(partes[1], v.monto_mixto2);
-        return;
-      }
-    }
-    sumarMetodo(raw, v.total);
-  });
-  const porMetodo = Object.values(mapaMetodo);
+  const porMetodo = pagos.agruparPorMetodo(ventasParaMetodo);
 
   return { ventasHoy, ventasSemana, porMetodo };
 }

@@ -1,0 +1,14 @@
+PRUEBAS AUTOMATICAS
+===================
+Para correrlas, desde la carpeta "backend":
+
+    node --test
+
+Tardan unos segundos. Al final tiene que decir "fail 0".
+Si dice "fail" con un numero mayor a 0, algo del sistema esta calculando mal
+la plata: avisame cual prueba fallo ("not ok ...").
+
+Las pruebas NO tocan la base de datos real: levantan una copia temporal del
+sistema con una base vacia y la borran al terminar. Se pueden correr con
+el sistema andando y con clientes usando el sistema.
+Corrilas cada vez que cambies algo en ventas, caja, cuentas o reportes.

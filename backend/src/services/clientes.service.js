@@ -1,5 +1,5 @@
 // src/services/clientes.service.js
-const { get, all, run } = require('../db');
+const { get, all, run, db } = require('../db');
 
 function initClientesSchema() {
   ['documento TEXT', 'saldo REAL NOT NULL DEFAULT 0'].forEach(col => {
@@ -25,6 +25,9 @@ function initClientesSchema() {
     created_at  TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
     FOREIGN KEY (cliente_id) REFERENCES clientes(id)
   )`);
+  // Medio con el que se cobró un pago ('Efectivo', 'Transferencia'…). 'anulacion' = deuda revertida.
+  try { run(`ALTER TABLE clientes_movimientos ADD COLUMN metodo TEXT`); } catch(e) {}
+  try { run(`ALTER TABLE cuenta_corriente ADD COLUMN metodo TEXT`); } catch(e) {}
 }
 
 function list() {
@@ -159,17 +162,47 @@ function registrarCargo(clienteId, monto, descripcion = 'Cargo', saleId = null) 
   return findById(clienteId);
 }
 
-function registrarPago(clienteId, monto, descripcion = 'Pago') {
+// Registra un pago (o recarga de saldo a favor) del cliente.
+//  • metodo: con qué pagó ('Efectivo' por defecto). Se guarda para poder rendir cuentas.
+//  • Si pagó en EFECTIVO y hay caja abierta, el efectivo entra a la caja (así el cierre cuadra).
+//  • Devuelve el cliente actualizado + { caja_ingreso, movimiento_id }.
+function registrarPago(clienteId, monto, descripcion = 'Pago', opts = {}) {
+  const importe = Number(monto);
+  if (!Number.isFinite(importe) || importe <= 0) throw new Error('Monto inválido');
   const c = findById(clienteId);
   if (!c) throw new Error('Cliente no encontrado');
-  const nuevoSaldo = (c.saldo || 0) - Number(monto);
-  run(`UPDATE clientes SET saldo = ? WHERE id = ?`, [nuevoSaldo, Number(clienteId)]);
-  run(
-    `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, saldo_post)
-     VALUES (?, 'pago', ?, ?, ?)`,
-    [Number(clienteId), Number(monto), descripcion, nuevoSaldo]
-  );
-  return findById(clienteId);
+
+  const metodo = String(opts.metodo || 'Efectivo').trim() || 'Efectivo';
+  const esEfectivo = metodo.toLowerCase().replace(/\s+/g, '') === 'efectivo';
+  let cajaIngreso = false;
+  let movId = null;
+
+  const tx = db.transaction(() => {
+    const nuevoSaldo = Math.round(((c.saldo || 0) - importe) * 100) / 100;
+    run(`UPDATE clientes SET saldo = ? WHERE id = ?`, [nuevoSaldo, Number(clienteId)]);
+    const r = run(
+      `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, saldo_post, metodo)
+       VALUES (?, 'pago', ?, ?, ?, ?)`,
+      [Number(clienteId), importe, descripcion, nuevoSaldo, metodo]
+    );
+    movId = r.lastInsertRowid;
+    // Libro "Cuenta" (es el que muestra la pantalla de cuenta corriente)
+    run(
+      `INSERT INTO cuenta_corriente (cliente_id, tipo, monto, descripcion, metodo) VALUES (?, 'pago', ?, ?, ?)`,
+      [Number(clienteId), importe, `${descripcion} (${metodo})`, metodo]
+    );
+    if (esEfectivo) {
+      const caja = require('./caja.service');
+      const ing = caja.registrarIngreso(
+        opts.sucursal_id || 1, importe,
+        `Cobro de cuenta corriente — ${c.nombre}`
+      );
+      cajaIngreso = !!ing.ok;
+    }
+  });
+  tx();
+
+  return { ...findById(clienteId), caja_ingreso: cajaIngreso, movimiento_id: movId, metodo };
 }
 
 // ─────────────────────────────────────────────────────────────

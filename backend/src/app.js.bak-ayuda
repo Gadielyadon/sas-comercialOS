@@ -1,0 +1,446 @@
+// src/app.js
+require('dotenv').config();   // ← carga .env automáticamente
+const express = require('express');
+const path    = require('path');
+const app     = express();
+
+// ── Versión de assets para cache-busting ──────────────────────
+// Cambia sola cuando cambia el CSS, así los navegadores bajan la
+// versión nueva sin que el cliente tenga que borrar el caché.
+try {
+  const fs = require('fs');
+  app.locals.assetVersion = Math.floor(Math.max(
+    fs.statSync(path.join(__dirname, 'public', 'css', 'styles.css')).mtimeMs,
+    fs.statSync(path.join(__dirname, 'public', 'js', 'offline.js')).mtimeMs,
+    fs.statSync(path.join(__dirname, 'public', 'js', 'axauth.js')).mtimeMs
+  ));
+} catch (e) {
+  app.locals.assetVersion = Date.now();
+}
+
+// ── Trust proxy — necesario para cookies seguras detrás de Nginx ──
+app.set('trust proxy', 1);
+
+// ── Compresión gzip — reduce respuestas hasta 6x ──────────────
+try {
+  const compression = require('compression');
+  app.use(compression());
+} catch(e) {
+  // Si no está instalado, instalar con: npm install compression
+  console.log('ℹ️  compression no instalado — ejecutar: npm install compression');
+}
+
+// ── Views ─────────────────────────────────────────────────────
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// ── Service Worker (modo sin internet) ────────────────────────
+// Va ANTES del static para que el navegador siempre revise si hay versión nueva.
+app.get('/sw.js', (req, res) => {
+  res.set({
+    'Content-Type': 'application/javascript; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Service-Worker-Allowed': '/',
+  });
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+// ── Middlewares base ──────────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '7d',        // browser cachea CSS/JS/imágenes por 7 días
+  etag: true,
+}));
+// ── Favicon ───────────────────────────────────────────────────
+app.get('/favicon.ico', (req, res) => res.redirect('/favicon (3).svg'));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
+
+const session = require('express-session');
+
+// ── Milisegundos hasta medianoche hora Argentina ──────────────
+// La sesión vence a las 00:00, así cubre cualquier horario de negocio
+// y el "día" siempre reinicia junto con el cambio de fecha.
+function msHastaMedianoche() {
+  const ahora = new Date();
+  // Fecha actual en Buenos Aires
+  const ahoraArg = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  // Medianoche de mañana en Buenos Aires
+  const maniana = new Date(ahoraArg);
+  maniana.setDate(maniana.getDate() + 1);
+  maniana.setHours(0, 0, 0, 0);
+  const ms = maniana - ahoraArg;
+  // Mínimo 1 minuto por si se llama justo en el tick de medianoche
+  return Math.max(ms, 60 * 1000);
+}
+
+// ── Session store en SQLite — usa la conexión existente, sin recompilar ──
+function makeSqliteStore(session) {
+  const Store = session.Store;
+  const { db } = require('./db');
+  db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expired INTEGER NOT NULL
+  )`);
+  class SqliteStore extends Store {
+    get(sid, cb) {
+      try {
+        const row = db.prepare('SELECT sess, expired FROM sessions WHERE sid=?').get(sid);
+        if (!row) return cb(null, null);
+        if (Date.now() > row.expired) { this.destroy(sid, ()=>{}); return cb(null, null); }
+        cb(null, JSON.parse(row.sess));
+      } catch(e) { cb(e); }
+    }
+    set(sid, sess, cb) {
+      try {
+        const maxAge = (sess.cookie && sess.cookie.maxAge) ? sess.cookie.maxAge : msHastaMedianoche();
+        const expired = Date.now() + maxAge;
+        db.prepare('INSERT OR REPLACE INTO sessions (sid, sess, expired) VALUES (?,?,?)').run(sid, JSON.stringify(sess), expired);
+        cb && cb(null);
+      } catch(e) { cb && cb(e); }
+    }
+    destroy(sid, cb) {
+      try { db.prepare('DELETE FROM sessions WHERE sid=?').run(sid); cb && cb(null); }
+      catch(e) { cb && cb(e); }
+    }
+    touch(sid, sess, cb) { this.set(sid, sess, cb); }
+  }
+  setInterval(() => {
+    try { db.prepare('DELETE FROM sessions WHERE expired<?').run(Date.now()); } catch(e) {}
+  }, 1000 * 60 * 15);
+  return new SqliteStore();
+}
+
+app.use(session({
+  store: makeSqliteStore(session),
+  secret: process.env.SESSION_SECRET || 'comercial-os-secret-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    // maxAge se recalcula en cada login — ver loginHandler en auth.routes.js
+    maxAge: 1000 * 60 * 60 * 24  // 24h de fallback, el login lo reemplaza
+  }
+}));
+
+// ── Middleware: renovar expiración de sesión a medianoche en cada request ──
+app.use((req, res, next) => {
+  if (req.session?.user) {
+    // Recalcular cuánto falta para medianoche Argentina en este momento
+    req.session.cookie.maxAge = msHastaMedianoche();
+  }
+  next();
+});
+
+// ── Protección de rutas: redirige al login si no hay sesión ───
+app.use((req, res, next) => {
+  const openPaths = ['/login', '/logout'];
+  // La vidriera digital (catálogo público) y su panel oculto de activación
+  // no requieren sesión — son para clientes finales y para vos por URL secreta.
+  if (openPaths.includes(req.path) || req.path === '/vidriera' || req.path.startsWith('/admin/vidriera')) {
+    return next();
+  }
+
+  // Si no hay sesión: las llamadas a la API reciben un 401 en JSON (no una redirección al
+  // login, que el navegador seguiría y tomaría como respuesta exitosa).
+  if (!req.session.user) {
+    if (req.path.startsWith('/api/') || (req.headers.accept || '').includes('application/json')) {
+      return res.status(401).json({ error: 'Sesión vencida. Iniciá sesión de nuevo.', sesion_vencida: true });
+    }
+    req.session.returnTo = req.originalUrl;
+    return res.redirect('/login');
+  }
+
+  // Normalizar: garantizar que user.name siempre tenga el nombre correcto
+  const u = req.session.user;
+  if (!u.name) {
+    u.name = u.nombre || u.username || 'Usuario';
+    req.session.user = u;
+  }
+
+  // El Service Worker usa esto para guardar las pantallas por usuario (modo sin internet)
+  res.set('X-AX-User', String(u.id));
+
+  next();
+});
+
+
+// ── Init schemas ──────────────────────────────────────────────
+// 1. Sucursales PRIMERO (crea tabla + columna sucursal_id en las demás)
+try {
+  const sucSvc = require('./services/sucursales.service');
+  sucSvc.initSucursalesSchema();
+  console.log('✅  Sucursales schema OK');
+} catch(e) { console.log('⚠️   sucursales.service no encontrado, se omite'); }
+
+// 2. Caja
+try {
+  const cajaSvc = require('./services/caja.service');
+  cajaSvc.initCajaSchema();
+  console.log('✅  Caja schema OK');
+} catch(e) { console.log('⚠️   Error en caja schema:', e.message); }
+
+// 3. Promo columns en products
+try {
+  const prodSvc = require('./services/products.service');
+  prodSvc.initPromoSchema();
+  console.log('✅  Products schema OK');
+} catch(e) { console.log('⚠️   Error en products schema:', e.message); }
+
+// 4. Clientes
+try {
+  const clSvc = require('./services/clientes.service');
+  clSvc.initClientesSchema();
+  console.log('✅  Clientes schema OK');
+} catch(e) { console.log('⚠️   clientes.service no encontrado, se omite'); }
+
+// 5. Proveedores
+try {
+  const provSvc = require('./services/proveedores.service');
+  provSvc.initProveedoresSchema();
+  if (provSvc.initRecepcionSchema) provSvc.initRecepcionSchema();
+  console.log('✅  Proveedores schema OK');
+} catch(e) { console.log('⚠️   proveedores.service no encontrado:', e.message); }
+
+// 6. Gastos
+try {
+  const gastosSvc = require('./services/gastos.service');
+  gastosSvc.initGastosSchema();
+  console.log('✅  Gastos schema OK');
+} catch(e) { console.log('⚠️   gastos.service no encontrado:', e.message); }
+
+// Sales
+const salesSvc = require('./services/sales.service');
+salesSvc.initSalesSchema();
+require('./services/offline.service').ensureSchema();   // ids de operaciones hechas sin internet
+
+// Auth — usuarios
+try {
+  const authSvc = require('./services/auth.service');
+  authSvc.initUsersTable();
+  console.log('✅  Users schema OK');
+} catch(e) { console.log('⚠️   Error en users schema:', e.message); }
+
+// Payment methods
+try {
+  const pmSvc = require('./services/payment_methods.service');
+  if (pmSvc.initPaymentMethodsSchema) pmSvc.initPaymentMethodsSchema();
+  console.log('✅  Payment methods schema OK');
+} catch(e) { console.log('⚠️   Error en payment_methods schema:', e.message); }
+
+// 7. Presupuestos
+try {
+  const presupuestosSvc = require('./services/presupuestos.service');
+  presupuestosSvc.initPresupuestosSchema();
+  console.log('✅  Presupuestos schema OK');
+} catch(e) { console.log('⚠️   Error en presupuestos schema:', e.message); }
+
+// 7.1 Remitos
+try {
+  const remitosSvc = require('./services/remitos.service');
+  remitosSvc.initRemitosSchema();
+  console.log('✅  Remitos schema OK');
+} catch(e) { console.log('⚠️   Error en remitos schema:', e.message); }
+
+// 8. AFIP / Factura Electrónica
+try {
+  const afipSvc = require('./services/afip.service');
+  afipSvc.initAfipSchema();
+  console.log('✅  AFIP schema OK');
+} catch(e) { console.log('⚠️   Error en AFIP schema:', e.message); }
+
+// ── Auth middleware (si existe) ───────────────────────────────
+try {
+  const { injectUser } = require('./middlewares/auth.middleware');
+  app.use(injectUser);
+  console.log('✅  Auth middleware OK');
+} catch(e) { 
+  // Sin auth: inyectar usuario admin por defecto para desarrollo
+  app.use((req, res, next) => {
+    res.locals.user = res.locals.user || { id: 1, name: 'Admin', role: 'admin', sucursal_id: 1 };
+    next();
+  });
+}
+
+// ── Sucursal middleware (si existe) ───────────────────────────
+try {
+  const { injectSucursal } = require('./middlewares/sucursal.middleware');
+  app.use(injectSucursal);
+  console.log('✅  Sucursal middleware OK');
+} catch(e) {
+  // Fallback: inyectar sucursal 1 por defecto
+  app.use((req, res, next) => {
+    res.locals.sucursal_id     = 1;
+    res.locals.sucursal        = { id: 1, nombre: 'Casa Central' };
+    res.locals.sucursal_filtro = null;  // admin ve todo
+    res.locals.es_admin        = true;
+    next();
+  });
+  console.log('ℹ️   sucursal.middleware no encontrado, usando fallback');
+}
+
+// ── Empresa middleware — cachea nombre/logo para no ir a DB en cada request ──
+let _empresaCache = null;
+let _empresaCacheAt = 0;
+const _EMPRESA_TTL = 30000; // refresca cada 30 segundos
+
+function invalidarCacheEmpresa() { _empresaCache = null; }
+// Exportar solo la función, sin pisar el module.exports del app
+if (typeof exports !== 'undefined') exports.invalidarCacheEmpresa = invalidarCacheEmpresa;
+
+app.use((req, res, next) => {
+  const now = Date.now();
+  if (!_empresaCache || (now - _empresaCacheAt) > _EMPRESA_TTL) {
+    try {
+      const { get } = require('./db');
+      const getNombre = get(`SELECT value FROM config WHERE key=?`, ['empresa_nombre']);
+      const getLogo   = get(`SELECT value FROM config WHERE key=?`, ['empresa_logo']);
+      _empresaCache = {
+        nombre: getNombre ? getNombre.value : '',
+        logo:   getLogo   ? getLogo.value   : '',
+      };
+      _empresaCacheAt = now;
+    } catch(e) {
+      _empresaCache = { nombre: '', logo: '' };
+    }
+  }
+  res.locals.empresa_nombre = _empresaCache.nombre;
+  res.locals.empresa_logo   = _empresaCache.logo;
+  next();
+});
+
+// ── Rutas ─────────────────────────────────────────────────────
+// Auth
+try {
+  const authRoutes = require('./routes/auth.routes');
+  app.use('/', authRoutes);
+} catch(e) {}
+
+// Caja
+try {
+  const cajaRoutes = require('./routes/caja.routes');
+  app.use('/caja', cajaRoutes);
+} catch(e) { console.log('⚠️   caja.routes no encontrado'); }
+
+// API
+const apiRoutes = require('./routes/api.routes');
+app.use('/api', apiRoutes);
+
+// Proveedores
+try {
+  const provRoutes = require('./routes/proveedores.routes');
+  app.use('/proveedores', provRoutes);
+  console.log('✅  Proveedores routes OK');
+} catch(e) { console.log('⚠️   proveedores.routes no encontrado:', e.message); }
+
+// Vencimientos (lotes con fecha de vencimiento)
+try {
+  const lotesSvc = require('./services/lotes.service');
+  lotesSvc.ensureSchema();
+  app.use('/vencimientos', require('./routes/vencimientos.routes'));
+  console.log('✅  Vencimientos routes OK');
+} catch(e) { console.log('⚠️   vencimientos no disponible:', e.message); }
+
+// Gastos
+try {
+  const gastosRoutes = require('./routes/gastos.routes');
+  app.use('/gastos', gastosRoutes);
+  console.log('✅  Gastos routes OK');
+} catch(e) { console.log('⚠️   gastos.routes no encontrado:', e.message); }
+
+// Importar
+try {
+  const importarRoutes = require('./routes/importar.routes');
+  app.use('/importar', importarRoutes);
+  console.log('✅  Importar routes OK');
+} catch(e) { console.log('⚠️   importar.routes no encontrado:', e.message); }
+
+// Presupuestos
+try {
+  const presupuestosRoutes = require('./routes/presupuestos.routes');
+  app.use('/presupuestos', presupuestosRoutes);
+  console.log('✅  Presupuestos routes OK');
+} catch(e) { console.log('⚠️   presupuestos.routes error:', e.message); }
+
+// Remitos
+try {
+  const remitosRoutes = require('./routes/remitos.routes');
+  app.use('/remitos', remitosRoutes);
+  console.log('✅  Remitos routes OK');
+} catch(e) { console.log('⚠️   remitos.routes error:', e.message); }
+
+// Pedidos y Faltantes
+try {
+  const pedidosRoutes = require('./routes/pedidos.routes');
+  app.use('/pedidos', pedidosRoutes);
+  console.log('✅  Pedidos routes OK');
+} catch(e) { console.log('⚠️   pedidos.routes error:', e.message); }
+
+// AFIP / Factura Electrónica
+try {
+  const afipRoutes = require('./routes/afip.routes');
+  app.use('/afip', afipRoutes);
+
+// ── Mercado Pago Point ──────────────────────────────────────
+try {
+  const mpRoutes = require('./routes/mp.routes');
+  app.use('/api/mp', mpRoutes);
+} catch(e) { console.warn('[MP]', e.message); }
+  console.log('✅  AFIP routes OK');
+} catch(e) { console.log('⚠️   afip.routes error:', e.message); }
+
+// Email — envío de comprobantes
+try {
+  const emailRoutes = require('./routes/email.routes');
+  app.use('/api/email', emailRoutes);
+  console.log('✅  Email routes OK');
+} catch(e) { console.log('⚠️   email.routes error:', e.message); }
+
+// Vidriera digital — catálogo público sin login
+try {
+  const vidrieraRoutes = require('./routes/vidriera.routes');
+  app.use('/', vidrieraRoutes);
+  console.log('✅  Vidriera routes OK');
+} catch(e) { console.log('⚠️   vidriera.routes error:', e.message); }
+
+// Copias de seguridad de la base de datos
+try {
+  const backupRoutes = require('./routes/backup.routes');
+  app.use('/api/backups', backupRoutes);
+  console.log('✅  Backups routes OK — generación manual desde Ajustes');
+} catch(e) { console.log('⚠️   backup.routes error:', e.message); }
+
+// Main (dashboard, ventas, inventario, sucursales)
+const mainRoutes = require('./routes/main.routes');
+app.use('/', mainRoutes);
+
+// ── 404 ───────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).send('Página no encontrada');
+});
+
+// ── Error handler global ──────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('❌ Error no manejado:', err.message);
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
+
+// ── Evitar que crashes de promesas tiren el server ────────────
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️  unhandledRejection:', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('❌ uncaughtException:', err.message);
+  // No llamamos process.exit() — pm2 lo maneja si es fatal
+});
+
+// ── Start ─────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`\n🚀  ComercialOS en http://localhost:${PORT}\n`);
+  // Copias de seguridad automáticas (las pruebas automáticas usan DB_PATH y no las activan)
+  if (!process.env.DB_PATH || process.env.AXSOFT_SCHEDULER === '1') {
+    try { require('./services/backup_auto.service').iniciarPlanificador(); }
+    catch (e) { console.log('⚠️   Copias automáticas no iniciadas:', e.message); }
+  }
+});

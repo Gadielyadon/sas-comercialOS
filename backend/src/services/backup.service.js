@@ -10,18 +10,35 @@ const fs   = require('fs');
 const path = require('path');
 const { db } = require('../db');
 
-const BACKUPS_DIR = path.join(__dirname, '..', 'db', 'backups');
+// BACKUPS_DIR es opcional (lo usan las pruebas automáticas para no tocar las copias reales).
+const BACKUPS_DIR = process.env.BACKUPS_DIR || path.join(__dirname, '..', 'db', 'backups');
 
 function ensureDir() {
   if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
 }
 
+// Fecha y hora de Argentina (aunque la VPS esté en otra zona horaria, como UTC)
+function ahoraAR(d = new Date()) {
+  const f = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).format(d).replace('T', ' ');
+  return { fecha: f.slice(0, 10), hora: Number(f.slice(11, 13)), hhmmss: f.slice(11, 19).replace(/:/g, '') };
+}
+
+// Devuelve un nombre que NO exista todavía y que sea POSTERIOR al de cualquier copia anterior del mismo tipo
+// (así la limpieza de copias viejas nunca confunde la nueva con una vieja).
+// VACUUM INTO no sobrescribe: si se piden dos copias en el mismo segundo (por ejemplo, un doble clic),
+// la segunda usa el segundo siguiente en vez de fallar.
 function nombreArchivo(prefijo = 'backup') {
-  const ahora = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const fecha = `${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}`;
-  const hora  = `${pad(ahora.getHours())}${pad(ahora.getMinutes())}${pad(ahora.getSeconds())}`;
-  return `${prefijo}_${fecha}_${hora}.sqlite`;
+  let existentes = [];
+  try { existentes = fs.readdirSync(BACKUPS_DIR).filter(f => f.startsWith(prefijo + '_')); } catch (_) {}
+  for (let n = 0; n < 3600; n++) {
+    const { fecha, hhmmss } = ahoraAR(new Date(Date.now() + n * 1000));
+    const nombre = `${prefijo}_${fecha}_${hhmmss}.sqlite`;
+    if (!existentes.some(f => f >= nombre)) return nombre;
+  }
+  throw new Error('No se pudo elegir un nombre libre para la copia');
 }
 
 // Crea una copia de seguridad y devuelve su info (nombre, tamaño, fecha)
@@ -72,4 +89,5 @@ module.exports = {
   getBackupPath,
   eliminarBackup,
   BACKUPS_DIR,
+  ahoraAR,
 };

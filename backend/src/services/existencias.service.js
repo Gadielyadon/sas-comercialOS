@@ -9,6 +9,11 @@ const { db, get, all, run } = require('../db');
 
 function toNum(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 
+// Lotes con vencimiento: si algo falla ahí, el movimiento de stock NUNCA se cae.
+function _lotes(fn) {
+  try { return fn(require('./lotes.service')); } catch (e) { console.error('[lotes]', e.message); return null; }
+}
+
 // Stock de un producto en un lugar puntual
 function getStock(sku, sucursal_id) {
   const r = get(`SELECT stock FROM existencias WHERE sku = ? AND sucursal_id = ?`,
@@ -38,13 +43,20 @@ function ensureRow(sku, sucursal_id, stockInicial = 0) {
   _mirror(String(sku), Number(sucursal_id));
 }
 
-function _registrarMov(sku, suc, delta, result, tipo, motivo, ref, usuario) {
+function _registrarMov(sku, suc, delta, result, tipo, motivo, ref, usuario, fecha = null) {
   try {
-    run(`INSERT INTO movimientos_stock
-           (sku, sucursal_id, delta, stock_result, tipo, motivo, ref_sucursal_id, usuario)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [String(sku), Number(suc), delta == null ? 0 : toNum(delta), result == null ? null : toNum(result),
-        String(tipo), motivo || null, ref != null ? Number(ref) : null, usuario || null]);
+    const args = [String(sku), Number(suc), delta == null ? 0 : toNum(delta), result == null ? null : toNum(result),
+      String(tipo), motivo || null, ref != null ? Number(ref) : null, usuario || null];
+    if (fecha) {
+      // Operación hecha sin internet: se conserva la fecha y hora reales
+      run(`INSERT INTO movimientos_stock
+             (sku, sucursal_id, delta, stock_result, tipo, motivo, ref_sucursal_id, usuario, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [...args, String(fecha)]);
+    } else {
+      run(`INSERT INTO movimientos_stock
+             (sku, sucursal_id, delta, stock_result, tipo, motivo, ref_sucursal_id, usuario)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, args);
+    }
   } catch (_) {}
 }
 
@@ -57,8 +69,10 @@ function _mirror(sku, sucursal_id) {
 }
 
 // Setea el stock a un valor absoluto
-function setStock(sku, sucursal_id, stock, { motivo = 'ajuste manual', usuario = null, tipo = 'ajuste' } = {}) {
+function setStock(sku, sucursal_id, stock, { motivo = 'ajuste manual', usuario = null, tipo = 'ajuste', sinLotes = false } = {}) {
   const s = Math.max(0, toNum(stock));
+  const antes = getStock(sku, sucursal_id);
+  if (!sinLotes && s < antes) _lotes(L => L.consumir(sku, sucursal_id, antes - s, { tipo: 'ajuste' }));
   run(`INSERT INTO existencias (sku, sucursal_id, stock) VALUES (?, ?, ?)
        ON CONFLICT(sku, sucursal_id) DO UPDATE SET stock = excluded.stock, updated_at = datetime('now','localtime')`,
     [String(sku), Number(sucursal_id), s]);
@@ -69,7 +83,7 @@ function setStock(sku, sucursal_id, stock, { motivo = 'ajuste manual', usuario =
 
 // Ajusta por delta (suma/resta). Devuelve { stock } o { error }
 function adjustStock(sku, sucursal_id, delta,
-  { motivo = 'ajuste manual', usuario = null, tipo = 'ajuste', permitirNegativo = false } = {}) {
+  { motivo = 'ajuste manual', usuario = null, tipo = 'ajuste', permitirNegativo = false, sinLotes = false, fecha = null } = {}) {
   const actual = getStock(sku, sucursal_id);
   const d = toNum(delta);
   const nuevo = actual + d;
@@ -80,8 +94,11 @@ function adjustStock(sku, sucursal_id, delta,
   run(`INSERT INTO existencias (sku, sucursal_id, stock) VALUES (?, ?, ?)
        ON CONFLICT(sku, sucursal_id) DO UPDATE SET stock = excluded.stock, updated_at = datetime('now','localtime')`,
     [String(sku), Number(sucursal_id), s]);
-  _registrarMov(sku, sucursal_id, d, s, tipo, motivo, null, usuario);
+  _registrarMov(sku, sucursal_id, d, s, tipo, motivo, null, usuario, fecha);
   _mirror(sku, sucursal_id);
+  // Salida de stock que no es una venta (ajuste, merma…): se gasta primero lo que vence antes.
+  // Las ventas lo hacen ellas mismas (necesitan guardar de qué venta salió cada unidad).
+  if (d < 0 && !sinLotes && tipo !== 'venta') _lotes(L => L.consumir(sku, sucursal_id, -d, { tipo }));
   return { stock: s };
 }
 
@@ -108,7 +125,11 @@ function transferStock(sku, desde, hacia, qty, { motivo = null, usuario = null }
   desde = Number(desde); hacia = Number(hacia); qty = toNum(qty);
   if (qty <= 0) return { error: 'La cantidad a mover debe ser mayor a cero' };
   if (desde === hacia) return { error: 'El origen y el destino no pueden ser el mismo lugar' };
-  try { return _mover(String(sku), desde, hacia, qty, motivo, usuario); }
+  try {
+    const r = _mover(String(sku), desde, hacia, qty, motivo, usuario);
+    _lotes(L => L.transferir(sku, desde, hacia, qty));   // las fechas viajan con la mercadería
+    return r;
+  }
   catch (e) { return { error: e && e._stock ? e.message : 'No se pudo mover el stock' }; }
 }
 

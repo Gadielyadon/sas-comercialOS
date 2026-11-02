@@ -1,0 +1,71 @@
+COPIAS DE SEGURIDAD AUTOMATICAS A GOOGLE DRIVE - GUIA
+=====================================================
+
+QUE HACE
+- Todos los dias a las 03:00 (hora de Argentina) cada sistema hace una copia de su base de datos,
+  verifica que no este danada, la comprime, la CIFRA y la sube a TU Google Drive:
+      AxSoft Backups / <nombre-del-cliente> / auto_2026-10-24_030000.axbk
+- Limpieza automatica: se guardan las ultimas 14 copias diarias, 8 semanales y 6 mensuales.
+  En el servidor del cliente quedan solo las ultimas 7. Las copias manuales no se tocan nunca.
+- Antes de importar Excel o de actualizar precios / IVA masivo se hace una copia "previa" (y se sube).
+- Si falla algo, o pasan mas de 26 horas sin copia, aparece un aviso en la campana (solo para admin).
+- Sin Drive conectado las copias diarias se hacen igual, pero quedan solo en el servidor.
+
+PREPARACION (UNA SOLA VEZ, PARA TODOS TUS CLIENTES)
+1) Entra a https://console.cloud.google.com con tu cuenta de Google.
+2) Crea un proyecto nuevo (por ejemplo "AxSoft Backups").
+3) Menu "APIs y servicios" > "Biblioteca" > busca "Google Drive API" > Habilitar.
+4) "APIs y servicios" > "Pantalla de consentimiento de OAuth":
+     - Tipo de usuario: Externo.
+     - Nombre de la app, tu correo de contacto.
+     - Permisos (scopes): agrega  .../auth/drive.file   (solo ve los archivos que el sistema mismo sube).
+     - IMPORTANTE: al terminar, "Publicar la app" (estado "En produccion").
+       Si queda en "Prueba", Google corta la conexion a los 7 dias y las copias dejan de subirse.
+5) "Credenciales" > "Crear credenciales" > "ID de cliente de OAuth":
+     - Tipo de aplicacion: "Televisores y dispositivos de entrada limitada".
+     - Copia el ID de cliente y el secreto: van en install.sh (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+6) Elegi tu CLAVE_MAESTRA_BACKUPS. Para generar una buena:
+       node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   GUARDALA EN DOS LUGARES SEGUROS (gestor de contrasenas + papel/otro equipo).
+   Si la perdes, las copias en Drive no se pueden abrir. NO va en los servidores de los clientes.
+
+PARA CADA CLIENTE NUEVO
+1) En install.sh completa: CLAVE_MAESTRA_BACKUPS, NOMBRE_CLIENTE (sin espacios, unico: ej ferreteria-lopez),
+   GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET. El instalador calcula la clave de ese cliente solo.
+2) Con el sistema andando: Ajustes > Copias de seguridad > "Conectar Google Drive".
+   Aparece un codigo. Abri google.com/device en tu celular o PC, inicia sesion con TU cuenta de Google
+   (la que guarda las copias) e ingresa el codigo. Listo: el sistema muestra "Conectado como ...".
+3) Toca "Copiar y subir ahora" y verifica en tu Drive que aparecio AxSoft Backups / <cliente> / auto_...axbk.
+
+PARA CLIENTES YA INSTALADOS
+1) Calcula su clave:   node tools/clave-backup.js <TU_CLAVE_MAESTRA> <nombre-del-cliente>
+2) Agrega al archivo backend/.env del servidor (el .env.example muestra donde):
+       GOOGLE_CLIENT_ID=...
+       GOOGLE_CLIENT_SECRET=...
+       BACKUP_CLIENT_NAME=<nombre-del-cliente>
+       BACKUP_ENCRYPTION_KEY=<la clave calculada>
+3) Reinicia (pm2 restart comercialos) y segui con el paso 2 de "Cliente nuevo".
+
+COMO RESTAURAR (si se pierde o se rompe un servidor)
+1) Baja de tu Drive el archivo .axbk que quieras (el mas reciente, o uno anterior).
+2) En tu PC, con Node instalado, desde la carpeta backend:
+       node tools/restaurar-backup.js auto_2026-10-24_030000.axbk base-restaurada.sqlite --maestra <TU_CLAVE_MAESTRA> --cliente <nombre-del-cliente>
+   (o con --clave <clave calculada>). Descifra, verifica y te deja base-restaurada.sqlite.
+3) En el servidor, con el sistema detenido: copia tu base actual aparte (por las dudas), reemplaza
+   backend/src/db/database.sqlite por la restaurada y volve a iniciar. Las ventas hechas DESPUES de la
+   hora de esa copia no estan incluidas.
+   RECOMENDADO: hace una prueba de restauracion ahora, antes de necesitarla. Una copia que nunca
+   probaste no es una copia de seguridad.
+
+LIMITES Y CUIDADOS (importante)
+- Con UN solo Drive para todos los clientes, el permiso es el mismo para todos los sistemas: un servidor
+  de cliente comprometido podria BORRAR (no leer) copias de otros clientes. Leerlas no puede: cada
+  cliente cifra con su propia clave. Google guarda lo borrado 30 dias en la papelera. Entra a tu Drive de
+  vez en cuando a mirar que esten las carpetas y las fechas de las copias.
+- Un Drive gratis tiene 15 GB. Con ~14+8+6 copias por cliente, calcula tamano de base x 28 x clientes.
+- Cada copia se sube entera (no por partes): limite 400 MB por copia.
+- Es posible que Google muestre "app no verificada" al conectar: con este permiso minimo, tocar
+  "Continuar" es lo esperado.
+- Si el permiso se revoca o vence, el sistema avisa en la campana y en Ajustes: reconecta ahi mismo.
+- NO pude probar contra Google real (solo contra un Google simulado). La primera conexion real
+  la tenes que verificar vos con el paso 3 de "Cliente nuevo".

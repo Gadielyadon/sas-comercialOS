@@ -63,7 +63,7 @@
           </div>
         </div>
       </div>
-      <form method="POST" action="/caja/cerrar" onsubmit="return confirm('¿Seguro que querés cerrar la caja?')" style="margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <form method="POST" action="/caja/cerrar" onsubmit="return window.axConfirmarCierre ? axConfirmarCierre() : confirm('¿Seguro que querés cerrar la caja?')" style="margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <input type="number" name="monto_contado" step="0.01" min="0" placeholder="Efectivo contado (opcional)"
           style="padding:10px 12px;border-radius:10px;border:1.5px solid rgba(16,185,129,.4);background:var(--bg-surface);color:var(--text-primary);font-size: 15px;width:190px;">
         <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;background:#ef4444;color:#fff;font-size: 15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,.35);">

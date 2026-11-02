@@ -1,22 +1,35 @@
 const { get, all, run, db } = require('../db');
+const pagos = require('./pagos.service');
 const existencias = require('./existencias.service');
 
 // ─────────────────────────────────────────────────────────────
 // Hora Argentina — robusta para VPS con cualquier timezone configurada
 // ─────────────────────────────────────────────────────────────
-function nowArgentina() {
+function nowArgentina(fecha = new Date()) {
   try {
     const str = new Intl.DateTimeFormat('sv-SE', {
       timeZone: 'America/Argentina/Buenos_Aires',
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', second: '2-digit',
       hour12: false
-    }).format(new Date()).replace('T', ' ');
+    }).format(fecha).replace('T', ' ');
     return str.substring(0, 19);
   } catch(e) {
-    const local = new Date(Date.now() + (-3 * 60 * 60 * 1000));
+    const local = new Date(fecha.getTime() + (-3 * 60 * 60 * 1000));
     return local.toISOString().replace('T', ' ').substring(0, 19);
   }
+}
+
+// Fecha real de una venta hecha sin internet (llega en ISO desde el navegador).
+// Si es inválida, futura (>5 min) o de hace más de 60 días, se ignora y se usa la hora actual.
+function fechaVentaOffline(valor) {
+  if (!valor) return null;
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return null;
+  const ahora = Date.now();
+  if (d.getTime() > ahora + 5 * 60 * 1000) return null;
+  if (d.getTime() < ahora - 60 * 24 * 60 * 60 * 1000) return null;
+  return nowArgentina(d);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -38,6 +51,9 @@ function initSalesSchema() {
     `ALTER TABLE sales ADD COLUMN usuario        TEXT    DEFAULT NULL`,
     // Trazabilidad: de qué presupuesto salió esta venta, si vino de "Convertir a venta"
     `ALTER TABLE sales ADD COLUMN presupuesto_id INTEGER DEFAULT NULL`,
+    // Venta hecha sin internet: id único generado en el navegador (evita duplicados al reintentar)
+    `ALTER TABLE sales ADD COLUMN client_uuid TEXT DEFAULT NULL`,
+    `ALTER TABLE sales ADD COLUMN offline INTEGER DEFAULT 0`,
   ];
 
   const saleItemsCols = [
@@ -59,6 +75,11 @@ function initSalesSchema() {
   for (const sql of saleItemsCols) {
     try { run(sql); } catch (_) {}
   }
+
+  // Un mismo client_uuid no puede guardarse dos veces
+  try {
+    run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_client_uuid ON sales(client_uuid) WHERE client_uuid IS NOT NULL`);
+  } catch (e) { console.error('[sales] índice client_uuid:', e.message); }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -169,8 +190,8 @@ function _ensureStmts() {
     INSERT INTO sales (
       total, payment_method, cash_received, change_amount,
       discount_pct, discount_fixed, recargo_pct, cliente_id, sucursal_id,
-      monto_mixto2, usuario, presupuesto_id, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      monto_mixto2, usuario, presupuesto_id, created_at, client_uuid, offline
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   insertSaleItemStmt = db.prepare(`
     INSERT INTO sale_items (
@@ -211,11 +232,31 @@ function createSale({
   monto_mixto2,
   usuario,
   presupuesto_id,
+  client_uuid,
+  fecha_venta,
+  offline,
   items,
 }) {
   if (!Array.isArray(items) || !items.length) {
     throw new Error('La venta no tiene items');
   }
+
+  // ── Idempotencia: si esta venta ya se guardó (reintento tras un corte de internet),
+  // devolvemos la que existe en vez de duplicarla y descontar el stock dos veces.
+  if (client_uuid) {
+    _ensureStmts();
+    const previa = get('SELECT id FROM sales WHERE client_uuid = ?', [String(client_uuid)]);
+    if (previa) {
+      return {
+        ok: true,
+        sale_id: previa.id,
+        sale: getSaleStmt.get(previa.id),
+        items: getSaleItemsStmt.all(previa.id),
+        duplicada: true,
+      };
+    }
+  }
+  const esOffline = offline ? 1 : 0;
 
   const suc = sucursal_id ? Number(sucursal_id) : 1;
 
@@ -234,11 +275,26 @@ function createSale({
     }
   }
 
+  // ── Fiado / cuenta corriente: SIEMPRE necesita un cliente real ───────────────
+  // (incluye pagos mixtos como "Efectivo + Fiado"). Sin cliente la deuda no queda
+  // anotada en ninguna cuenta y nadie la puede cobrar después.
+  {
+    const pmL = String(payment_method || '').toLowerCase();
+    const pideFiado = es_cuenta_corriente || pmL.includes('fiado') || pmL.includes('cuenta corriente');
+    if (pideFiado) {
+      const cid = Number(cliente_id);
+      const cli = (cid > 1) ? get('SELECT id FROM clientes WHERE id = ?', [cid]) : null;
+      if (!cli) {
+        throw new Error('Para vender en fiado / cuenta corriente tenés que elegir un cliente.');
+      }
+    }
+  }
+
   _ensureStmts();
 
   const tx = db.transaction(() => {
     const productCache = new Map();
-    const createdAt = nowArgentina();
+    const createdAt = fechaVentaOffline(fecha_venta) || nowArgentina();
 
     const saleRes = insertSaleStmt.run(
       toNumber(total),
@@ -259,7 +315,9 @@ function createSale({
       monto_mixto2 !== undefined && monto_mixto2 !== null ? toNumber(monto_mixto2) : null,
       usuario || null,
       presupuesto_id ? Number(presupuesto_id) : null,
-      createdAt
+      createdAt,
+      client_uuid ? String(client_uuid) : null,
+      esOffline
     );
 
     const sale_id = Number(saleRes.lastInsertRowid);
@@ -312,7 +370,7 @@ function createSale({
         throw new Error(`Producto no existe: ${sku}`);
       }
 
-      if (toNumber(prod.stock, 0) < qty && !prod.venta_sin_stock) {
+      if (toNumber(prod.stock, 0) < qty && !prod.venta_sin_stock && !esOffline) {
         throw new Error(`Stock insuficiente para ${prod.name || sku}. Disponible: ${prod.stock}`);
       }
 
@@ -360,6 +418,9 @@ function createSale({
       // Descontar del stock de la sucursal donde se vende (motor de existencias).
       // El espejo deja products.stock sincronizado para el código que aún lo lea.
       existencias.adjustStock(sku, suc, -qty, { tipo: 'venta', motivo: 'Venta', permitirNegativo: true });
+      // Lotes con vencimiento: sale primero lo que vence antes y queda anotado de qué venta salió
+      try { require('./lotes.service').consumir(sku, suc, qty, { sale_id, tipo: 'venta' }); }
+      catch (e) { console.error('[lotes] consumir:', e.message); }
 
       // mantener cache consistente por si el SKU aparece otra vez en la misma venta
       prod.stock = toNumber(prod.stock, 0) - qty;
@@ -382,15 +443,9 @@ function createSale({
           // Venta fiada — suma al saldo SOLO lo que quedó fiado.
           // En pago mixto ("Efectivo + Fiado") es la parte del método fiado, no el total.
           let montoCargo = toNumber(total);
-          const pmRaw = String(payment_method || '');
-          if (pmRaw.includes('+')) {
-            const partes = pmRaw.split('+').map(x => x.trim().toLowerCase());
-            const esFiado = x => x.includes('fiado') || x.includes('cuenta corriente');
-            if (partes.length === 2) {
-              if (esFiado(partes[1]) && !esFiado(partes[0])) montoCargo = toNumber(monto_mixto2, 0);
-              else if (esFiado(partes[0]) && !esFiado(partes[1])) montoCargo = toNumber(cash_received, 0);
-              montoCargo = Math.min(montoCargo, toNumber(total));
-            }
+          if (String(payment_method || '').includes('+')) {
+            const fiado = pagos.fiadoDe({ payment_method, total, cash_received, monto_mixto2 });
+            if (fiado > 0) montoCargo = Math.min(fiado, toNumber(total));
           }
           insertCuentaCorrienteStmt.run(
             Number(cliente_id),
@@ -482,7 +537,8 @@ function listToday(sucursal_id = null) {
       : '';
 
     const sales = all(
-      `SELECT s.id, s.total, s.payment_method, s.cash_received, s.monto_mixto2, s.created_at
+      `SELECT s.id, s.total, s.payment_method, s.cash_received, s.monto_mixto2, s.created_at,
+              COALESCE(s.status,'completada') AS status
        FROM sales s
        WHERE DATE(s.created_at) = ?
        ${sWhere}
@@ -538,6 +594,30 @@ function anularVenta({ sale_id, motivo, usuario }) {
       [motivo || 'Sin motivo', nowArgentina(), usuario || 'sistema', Number(sale_id)]
     );
 
+    // Si la venta se fió, la deuda del cliente tiene que desaparecer con la anulación.
+    // Se deja un movimiento que la revierte (no se borra nada: queda el rastro).
+    const cargosFiado = all(
+      `SELECT cliente_id, monto FROM cuenta_corriente WHERE sale_id = ? AND tipo = 'cargo'`,
+      [Number(sale_id)]
+    );
+    for (const cg of cargosFiado) {
+      const monto = Number(cg.monto) || 0;
+      if (monto <= 0) continue;
+      const cli = get(`SELECT saldo FROM clientes WHERE id = ?`, [Number(cg.cliente_id)]);
+      if (!cli) continue;
+      const nuevoSaldo = Math.round(((cli.saldo || 0) - monto) * 100) / 100;
+      run(`UPDATE clientes SET saldo = ? WHERE id = ?`, [nuevoSaldo, Number(cg.cliente_id)]);
+      run(
+        `INSERT INTO cuenta_corriente (cliente_id, tipo, monto, descripcion, sale_id) VALUES (?, 'pago', ?, ?, ?)`,
+        [Number(cg.cliente_id), monto, `Anulación venta #${sale_id} — deuda revertida`, Number(sale_id)]
+      );
+      run(
+        `INSERT INTO clientes_movimientos (cliente_id, tipo, monto, descripcion, sale_id, saldo_post, metodo)
+         VALUES (?, 'pago', ?, ?, ?, ?, 'anulacion')`,
+        [Number(cg.cliente_id), monto, `Anulación venta #${sale_id} — deuda revertida`, Number(sale_id), nuevoSaldo]
+      );
+    }
+
     // Devolver stock — a existencias (fuente de verdad por sucursal), que además
     // espeja products.stock. Simétrico con cómo la venta descuenta el stock.
     for (const item of items) {
@@ -555,6 +635,9 @@ function anularVenta({ sale_id, motivo, usuario }) {
   });
 
   tx();
+  // Las unidades vuelven al mismo lote del que salieron
+  try { require('./lotes.service').restaurarVenta(sale_id); }
+  catch (e) { console.error('[lotes] restaurar:', e.message); }
   return { ok: true, sale_id: Number(sale_id) };
 }
 
@@ -638,26 +721,7 @@ function ventasPorMetodo(sucursal_id = null) {
          AND COALESCE(status,'completada') != 'anulada' ${sW}`,
       [hoy]
     );
-    const mapa = {};
-    function sumar(nombre, monto) {
-      const m = (nombre || 'Sin método').trim();
-      if (!mapa[m]) mapa[m] = { payment_method: m, total: 0, count: 0 };
-      mapa[m].total += Number(monto) || 0;
-      mapa[m].count += 1;
-    }
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Sin método').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumar(partes[0], v.cash_received);
-          sumar(partes[1], v.monto_mixto2);
-          return;
-        }
-      }
-      sumar(raw, v.total);
-    });
-    return Object.values(mapa).sort((a, b) => b.total - a.total);
+    return pagos.agruparPorMetodo(ventas);
   } catch(e) {
     console.error('ventasPorMetodo:', e.message);
     return [];
@@ -694,6 +758,7 @@ function findSaleByPresupuestoId(presupuesto_id) {
 
 module.exports = {
   initSalesSchema,
+  fechaVentaOffline,
   createSale,
   listRecent,
   listToday,

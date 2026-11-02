@@ -555,7 +555,17 @@ function ivmActualizarPreview() {
   const el = document.getElementById('ivm_preview_count');
   if (el) el.textContent = `${n} producto${n !== 1 ? 's' : ''}`;
 }
+// Copia de seguridad "previa" antes de una operación masiva (si no se puede, se sigue igual)
+async function _copiaPreviaCambio(motivo) {
+  try {
+    await Promise.race([
+      fetch('/api/backups/pre-cambio', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ motivo }) }),
+      new Promise(r => setTimeout(r, 4000)),
+    ]);
+  } catch (_) {}
+}
 async function ivmAplicar() {
+  await _copiaPreviaCambio('iva-masivo');
   const valor = parseFloat(document.getElementById('ivm_alicuota').value);
   const errEl = document.getElementById('ivm_error');
   const btn = document.getElementById('ivm_btn_aplicar');
@@ -996,8 +1006,44 @@ function filterRows() {
     tr.style.display = (sku.includes(q) || name.includes(q)) ? '' : 'none';
   });
 }
+// Ajuste de stock protegido contra cortes de internet:
+//  · con conexión → se envía con un ID único (si se corta a mitad, el reintento no se aplica dos veces)
+//  · sin conexión (o sin respuesta en 12 s) → se guarda en este equipo y se aplica solo al volver internet
+// Devuelve { r } (respuesta del servidor), { offline:true } (guardado en el equipo) o { guardado:false } (no se pudo).
+async function _enviarAjusteStock(sku, delta) {
+  const uuid  = window.OfflineQueue?.nuevoUuid?.() || null;
+  const fecha = new Date().toISOString();
+  const encolar = async () => {
+    if (!window.OfflineQueue) { alert('Sin conexión. Recargá la página e intentá de nuevo.'); return { guardado:false }; }
+    try {
+      await window.OfflineQueue.guardarAjusteStock({ sku, delta, client_uuid: uuid, fecha_ajuste: fecha });
+      await window.OfflineQueue.actualizarBadgeOffline();
+      window.OfflineQueue.mostrarToastOffline('✓ Ajuste guardado en este equipo — se aplica solo cuando vuelva internet', 'success');
+      return { offline:true };
+    } catch (e) { alert('No se pudo guardar el ajuste en este equipo: ' + (e.message || e)); return { guardado:false }; }
+  };
+  if (!navigator.onLine) return encolar();
+  const ctl = new AbortController();
+  const to  = setTimeout(() => ctl.abort(), 12000);
+  let r;
+  try {
+    r = await fetch(`/api/products/${encodeURIComponent(sku)}/stock`, {
+      method:'PATCH', headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({ delta, client_uuid: uuid, fecha_ajuste: fecha }), signal: ctl.signal });
+  } catch (e) { clearTimeout(to); return encolar(); }
+  clearTimeout(to);
+  if (r.status === 401) return encolar();   // sesión vencida: el ajuste espera hasta volver a iniciar sesión
+  return { r };
+}
+function _sumarStockLocal(sku, delta) {
+  const i = _allProducts.findIndex(p => p.sku === sku);
+  if (i !== -1) _allProducts[i] = { ..._allProducts[i], stock: Number(_allProducts[i].stock) + Number(delta) };
+}
 async function stockDelta(sku, delta) {
-  const r = await fetch(`/api/products/${encodeURIComponent(sku)}/stock`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ delta }) });
+  const res = await _enviarAjusteStock(sku, delta);
+  if (res.guardado === false) return;
+  if (res.offline) { _sumarStockLocal(sku, delta); renderTable(_allProducts); return; }
+  const r = res.r;
   if (!r.ok) { const e = await r.json().catch(()=>({error:'Error'})); alert(e.error || 'Error'); return; }
   const updated = await r.json();
   const idx = _allProducts.findIndex(p => p.sku === sku);
@@ -1317,6 +1363,21 @@ async function ejecutarImportacion() {
   } catch(e) { location.reload(); }
 }
 
+// Sin internet: lo ajustado y no enviado todavía se refleja al recargar; al sincronizar se trae el stock real.
+window.addEventListener('load', async () => {
+  try {
+    const antes = _allProducts.map(p => p.stock).join();
+    await window.OfflineQueue?.aplicarStockPendiente(_allProducts);
+    if (_allProducts.map(p => p.stock).join() !== antes) renderTable(_allProducts);
+  } catch (_) {}
+});
+window.addEventListener('axsoft:sync', async () => {
+  try {
+    const r = await fetch('/api/products?limit=9999');
+    if (r.ok) { _allProducts = await r.json(); renderTable(_allProducts); }
+  } catch (_) {}
+});
+
 function descargarPlantilla(){
   const generar = () => {
     const data = [
@@ -1433,7 +1494,7 @@ let _smSku=null,_smStock=0;
 function abrirModalStock(producto){_smSku=producto.sku;_smStock=Number(producto.stock);document.getElementById('smNombre').textContent=producto.name;document.getElementById('smSku').textContent=producto.sku;const catSpan=document.getElementById('smCategoria');if(producto.category){document.getElementById('smCatVal').textContent=producto.category;catSpan.style.display='';}else{catSpan.style.display='none';}actualizarStockModal(_smStock);document.getElementById('smCantidad').value='';document.getElementById('smSigno').value='1';document.getElementById('modalStock').classList.add('open');setTimeout(()=>document.getElementById('smCantidad').focus(),120);}
 function actualizarStockModal(stock){_smStock=stock;const el=document.getElementById('smStockActual');const badge=document.getElementById('smStockBadge');el.textContent=stock;const clase=stock<=0?'vacio':stock<=3?'bajo':'ok';el.style.color={vacio:'#dc2626',bajo:'#d97706',ok:'#059669'}[clase];badge.innerHTML=`<span class="stock-badge ${clase}"><span class="stock-dot ${clase}"></span>${stock}</span>`;}
 function cerrarModalStock(){document.getElementById('modalStock').classList.remove('open');_smSku=null;}
-async function ajustarStock(delta){if(!_smSku)return;try{const r=await fetch(`/api/products/${encodeURIComponent(_smSku)}/stock`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta})});if(!r.ok){alert('Error actualizando stock');return;}const nuevoStock=_smStock+delta;actualizarStockModal(Math.max(0,nuevoStock));actualizarFilaStock(_smSku,Math.max(0,nuevoStock));}catch(e){alert('Error de red');}}
+async function ajustarStock(delta){if(!_smSku)return;const sku=_smSku;const res=await _enviarAjusteStock(sku,delta);if(res.guardado===false)return;if(res.offline){const nuevo=_smStock+delta;_sumarStockLocal(sku,delta);actualizarStockModal(nuevo);actualizarFilaStock(sku,nuevo);return;}try{const r=res.r;if(!r.ok){const e=await r.json().catch(()=>({}));alert(e.error||'Error actualizando stock');return;}const nuevoStock=_smStock+delta;_sumarStockLocal(sku,delta);actualizarStockModal(Math.max(0,nuevoStock));actualizarFilaStock(sku,Math.max(0,nuevoStock));}catch(e){alert('Error de red');}}
 async function aplicarPersonalizado(){const cant=parseInt(document.getElementById('smCantidad').value)||0;const signo=document.getElementById('smSigno').value;if(!cant&&signo!=='set')return;if(signo==='set'){const nuevo=Math.max(0,cant);const delta=nuevo-_smStock;await ajustarStock(delta);}else{await ajustarStock(Number(signo)*cant);}document.getElementById('smCantidad').value='';document.getElementById('smCantidad').focus();}
 function actualizarFilaStock(sku,nuevoStock){const row=document.querySelector(`[data-sku="${sku}"]`);if(!row)return;const td=row.querySelector('[data-stock]');if(!td)return;td.setAttribute('data-stock',nuevoStock);const clase=nuevoStock<=0?'vacio':nuevoStock<=3?'bajo':'ok';td.innerHTML=`<span class="stock-badge ${clase}"><span class="stock-dot ${clase}"></span>${nuevoStock}</span>`;row.classList.remove('row-flash');void row.offsetWidth;row.classList.add('row-flash');}
 
@@ -1647,6 +1708,7 @@ function apActualizarPreview() {
   if(label)label.textContent=`Aplicar a ${count} producto${count!==1?'s':''}`;
 }
 async function apAplicar() {
+  await _copiaPreviaCambio('precios-masivo');
   const operacion=document.getElementById('ap_operacion').value;
   const valor=parseFloat(document.getElementById('ap_valor').value)||0;
   const categoria=document.getElementById('ap_categoria').value;

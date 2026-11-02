@@ -1,4 +1,5 @@
 const { get, all, run } = require('../db');
+const pagos = require('./pagos.service');
 
 function initCajaSchema() {
   run(`CREATE TABLE IF NOT EXISTS caja (
@@ -178,21 +179,8 @@ function close(user, sucursal_id = 1, monto_contado = null) {
 
     totalVentas = ventasTurno.reduce((a, v) => a + (Number(v.total) || 0), 0);
 
-    // Efectivo real: en un pago mixto solo cuenta la parte cobrada en efectivo,
-    // no el total de la venta (igual criterio que la pantalla del turno y los Reportes).
-    totalEfectivo = ventasTurno.reduce((a, v) => {
-      const pm = String(v.payment_method || '').trim().toLowerCase();
-      if (pm.includes('+')) {
-        const partes = pm.split('+').map(x => x.trim());
-        if (partes.length === 2) {
-          let t = 0;
-          if (partes[0] === 'efectivo') t += Number(v.cash_received) || 0;
-          if (partes[1] === 'efectivo') t += Number(v.monto_mixto2) || 0;
-          return a + t;
-        }
-      }
-      return a + (pm === 'efectivo' ? Number(v.total) || 0 : 0);
-    }, 0);
+    // Efectivo real (en un pago mixto solo cuenta la parte cobrada en efectivo)
+    totalEfectivo = ventasTurno.reduce((a, v) => a + pagos.efectivoDe(v), 0);
   } catch (e) {
     totalVentas = 0;
   }
@@ -216,6 +204,18 @@ function close(user, sucursal_id = 1, monto_contado = null) {
   );
 
   return { ok: true, efectivoEsperado, contado, diferencia };
+}
+
+// Registra un ingreso de efectivo en la caja ABIERTA de la sucursal (ej: cobro de una deuda).
+// Si no hay caja abierta no hace nada y lo informa (ok:false) — no rompe el cobro.
+function registrarIngreso(sucursal_id, monto, descripcion) {
+  const cur = getCurrentCaja(sucursal_id);
+  if (!cur.ok) return { ok: false, motivo: 'sin_caja_abierta' };
+  const r = run(
+    `INSERT INTO caja_movimientos (caja_id, tipo, monto, descripcion, created_at) VALUES (?, 'ingreso', ?, ?, ?)`,
+    [cur.caja.id, Number(monto), descripcion || '', nowArgentina()]
+  );
+  return { ok: true, caja_id: cur.caja.id, id: r.lastInsertRowid };
 }
 
 function getMovimientos(caja_id) {
@@ -253,6 +253,7 @@ module.exports = {
   getCurrentCaja,
   getLastClosedCaja,
   getLowStockProducts,
+  registrarIngreso,
   open,
   close,
   getMovimientos,

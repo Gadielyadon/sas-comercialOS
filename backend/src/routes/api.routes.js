@@ -1,6 +1,7 @@
 // src/routes/api.routes.js
 const express = require('express');
 const router  = express.Router();
+const pagos   = require('../services/pagos.service');
 const { requireAuth, requireAdmin, requireAccion } = require('../middlewares/auth.middleware');
 
 // Toda la API requiere estar logueado — antes cualquiera que supiera la URL
@@ -103,12 +104,25 @@ router.get('/products.xlsx',         productsCtrl.exportXlsx);
 router.post('/sales',       salesCtrl.create);
 router.get('/sales/recent', salesCtrl.recent);
 
+// Control de coherencia del efectivo + ventas mixtas "raras" en un período
+router.get('/control/pagos', (req, res) => {
+  try {
+    const { all } = require('../db');
+    const hoy = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
+    const desde = req.query.desde || hoy;
+    const hasta = req.query.hasta || desde;
+    res.json(pagos.controlar(all, desde, hasta));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Lista de métodos para el filtro del Historial: los configurados + los que ya
 // aparecieron en ventas (incluye las partes de pagos mixtos). Sin duplicados.
 router.get('/ventas/metodos', (req, res) => {
   try {
     const { all } = require('../db');
-    const norm = x => String(x || '').toLowerCase().replace(/\s+/g, '');
+    const norm = pagos.norm;
     const vistos = new Map();
     const agregar = n => {
       const nombre = String(n || '').trim();
@@ -143,13 +157,11 @@ router.get('/ventas/buscar', (req, res) => {
     if (desde)  { conditions.push(`DATE(s.created_at) >= ?`); params.push(desde); }
     if (hasta)  { conditions.push(`DATE(s.created_at) <= ?`); params.push(hasta); }
     // Incluye pagos simples ("Efectivo") y mixtos ("Efectivo + Débito" / "Transferencia + Efectivo")
-    // La comparación ignora espacios y mayúsculas ("Mercado Pago" = "MercadoPago").
-    const _normMetodo = x => String(x || '').toLowerCase().replace(/\s+/g, '');
-    const metodoKey = metodo ? _normMetodo(metodo) : '';
+    // Incluye pagos mixtos; ignora espacios y mayúsculas ("Mercado Pago" = "MercadoPago").
     if (metodo) {
-      const nExpr = `REPLACE(LOWER(TRIM(s.payment_method)),' ','')`;
-      conditions.push(`(${nExpr} = ? OR ${nExpr} LIKE ? OR ${nExpr} LIKE ?)`);
-      params.push(metodoKey, `${metodoKey}+%`, `%+${metodoKey}`);
+      const f = pagos.filtroSQL('s.payment_method', metodo);
+      conditions.push(f.sql);
+      params.push(...f.params);
     }
     if (status && status !== 'todas') {
       conditions.push(`COALESCE(s.status,'completada') = ?`);
@@ -195,19 +207,7 @@ router.get('/ventas/buscar', (req, res) => {
     // Resumen sobre TODO el filtro (no solo la página visible).
     // Si hay filtro por método, calcula cuánto entró realmente por ese método
     // (en pagos mixtos solo la parte que corresponde a ese método).
-    const _partePorMetodo = (v, nombre) => {
-      const raw = (v.payment_method || '').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(x => x.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          let t = 0;
-          if (_normMetodo(partes[0]) === _normMetodo(nombre)) t += Number(v.cash_received) || 0;
-          if (_normMetodo(partes[1]) === _normMetodo(nombre)) t += Number(v.monto_mixto2) || 0;
-          return t;
-        }
-      }
-      return _normMetodo(raw) === _normMetodo(nombre) ? Number(v.total) || 0 : 0;
-    };
+    const _partePorMetodo = (v, nombre) => pagos.montoEnMetodo(v, nombre);
     const filasResumen = all(`
       SELECT s.id, s.total, s.payment_method, s.cash_received, s.monto_mixto2,
              COALESCE(s.status,'completada') AS status
@@ -574,14 +574,15 @@ router.post('/clientes/:id/cargo', (req, res) => {
 
 router.post('/clientes/:id/pago', (req, res) => {
   try {
-    const { run } = require('../db');
-    const { monto, descripcion } = req.body;
-    if (!monto || monto <= 0) return res.status(400).json({ error: 'monto inválido' });
-    run(`INSERT INTO cuenta_corriente (cliente_id, tipo, monto, descripcion) VALUES (?, 'pago', ?, ?)`,
-      [Number(req.params.id), Number(monto), descripcion || 'Pago manual']);
-    run(`UPDATE clientes SET saldo = saldo - ? WHERE id = ?`, [Number(monto), Number(req.params.id)]);
-    res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    const { monto, descripcion, metodo } = req.body;
+    const importe = Number(monto);
+    if (!Number.isFinite(importe) || importe <= 0) return res.status(400).json({ error: 'Monto inválido' });
+    const out = require('../services/clientes.service').registrarPago(
+      Number(req.params.id), importe, descripcion || 'Pago manual',
+      { metodo, sucursal_id: req.session?.user?.sucursal_id || 1 }
+    );
+    res.json({ ok: true, ...out });
+  } catch(e) { res.status(e.message === 'Cliente no encontrado' ? 404 : 500).json({ error: e.message }); }
 });
 
 // ── Sucursales ────────────────────────────────────────────────
@@ -732,40 +733,19 @@ router.get('/reporte/metodos', (req, res) => {
     const comisionMap = {};
     pms.forEach(p => { comisionMap[p.nombre] = p.comision_interna_pct || 0; });
 
-    const mapa = {};
-    function sumarMetodo(nombre, monto, contarTransaccion) {
-      const m = (nombre || 'Sin método').trim();
-      if (!mapa[m]) mapa[m] = { metodo: m, total: 0, cantidad: 0, comision_pct: comisionMap[m] || 0 };
-      mapa[m].total += Number(monto) || 0;
-      if (contarTransaccion) mapa[m].cantidad += 1;
-    }
-
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Sin método').trim();
-      // Pago mixto: viene como "Método1 + Método2" — el monto real de cada
-      // uno está en cash_received (método 1) y monto_mixto2 (método 2), no
-      // en v.total (que es la suma de los dos juntos). Si los sumáramos
-      // como una sola fila con v.total, se pisaría cuánto entró realmente
-      // por cada método (ej: el efectivo real del día quedaría de menos).
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumarMetodo(partes[0], v.cash_received, true);
-          sumarMetodo(partes[1], v.monto_mixto2, true);
-          return;
-        }
-      }
-      sumarMetodo(raw, v.total, true);
-    });
-
-    // Calcular comisión neta
-    Object.values(mapa).forEach(m => {
-      m.comision_monto = m.total * (m.comision_pct / 100);
-      m.neto           = m.total - m.comision_monto;
+    const comisionDe = nombre => {
+      const k = pagos.norm(nombre);
+      const hit = pms.find(p => pagos.norm(p.nombre) === k);
+      return hit ? (hit.comision_interna_pct || 0) : 0;
+    };
+    const mapa = pagos.agruparPorMetodo(ventas).map(m => {
+      const comision_pct = comisionDe(m.payment_method);
+      const comision_monto = m.total * (comision_pct / 100);
+      return { metodo: m.payment_method, total: m.total, cantidad: m.count, comision_pct, comision_monto, neto: m.total - comision_monto };
     });
 
     res.json({
-      metodos: Object.values(mapa).sort((a, b) => b.total - a.total),
+      metodos: mapa,
       ventas,
       desde,
       hasta,
@@ -787,6 +767,7 @@ router.get('/reporte/metodos.xlsx', (req, res) => {
     const ventas = all(`
       SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
       FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+        AND COALESCE(status,'completada') != 'anulada'
       ORDER BY id DESC
     `, [desde, hasta]);
 
@@ -794,31 +775,16 @@ router.get('/reporte/metodos.xlsx', (req, res) => {
     const comisionMap = {};
     pms.forEach(p => { comisionMap[p.nombre] = p.comision_interna_pct || 0; });
 
-    const mapa = {};
-    function sumarMetodo(nombre, monto, contarTransaccion) {
-      const m = (nombre || 'Sin método').trim();
-      if (!mapa[m]) mapa[m] = { metodo: m, total: 0, cantidad: 0, comision_pct: comisionMap[m] || 0 };
-      mapa[m].total += Number(monto) || 0;
-      if (contarTransaccion) mapa[m].cantidad += 1;
-    }
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Sin método').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumarMetodo(partes[0], v.cash_received, true);
-          sumarMetodo(partes[1], v.monto_mixto2, true);
-          return;
-        }
-      }
-      sumarMetodo(raw, v.total, true);
+    const comisionDe = nombre => {
+      const k = pagos.norm(nombre);
+      const hit = pms.find(p => pagos.norm(p.nombre) === k);
+      return hit ? (hit.comision_interna_pct || 0) : 0;
+    };
+    const metodos = pagos.agruparPorMetodo(ventas).map(m => {
+      const comision_pct = comisionDe(m.payment_method);
+      const comision_monto = m.total * (comision_pct / 100);
+      return { metodo: m.payment_method, total: m.total, cantidad: m.count, comision_pct, comision_monto, neto: m.total - comision_monto };
     });
-    Object.values(mapa).forEach(m => {
-      m.comision_monto = m.total * (m.comision_pct / 100);
-      m.neto           = m.total - m.comision_monto;
-    });
-
-    const metodos = Object.values(mapa).sort((a, b) => b.total - a.total);
     const totalBruto    = metodos.reduce((s, m) => s + m.total, 0);
     const totalComision = metodos.reduce((s, m) => s + m.comision_monto, 0);
     const totalNeto     = totalBruto - totalComision;
@@ -886,6 +852,7 @@ router.get('/historial.xlsx', (req, res) => {
 
     const ventas = all(`
       SELECT DISTINCT s.id, s.total, s.payment_method, s.created_at,
+        s.cash_received, s.monto_mixto2,
         COALESCE(s.status,'completada') AS status,
         c.nombre AS cliente_nombre
       FROM sales s
@@ -1040,30 +1007,10 @@ router.get('/historial.xlsx', (req, res) => {
     // ══════════════════════════════════════════════
     // HOJA 4 — Resumen por método de pago
     // ══════════════════════════════════════════════
-    const metodMap = {};
-    function sumarMetod(nombre, monto) {
-      const m = (nombre || 'Sin método').trim();
-      if (!metodMap[m]) metodMap[m] = { ventas: 0, total: 0 };
-      metodMap[m].ventas++;
-      metodMap[m].total += fmt(monto);
-    }
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Sin método').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumarMetod(partes[0], v.cash_received);
-          sumarMetod(partes[1], v.monto_mixto2);
-          return;
-        }
-      }
-      sumarMetod(raw, v.total);
-    });
+    const _ventasVig = pagos.vigentes(ventas);
     const h4 = [['Método de pago','Cantidad de ventas','Total recaudado']];
-    Object.entries(metodMap).sort((a,b)=>b[1].total-a[1].total).forEach(([m,d])=>{
-      h4.push([m, d.ventas, peso(d.total)]);
-    });
-    h4.push(['TOTAL', ventas.length, peso(ventas.reduce((s,v)=>s+fmt(v.total),0))]);
+    pagos.agruparPorMetodo(ventas).forEach(m => { h4.push([m.payment_method, m.count, peso(m.total)]); });
+    h4.push(['TOTAL', _ventasVig.length, peso(_ventasVig.reduce((s,v)=>s+fmt(v.total),0))]);
     const ws4 = XLSX.utils.aoa_to_sheet(h4);
     ws4['!cols'] = [{wch:22},{wch:20},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws4, 'Por método de pago');
@@ -1082,6 +1029,13 @@ router.get('/historial.xlsx', (req, res) => {
 
 // GET /api/notificaciones — chequea stock bajo, pedidos urgentes, recordatorios
 // Cache de 30s para no sobrecargar la DB en cada poll del cliente
+// Algunas notificaciones (como las de copias de seguridad) son solo para administradores.
+// La respuesta se cachea para todos, así que se filtra al responder.
+function _paraUsuario(r, req) {
+  const esAdmin = req.session?.user?.role === 'admin';
+  const notifs = (r.notifs || []).filter(n => esAdmin || !n.soloAdmin);
+  return { ...r, notifs, total: notifs.length };
+}
 let _notifCache = null;
 let _notifCacheAt = 0;
 const _NOTIF_TTL = 30000;
@@ -1090,10 +1044,21 @@ router.get('/notificaciones', (req, res) => {
   try {
     const now = Date.now();
     if (_notifCache && (now - _notifCacheAt) < _NOTIF_TTL) {
-      return res.json(_notifCache);
+      return res.json(_paraUsuario(_notifCache, req));
     }
     const { all, get: dbGet } = require('../db');
     const notifs = [];
+
+    // ── Problemas con las copias de seguridad ──
+    try {
+      const al = require('../services/backup_auto.service').alerta();
+      if (al) {
+        notifs.push({
+          tipo: 'backup', icono: 'bi-hdd-fill', color: al.nivel === 'error' ? '#dc2626' : '#f59e0b',
+          titulo: al.titulo, detalle: al.detalle, link: '/ajustes#sec-backups', id: 'backup_alerta', soloAdmin: true,
+        });
+      }
+    } catch(e) {}
 
     // ── Stock bajo (≤ 3 unidades, no pesables, no sin-control-stock) ──
     try {
@@ -1238,7 +1203,7 @@ router.get('/notificaciones', (req, res) => {
     const result = { notifs, total: notifs.length };
     _notifCache = result;
     _notifCacheAt = Date.now();
-    res.json(result);
+    res.json(_paraUsuario(result, req));
   } catch(e) {
     res.status(500).json({ error: e.message, notifs: [], total: 0 });
   }

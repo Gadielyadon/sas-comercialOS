@@ -1,0 +1,287 @@
+<%- include('../partials/head', { title: 'Vencimientos' }) %>
+
+<style>
+.vc-cards   { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
+.vc-card    { background:var(--bg-surface); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer; transition:transform .12s; }
+.vc-card:hover { transform:translateY(-2px); }
+.vc-card.activo { outline:2px solid var(--color-primary); }
+.vc-card-l  { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
+.vc-card-v  { font-size:26px; font-weight:800; margin:2px 0; }
+.vc-card-s  { font-size:13px; color:var(--text-secondary); }
+.vc-rojo { color:#dc2626; } .vc-naranja { color:#ea580c; } .vc-amarillo { color:#ca8a04; } .vc-verde { color:#059669; }
+.vc-badge   { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12.5px; font-weight:700; }
+.vc-b-rojo  { background:rgba(220,38,38,.12); color:#dc2626; }
+.vc-b-naranja { background:rgba(234,88,12,.12); color:#ea580c; }
+.vc-b-amarillo { background:rgba(202,138,4,.14); color:#a16207; }
+.vc-b-verde { background:rgba(5,150,105,.12); color:#059669; }
+.vc-barra   { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+.vc-inp     { padding:9px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-color); background:var(--bg-surface-2); color:var(--text-primary); font-size:15px; width:100%; outline:none; }
+.vc-lbl     { font-size:12.5px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:5px; }
+.vc-btn     { padding:9px 16px; border-radius:var(--radius-sm); border:none; font-weight:700; font-size:14.5px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+.vc-btn-p   { background:linear-gradient(135deg,var(--color-primary),#4f46e5); color:#fff; }
+.vc-btn-o   { background:transparent; border:1px solid var(--border-color); color:var(--text-primary); }
+.vc-btn-r   { background:rgba(220,38,38,.1); border:1px solid rgba(220,38,38,.35); color:#dc2626; }
+.vc-modal   { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:2000; padding:16px; }
+.vc-modal.open { display:flex; }
+.vc-modal-box { background:var(--bg-surface); border-radius:var(--radius-md); padding:22px; width:100%; max-width:440px; max-height:92vh; overflow:auto; }
+.vc-sug     { border:1px solid var(--border-color); border-radius:var(--radius-sm); margin-top:4px; max-height:200px; overflow:auto; background:var(--bg-surface); }
+.vc-sug div { padding:8px 12px; cursor:pointer; font-size:14.5px; border-bottom:1px solid var(--border-color); }
+.vc-sug div:hover { background:var(--bg-surface-2); }
+.vc-radio   { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-sm); cursor:pointer; margin-bottom:8px; font-size:14px; }
+.vc-radio input { margin-top:3px; }
+.vc-vacio   { text-align:center; padding:40px 10px; color:var(--text-muted); }
+</style>
+
+<div class="app-layout">
+  <%- include('../partials/sidebar', { active: 'vencimientos', user }) %>
+  <div class="main-content">
+    <%- include('../partials/header', { module: 'Vencimientos', user }) %>
+
+    <div class="page-body">
+
+      <div class="vc-cards" id="vcCards">
+        <div class="vc-card" data-f="vencidos" onclick="filtrar('vencidos')"><div class="vc-card-l">Ya vencidos</div><div class="vc-card-v vc-rojo" id="cVencidos">-</div><div class="vc-card-s" id="sVencidos"></div></div>
+        <div class="vc-card" data-f="7"  onclick="filtrar('7')"><div class="vc-card-l">Vencen en 7 días</div><div class="vc-card-v vc-naranja" id="c7">-</div><div class="vc-card-s" id="s7"></div></div>
+        <div class="vc-card" data-f="15" onclick="filtrar('15')"><div class="vc-card-l">Vencen en 8 a 15 días</div><div class="vc-card-v vc-amarillo" id="c15">-</div><div class="vc-card-s" id="s15"></div></div>
+        <div class="vc-card" data-f="30" onclick="filtrar('30')"><div class="vc-card-l">Vencen en 16 a 30 días</div><div class="vc-card-v vc-verde" id="c30">-</div><div class="vc-card-s" id="s30"></div></div>
+      </div>
+
+      <div class="card-panel">
+        <div class="card-panel-body">
+          <div class="vc-barra">
+            <select id="selDias" class="vc-inp" style="width:auto;" onchange="cargar()">
+              <option value="30">Mostrar: próximos 30 días</option>
+              <option value="7">Mostrar: próximos 7 días</option>
+              <option value="15">Mostrar: próximos 15 días</option>
+              <option value="60">Mostrar: próximos 60 días</option>
+              <option value="90">Mostrar: próximos 90 días</option>
+              <option value="todos">Mostrar: todo</option>
+            </select>
+            <input type="text" id="buscar" class="vc-inp" style="width:220px;" placeholder="Buscar producto…" oninput="render()">
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <button class="vc-btn vc-btn-p" onclick="abrirNuevo()"><i class="bi bi-plus-circle"></i> Cargar vencimiento</button>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="sales-table" id="tabla">
+              <thead>
+                <tr>
+                  <th>Producto</th><th>Cantidad</th><th>Vence</th><th>Estado</th><th>Valor (a precio)</th><th style="width:210px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"><tr><td colspan="6" class="vc-vacio">Cargando…</td></tr></tbody>
+            </table>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:10px;">
+            Cuando se vende, se descuenta primero la mercadería que vence antes. Si anulás una venta, las unidades vuelven a su lote.
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <%- include('../partials/footer') %>
+  </div>
+</div>
+
+<!-- Modal: cargar vencimiento -->
+<div class="vc-modal" id="mNuevo" onclick="if(event.target.id==='mNuevo')cerrar('mNuevo')">
+  <div class="vc-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:18px;font-weight:800;">Cargar vencimiento</div>
+      <button onclick="cerrar('mNuevo')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-secondary);"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="vc-lbl">Producto</label>
+      <input type="text" id="nProd" class="vc-inp" placeholder="Escribí el nombre o escaneá el código…" oninput="buscarProd()" autocomplete="off">
+      <div class="vc-sug" id="nSug" style="display:none;"></div>
+      <div id="nSel" style="font-size:13.5px;margin-top:6px;font-weight:700;color:var(--color-primary);"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div><label class="vc-lbl">Cantidad</label><input type="number" id="nCant" class="vc-inp" min="0" step="any" placeholder="Ej: 12"></div>
+      <div><label class="vc-lbl">Fecha de vencimiento</label><input type="date" id="nFecha" class="vc-inp"></div>
+    </div>
+    <label class="vc-radio"><input type="radio" name="nTipo" value="nueva" checked>
+      <span><b>Es mercadería nueva</b><br><span style="color:var(--text-secondary);">Suma esas unidades al stock y anota cuándo vencen.</span></span></label>
+    <label class="vc-radio"><input type="radio" name="nTipo" value="existente">
+      <span><b>Ya la tengo cargada en el stock</b><br><span style="color:var(--text-secondary);">No cambia el stock, solo anota la fecha de vencimiento.</span></span></label>
+    <div id="nErr" style="color:#dc2626;font-size:13.5px;font-weight:600;margin:8px 0;display:none;"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="vc-btn vc-btn-p" style="flex:1;justify-content:center;" onclick="guardarNuevo()"><i class="bi bi-check-circle"></i> Guardar</button>
+      <button class="vc-btn vc-btn-o" onclick="cerrar('mNuevo')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: cambiar fecha -->
+<div class="vc-modal" id="mEditar" onclick="if(event.target.id==='mEditar')cerrar('mEditar')">
+  <div class="vc-modal-box" style="max-width:380px;">
+    <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Corregir lote</div>
+    <div id="eNombre" style="font-size:13.5px;color:var(--text-secondary);margin-bottom:14px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><label class="vc-lbl">Cantidad</label><input type="number" id="eCant" class="vc-inp" min="0" step="any"></div>
+      <div><label class="vc-lbl">Vence</label><input type="date" id="eFecha" class="vc-inp"></div>
+    </div>
+    <div id="eErr" style="color:#dc2626;font-size:13.5px;font-weight:600;margin:8px 0;display:none;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="vc-btn vc-btn-p" style="flex:1;justify-content:center;" onclick="guardarEdicion()">Guardar</button>
+      <button class="vc-btn vc-btn-o" onclick="cerrar('mEditar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/scripts') %>
+<script>
+'use strict';
+let _datos = { lotes: [], resumen: {} };
+let _filtro = null;       // null | 'vencidos' | '7' | '15' | '30'
+let _prodSel = null;
+let _editId  = null;
+
+const $ = id => document.getElementById(id);
+const peso = n => '$' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+const esc  = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num  = n => Number(n).toLocaleString('es-AR', { maximumFractionDigits: 3 });
+function fechaAR(iso) { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function estado(dias) {
+  if (dias < 0)   return { t: dias === -1 ? 'Venció ayer' : `Venció hace ${-dias} días`, c: 'rojo' };
+  if (dias === 0) return { t: 'Vence hoy', c: 'rojo' };
+  if (dias === 1) return { t: 'Vence mañana', c: 'naranja' };
+  if (dias <= 7)  return { t: `Vence en ${dias} días`, c: 'naranja' };
+  if (dias <= 15) return { t: `Vence en ${dias} días`, c: 'amarillo' };
+  return { t: `Vence en ${dias} días`, c: 'verde' };
+}
+function grupo(dias) { return dias < 0 ? 'vencidos' : dias <= 7 ? '7' : dias <= 15 ? '15' : dias <= 30 ? '30' : 'mas'; }
+
+async function cargar() {
+  try {
+    const r = await fetch('/vencimientos/api/lotes?dias=' + encodeURIComponent($('selDias').value));
+    _datos = await r.json();
+  } catch (e) { $('tbody').innerHTML = '<tr><td colspan="6" class="vc-vacio">No se pudo cargar</td></tr>'; return; }
+  const rs = _datos.resumen || {};
+  const p = (id, k) => { const x = rs[k] || { lotes: 0, unidades: 0, valor: 0 };
+    $('c' + id).textContent = x.lotes;
+    $('s' + id).textContent = x.lotes ? `${num(x.unidades)} u. · ${peso(x.valor)}` : 'Nada por acá 👌'; };
+  p('Vencidos', 'vencidos'); p('7', 'd7'); p('15', 'd15'); p('30', 'd30');
+  render();
+}
+
+function filtrar(f) {
+  _filtro = (_filtro === f) ? null : f;
+  document.querySelectorAll('.vc-card').forEach(c => c.classList.toggle('activo', c.dataset.f === _filtro));
+  render();
+}
+
+function render() {
+  const q = $('buscar').value.trim().toLowerCase();
+  const lista = (_datos.lotes || []).filter(l =>
+    (!_filtro || grupo(l.dias) === _filtro) &&
+    (!q || String(l.name || '').toLowerCase().includes(q) || String(l.sku).toLowerCase().includes(q)));
+  if (!lista.length) {
+    $('tbody').innerHTML = `<tr><td colspan="6" class="vc-vacio">${(_datos.lotes||[]).length ? 'No hay lotes con ese filtro.' : 'Todavía no cargaste vencimientos. Tocá “Cargar vencimiento” para empezar.'}</td></tr>`;
+    return;
+  }
+  $('tbody').innerHTML = lista.map(l => {
+    const e = estado(l.dias);
+    return `<tr>
+      <td><strong>${esc(l.name || l.sku)}</strong><div style="font-size:12.5px;color:var(--text-muted);">${esc(l.sku)}</div></td>
+      <td>${num(l.cantidad)}</td>
+      <td>${fechaAR(l.vence)}</td>
+      <td><span class="vc-badge vc-b-${e.c}">${e.t}</span></td>
+      <td>${peso(l.valor)}</td>
+      <td style="white-space:nowrap;">
+        <button class="vc-btn vc-btn-o" style="padding:6px 10px;" title="Corregir fecha o cantidad" onclick="abrirEditar(${l.id})"><i class="bi bi-pencil"></i></button>
+        <button class="vc-btn vc-btn-r" style="padding:6px 10px;" onclick="darDeBaja(${l.id})"><i class="bi bi-trash3"></i> ${l.dias < 0 ? 'Dar de baja' : 'Tirar'}</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function cerrar(id) { $(id).classList.remove('open'); }
+
+/* ── Cargar vencimiento ── */
+function abrirNuevo() {
+  _prodSel = null;
+  $('nProd').value = ''; $('nSel').textContent = ''; $('nSug').style.display = 'none';
+  $('nCant').value = ''; $('nFecha').value = ''; $('nErr').style.display = 'none';
+  document.querySelector('input[name="nTipo"][value="nueva"]').checked = true;
+  $('mNuevo').classList.add('open');
+  setTimeout(() => $('nProd').focus(), 80);
+}
+let _t = null;
+function buscarProd() {
+  clearTimeout(_t);
+  const q = $('nProd').value.trim();
+  _prodSel = null; $('nSel').textContent = '';
+  if (q.length < 2) { $('nSug').style.display = 'none'; return; }
+  _t = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/products?q=' + encodeURIComponent(q) + '&limit=8');
+      const lista = await r.json();
+      const box = $('nSug');
+      if (!Array.isArray(lista) || !lista.length) { box.innerHTML = '<div style="color:var(--text-muted);">Sin resultados</div>'; box.style.display = 'block'; return; }
+      box.innerHTML = lista.map((p, i) => `<div data-i="${i}">${esc(p.name)} <span style="color:var(--text-muted);font-size:12.5px;">· ${esc(p.sku)}</span></div>`).join('');
+      box.style.display = 'block';
+      box.querySelectorAll('div[data-i]').forEach(d => d.onclick = () => elegirProd(lista[Number(d.dataset.i)]));
+      // si escanearon un código exacto, lo elige solo
+      const exacto = lista.find(p => String(p.sku) === q);
+      if (exacto) elegirProd(exacto);
+    } catch (e) {}
+  }, 220);
+}
+function elegirProd(p) {
+  _prodSel = p;
+  $('nProd').value = p.name; $('nSug').style.display = 'none';
+  $('nSel').textContent = '✔ ' + p.name + ' (' + p.sku + ')';
+}
+async function guardarNuevo() {
+  const err = $('nErr'); err.style.display = 'none';
+  const falla = m => { err.textContent = m; err.style.display = 'block'; };
+  if (!_prodSel) return falla('Elegí un producto de la lista.');
+  const cantidad = parseFloat($('nCant').value);
+  if (!(cantidad > 0)) return falla('Ingresá una cantidad mayor a cero.');
+  if (!$('nFecha').value) return falla('Elegí la fecha de vencimiento.');
+  const sumar = document.querySelector('input[name="nTipo"]:checked').value === 'nueva';
+  const r = await fetch('/vencimientos/api/lotes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sku: _prodSel.sku, cantidad, vence: $('nFecha').value, sumar_stock: sumar })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) return falla(d.error || 'No se pudo guardar.');
+  cerrar('mNuevo'); cargar();
+}
+
+/* ── Corregir ── */
+function abrirEditar(id) {
+  const l = (_datos.lotes || []).find(x => x.id === id); if (!l) return;
+  _editId = id;
+  $('eNombre').textContent = (l.name || l.sku);
+  $('eCant').value = l.cantidad; $('eFecha').value = l.vence; $('eErr').style.display = 'none';
+  $('mEditar').classList.add('open');
+}
+async function guardarEdicion() {
+  const r = await fetch('/vencimientos/api/lotes/' + _editId, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vence: $('eFecha').value, cantidad: parseFloat($('eCant').value) })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { $('eErr').textContent = d.error || 'No se pudo guardar.'; $('eErr').style.display = 'block'; return; }
+  cerrar('mEditar'); cargar();
+}
+
+/* ── Dar de baja ── */
+async function darDeBaja(id) {
+  const l = (_datos.lotes || []).find(x => x.id === id); if (!l) return;
+  const vencido = l.dias < 0;
+  if (!confirm(`${vencido ? 'Dar de baja' : 'Tirar'} ${num(l.cantidad)} u. de "${l.name || l.sku}"?\n\nSe descuentan del stock como merma (${peso(l.valor)} a precio de venta).`)) return;
+  const r = await fetch('/vencimientos/api/lotes/' + id + '/baja', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo: vencido ? 'Vencido' : 'Descartado antes de vencer' })
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(d.error || 'No se pudo dar de baja'); return; }
+  cargar();
+}
+
+cargar();
+</script>

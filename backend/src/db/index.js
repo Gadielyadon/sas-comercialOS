@@ -3,7 +3,9 @@ const fs   = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const dbPath     = path.join(__dirname, 'database.sqlite');
+// DB_PATH es opcional (lo usan las pruebas automáticas para no tocar la base real).
+// Si no está definida, se usa la base de siempre.
+const dbPath     = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
 const schemaPath = path.join(__dirname, 'schema.sql');
 
 const db = new Database(dbPath);

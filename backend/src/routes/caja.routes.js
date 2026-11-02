@@ -2,6 +2,7 @@ const express  = require('express');
 const router   = express.Router();
 const cajaSvc  = require('../services/caja.service');
 const salesSvc = require('../services/sales.service');
+const pagos    = require('../services/pagos.service');
 const { run, get, all } = require('../db');
 const { requireAuth } = require('../middlewares/auth.middleware');
 
@@ -60,7 +61,8 @@ function enviarResumenCaja(req, res) {
     const hasta = caja.closed_at || nowArgentina();
 
     const ventas = all(`
-      SELECT id, total, payment_method, cash_received, monto_mixto2, created_at
+      SELECT id, total, payment_method, cash_received, monto_mixto2, created_at,
+             COALESCE(status,'completada') AS status
       FROM sales
       WHERE created_at >= ? AND created_at <= ?
       ${caja.sucursal_id ? 'AND sucursal_id = ?' : ''}
@@ -70,31 +72,11 @@ function enviarResumenCaja(req, res) {
       : [caja.opened_at, hasta]
     );
 
-    const desglose = {};
-    function sumarDesglose(nombre, monto) {
-      const m = (nombre || 'Otro').trim();
-      if (!desglose[m]) desglose[m] = { total: 0, cantidad: 0 };
-      desglose[m].total += Number(monto) || 0;
-      desglose[m].cantidad += 1;
-    }
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Otro').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumarDesglose(partes[0], v.cash_received);
-          sumarDesglose(partes[1], v.monto_mixto2);
-          return;
-        }
-      }
-      sumarDesglose(raw, v.total);
-    });
-
-    const desgloseArr = Object.entries(desglose).map(([metodo, d]) => ({
-      metodo,
-      payment_method: metodo,
-      total: d.total,
-      cantidad: d.cantidad
+    const desgloseArr = pagos.agruparPorMetodo(ventas).map(m => ({
+      metodo: m.payment_method,
+      payment_method: m.payment_method,
+      total: m.total,
+      cantidad: m.count
     }));
 
     let movimientos = [];
@@ -102,21 +84,10 @@ function enviarResumenCaja(req, res) {
       movimientos = all(`SELECT * FROM caja_movimientos WHERE caja_id = ? ORDER BY id ASC`, [caja_id]);
     } catch (e) {}
 
-    const totalVentas = ventas.reduce((s, v) => s + Number(v.total || 0), 0);
-
-    const totalEfectivo = ventas.reduce((s, v) => {
-      const metodo = (v.payment_method || '').toLowerCase().trim();
-      if (metodo === 'efectivo') return s + Number(v.total || 0);
-      if (metodo.includes('+') && metodo.includes('efectivo')) {
-        // Pago mixto: el efectivo puede ser el método 1 (cash_received) o el
-        // método 2 (monto_mixto2) según cuál haya elegido el cajero como
-        // principal — hay que fijarse en qué posición aparece "efectivo".
-        const partes = metodo.split('+').map(p => p.trim());
-        if (partes[0] === 'efectivo') return s + Number(v.cash_received || 0);
-        if (partes[1] === 'efectivo') return s + Number(v.monto_mixto2 || 0);
-      }
-      return s;
-    }, 0);
+    // Las ventas anuladas no cuentan como venta ni como efectivo
+    const ventasVigentes = pagos.vigentes(ventas);
+    const totalVentas    = ventasVigentes.reduce((s, v) => s + Number(v.total || 0), 0);
+    const totalEfectivo  = ventasVigentes.reduce((s, v) => s + pagos.efectivoDe(v), 0);
 
     const ingresos = movimientos
       .filter(m => m.tipo === 'ingreso')
@@ -154,21 +125,10 @@ router.get('/', (req, res) => {
   const suc_id = user.sucursal_id || 1;
   const caja   = cajaActual(req);
   const ventas = caja ? ventasDelTurno(suc_id) : [];
-  const total  = ventas.reduce((s, v) => s + v.total, 0);
+  const total  = pagos.vigentes(ventas).reduce((s, v) => s + Number(v.total || 0), 0);
 
   const porMetodo = {};
-  ventas.forEach(v => {
-    const raw = (v.payment_method || 'Sin método').trim();
-    if (raw.includes('+')) {
-      const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-      if (partes.length === 2) {
-        porMetodo[partes[0]] = (porMetodo[partes[0]] || 0) + (Number(v.cash_received) || 0);
-        porMetodo[partes[1]] = (porMetodo[partes[1]] || 0) + (Number(v.monto_mixto2) || 0);
-        return;
-      }
-    }
-    porMetodo[raw] = (porMetodo[raw] || 0) + Number(v.total || 0);
-  });
+  pagos.agruparPorMetodo(ventas).forEach(m => { porMetodo[m.payment_method] = m.total; });
 
   let movimientos = [];
   let totalMov = 0;

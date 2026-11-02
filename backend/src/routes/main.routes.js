@@ -6,6 +6,7 @@ const productsService = require('../services/products.service');
 const cajaService     = require('../services/caja.service');
 const { get, all, run, db } = require('../db');
 const reportesCtrl    = require('../controllers/reportes.controller');
+const pagos           = require('../services/pagos.service');
 
 // requirePermiso / requireAuth / requireAdmin — si auth.middleware falla, usar passthrough
 let requirePermiso = (_sec) => (_req, _res, next) => next();
@@ -70,25 +71,8 @@ function getVentasPorMetodo(sucursal_id) {
   try {
     const hoy   = fechaArg(0);
     const where = sucursal_id ? `AND sucursal_id = ${Number(sucursal_id)}` : '';
-    const ventas = all(`SELECT payment_method, cash_received, monto_mixto2, total FROM sales WHERE DATE(created_at) = ? ${where}`, [hoy]);
-    const mapa = {};
-    function sumar(nombre, monto) {
-      const m = (nombre || 'Sin método').trim();
-      mapa[m] = (mapa[m] || 0) + (Number(monto) || 0);
-    }
-    ventas.forEach(v => {
-      const raw = (v.payment_method || 'Sin método').trim();
-      if (raw.includes('+')) {
-        const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-        if (partes.length === 2) {
-          sumar(partes[0], v.cash_received);
-          sumar(partes[1], v.monto_mixto2);
-          return;
-        }
-      }
-      sumar(raw, v.total);
-    });
-    return Object.entries(mapa).map(([payment_method, total]) => ({ payment_method, total }));
+    const ventas = all(`SELECT payment_method, cash_received, monto_mixto2, total FROM sales WHERE DATE(created_at) = ? AND COALESCE(status,'completada') != 'anulada' ${where}`, [hoy]);
+    return pagos.agruparPorMetodo(ventas).map(m => ({ payment_method: m.payment_method, total: m.total }));
   } catch(e) { return []; }
 }
 
@@ -376,6 +360,17 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
   const productosEstancados = getProductosEstancados(sucursal_id);
   const clientesDeuda       = getClientesDeuda();
   const ventasPorVendedor   = getVentasPorVendedor(sucursal_id);
+  // Mercadería por vencer (solo si el comercio cargó vencimientos)
+  let porVencer = { hayLotes: false, vencidos: 0, d7: 0, lista: [] };
+  try {
+    const L = require('../services/lotes.service').listar({ sucursal_id: res.locals?.sucursal_id || 1, dias: null });
+    porVencer = {
+      hayLotes: L.lotes.length > 0,
+      vencidos: L.resumen.vencidos.lotes,
+      d7: L.resumen.d7.lotes,
+      lista: L.lotes.filter(l => l.dias <= 15).slice(0, 8),
+    };
+  } catch (e) { /* sin lotes: el tablero sigue igual */ }
   res.render('pages/dashboard', {
     title: 'Dashboard', user, active: 'dashboard', activeSub: null, module: 'Dashboard',
     empresaNombre: getConfigValue('empresa_nombre', 'Mi Comercio'),
@@ -390,7 +385,7 @@ router.get('/dashboard', requirePermiso('dashboard'), (req, res) => {
     sucursal:       res.locals?.sucursal || { id: 1, nombre: 'Casa Central' },
     modulo_sucursales: false, recentSales: [],
     gastosMes, ventasMes, deudaProvs, stockCritico,
-    productosEstancados, clientesDeuda, ventasPorVendedor
+    productosEstancados, clientesDeuda, ventasPorVendedor, porVencer
   });
 });
 
@@ -474,51 +469,6 @@ router.post('/inventario/etiquetas/imprimir', requirePermiso('inventario'), (req
     empresaNombre: getConfigValue('empresa_nombre', ''),
     empresaLogo:   getConfigValue('empresa_logo', ''),
   });
-});
-
-// ── Inventario · Carga automática (IA) ──────────────────────────
-// Escanea una foto o PDF de una factura de proveedor, extrae los ítems
-// con IA y los matchea contra el catálogo existente antes de aplicarlos.
-router.get('/inventario/carga-automatica', requirePermiso('inventario'), (req, res) => {
-  const user = req.session?.user || { name: 'Admin' };
-  res.render('pages/carga_automatica', {
-    title: 'Carga automática', user, active: 'carga-automatica', module: 'Inventario',
-    sucursal_id: res.locals.sucursal_id || 1,
-  });
-});
-
-router.post('/inventario/carga-automatica/api/escanear', requirePermiso('inventario'), async (req, res) => {
-  try {
-    const { imagen_base64, media_type } = req.body || {};
-    const cargaSvc = require('../services/carga_automatica.service');
-    const items = await cargaSvc.extraerItemsDeFactura({ base64: imagen_base64, mediaType: media_type });
-    if (!items.length) {
-      return res.json({ ok: true, items: [], aviso: 'No se detectaron productos en el documento.' });
-    }
-    const sucursal_id = res.locals.sucursal_id || 1;
-    const matched = cargaSvc.matchearProductos(items, sucursal_id);
-    res.json({ ok: true, items: matched });
-  } catch (e) {
-    console.error('[carga-automatica/escanear]', e.message);
-    res.status(e.configFaltante ? 400 : 500).json({ ok: false, error: e.message });
-  }
-});
-
-router.post('/inventario/carga-automatica/api/confirmar', requirePermiso('inventario'), (req, res) => {
-  try {
-    const { items } = req.body || {};
-    if (!Array.isArray(items) || !items.length) {
-      return res.status(400).json({ ok: false, error: 'No hay ítems para cargar' });
-    }
-    const cargaSvc = require('../services/carga_automatica.service');
-    const sucursal_id = res.locals.sucursal_id || 1;
-    const usuario = req.session?.user?.name || null;
-    const resumen = cargaSvc.aplicarCarga({ items, sucursal_id, usuario });
-    res.json({ ok: true, ...resumen });
-  } catch (e) {
-    console.error('[carga-automatica/confirmar]', e.message);
-    res.status(500).json({ ok: false, error: e.message });
-  }
 });
 
 // ── Ventas ────────────────────────────────────────────────────
@@ -834,10 +784,16 @@ router.get('/api/reportes/ventas', (req, res) => {
     const total_fiado = Math.min(fiadoRow?.total || 0, resumen?.total || 0);
     const cobrado = { total: (resumen?.total || 0) - total_fiado };
 
-    const productos = all(
+    // Costo de cada ítem: el guardado al vender; si no hay, el actual del producto.
+    // Lo que no tiene costo NO se cuenta como ganancia: se informa aparte.
+    const _COSTO = `COALESCE(NULLIF(si.price_cost,0), NULLIF(p.price_cost,0), 0)`;
+    const _VENTA = `COALESCE(si.subtotal, si.qty * si.price, 0)`;
+    const productosRaw = all(
       `SELECT si.name, COALESCE(p.category,'Sin categoría') as category,
               COALESCE(SUM(si.qty),0) as cantidad,
-              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as total
+              COALESCE(SUM(si.subtotal), SUM(si.qty * si.price), 0) as total,
+              COALESCE(SUM(CASE WHEN ${_COSTO} > 0 THEN ${_VENTA} ELSE 0 END),0) as venta_con_costo,
+              COALESCE(SUM(CASE WHEN ${_COSTO} > 0 THEN si.qty * ${_COSTO} ELSE 0 END),0) as costo
        FROM sale_items si
        JOIN sales s ON s.id = si.sale_id
        LEFT JOIN products p ON p.sku = si.sku
@@ -848,6 +804,36 @@ router.get('/api/reportes/ventas', (req, res) => {
        LIMIT 100`,
       [desde, hasta]
     );
+    const _r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+    const productos = productosRaw.map(r => {
+      const ganancia = r.venta_con_costo - r.costo;
+      return {
+        name: r.name, category: r.category, cantidad: r.cantidad, total: r.total,
+        costo: _r2(r.costo),
+        ganancia: r.venta_con_costo > 0 ? _r2(ganancia) : null,
+        margen_pct: r.venta_con_costo > 0 ? Math.round((ganancia / r.venta_con_costo) * 1000) / 10 : null,
+        venta_sin_costo: _r2(r.total - r.venta_con_costo),   // >0 = falta cargar costo (total o parcial)
+      };
+    });
+    // Totales de ganancia sobre TODAS las ventas del período (no solo los 100 productos listados)
+    const gTot = get(
+      `SELECT COALESCE(SUM(${_VENTA}),0) AS venta,
+              COALESCE(SUM(CASE WHEN ${_COSTO} > 0 THEN ${_VENTA} ELSE 0 END),0) AS venta_con_costo,
+              COALESCE(SUM(CASE WHEN ${_COSTO} > 0 THEN si.qty * ${_COSTO} ELSE 0 END),0) AS costo
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       LEFT JOIN products p ON p.sku = si.sku
+       WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+         AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
+      [desde, hasta]
+    ) || { venta: 0, venta_con_costo: 0, costo: 0 };
+    const gananciaResumen = {
+      ganancia: _r2(gTot.venta_con_costo - gTot.costo),
+      venta_con_costo: _r2(gTot.venta_con_costo),
+      venta_sin_costo: _r2(gTot.venta - gTot.venta_con_costo),
+      margen_pct: gTot.venta_con_costo > 0 ? Math.round(((gTot.venta_con_costo - gTot.costo) / gTot.venta_con_costo) * 1000) / 10 : null,
+      cobertura_pct: gTot.venta > 0 ? Math.round((gTot.venta_con_costo / gTot.venta) * 100) : 0,
+    };
 
     const categorias = all(
       `SELECT COALESCE(p.category,'Sin categoría') as category,
@@ -871,28 +857,7 @@ router.get('/api/reportes/ventas', (req, res) => {
          AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
       [desde, hasta]
     );
-    const _mapaMetodos = {};
-    (function() {
-      function sumar(nombre, monto) {
-        const m = (nombre || 'Sin método').trim();
-        if (!_mapaMetodos[m]) _mapaMetodos[m] = { payment_method: m, count: 0, total: 0 };
-        _mapaMetodos[m].total += Number(monto) || 0;
-        _mapaMetodos[m].count += 1;
-      }
-      _ventasMetodo.forEach(v => {
-        const raw = (v.payment_method || 'Sin método').trim();
-        if (raw.includes('+')) {
-          const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-          if (partes.length === 2) {
-            sumar(partes[0], v.cash_received);
-            sumar(partes[1], v.monto_mixto2);
-            return;
-          }
-        }
-        sumar(raw, v.total);
-      });
-    })();
-    const metodos = Object.values(_mapaMetodos).sort((a, b) => b.total - a.total);
+    const metodos = pagos.agruparPorMetodo(_ventasMetodo);
 
     const departamentos = all(
       `SELECT si.name AS departamento,
@@ -915,6 +880,7 @@ router.get('/api/reportes/ventas', (req, res) => {
       total_cobrado: cobrado?.total || 0,
       total_fiado,
       count_ventas: resumen?.count || 0,
+      ganancia: gananciaResumen,
       productos,
       categorias,
       metodos,
@@ -1137,28 +1103,9 @@ router.get('/api/reportes/ventas/export', (req, res) => {
          AND COALESCE(s.status,'completada') != 'anulada' ${sWhere}`,
       [desde, hasta]
     );
-    const _mapaMetodos2 = {};
-    (function() {
-      function sumar(nombre, monto) {
-        const m = (nombre || 'Sin método').trim();
-        if (!_mapaMetodos2[m]) _mapaMetodos2[m] = { 'Método de pago': m, Transacciones: 0, 'Total $': 0 };
-        _mapaMetodos2[m]['Total $'] += Number(monto) || 0;
-        _mapaMetodos2[m].Transacciones += 1;
-      }
-      _ventasMetodo2.forEach(v => {
-        const raw = (v.payment_method || 'Sin método').trim();
-        if (raw.includes('+')) {
-          const partes = raw.split('+').map(p => p.trim()).filter(Boolean);
-          if (partes.length === 2) {
-            sumar(partes[0], v.cash_received);
-            sumar(partes[1], v.monto_mixto2);
-            return;
-          }
-        }
-        sumar(raw, v.total);
-      });
-    })();
-    const metodos = Object.values(_mapaMetodos2).sort((a, b) => b['Total $'] - a['Total $']);
+    const metodos = pagos.agruparPorMetodo(_ventasMetodo2).map(m => ({
+      'Método de pago': m.payment_method, Transacciones: m.count, 'Total $': m.total,
+    }));
 
     const XLSX = require('xlsx');
     const wb   = XLSX.utils.book_new();
